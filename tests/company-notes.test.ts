@@ -1,0 +1,41 @@
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { workflowOf } from "graphinject";
+import { JobScout } from "../src/job-scout.workflow.js";
+import { NOTES_DIR } from "../src/paths.js";
+import { CompanyNotes } from "../src/rag/company-notes.js";
+
+const signal = new AbortController().signal;
+
+describe("company notes (knowledge base)", () => {
+  it("AC3: finds the note about a company, with its file as the source", async () => {
+    const notes = new CompanyNotes({
+      folder: NOTES_DIR,
+      dbFile: join(await mkdtemp(join(tmpdir(), "notes-")), "notes.sqlite"),
+    });
+
+    const retrieval = await notes.retrieve("Why is Fireblocks a fit for a backend engineer?", {
+      k: 3,
+      signal,
+    });
+
+    expect(retrieval.passages[0]?.source).toBe("fireblocks.md");
+    expect(retrieval.passages.map((p) => p.source)).not.toContain("readme.md");
+  });
+
+  it("AC3: the scout searches the notes itself (tool mode, 3 passages); the notes are marked as samples", async () => {
+    const workflow = await workflowOf(JobScout);
+    const index = await new CompanyNotes({
+      folder: NOTES_DIR,
+      dbFile: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
+    }).index();
+
+    expect(workflow.config.agents.scout?.rag).toEqual([
+      { name: "company_notes", mode: "tool", k: 3 },
+    ]);
+    expect(workflow.config.agents.scout?.tools).toContain("search_company_notes");
+    expect(index.documents).toBe(5);
+  });
+});

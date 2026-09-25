@@ -4,7 +4,13 @@ export const KIMI_PRICE = { inputPerMTok: 0.4972, outputPerMTok: 2.97, cacheRead
 
 export const DEFAULTS = {
   // no maxTokens: graphInject's default ceiling (8192) applies
-  chat: { temperature: 0, thinking: "default", cache: true },
+  chat: {
+    temperature: 0,
+    thinking: "default",
+    cache: true,
+    // kimi-k2.6 via Inceptron loops while generating tool-call arguments (seen in #92, #97)
+    provider: { ignore: ["Inceptron"] },
+  },
   router: { kind: "jev", model: "typesafe/jev-1.13" },
   tools: { maxToolCalls: 8 },
   history: { limit: 5 },

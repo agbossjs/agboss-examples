@@ -1,8 +1,12 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
+    // the shortlist MCP server writes to a temp folder in tests, never to ~/job-scout
+    env: { JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests") },
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

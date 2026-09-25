@@ -42,6 +42,10 @@ describe("job-scout search config", () => {
     expect(prompts.profiler).toContain(`Boards: all ${boards}`);
     expect(prompts.profiler).not.toMatch(/^\d\. /m);
     expect(prompts.scout).toContain("Never add a filter of your own.");
+    // the list comes first and is never dropped for the notes-based explanation (found in #92 M1)
+    const scout = prompts.scout ?? "";
+    expect(scout.indexOf("numbered list")).toBeLessThan(scout.indexOf("search_company_notes"));
+    expect(prompts.scout).toContain("Never drop this list");
     expect(prompts.scout).not.toMatch(/e\.g\. (Lead|Senior)/);
     expect(prompts.scout).toContain("they also match their cities): israel");
   });

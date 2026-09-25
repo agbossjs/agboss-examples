@@ -22,6 +22,7 @@
     "graphinject": "0.1.0",
     "unpdf": "^1.8.1",
     "zod": "^4.6.5",
-    "dotenv": "^18.0.3"
+    "dotenv": "^18.0.3",
+    "@modelcontextprotocol/server-filesystem": "^2026.8.31"
   }
 }
