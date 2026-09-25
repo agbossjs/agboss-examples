@@ -3,7 +3,7 @@ export const KIMI = "moonshotai/kimi-k2.6";
 export const KIMI_PRICE = { inputPerMTok: 0.4972, outputPerMTok: 2.97, cacheReadPerMTok: 0.1284 };
 
 export const DEFAULTS = {
-  // no maxTokens: graphInject's default ceiling (8192) applies
+  // no maxTokens: GraphCompose's default ceiling (8192) applies
   chat: {
     temperature: 0,
     thinking: "default",

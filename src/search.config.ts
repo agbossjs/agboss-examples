@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { InjectionToken } from "graphinject";
+import { InjectionToken } from "graphcompose";
 
 /**
  * Where job-scout looks. Change this file to point it at another country or set of companies —

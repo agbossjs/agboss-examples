@@ -1,4 +1,4 @@
-import { McpServer, McpTool } from "graphinject";
+import { McpServer, McpTool } from "graphcompose";
 import { z } from "zod";
 import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../paths.js";
 

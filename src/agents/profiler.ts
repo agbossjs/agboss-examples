@@ -1,5 +1,5 @@
 import { ReadResume } from "../tools/read-resume.js";
-import { Agent } from "graphinject";
+import { Agent } from "graphcompose";
 import { KIMI, KIMI_PRICE } from "../settings.js";
 
 @Agent({

@@ -1,4 +1,4 @@
-import { Agent } from "graphinject";
+import { Agent } from "graphcompose";
 import { ReadShortlist, WriteShortlist } from "../mcp/shortlist.js";
 import { KIMI, KIMI_PRICE } from "../settings.js";
 

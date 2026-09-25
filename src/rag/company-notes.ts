@@ -1,4 +1,4 @@
-import { InjectionToken, Rag, SqliteFtsConnector, type FtsOptions } from "graphinject";
+import { InjectionToken, Rag, SqliteFtsConnector, type FtsOptions } from "graphcompose";
 
 /** Where the notes are and where their index lives. */
 export const NOTES_INDEX = new InjectionToken<FtsOptions>("NOTES_INDEX");

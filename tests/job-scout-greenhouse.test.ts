@@ -1,4 +1,4 @@
-import { toolOf, type Router, type ToolContext } from "graphinject";
+import { toolOf, type Router, type ToolContext } from "graphcompose";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, routerFitJudge, type FitJudge } from "../src/fit.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.js";

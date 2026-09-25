@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { workflowOf } from "graphinject";
+import { workflowOf } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { NOTES_DIR } from "../src/paths.js";
 import { CompanyNotes } from "../src/rag/company-notes.js";

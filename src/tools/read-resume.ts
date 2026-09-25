@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
-import { Tool, type ToolHandler } from "graphinject";
+import { Tool, type ToolHandler } from "graphcompose";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 /** The model gets at most this much resume text. */

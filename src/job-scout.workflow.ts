@@ -1,4 +1,4 @@
-import { Workflow, writeToolsNeedApproval } from "graphinject";
+import { Workflow, writeToolsNeedApproval } from "graphcompose";
 import { BUDGET, DEFAULTS, GUARDS, KIMI, KIMI_PRICE, ROUTERS } from "./settings.js";
 import { Profiler } from "./agents/profiler.js";
 import { Scout } from "./agents/scout.js";

@@ -1,7 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { createAppDeps, workflowOf, type ToolContext } from "graphinject";
+import { createAppDeps, workflowOf, type ToolContext } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { SHORTLIST_DIR, SHORTLIST_FILE } from "../src/paths.js";
 

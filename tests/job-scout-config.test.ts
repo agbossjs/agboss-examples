@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { probeBoard } from "../src/boards.js";
-import { workflowOf } from "graphinject";
+import { workflowOf } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { jobScoutPromptVariables } from "../src/prompt-variables.js";
 import { jobSearchConfig, JobSearchSchema } from "../src/search.config.js";

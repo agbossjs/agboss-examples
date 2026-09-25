@@ -1,4 +1,4 @@
-import { toolOf, type ToolContext } from "graphinject";
+import { toolOf, type ToolContext } from "graphcompose";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -1,4 +1,4 @@
-import { Injectable, ROUTER_FACTORY, type Router } from "graphinject";
+import { Injectable, ROUTER_FACTORY, type Router } from "graphcompose";
 
 /** What the judge sees of a job. */
 export interface JobText {

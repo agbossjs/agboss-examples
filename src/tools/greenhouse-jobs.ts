@@ -1,4 +1,4 @@
-import { Tool, type ToolContext, type ToolHandler } from "graphinject";
+import { Tool, type ToolContext, type ToolHandler } from "graphcompose";
 export { htmlToText } from "../boards.js";
 import { z } from "zod";
 import { boardReader, defaultFetchJson, type Candidate } from "../boards.js";
