@@ -1,0 +1,27 @@
+{
+  "name": "job-scout-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "graphInject example: resume \u2192 search brief \u2192 Greenhouse jobs ranked by Jev",
+  "scripts": {
+    "chat": "graphinject chat --workflow src/job-scout.workflow.ts",
+    "run": "graphinject run --workflow src/job-scout.workflow.ts",
+    "describe": "graphinject describe --workflow src/job-scout.workflow.ts",
+    "eval": "graphinject eval --workflow src/job-scout.workflow.ts",
+    "replay": "graphinject replay --workflow src/job-scout.workflow.ts",
+    "golden": "graphinject golden --workflow src/job-scout.workflow.ts",
+    "compare": "graphinject compare --workflow src/job-scout.workflow.ts",
+    "rag:index": "graphinject rag:index --workflow src/job-scout.workflow.ts",
+    "probe": "tsx src/probe-boards.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "graphinject": "0.1.0",
+    "unpdf": "^1.8.1",
+    "zod": "^4.6.5",
+    "dotenv": "^18.0.3"
+  }
+}

@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../../../node_modules/graphinject/schema/profile.schema.json
+# Does the scout rank and present jobs better with a little thinking? Compare:
+#   npm run compare -- --profiles base,scout-low-thinking --golden core
+profile: scout-low-thinking
+version: 1.1.0-low-thinking
+agents:
+  scout:
+    thinking: low
