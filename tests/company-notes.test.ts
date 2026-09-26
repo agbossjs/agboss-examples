@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { workflowOf } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
-import { NOTES_DIR } from "../src/paths.js";
-import { CompanyNotes } from "../src/rag/company-notes.js";
+import { NOTES_DIR } from "../src/config/paths.js";
+import { CompanyNotes } from "../src/rag/company-notes.rag.js";
 
 const signal = new AbortController().signal;
 

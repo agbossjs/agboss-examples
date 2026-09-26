@@ -1,6 +1,6 @@
 import { Agent } from "graphcompose";
-import { ReadShortlist, WriteShortlist } from "../mcp/shortlist.js";
-import { KIMI, KIMI_PRICE } from "../settings.js";
+import { ReadShortlist, WriteShortlist } from "../mcp/shortlist.mcp.js";
+import { KIMI, KIMI_PRICE } from "../config/settings.js";
 
 @Agent({
   name: "shortlist",
@@ -12,6 +12,5 @@ import { KIMI, KIMI_PRICE } from "../settings.js";
   // matching "save 3" to the list and links to the file needs a little care
   thinking: "low",
   tools: [ReadShortlist, WriteShortlist],
-  prompt: new URL("./shortlist.prompt.md", import.meta.url),
 })
 export class Shortlist {}

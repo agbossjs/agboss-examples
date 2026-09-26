@@ -1,14 +1,14 @@
 import { Workflow, writeToolsNeedApproval } from "graphcompose";
-import { BUDGET, DEFAULTS, GUARDS, KIMI, KIMI_PRICE, ROUTERS } from "./settings.js";
-import { Profiler } from "./agents/profiler.js";
-import { Scout } from "./agents/scout.js";
-import { Shortlist } from "./agents/shortlist.js";
-import { ShortlistServer } from "./mcp/shortlist.js";
-import { NOTES_DB, NOTES_DIR, SHORTLIST_FILE } from "./paths.js";
-import { NOTES_INDEX } from "./rag/company-notes.js";
-import { JobFitJudge } from "./fit.js";
-import { jobScoutPromptVariables } from "./prompt-variables.js";
-import { JOB_SEARCH, jobSearchConfig } from "./search.config.js";
+import { BUDGET, DEFAULTS, GUARDS, KIMI, KIMI_PRICE, ROUTERS } from "./config/settings.js";
+import { Profiler } from "./agents/profiler.agent.js";
+import { Scout } from "./agents/scout.agent.js";
+import { Shortlist } from "./agents/shortlist.agent.js";
+import { ShortlistServer } from "./mcp/shortlist.mcp.js";
+import { NOTES_DB, NOTES_DIR, SHORTLIST_FILE } from "./config/paths.js";
+import { NOTES_INDEX } from "./rag/company-notes.rag.js";
+import { JobFitJudge } from "./services/job-fit.service.js";
+import { jobScoutPromptVariables } from "./config/prompt-variables.js";
+import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
 
 /**
  * Resume from disk → proposed brief → Greenhouse jobs ranked by Jev, explained with the user's company

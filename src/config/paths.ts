@@ -22,7 +22,7 @@ export const FILESYSTEM_SERVER = join(
 );
 
 /** The user's notes about companies (the company_notes knowledge base). */
-export const NOTES_DIR = join(HERE, "..", "notes", "companies");
+export const NOTES_DIR = join(HERE, "..", "..", "notes", "companies");
 export const NOTES_DB = join(
   homedir(),
   ".langgraph-agents",

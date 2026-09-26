@@ -1,6 +1,6 @@
-import { ReadResume } from "../tools/read-resume.js";
+import { ReadResume } from "../tools/read-resume.tool.js";
 import { Agent } from "graphcompose";
-import { KIMI, KIMI_PRICE } from "../settings.js";
+import { KIMI, KIMI_PRICE } from "../config/settings.js";
 
 @Agent({
   name: "profiler",
@@ -11,6 +11,5 @@ import { KIMI, KIMI_PRICE } from "../settings.js";
   // a ceiling: a model stuck in a repetition loop stops here instead of generating for minutes
   maxTokens: 2000,
   tools: [ReadResume],
-  prompt: new URL("./profiler.prompt.md", import.meta.url),
 })
 export class Profiler {}

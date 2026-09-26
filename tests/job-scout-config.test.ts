@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { probeBoard } from "../src/boards.js";
+import { probeBoard } from "../src/helpers/boards.helper.js";
 import { workflowOf } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
-import { jobScoutPromptVariables } from "../src/prompt-variables.js";
-import { jobSearchConfig, JobSearchSchema } from "../src/search.config.js";
+import { jobScoutPromptVariables } from "../src/config/prompt-variables.js";
+import { jobSearchConfig, JobSearchSchema } from "../src/config/search.config.js";
 
 describe("job-scout search config", () => {
   it("rejects a config without boards", () => {

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
-import { probeBoard } from "./boards.js";
-import { jobSearchConfig } from "./search.config.js";
+import { probeBoard } from "../helpers/boards.helper.js";
+import { jobSearchConfig } from "../config/search.config.js";
 
 // npm run job-scout:probe -- --place <place> <board token> …
 // Which Greenhouse boards have live jobs in a place; prints lines to paste into search.config.ts.

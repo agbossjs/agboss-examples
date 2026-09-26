@@ -3,8 +3,10 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { htmlToText, matchScore } from "../src/tools/greenhouse-jobs.js";
-import { MAX_RESUME_CHARS, ReadResume } from "../src/tools/read-resume.js";
+import { htmlToText } from "../src/helpers/boards.helper.js";
+import { matchScore } from "../src/helpers/greenhouse.helper.js";
+import { MAX_RESUME_CHARS } from "../src/helpers/resume.helper.js";
+import { ReadResume } from "../src/tools/read-resume.tool.js";
 
 const ctx: ToolContext = {
   runId: "r",

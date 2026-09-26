@@ -1,7 +1,7 @@
-import { GreenhouseJobs } from "../tools/greenhouse-jobs.js";
+import { GreenhouseJobs } from "../tools/greenhouse-jobs.tool.js";
 import { Agent } from "graphcompose";
-import { CompanyNotes } from "../rag/company-notes.js";
-import { KIMI, KIMI_PRICE } from "../settings.js";
+import { CompanyNotes } from "../rag/company-notes.rag.js";
+import { KIMI, KIMI_PRICE } from "../config/settings.js";
 
 @Agent({
   name: "scout",
@@ -15,6 +15,5 @@ import { KIMI, KIMI_PRICE } from "../settings.js";
   thinking: "none",
   tools: [GreenhouseJobs],
   rag: [{ use: CompanyNotes, mode: "tool" }],
-  prompt: new URL("./scout.prompt.md", import.meta.url),
 })
 export class Scout {}

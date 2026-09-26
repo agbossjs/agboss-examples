@@ -1,14 +1,19 @@
 import { toolOf, type Router, type ToolContext } from "graphcompose";
 import { describe, expect, it, vi } from "vitest";
-import { FIT_QUESTION, mapLimited, routerFitJudge, type FitJudge } from "../src/fit.js";
-import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.js";
+import {
+  FIT_QUESTION,
+  mapLimited,
+  routerFitJudge,
+  type FitJudge,
+} from "../src/helpers/fit.helper.js";
+import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
 
 const greenhouse = (deps: {
   judge: FitJudge;
   fetchJson: (url: string) => Promise<unknown>;
   search: typeof testSearch;
 }) => toolOf(new GreenhouseJobs({ rate: deps.judge }, deps.search, deps.fetchJson));
-import type { JobSearch } from "../src/search.config.js";
+import type { JobSearch } from "../src/config/search.config.js";
 import { usageRecord } from "./helpers.js";
 
 const ctx: ToolContext = {

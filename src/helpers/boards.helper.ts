@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JobText } from "./fit.js";
+import type { JobText } from "./fit.helper.js";
 
 const BoardResponse = z.object({
   jobs: z.array(

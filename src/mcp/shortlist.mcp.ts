@@ -1,6 +1,6 @@
 import { McpServer, McpTool } from "graphcompose";
 import { z } from "zod";
-import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../paths.js";
+import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../config/paths.js";
 
 /** The official filesystem MCP server, limited to the shortlist folder. */
 @McpServer({

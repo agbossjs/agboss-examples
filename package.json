@@ -13,7 +13,7 @@
     "golden": "graphcompose golden --workflow src/job-scout.workflow.ts",
     "compare": "graphcompose compare --workflow src/job-scout.workflow.ts",
     "rag:index": "graphcompose rag:index --workflow src/job-scout.workflow.ts",
-    "probe": "tsx src/probe-boards.ts",
+    "probe": "tsx src/scripts/probe-boards.ts",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
     "coverage": "vitest run --coverage"
