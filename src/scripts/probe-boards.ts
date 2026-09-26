@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { probeBoard } from "../helpers/boards.helper.js";
+import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { jobSearchConfig } from "../config/search.config.js";
 
 // npm run job-scout:probe -- --place <place> <board token> …
@@ -13,9 +13,10 @@ if (place === "" || positionals.length === 0) {
   process.stderr.write("usage: npm run job-scout:probe -- --place <place> <board token> …\n");
   process.exit(1);
 }
+const boards = new GreenhouseBoards(jobSearchConfig);
 const words = jobSearchConfig.places[place] ?? [place];
 const results = await Promise.all(
-  positionals.map((board) => probeBoard(board.toLowerCase(), words)),
+  positionals.map((board) => boards.probe(board.toLowerCase(), words)),
 );
 const found = results
   .flatMap((r) => ("error" in r ? [] : [r]))

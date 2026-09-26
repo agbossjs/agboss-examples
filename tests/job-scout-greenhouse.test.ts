@@ -1,18 +1,22 @@
 import { toolOf, type Router, type ToolContext } from "graphcompose";
 import { describe, expect, it, vi } from "vitest";
-import {
-  FIT_QUESTION,
-  mapLimited,
-  routerFitJudge,
-  type FitJudge,
-} from "../src/helpers/fit.helper.js";
+import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
+import { GreenhouseBoards } from "../src/services/greenhouse-boards.service.js";
+import { JobFitJudge } from "../src/services/job-fit.service.js";
 
 const greenhouse = (deps: {
   judge: FitJudge;
   fetchJson: (url: string) => Promise<unknown>;
   search: typeof testSearch;
-}) => toolOf(new GreenhouseJobs({ rate: deps.judge }, deps.search, deps.fetchJson));
+}) =>
+  toolOf(
+    new GreenhouseJobs(
+      { rate: deps.judge },
+      deps.search,
+      new GreenhouseBoards(deps.search, deps.fetchJson),
+    ),
+  );
 import type { JobSearch } from "../src/config/search.config.js";
 import { usageRecord } from "./helpers.js";
 
@@ -134,7 +138,7 @@ describe("greenhouse_jobs", () => {
   });
 });
 
-describe("routerFitJudge", () => {
+describe("JobFitJudge (Jev per job)", () => {
   const jobText = {
     company: "Acme",
     title: "Backend",
@@ -152,7 +156,10 @@ describe("routerFitJudge", () => {
       }),
     );
 
-    const result = await routerFitJudge({ name: "job-fit", route })("Java backend", jobText);
+    const result = await new JobFitJudge(() => ({ name: "job-fit", route })).rate(
+      "Java backend",
+      jobText,
+    );
 
     expect(result.fit).toBeCloseTo(0.2);
     expect(result.costUsd).toBe(0.00002);
@@ -162,7 +169,7 @@ describe("routerFitJudge", () => {
   it("reports a failed decision as no fit value", async () => {
     const route = vi.fn<Router["route"]>(() => Promise.resolve({ kind: "failed", reason: "down" }));
 
-    expect(await routerFitJudge({ name: "job-fit", route })("x", jobText)).toEqual({
+    expect(await new JobFitJudge(() => ({ name: "job-fit", route })).rate("x", jobText)).toEqual({
       fit: undefined,
       costUsd: 0,
     });

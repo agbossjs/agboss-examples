@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { probeBoard } from "../src/helpers/boards.helper.js";
+import { GreenhouseBoards, type FetchJson } from "../src/services/greenhouse-boards.service.js";
+
+const probeBoard = (board: string, words: readonly string[], fetchJson: FetchJson) =>
+  new GreenhouseBoards({ boards: {}, places: {} }, fetchJson).probe(board, words);
 import { workflowOf } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { jobScoutPromptVariables } from "../src/config/prompt-variables.js";

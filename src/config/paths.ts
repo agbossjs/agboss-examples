@@ -1,3 +1,4 @@
+import { InjectionToken } from "graphcompose";
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
@@ -9,6 +10,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** The only folder the filesystem MCP server may touch (`JOB_SCOUT_DIR` overrides it, e.g. in tests). */
 export const SHORTLIST_DIR = process.env.JOB_SCOUT_DIR ?? join(homedir(), "job-scout");
 export const SHORTLIST_FILE = join(SHORTLIST_DIR, "shortlist.md");
+
+/** The shortlist file, injected into the MCP tools that read and write it. */
+export const SHORTLIST = new InjectionToken<string>("SHORTLIST");
 // the server refuses a folder that does not exist
 mkdirSync(SHORTLIST_DIR, { recursive: true });
 

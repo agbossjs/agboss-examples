@@ -1,11 +1,12 @@
 import { Tool, type ToolContext, type ToolHandler } from "graphcompose";
 import { z } from "zod";
-import { boardReader, defaultFetchJson, type Candidate } from "../helpers/boards.helper.js";
+import type { Candidate } from "../helpers/boards.helper.js";
+import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { fitScorer, matchScore, MAX_JUDGED, passesFilters } from "../helpers/greenhouse.helper.js";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
 import { JobFitJudge, type FitRater } from "../services/job-fit.service.js";
 
-const Input = z.object({
+export const JobQuery = z.object({
   profile: z
     .string()
     .min(20)
@@ -53,7 +54,7 @@ const Job = z.object({
   matchedSkills: z.array(z.string()),
 });
 
-const Output = z.object({
+export const JobMatches = z.object({
   searched: z.array(z.string()),
   failedBoards: z.array(z.object({ board: z.string(), error: z.string() })),
   afterFilters: z.number(),
@@ -63,7 +64,8 @@ const Output = z.object({
   jobs: z.array(Job),
 });
 
-type Search = z.output<typeof Input>;
+export type JobQuery = z.infer<typeof JobQuery>;
+export type JobMatches = z.infer<typeof JobMatches>;
 
 /**
  * Public Greenhouse boards (no key): hard filters (location, excluded titles), then a cheap judge
@@ -74,28 +76,26 @@ type Search = z.output<typeof Input>;
   name: "greenhouse_jobs",
   description:
     "Find jobs on Greenhouse boards that fit what the user wants; returns the best with links.",
-  input: Input,
-  output: Output,
+  input: JobQuery,
+  output: JobMatches,
   timeoutMs: 240_000,
-  deps: [JobFitJudge, JOB_SEARCH],
+  deps: [JobFitJudge, JOB_SEARCH, GreenhouseBoards],
 })
-export class GreenhouseJobs implements ToolHandler<typeof Input, typeof Output> {
-  private readonly readBoards: ReturnType<typeof boardReader>;
+export class GreenhouseJobs implements ToolHandler<JobQuery, JobMatches> {
   private readonly score: ReturnType<typeof fitScorer>;
 
   constructor(
     judge: FitRater,
     private readonly search: JobSearch,
-    fetchJson: (url: string) => Promise<unknown> = defaultFetchJson,
+    private readonly boards: GreenhouseBoards,
   ) {
-    this.readBoards = boardReader(fetchJson, search.boards);
     this.score = fitScorer((profile, job) => judge.rate(profile, job));
   }
 
-  async run(input: Search, ctx: ToolContext): Promise<z.output<typeof Output>> {
+  async run(input: JobQuery, ctx: ToolContext): Promise<JobMatches> {
     const requested = input.boards.length > 0 ? input.boards : Object.keys(this.search.boards);
     const boards = [...new Set(requested.map((board) => board.trim().toLowerCase()))];
-    const { failedBoards, candidates } = await this.readBoards(boards);
+    const { failedBoards, candidates } = await this.boards.jobs(boards);
     const filtered = candidates.filter((job) => passesFilters(job, input, this.search.places));
     const judgedJobs = filtered.slice(0, MAX_JUDGED);
     const { fits, costUsd } = await this.score(input.profile, judgedJobs);

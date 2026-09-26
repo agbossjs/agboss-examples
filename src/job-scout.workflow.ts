@@ -3,10 +3,12 @@ import { BUDGET, DEFAULTS, GUARDS, KIMI, KIMI_PRICE, ROUTERS } from "./config/se
 import { Profiler } from "./agents/profiler.agent.js";
 import { Scout } from "./agents/scout.agent.js";
 import { Shortlist } from "./agents/shortlist.agent.js";
-import { ShortlistServer } from "./mcp/shortlist.mcp.js";
-import { NOTES_DB, NOTES_DIR, SHORTLIST_FILE } from "./config/paths.js";
+import { ShortlistServer } from "./mcp/shortlist.server.js";
+import { NOTES_DB, NOTES_DIR, SHORTLIST, SHORTLIST_FILE } from "./config/paths.js";
 import { NOTES_INDEX } from "./rag/company-notes.rag.js";
 import { JobFitJudge } from "./services/job-fit.service.js";
+import { ResumeReader } from "./services/resume-reader.service.js";
+import { GreenhouseBoards } from "./services/greenhouse-boards.service.js";
 import { jobScoutPromptVariables } from "./config/prompt-variables.js";
 import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
 
@@ -26,10 +28,13 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   mcp: [ShortlistServer],
   providers: [
     JobFitJudge,
+    ResumeReader,
+    GreenhouseBoards,
     { provide: JOB_SEARCH, useValue: jobSearchConfig },
+    { provide: SHORTLIST, useValue: SHORTLIST_FILE },
     { provide: NOTES_INDEX, useValue: { folder: NOTES_DIR, dbFile: NOTES_DB } },
   ],
-  promptVariables: { ...jobScoutPromptVariables(jobSearchConfig), shortlistFile: SHORTLIST_FILE },
+  promptVariables: jobScoutPromptVariables(jobSearchConfig),
   needsApproval: writeToolsNeedApproval,
 })
 export class JobScout {}

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { JobText } from "./fit.helper.js";
 
-const BoardResponse = z.object({
+export const BoardResponse = z.object({
   jobs: z.array(
     z.object({
       title: z.string(),
@@ -13,7 +13,7 @@ const BoardResponse = z.object({
     }),
   ),
 });
-type BoardJob = z.infer<typeof BoardResponse>["jobs"][number];
+export type BoardJob = z.infer<typeof BoardResponse>["jobs"][number];
 
 const ENTITIES: Readonly<Record<string, string>> = {
   "&lt;": "<",
@@ -49,80 +49,4 @@ export function candidateOf(
     url: job.absolute_url,
     updated: job.updated_at.slice(0, 10),
   };
-}
-
-export async function defaultFetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Greenhouse answered ${String(response.status)}`);
-  return response.json();
-}
-
-/** Fetches (and caches) board jobs; failed boards are reported, not thrown. */
-export function boardReader(
-  fetchJson: (url: string) => Promise<unknown>,
-  companies: Readonly<Record<string, string>>,
-): (
-  boards: readonly string[],
-) => Promise<{ failedBoards: { board: string; error: string }[]; candidates: Candidate[] }> {
-  const cache = new Map<string, Promise<BoardJob[]>>();
-  const read = (board: string): Promise<BoardJob[]> => {
-    const cached = cache.get(board);
-    if (cached !== undefined) return cached;
-    const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs?content=true`;
-    const pending = fetchJson(url).then((body) => BoardResponse.parse(body).jobs);
-    pending.catch(() => cache.delete(board));
-    cache.set(board, pending);
-    return pending;
-  };
-  return async (boards: readonly string[]) => {
-    const settled = await Promise.allSettled(boards.map(read));
-    return {
-      failedBoards: settled.flatMap((r, i) =>
-        r.status === "rejected" ? [{ board: boards[i] ?? "", error: String(r.reason) }] : [],
-      ),
-      candidates: settled.flatMap((r, i) =>
-        r.status === "fulfilled"
-          ? r.value.map((job) => candidateOf(boards[i] ?? "", job, companies))
-          : [],
-      ),
-    };
-  };
-}
-
-const ProbeResponse = z.object({
-  jobs: z.array(
-    z.object({
-      location: z.object({ name: z.string() }).nullable().optional(),
-      company_name: z.string().optional(),
-    }),
-  ),
-});
-
-export type BoardProbe =
-  | {
-      readonly board: string;
-      readonly company: string;
-      readonly jobs: number;
-      readonly inPlace: number;
-    }
-  | { readonly board: string; readonly error: string };
-
-/** How many live jobs a board has, and how many of them are in a place (any of its words). */
-export async function probeBoard(
-  board: string,
-  placeWords: readonly string[],
-  fetchJson: (url: string) => Promise<unknown> = defaultFetchJson,
-): Promise<BoardProbe> {
-  try {
-    const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs`;
-    const { jobs } = ProbeResponse.parse(await fetchJson(url));
-    const words = placeWords.map((word) => word.toLowerCase());
-    const inPlace = jobs.filter((job) => {
-      const location = (job.location?.name ?? "").toLowerCase();
-      return words.some((word) => location.includes(word));
-    }).length;
-    return { board, company: jobs[0]?.company_name ?? board, jobs: jobs.length, inPlace };
-  } catch (error) {
-    return { board, error: error instanceof Error ? error.message : String(error) };
-  }
 }

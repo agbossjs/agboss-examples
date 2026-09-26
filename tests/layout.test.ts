@@ -10,7 +10,7 @@ const SUFFIXES: Readonly<Record<string, RegExp>> = {
   agents: /\.(agent\.ts|prompt\.md)$/,
   tools: /\.tool(\.test)?\.ts$/,
   services: /\.service\.ts$/,
-  mcp: /\.mcp\.ts$/,
+  mcp: /\.(server|mcp)\.ts$/,
   rag: /\.rag\.ts$/,
   helpers: /\.helper\.ts$/,
 };
