@@ -107,7 +107,7 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
 
     expect(paused).toHavePausedAt(Shortlist);
     expect(done).toFinishWith(ChatWorkflowFinish, { text: "Saved 1 job." });
-    expect(done.stopReason).toBe("the agent answered after the human decision");
+    expect(done.stopReason).toBe("the agent answered after the approval decision");
     expect(modelOf(MainRouter).requests).toHaveLength(1);
     expect(modelOf(Shortlist)).toHaveCalledTools([SaveShortlist]);
     expect(written).toEqual([
