@@ -33,7 +33,7 @@ describe("job-scout workflow", () => {
     const lines = describeWorkflow(await workflowOf(JobScout));
     const has = (text: string): boolean => lines.some((line) => line.includes(text));
 
-    expect(lines[0]).toBe("job-scout 1.2.0");
+    expect(lines[0]).toMatch(/^job-scout 1\.2\.0 · config [0-9a-f]{8}$/);
     expect(has("· read_resume (read, local)")).toBe(true);
     expect(
       has(
