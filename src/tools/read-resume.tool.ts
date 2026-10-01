@@ -1,17 +1,6 @@
 import { Tool, type ToolHandler } from "graphcompose";
-import { z } from "zod";
 import { ResumeReader } from "../services/resume-reader.service.js";
-
-export const ResumeRequest = z.object({ path: z.string().min(1) });
-export type ResumeRequest = z.infer<typeof ResumeRequest>;
-export const ResumeText = z.object({
-  path: z.string(),
-  requestedPath: z.string().optional(),
-  format: z.enum(["pdf", "markdown", "text"]),
-  text: z.string(),
-  truncated: z.boolean(),
-});
-export type ResumeText = z.infer<typeof ResumeText>;
+import { ResumeRequest, ResumeText } from "./read-resume.dto.js";
 
 /** Reads the user's resume (PDF, Markdown, text). */
 @Tool({

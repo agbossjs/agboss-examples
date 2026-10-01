@@ -1,71 +1,10 @@
 import { Tool, type ToolContext, type ToolHandler } from "graphcompose";
-import { z } from "zod";
 import type { Candidate } from "../helpers/boards.helper.js";
 import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { fitScorer, matchScore, MAX_JUDGED, passesFilters } from "../helpers/greenhouse.helper.js";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
 import { JobFitJudge, type FitRater } from "../services/job-fit.service.js";
-
-export const JobQuery = z.object({
-  profile: z
-    .string()
-    .min(20)
-    .describe(
-      "What the user wants: role, primary languages, specialization, seniority, deal-breakers",
-    ),
-  locations: z
-    .array(z.string())
-    .min(1)
-    .describe("Places or cities; a configured place (e.g. a country) also matches its cities"),
-  titleMustInclude: z
-    .array(z.string())
-    .default([])
-    .describe(
-      "Keep only jobs whose title has any of these words, e.g. Senior — applied before the judge",
-    ),
-  excludeTitleWords: z
-    .array(z.string())
-    .default([])
-    .describe("Drop jobs whose title has any, e.g. Team Lead, Manager"),
-  skills: z
-    .array(z.string())
-    .default([])
-    .describe("Skills from the resume — shown as matched skills"),
-  boards: z.array(z.string()).default([]).describe("Board tokens; empty = all configured boards"),
-  count: z.number().int().min(1).max(50).default(20),
-  minFit: z
-    .number()
-    .min(0)
-    .max(1)
-    .default(0)
-    .describe(
-      "Optional floor on the judge's P(fit); 0 = rank only (the judge ranks well, its probabilities are compressed)",
-    ),
-});
-
-const Job = z.object({
-  company: z.string(),
-  title: z.string(),
-  location: z.string(),
-  department: z.string(),
-  url: z.string(),
-  updated: z.string(),
-  fit: z.number(),
-  matchedSkills: z.array(z.string()),
-});
-
-export const JobMatches = z.object({
-  searched: z.array(z.string()),
-  failedBoards: z.array(z.object({ board: z.string(), error: z.string() })),
-  afterFilters: z.number(),
-  judged: z.number(),
-  judgeFailures: z.number(),
-  passed: z.number(),
-  jobs: z.array(Job),
-});
-
-export type JobQuery = z.infer<typeof JobQuery>;
-export type JobMatches = z.infer<typeof JobMatches>;
+import { JobMatches, JobQuery } from "./greenhouse-jobs.dto.js";
 
 /**
  * Public Greenhouse boards (no key): hard filters (location, excluded titles), then a cheap judge

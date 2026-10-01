@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const src = new URL("../src", import.meta.url).pathname;
 const files = (folder: string): string[] => readdirSync(join(src, folder));
 
-/** Each folder holds one kind of file, named by its suffix (Angular style). */
+/** Each folder holds one kind of file, named by its suffix (Angular style); DTOs sit next to their users (#118). */
 const SUFFIXES: Readonly<Record<string, RegExp>> = {
   agents: /\.(agent\.ts|prompt\.md)$/,
-  tools: /\.tool(\.test)?\.ts$/,
+  tools: /\.(tool(\.test)?|dto)\.ts$/,
   services: /\.service\.ts$/,
-  mcp: /\.(server|mcp)\.ts$/,
+  mcp: /\.(server|mcp|dto)\.ts$/,
   rag: /\.rag\.ts$/,
   helpers: /\.helper\.ts$/,
 };

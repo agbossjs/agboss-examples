@@ -1,13 +1,9 @@
 import { McpTool, type ToolHandler } from "graphcompose";
-import { z } from "zod";
+import { NoInput } from "graphcompose/dto";
 import { SHORTLIST } from "../config/paths.js";
 import { isMissingFile } from "../helpers/shortlist.helper.js";
+import { ShortlistContent } from "./read-shortlist.dto.js";
 import { ShortlistServer } from "./shortlist.server.js";
-
-export const NoInput = z.object({});
-export type NoInput = z.infer<typeof NoInput>;
-export const Shortlist = z.object({ content: z.string() });
-export type Shortlist = z.infer<typeof Shortlist>;
 
 /** The user's shortlist, as saved. */
 @McpTool({
@@ -15,16 +11,16 @@ export type Shortlist = z.infer<typeof Shortlist>;
   name: "read_shortlist",
   description: "Read the user's shortlist (empty when nothing is saved yet).",
   input: NoInput,
-  output: Shortlist,
+  output: ShortlistContent,
   deps: [ShortlistServer, SHORTLIST],
 })
-export class ReadShortlist implements ToolHandler<NoInput, Shortlist> {
+export class ReadShortlist implements ToolHandler<NoInput, ShortlistContent> {
   constructor(
     private readonly server: ShortlistServer,
     private readonly file: string,
   ) {}
 
-  async run(): Promise<Shortlist> {
+  async run(): Promise<ShortlistContent> {
     try {
       return await this.server.call("read_text_file", { path: this.file });
     } catch (error) {
