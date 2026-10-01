@@ -8,6 +8,9 @@ const files = (folder: string): string[] => readdirSync(join(src, folder));
 /** Each folder holds one kind of file, named by its suffix (Angular style); DTOs sit next to their users (#118). */
 const SUFFIXES: Readonly<Record<string, RegExp>> = {
   agents: /\.(agent\.ts|prompt\.md)$/,
+  entries: /\.entry\.ts$/,
+  routers: /\.router\.ts$/,
+  conclusions: /\.conclusion\.ts$/,
   tools: /\.(tool(\.test)?|dto)\.ts$/,
   services: /\.service\.ts$/,
   mcp: /\.(server|mcp|dto)\.ts$/,
@@ -20,12 +23,15 @@ describe("job-scout follows the file conventions (#107)", () => {
     expect(readdirSync(src).sort()).toEqual(
       [
         "agents",
+        "conclusions",
         "config",
         "data",
         "helpers",
         "job-scout.workflow.ts",
+        "entries",
         "mcp",
         "rag",
+        "routers",
         "scripts",
         "services",
         "studio.ts",

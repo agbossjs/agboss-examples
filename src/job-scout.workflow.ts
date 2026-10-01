@@ -1,8 +1,13 @@
 import { Workflow, writeToolsNeedApproval } from "graphcompose";
-import { BUDGET, DEFAULTS, GUARDS, KIMI, KIMI_PRICE, ROUTERS } from "./config/settings.js";
+import { from, WorkflowSettings, type WorkflowDefinition } from "graphcompose/graph";
+import { usd } from "graphcompose/units";
+import { DEFAULTS, GUARDS, KIMI, KIMI_PRICE } from "./config/settings.js";
 import { Profiler } from "./agents/profiler.agent.js";
 import { Scout } from "./agents/scout.agent.js";
 import { Shortlist } from "./agents/shortlist.agent.js";
+import { ChatEntry } from "./entries/chat.entry.js";
+import { AnswerConclusion } from "./conclusions/answer.conclusion.js";
+import { MainRouter } from "./routers/main.router.js";
 import { ShortlistServer } from "./mcp/shortlist.server.js";
 import { NOTES_DB, NOTES_DIR, SHORTLIST, SHORTLIST_FILE } from "./config/paths.js";
 import { NOTES_INDEX } from "./rag/company-notes.rag.js";
@@ -14,17 +19,20 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
 
 /**
  * Resume from disk → proposed brief → Greenhouse jobs ranked by Jev, explained with the user's company
- * notes, the chosen ones saved to a shortlist (a write the user approves).
+ * notes, the chosen ones saved to a shortlist (a write the user approves). The graph is a star: the
+ * message goes to the main router, which sends it to an agent and back, until it sends the answer.
  */
 @Workflow({
   name: "job-scout",
-  version: "1.2.0",
+  version: "2.0.0",
+  flow: [
+    from(ChatEntry).to(MainRouter),
+    from(MainRouter).choose(Profiler, Scout, Shortlist, AnswerConclusion),
+    from(Profiler, Scout, Shortlist).to(MainRouter),
+  ],
   defaults: { ...DEFAULTS, history: { limit: 8 } },
-  budget: { ...BUDGET, runBudgetCap: 0.1 },
-  routers: ROUTERS,
   guards: GUARDS,
   compaction: { every: 5, keep: 10, model: { model: KIMI, thinking: "none", price: KIMI_PRICE } },
-  agents: [Profiler, Scout, Shortlist],
   mcp: [ShortlistServer],
   providers: [
     JobFitJudge,
@@ -37,4 +45,10 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   promptVariables: jobScoutPromptVariables(jobSearchConfig),
   needsApproval: writeToolsNeedApproval,
 })
-export class JobScout {}
+export class JobScout implements WorkflowDefinition {
+  settings(): WorkflowSettings {
+    return WorkflowSettings.builder()
+      .limits({ perRun: { steps: 12, cost: usd(0.1) }, perDay: { cost: usd(1) } })
+      .build();
+  }
+}
