@@ -2,7 +2,7 @@ import { route, Router } from "graphcompose/graph";
 import { Profiler } from "../agents/profiler.agent.js";
 import { Scout } from "../agents/scout.agent.js";
 import { Shortlist } from "../agents/shortlist.agent.js";
-import { AnswerConclusion } from "../conclusions/answer.conclusion.js";
+import { ChatWorkflowFinish } from "../workflow-finishes/chat.workflow-finish.js";
 
 /** Sends each message to the agent that handles it, and the turn to the answer once it is covered. */
 @Router({
@@ -17,7 +17,7 @@ import { AnswerConclusion } from "../conclusions/answer.conclusion.js";
     route(Scout, "Finding and ranking jobs"),
     route(Shortlist, "Saving chosen jobs to the shortlist, or showing it"),
     route(
-      AnswerConclusion,
+      ChatWorkflowFinish,
       "Stop and send the answer: the contributions so far answer the message, or the last agent asked the job seeker a question and waits for the reply, or it cannot be done (for example the job seeker rejected a required action)",
     ),
   ],

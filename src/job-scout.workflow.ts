@@ -5,8 +5,8 @@ import { DEFAULTS, GUARDS, KIMI, KIMI_PRICE } from "./config/settings.js";
 import { Profiler } from "./agents/profiler.agent.js";
 import { Scout } from "./agents/scout.agent.js";
 import { Shortlist } from "./agents/shortlist.agent.js";
-import { ChatEntry } from "./entries/chat.entry.js";
-import { AnswerConclusion } from "./conclusions/answer.conclusion.js";
+import { ChatWorkflowStart } from "./workflow-starts/chat.workflow-start.js";
+import { ChatWorkflowFinish } from "./workflow-finishes/chat.workflow-finish.js";
 import { MainRouter } from "./routers/main.router.js";
 import { ShortlistServer } from "./mcp/shortlist.server.js";
 import { NOTES_DB, NOTES_DIR, SHORTLIST, SHORTLIST_FILE } from "./config/paths.js";
@@ -26,8 +26,8 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   name: "job-scout",
   version: "2.0.0",
   flow: [
-    from(ChatEntry).to(MainRouter),
-    from(MainRouter).choose(Profiler, Scout, Shortlist, AnswerConclusion),
+    from(ChatWorkflowStart).to(MainRouter),
+    from(MainRouter).choose(Profiler, Scout, Shortlist, ChatWorkflowFinish),
     from(Profiler, Scout, Shortlist).to(MainRouter),
   ],
   defaults: { ...DEFAULTS, history: { limit: 8 } },

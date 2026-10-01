@@ -5,14 +5,14 @@ import { JobScout } from "../src/job-scout.workflow.js";
 const workflow = await workflowOf(JobScout);
 
 describe("job-scout on the flow graph (#116)", () => {
-  it("AC1: the flow assembles as a star — entry → main router ⇄ agents → answer", () => {
+  it("AC1: the flow assembles as a star — workflow start → main router ⇄ agents → workflow finish", () => {
     const lines = describeWorkflow(workflow);
 
     expect(lines).toEqual(
       expect.arrayContaining([
         "flow",
-        "  chat-message → main",
-        "  main → profiler | scout | shortlist | answer",
+        "  chat (workflow start) → main",
+        "  main → profiler | scout | shortlist | chat (workflow finish)",
         "  profiler, scout, shortlist → main",
       ]),
     );
@@ -25,7 +25,7 @@ describe("job-scout on the flow graph (#116)", () => {
     expect(workflow.routers).toHaveLength(1);
     expect(main).toMatchObject({ name: "main", model: "typesafe/jev-1.13", maxVisits: 3 });
     expect(main?.routes.map((item) => item.option)).toEqual([
-      "answer",
+      "chat",
       "profiler",
       "scout",
       "shortlist",

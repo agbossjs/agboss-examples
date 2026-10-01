@@ -21,8 +21,8 @@ describe("company notes (knowledge base)", () => {
       signal,
     });
 
-    expect(retrieval.passages[0]?.source).toBe("fireblocks.md");
-    expect(retrieval.passages.map((p) => p.source)).not.toContain("readme.md");
+    expect(retrieval.results[0]?.source).toBe("fireblocks.md");
+    expect(retrieval.results.map((result) => result.source)).not.toContain("readme.md");
   });
 
   it("AC3: the scout searches the notes itself (tool mode, 3 passages); the notes are marked as samples", async () => {
