@@ -5,6 +5,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
+    // the workflow matchers (toFollowPath, toFinishWith, …)
+    setupFiles: ["graphcompose/testing/setup"],
     // the shortlist MCP server writes to a temp folder in tests, never to ~/job-scout
     env: { JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests") },
     coverage: {

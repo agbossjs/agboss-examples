@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { describeWorkflow, workflowOf } from "graphcompose";
+import { answer, callTool, decide, testWith } from "graphcompose/testing";
 import { JobScout } from "../src/job-scout.workflow.js";
+import { MainRouter } from "../src/routers/main.router.js";
+import { Profiler } from "../src/agents/profiler.agent.js";
+import { Shortlist } from "../src/agents/shortlist.agent.js";
+import { SaveShortlist } from "../src/mcp/save-shortlist.mcp.js";
+import { ShortlistServer } from "../src/mcp/shortlist.server.js";
+import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
+import { ChatWorkflowFinish } from "../src/workflow-finishes/chat.workflow-finish.js";
 
 const workflow = await workflowOf(JobScout);
 
@@ -45,5 +53,81 @@ describe("job-scout on the flow graph (#116)", () => {
     expect(workflow.config.guards?.output).toHaveProperty("pii");
     expect(workflow.needsApproval).toBeDefined();
     expect(workflow.config.compaction).toMatchObject({ every: 5, keep: 10 });
+  });
+});
+
+const test = testWith(JobScout);
+const job = {
+  title: "Backend Engineer",
+  company: "Fireblocks",
+  location: "Tel Aviv",
+  link: "https://example.com/1",
+  fit: 81,
+};
+
+describe("job-scout by script (#135): the star, the approval pause and resume, #100", () => {
+  test("AC12: the star — the main router sends the message to an agent and the answer back", async ({
+    app,
+    modelOf,
+  }) => {
+    modelOf(MainRouter).respond(decide(Profiler), decide(ChatWorkflowFinish));
+    modelOf(Profiler).respond(answer("Brief: senior backend, Israel"));
+
+    const result = await app.run(ChatWorkflowStart, { text: "propose a search brief" });
+
+    expect(result).toFollowPath([
+      ChatWorkflowStart,
+      MainRouter,
+      Profiler,
+      MainRouter,
+      ChatWorkflowFinish,
+    ]);
+    expect(result).toFinishWith(ChatWorkflowFinish, { text: "Brief: senior backend, Israel" });
+    expect(modelOf(MainRouter)).toHaveBeenAskedWith({ input: "propose a search brief" });
+  });
+
+  test("AC12: saving to the shortlist waits for approval; after it the turn ends without asking the router (#100)", async ({
+    app,
+    modelOf,
+    mcpOf,
+  }) => {
+    modelOf(MainRouter).respond(decide(Shortlist));
+    modelOf(Shortlist).respond(callTool(SaveShortlist, { jobs: [job] }), answer("Saved 1 job."));
+    const written: string[] = [];
+    mcpOf(ShortlistServer).respond({
+      read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
+      write_file: ({ content }) => {
+        written.push(content);
+        return Promise.resolve({ content: "ok" });
+      },
+    });
+
+    const paused = await app.run(ChatWorkflowStart, { text: "save the first job" });
+    const done = await app.resume(paused.thread, { approved: true, by: "dana" });
+
+    expect(paused).toHavePausedAt(Shortlist);
+    expect(done).toFinishWith(ChatWorkflowFinish, { text: "Saved 1 job." });
+    expect(done.stopReason).toBe("the agent answered after the human decision");
+    expect(modelOf(MainRouter).requests).toHaveLength(1);
+    expect(modelOf(Shortlist)).toHaveCalledTools([SaveShortlist]);
+    expect(written).toEqual([
+      "# Shortlist\n- [Backend Engineer — Fireblocks, Tel Aviv](https://example.com/1) · fit 81%\n",
+    ]);
+  });
+
+  test("AC12: a declined save is not written; the agent answers after the decision", async ({
+    app,
+    modelOf,
+    mcpOf,
+  }) => {
+    modelOf(MainRouter).respond(decide(Shortlist));
+    modelOf(Shortlist).respond(callTool(SaveShortlist, { jobs: [job] }), answer("Not saved."));
+    const shortlist = mcpOf(ShortlistServer);
+
+    const paused = await app.run(ChatWorkflowStart, { text: "save the first job" });
+    const done = await app.resume(paused.thread, { approved: false, by: "dana", reason: "no" });
+
+    expect(done).toFinishWith(ChatWorkflowFinish, { text: "Not saved." });
+    expect(shortlist.calls).toEqual([]);
   });
 });

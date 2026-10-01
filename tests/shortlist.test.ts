@@ -30,7 +30,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("AC4: save_shortlist knows the file and never adds a job twice — through the real server", async () => {
     expect(SHORTLIST_DIR).toContain("job-scout-tests");
-    const deps = await createAppDeps(await workflowOf(JobScout), env);
+    const deps = await createAppDeps(await workflowOf(JobScout), { env });
     try {
       const first = await deps.tools("save_shortlist").invoke({ jobs: [job(1), job(2)] }, ctx);
       const second = await deps.tools("save_shortlist").invoke({ jobs: [job(2), job(3)] }, ctx);
@@ -83,7 +83,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("only the save waits for the user's approval", async () => {
     const workflow = await workflowOf(JobScout);
-    const deps = await createAppDeps(workflow, env);
+    const deps = await createAppDeps(workflow, { env });
     try {
       expect(workflow.needsApproval?.(deps.tools("save_shortlist"))).toBe(true);
       expect(workflow.needsApproval?.(deps.tools("read_shortlist"))).toBe(false);
@@ -95,7 +95,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("the server may touch only the shortlist folder", async () => {
     const workflow = await workflowOf(JobScout);
-    const deps = await createAppDeps(workflow, env);
+    const deps = await createAppDeps(workflow, { env });
     try {
       const write = workflow.serverTools?.find((tool) => tool.name === "shortlist__write_file");
       const outside = await write?.invoke(
