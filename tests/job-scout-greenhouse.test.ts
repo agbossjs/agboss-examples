@@ -24,6 +24,7 @@ const ctx: ToolContext = {
   runId: "r",
   workflow: "job-scout",
   agent: "a",
+  callId: "call-1",
   signal: new AbortController().signal,
   reportCost: () => undefined,
 };
