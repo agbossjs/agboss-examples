@@ -1,7 +1,9 @@
 import { Workflow, writeToolsNeedApproval } from "graphcompose";
 import { from, WorkflowSettings, type WorkflowDefinition } from "graphcompose/graph";
 import { usd } from "graphcompose/units";
-import { DEFAULTS, GUARDS, KIMI, KIMI_PRICE } from "./config/settings.js";
+import { JevModelProvider } from "graphcompose/models";
+import { DEFAULTS, GUARDS, KIMI } from "./config/settings.js";
+import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { Profiler } from "./agents/profiler.agent.js";
 import { Scout } from "./agents/scout.agent.js";
 import { Shortlist } from "./agents/shortlist.agent.js";
@@ -32,7 +34,7 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   ],
   defaults: { ...DEFAULTS, history: { limit: 8 } },
   guards: GUARDS,
-  compaction: { every: 5, keep: 10, model: { model: KIMI, thinking: "none", price: KIMI_PRICE } },
+  compaction: { every: 5, keep: 10, model: { model: KIMI, thinking: "none" } },
   mcp: [ShortlistServer],
   providers: [
     JobFitJudge,
@@ -49,6 +51,7 @@ export class JobScout implements WorkflowDefinition {
   settings(): WorkflowSettings {
     return WorkflowSettings.builder()
       .limits({ perRun: { steps: 12, cost: usd(0.1) }, perDay: { cost: usd(1) } })
+      .modelProviders([OpenRouterModelProvider, JevModelProvider])
       .build();
   }
 }

@@ -16,6 +16,7 @@ const SUFFIXES: Readonly<Record<string, RegExp>> = {
   mcp: /\.(server|mcp|dto)\.ts$/,
   rag: /\.rag\.ts$/,
   helpers: /\.helper\.ts$/,
+  "model-providers": /\.model-provider\.ts$/,
 };
 
 describe("job-scout follows the file conventions (#107)", () => {
@@ -30,6 +31,7 @@ describe("job-scout follows the file conventions (#107)", () => {
         "job-scout.workflow.ts",
         "workflow-starts",
         "mcp",
+        "model-providers",
         "rag",
         "routers",
         "scripts",

@@ -1,19 +1,12 @@
 /**
- * Settings the job-scout workflow uses (its limits are in its `settings()`). Prices: USD per 1M
- * tokens — verify on openrouter.ai/models.
+ * Settings the job-scout workflow uses (its limits and model providers are in its `settings()`).
+ * Costs come from OpenRouter's answers (`model-providers/openrouter.model-provider.ts`).
  */
 export const KIMI = "moonshotai/kimi-k2.6";
-export const KIMI_PRICE = { inputPerMTok: 0.4972, outputPerMTok: 2.97, cacheReadPerMTok: 0.1284 };
 
 export const DEFAULTS = {
-  // no maxTokens: GraphCompose's default ceiling (8192) applies
-  chat: {
-    temperature: 0,
-    thinking: "default",
-    cache: true,
-    // kimi-k2.6 via Inceptron loops while generating tool-call arguments (seen in #92, #97)
-    provider: { ignore: ["Inceptron"] },
-  },
+  // no maxTokens: GraphCompose's default ceiling (8192) applies; reasoning and caching: the provider's
+  chat: { temperature: 0 },
   router: { kind: "jev", model: "typesafe/jev-1.13" },
   tools: { maxToolCalls: 8 },
   history: { limit: 5 },

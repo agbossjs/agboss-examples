@@ -8,6 +8,7 @@
     "chat": "graphcompose chat --workflow src/job-scout.workflow.ts",
     "run": "graphcompose run --workflow src/job-scout.workflow.ts",
     "describe": "graphcompose describe --workflow src/job-scout.workflow.ts",
+    "check:models": "graphcompose check --models --workflow src/job-scout.workflow.ts",
     "eval": "graphcompose eval --workflow src/job-scout.workflow.ts",
     "replay": "graphcompose replay --workflow src/job-scout.workflow.ts",
     "golden": "graphcompose golden --workflow src/job-scout.workflow.ts",
