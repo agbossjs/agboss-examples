@@ -1,10 +1,11 @@
 import { GreenhouseJobs } from "../tools/greenhouse-jobs.tool.js";
-import { Agent } from "graphcompose/core";
+import { Agent, file } from "graphcompose/core";
 import { CompanyNotes } from "../rag/company-notes.rag.js";
 import { KIMI } from "../config/settings.js";
 
 @Agent({
   name: "scout",
+  instructions: file("./scout.prompt.md"),
   description:
     "Searches Greenhouse with the agreed search brief and returns the best-fitting jobs with links",
   model: KIMI,

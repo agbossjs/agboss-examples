@@ -1,10 +1,11 @@
-import { Agent } from "graphcompose/core";
+import { Agent, file } from "graphcompose/core";
 import { ReadShortlist } from "../mcp/read-shortlist.mcp.js";
 import { SaveShortlist } from "../mcp/save-shortlist.mcp.js";
 import { KIMI } from "../config/settings.js";
 
 @Agent({
   name: "shortlist",
+  instructions: file("./shortlist.prompt.md"),
   description: "Saves the jobs the user chooses to their shortlist file and shows what is on it",
   model: KIMI,
   // a ceiling: a model stuck in a repetition loop stops here instead of generating for minutes
