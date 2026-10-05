@@ -73,7 +73,7 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
     modelOf(MainRouter).respond(decide(Profiler), decide(ChatWorkflowFinish));
     modelOf(Profiler).respond(answer("Brief: senior backend, Israel"));
 
-    const result = await app.run(ChatWorkflowStart, { text: "propose a search brief" });
+    const result = await app.execute(ChatWorkflowStart, { text: "propose a search brief" });
 
     expect(result).toFollowPath([
       ChatWorkflowStart,
@@ -102,7 +102,7 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
       },
     });
 
-    const paused = await app.run(ChatWorkflowStart, { text: "save the first job" });
+    const paused = await app.execute(ChatWorkflowStart, { text: "save the first job" });
     const done = await app.resume(paused.thread, { approved: true, by: "dana" });
 
     expect(paused).toHavePausedAt(Shortlist);
@@ -124,7 +124,7 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
     modelOf(Shortlist).respond(callTool(SaveShortlist, { jobs: [job] }), answer("Not saved."));
     const shortlist = mcpOf(ShortlistServer);
 
-    const paused = await app.run(ChatWorkflowStart, { text: "save the first job" });
+    const paused = await app.execute(ChatWorkflowStart, { text: "save the first job" });
     const done = await app.resume(paused.thread, { approved: false, by: "dana", reason: "no" });
 
     expect(done).toFinishWith(ChatWorkflowFinish, { text: "Not saved." });
