@@ -1,4 +1,5 @@
-import { McpTool, type ToolHandler } from "graphcompose";
+import type { ToolHandler } from "graphcompose/tool";
+import { McpTool } from "graphcompose/mcp";
 import { SHORTLIST } from "../config/paths.js";
 import { addJobs, isMissingFile } from "../helpers/shortlist.helper.js";
 import { ChosenJobs, SavedJobs } from "./save-shortlist.dto.js";

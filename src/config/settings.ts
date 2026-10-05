@@ -6,7 +6,7 @@ export const KIMI = "moonshotai/kimi-k2.6";
 
 export const DEFAULTS = {
   // no maxTokens: GraphCompose's default ceiling (8192) applies; reasoning and caching: the provider's
-  chat: { temperature: 0 },
+  models: { temperature: 0 },
   router: { kind: "jev", model: "typesafe/jev-1.13" },
   tools: { maxToolCalls: 8 },
   history: { limit: 5 },

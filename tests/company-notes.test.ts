@@ -17,7 +17,7 @@ describe("company notes (knowledge base)", () => {
     });
 
     const retrieval = await notes.retrieve("Why is Fireblocks a fit for a backend engineer?", {
-      k: 3,
+      topK: 3,
       signal,
     });
 
@@ -33,7 +33,7 @@ describe("company notes (knowledge base)", () => {
     }).index();
 
     expect(workflow.config.agents.scout?.rag).toEqual([
-      { name: "company_notes", mode: "tool", k: 3 },
+      { name: "company_notes", mode: "tool", topK: 3 },
     ]);
     expect(workflow.config.agents.scout?.tools).toContain("search_company_notes");
     expect(index.documents).toBe(5);

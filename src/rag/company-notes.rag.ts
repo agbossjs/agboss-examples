@@ -1,4 +1,5 @@
-import { InjectionToken, Rag, SqliteFtsConnector, type FtsOptions } from "graphcompose";
+import { Rag, SqliteFtsConnector, type FtsOptions } from "graphcompose/rag";
+import { InjectionToken } from "graphcompose/core";
 
 /** Where the notes are and where their index lives. */
 export const NOTES_INDEX = new InjectionToken<FtsOptions>("NOTES_INDEX");
@@ -7,7 +8,7 @@ export const NOTES_INDEX = new InjectionToken<FtsOptions>("NOTES_INDEX");
 @Rag({
   name: "company_notes",
   description: "The user's notes about companies: stack, culture, what people say",
-  k: 3,
+  topK: 3,
   deps: [NOTES_INDEX],
 })
 export class CompanyNotes extends SqliteFtsConnector {}

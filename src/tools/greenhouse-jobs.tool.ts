@@ -1,4 +1,5 @@
-import { Tool, type ToolContext, type ToolHandler } from "graphcompose";
+import {  } from "graphcompose/core";
+import { Tool, type ToolContext, type ToolHandler } from "graphcompose/tool";
 import type { Candidate } from "../helpers/boards.helper.js";
 import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { fitScorer, matchScore, MAX_JUDGED, passesFilters } from "../helpers/greenhouse.helper.js";
