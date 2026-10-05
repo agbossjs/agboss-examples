@@ -1,4 +1,4 @@
-import { Injectable } from "graphcompose/core";
+import { Injectable } from "graphcompose";
 import { z } from "zod";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
 import {

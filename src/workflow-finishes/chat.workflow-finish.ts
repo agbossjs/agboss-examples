@@ -1,5 +1,5 @@
 import { WorkflowFinishText } from "graphcompose/dto";
-import { WorkflowFinish } from "graphcompose/router";
+import { WorkflowFinish } from "graphcompose/graph";
 
 /** Where a turn of the chat finishes: the answer sent back to the job seeker. */
 @WorkflowFinish({

@@ -1,5 +1,5 @@
-import { Injectable, ROUTER_FACTORY, type Router, } from "graphcompose/core";
-;
+import { Injectable, ROUTER_FACTORY } from "graphcompose";
+import { type Router } from "graphcompose";
 import { FIT, FIT_QUESTION, JOB_TEXT_CHARS, NO_FIT, type JobText } from "../helpers/fit.helper.js";
 
 /** P(the job fits what the candidate wants), undefined when the judge failed; and what it cost. */

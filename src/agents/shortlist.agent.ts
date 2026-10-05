@@ -1,4 +1,4 @@
-import { Agent, file } from "graphcompose/core";
+import { Agent, file } from "graphcompose";
 import { ReadShortlist } from "../mcp/read-shortlist.mcp.js";
 import { SaveShortlist } from "../mcp/save-shortlist.mcp.js";
 import { KIMI } from "../config/settings.js";

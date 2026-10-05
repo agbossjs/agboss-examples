@@ -1,5 +1,4 @@
-import {  } from "graphcompose/core";
-import { Tool, type ToolHandler } from "graphcompose/tool";
+import { Tool, type ToolHandler } from "graphcompose";
 import { ResumeReader } from "../services/resume-reader.service.js";
 import { ResumeRequest, ResumeText } from "./read-resume.dto.js";
 
