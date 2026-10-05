@@ -15,7 +15,11 @@ const greenhouse = (deps: {
     new GreenhouseJobs(
       { rate: deps.judge },
       deps.search,
-      new GreenhouseBoards(deps.search, deps.fetchJson),
+      new GreenhouseBoards(
+        deps.search,
+        { greenhouseApiUrl: "https://boards-api.greenhouse.io" },
+        deps.fetchJson,
+      ),
     ),
   );
 import type { JobSearch } from "../src/config/search.config.js";

@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { jobSearchConfig } from "../config/search.config.js";
+import { environment } from "../environments/environment.js";
 
 // npm run job-scout:probe -- --place <place> <board token> …
 // Which Greenhouse boards have live jobs in a place; prints lines to paste into search.config.ts.
@@ -13,7 +14,7 @@ if (place === "" || positionals.length === 0) {
   process.stderr.write("usage: npm run job-scout:probe -- --place <place> <board token> …\n");
   process.exit(1);
 }
-const boards = new GreenhouseBoards(jobSearchConfig);
+const boards = new GreenhouseBoards(jobSearchConfig, environment);
 const words = jobSearchConfig.places[place] ?? [place];
 const results = await Promise.all(
   positionals.map((board) => boards.probe(board.toLowerCase(), words)),

@@ -10,7 +10,8 @@ describe("job-scout workflow", () => {
     expect(Object.keys(workflow.config.agents)).toEqual(["profiler", "scout", "shortlist"]);
     expect(workflow.toolDependencies).toEqual({
       read_resume: "ResumeReader",
-      greenhouse_jobs: "JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH)",
+      greenhouse_jobs:
+        "JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH, ENV)",
       read_shortlist: "ShortlistServer, SHORTLIST",
       save_shortlist: "ShortlistServer, SHORTLIST",
     });
@@ -37,7 +38,7 @@ describe("job-scout workflow", () => {
     expect(has("· read_resume (read, local)")).toBe(true);
     expect(
       has(
-        "· greenhouse_jobs (read, local) ← JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH)",
+        "· greenhouse_jobs (read, local) ← JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH, ENV)",
       ),
     ).toBe(true);
     expect(
