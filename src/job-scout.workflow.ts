@@ -28,9 +28,9 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   name: "job-scout",
   version: "2.0.0",
   flow: [
-    from(ChatWorkflowStart).to(MainRouter),
-    from(MainRouter).choose(Profiler, Scout, Shortlist, ChatWorkflowFinish),
-    from(Profiler, Scout, Shortlist).to(MainRouter),
+    from(ChatWorkflowStart).next(MainRouter),
+    from(MainRouter).routeOne(Profiler, Scout, Shortlist, ChatWorkflowFinish),
+    from(Profiler, Scout, Shortlist).next(MainRouter),
   ],
   defaults: { ...DEFAULTS, history: { limit: 8 } },
   guards: GUARDS,
