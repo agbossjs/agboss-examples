@@ -37,20 +37,25 @@ describe("job-scout search config", () => {
 
   it("assembled prompts: every variable filled, the rules in place", async () => {
     const { prompts } = await workflowOf(JobScout);
+    const p =
+      typeof prompts.profiler === "function" ? await prompts.profiler({} as any) : prompts.profiler;
+    const s = typeof prompts.scout === "function" ? await prompts.scout({} as any) : prompts.scout;
     const boards = String(Object.keys(jobSearchConfig.boards).length);
 
-    expect(prompts.profiler).not.toContain("{{");
-    expect(prompts.scout).not.toContain("{{");
-    expect(prompts.profiler).toContain("Proposed search brief:");
-    expect(prompts.profiler).toContain(`Boards: all ${boards}`);
-    expect(prompts.profiler).not.toMatch(/^\d\. /m);
-    expect(prompts.scout).toContain("Never add a filter of your own.");
+    expect(p).not.toContain("{{");
+    expect(s).not.toContain("{{");
+    expect(p).toContain("Proposed search brief:");
+    expect(p).toContain(`Boards: all ${boards}`);
+    expect(p).not.toMatch(/^\d\. /m);
+    expect(s).toContain("Never add a filter of your own.");
     // the list comes first and is never dropped for the notes-based explanation (found in #92 M1)
-    const scout = prompts.scout ?? "";
-    expect((scout as any).indexOf("numbered list")).toBeLessThan((scout as any).indexOf("search_company_notes"));
-    expect(prompts.scout).toContain("Never drop this list");
-    expect(prompts.scout).not.toMatch(/e\.g\. (Lead|Senior)/);
-    expect(prompts.scout).toContain("they also match their cities): israel");
+    const scout = s ?? "";
+    expect(scout.indexOf("numbered list")).toBeLessThan(
+      (scout as any).indexOf("search_company_notes"),
+    );
+    expect(s).toContain("Never drop this list");
+    expect(s).not.toMatch(/e\.g\. (Lead|Senior)/);
+    expect(s).toContain("they also match their cities): israel");
   });
 });
 
