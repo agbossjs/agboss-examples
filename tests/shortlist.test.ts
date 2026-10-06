@@ -13,6 +13,7 @@ const ctx: ToolContext = {
   agent: "shortlist",
   callId: "call-1",
   signal: new AbortController().signal,
+  pause: () => ({}),
   reportCost: () => undefined,
 };
 const job = (n: number) => ({

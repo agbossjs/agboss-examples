@@ -31,6 +31,7 @@ const ctx: ToolContext = {
   agent: "a",
   callId: "call-1",
   signal: new AbortController().signal,
+  pause: () => ({}),
   reportCost: () => undefined,
 };
 
@@ -93,7 +94,8 @@ describe("greenhouse_jobs", () => {
 
     const result = await tool.invoke(
       { ...search, minFit: 0.5 },
-      { ...ctx, reportCost: (usd) => costs.push(usd) },
+      { ...ctx, pause: () => ({}),
+  reportCost: (usd) => costs.push(usd) },
     );
 
     expect(result.kind).toBe("ok");
