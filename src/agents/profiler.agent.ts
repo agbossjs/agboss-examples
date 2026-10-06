@@ -1,5 +1,5 @@
 import { ReadResume } from "../tools/read-resume.tool.js";
-import { Agent, file } from "graphcompose";
+import { Agent, file } from "graphcompose/core";
 import { KIMI } from "../config/settings.js";
 
 @Agent({

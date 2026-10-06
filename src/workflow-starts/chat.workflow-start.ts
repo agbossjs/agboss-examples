@@ -1,5 +1,5 @@
 import { WorkflowStartText } from "graphcompose/dto";
-import { WorkflowStart } from "graphcompose/graph";
+import { WorkflowStart } from "graphcompose/router";
 
 /** Where a turn of the chat starts: the job seeker's message. */
 @WorkflowStart({

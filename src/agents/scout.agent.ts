@@ -1,5 +1,5 @@
 import { GreenhouseJobs } from "../tools/greenhouse-jobs.tool.js";
-import { Agent, file } from "graphcompose";
+import { Agent, file } from "graphcompose/core";
 import { CompanyNotes } from "../rag/company-notes.rag.js";
 import { KIMI } from "../config/settings.js";
 

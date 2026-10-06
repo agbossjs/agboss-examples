@@ -1,4 +1,4 @@
-import { Injectable, ENV } from "graphcompose";
+import { Injectable, ENV } from "graphcompose/core";
 import type { AppEnvironment } from "../environments/environment.js";
 import { z } from "zod";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";

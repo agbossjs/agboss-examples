@@ -1,5 +1,5 @@
 
-import { Router } from "graphcompose/graph";
+import { Router } from "graphcompose/router";
 import { Profiler } from "../agents/profiler.agent.js";
 import { Scout } from "../agents/scout.agent.js";
 import { Shortlist } from "../agents/shortlist.agent.js";

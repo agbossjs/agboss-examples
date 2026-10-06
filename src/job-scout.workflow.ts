@@ -1,7 +1,7 @@
-import { Workflow } from "graphcompose";
+import { Workflow } from "graphcompose/core";
 import { writeToolsNeedApproval } from "graphcompose";
-import { from } from "graphcompose/graph";
-import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/graph";
+import { from } from "graphcompose/router";
+import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/core";
 import { usd } from "graphcompose/units";
 import { JevModelProvider } from "graphcompose/models";
 import { DEFAULTS, GUARDS, KIMI } from "./config/settings.js";
