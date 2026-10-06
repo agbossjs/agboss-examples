@@ -5,7 +5,7 @@ import { KIMI } from "../config/settings.js";
 
 @Agent({
   name: "scout",
-  instructions: file("./scout.prompt.md"),
+  promptUrls: ["./scout.prompt.md"],
   description:
     "Searches Greenhouse with the agreed search brief and returns the best-fitting jobs with links",
   model: KIMI,

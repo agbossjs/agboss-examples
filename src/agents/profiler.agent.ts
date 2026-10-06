@@ -4,7 +4,7 @@ import { KIMI } from "../config/settings.js";
 
 @Agent({
   name: "profiler",
-  instructions: file("./profiler.prompt.md"),
+  promptUrls: ["./profiler.prompt.md"],
   description:
     "Reads the user's resume, interviews them about the jobs they want and agrees a search brief",
   model: KIMI,
