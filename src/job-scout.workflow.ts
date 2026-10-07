@@ -1,7 +1,7 @@
 import { Workflow } from "graphcompose/core";
-import { writeToolsNeedApproval } from "graphcompose";
 import { from } from "graphcompose/router";
 import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/core";
+import { TerminalUserChannel } from "graphcompose/channels";
 import { usd } from "graphcompose/units";
 import { JevModelProvider } from "graphcompose/models";
 import { DEFAULTS, GUARDS, KIMI } from "./config/settings.js";
@@ -31,7 +31,7 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
   version: "2.0.0",
   flow: [
     from(ChatWorkflowStart).next(MainRouter),
-    from(MainRouter).routeOne(Profiler, Scout, Shortlist, ChatWorkflowFinish),
+    from(MainRouter).routes(Profiler, Scout, Shortlist, ChatWorkflowFinish),
     from(Profiler, Scout, Shortlist).next(MainRouter),
   ],
   defaults: { ...DEFAULTS, history: { limit: 8 } },
@@ -47,7 +47,7 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
     { provide: NOTES_INDEX, useValue: { folder: NOTES_DIR, dbFile: NOTES_DB } },
   ],
   promptVariables: jobScoutPromptVariables(jobSearchConfig),
-  needsApproval: writeToolsNeedApproval,
+  channelClasses: [TerminalUserChannel],
 })
 export class JobScout implements WorkflowDefinition {
   settings(): WorkflowSettings {

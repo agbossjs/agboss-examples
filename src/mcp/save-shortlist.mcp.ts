@@ -11,7 +11,7 @@ import { ShortlistServer } from "./shortlist.server.js";
   server: ShortlistServer,
   name: "save_shortlist",
   description: "Save the jobs the user chose to their shortlist (jobs already there are skipped).",
-  approval: TerminalUserChannel,
+  channel: TerminalUserChannel,
   input: ChosenJobs,
   output: SavedJobs,
   deps: [ShortlistServer, SHORTLIST],

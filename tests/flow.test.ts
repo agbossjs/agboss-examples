@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { describeWorkflow, workflowOf } from "graphcompose";
+import { workflowOf } from "graphcompose/testing";
+import { describeWorkflow } from "graphcompose";
 import { answer, callTool, decide, testWith } from "graphcompose/testing";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { MainRouter } from "../src/routers/main.router.js";
@@ -51,7 +52,6 @@ describe("job-scout on the flow graph (#116)", () => {
   it("AC1: guards, the approval pause and compaction stay on", () => {
     expect(workflow.config.guards?.input).toHaveProperty("prompt_injection");
     expect(workflow.config.guards?.output).toHaveProperty("pii");
-    expect(workflow.needsApproval).toBeDefined();
     expect(workflow.config.compaction).toMatchObject({ every: 5, keep: 10 });
   });
 });

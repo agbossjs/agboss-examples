@@ -1,4 +1,5 @@
-import { toolOf, type ToolContext } from "graphcompose";
+import type { ToolContext } from "graphcompose";
+import { toolOf } from "graphcompose/testing";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

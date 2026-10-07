@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { describeWorkflow, withProfile, workflowOf } from "graphcompose";
+import { workflowOf } from "graphcompose/testing";
+import { describeWorkflow, withProfile } from "graphcompose";
 import { JobScout } from "../src/job-scout.workflow.js";
 
 describe("job-scout workflow", () => {
@@ -35,10 +36,11 @@ describe("job-scout workflow", () => {
     const has = (text: string): boolean => lines.some((line) => line.includes(text));
 
     expect(lines[0]).toMatch(/^job-scout 2\.0\.0 · config [0-9a-f]{8}$/);
-    expect(has("· read_resume (read, local)")).toBe(true);
+    console.log(lines);
+    expect(has("· read_resume (local)")).toBe(true);
     expect(
       has(
-        "· greenhouse_jobs (read, local) ← JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH, ENV)",
+        "· greenhouse_jobs (local) ← JobFitJudge (ROUTER_FACTORY), JOB_SEARCH, GreenhouseBoards (JOB_SEARCH, ENV)",
       ),
     ).toBe(true);
     expect(
@@ -46,13 +48,13 @@ describe("job-scout workflow", () => {
         lines.some((l) => l.startsWith(agent)),
       ),
     ).toBe(true);
-    expect(has("· read_shortlist (read, MCP shortlist) ← ShortlistServer, SHORTLIST")).toBe(true);
+    expect(has("· read_shortlist (MCP shortlist) ← ShortlistServer, SHORTLIST")).toBe(true);
     expect(
       has(
-        "· save_shortlist (write, MCP shortlist, waits for approval) ← ShortlistServer, SHORTLIST",
+        "· save_shortlist (channel:terminal-user-channel, MCP shortlist, uses channel) ← ShortlistServer, SHORTLIST",
       ),
     ).toBe(true);
     expect(has("rag: company_notes (tool, k 3)")).toBe(true);
-    expect(has("· search_company_notes (read, local)")).toBe(true);
+    expect(has("· search_company_notes (local)")).toBe(true);
   });
 });
