@@ -1,5 +1,6 @@
 import type { ToolHandler } from "graphcompose";
 import { McpTool } from "graphcompose/mcp";
+import { TerminalUserChannel } from "graphcompose/channels";
 import { SHORTLIST } from "../config/paths.js";
 import { addJobs, isMissingFile } from "../helpers/shortlist.helper.js";
 import { ChosenJobs, SavedJobs } from "./save-shortlist.dto.js";
@@ -10,7 +11,7 @@ import { ShortlistServer } from "./shortlist.server.js";
   server: ShortlistServer,
   name: "save_shortlist",
   description: "Save the jobs the user chose to their shortlist (jobs already there are skipped).",
-  effect: "write",
+  approval: TerminalUserChannel,
   input: ChosenJobs,
   output: SavedJobs,
   deps: [ShortlistServer, SHORTLIST],
@@ -21,11 +22,11 @@ export class SaveShortlist implements ToolHandler<ChosenJobs, SavedJobs> {
     private readonly file: string,
   ) {}
 
-  async run({ jobs }: ChosenJobs): Promise<SavedJobs> {
+  run = async ({ jobs }: ChosenJobs): Promise<SavedJobs> => {
     const { content, added, alreadyThere } = addJobs(await this.current(), jobs);
     if (added.length > 0) await this.server.call("write_file", { path: this.file, content });
     return { added, alreadyThere };
-  }
+  };
 
   private async current(): Promise<string> {
     try {

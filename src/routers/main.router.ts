@@ -1,4 +1,3 @@
-
 import { Router } from "graphcompose/router";
 import { Profiler } from "../agents/profiler.agent.js";
 import { Scout } from "../agents/scout.agent.js";
@@ -17,7 +16,11 @@ import { ChatWorkflowFinish } from "../workflow-finishes/chat.workflow-finish.js
     { prompt: "Reading the resume and proposing a search brief", target: Profiler },
     { prompt: "Finding and ranking jobs", target: Scout },
     { prompt: "Saving chosen jobs to the shortlist, or showing it", target: Shortlist },
-    { prompt: "Stop and send the answer: the contributions so far answer the message, or the last agent asked the job seeker a question and waits for the reply, or it cannot be done (for example the job seeker rejected a required action)", target: ChatWorkflowFinish },
+    {
+      prompt:
+        "Stop and send the answer: the contributions so far answer the message, or the last agent asked the job seeker a question and waits for the reply, or it cannot be done (for example the job seeker rejected a required action)",
+      target: ChatWorkflowFinish,
+    },
   ],
 })
 export class MainRouter {}
