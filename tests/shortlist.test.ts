@@ -89,9 +89,6 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
     const workflow = await workflowOf(JobScout);
     const deps = await createAppDeps(workflow, { env });
     try {
-      
-      
-      
     } finally {
       await deps.close();
     }
