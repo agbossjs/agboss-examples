@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { workflowOf } from "graphcompose/testing";
 import { describeWorkflow } from "graphcompose";
-import { answer, callTool, decide, testWith } from "graphcompose/testing";
+import { replyWith, callTool, routeTo, testWith } from "graphcompose/testing";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { MainRouter } from "../src/routers/main.router.js";
 import { Profiler } from "../src/agents/profiler.agent.js";
@@ -40,7 +40,7 @@ describe("job-scout on the flow graph (#116)", () => {
       "shortlist",
     ]);
     expect(describeWorkflow(workflow)).toContain(
-      "  main  jev typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the answer",
+      "  main  jev typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the replyWith",
     );
   });
 
@@ -66,12 +66,12 @@ const job = {
 };
 
 describe("job-scout by script (#135): the star, the approval pause and resume, #100", () => {
-  test("AC12: the star — the main router sends the message to an agent and the answer back", async ({
+  test("AC12: the star — the main router sends the message to an agent and the replyWith back", async ({
     app,
-    modelOf,
+    mockLlm,
   }) => {
-    modelOf(MainRouter).respond(decide(Profiler), decide(ChatWorkflowFinish));
-    modelOf(Profiler).respond(answer("Brief: senior backend, Israel"));
+    mockLlm(MainRouter).thenReturn(routeTo(Profiler), routeTo(ChatWorkflowFinish));
+    mockLlm(Profiler).thenReturn(replyWith("Brief: senior backend, Israel"));
 
     const result = await app.execute(ChatWorkflowStart, { text: "propose a search brief" });
 
@@ -83,16 +83,19 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
       ChatWorkflowFinish,
     ]);
     expect(result).toFinishWith(ChatWorkflowFinish, { text: "Brief: senior backend, Israel" });
-    expect(modelOf(MainRouter)).toHaveBeenAskedWith({ input: "propose a search brief" });
+    expect(mockLlm(MainRouter)).toHaveBeenAskedWith({ input: "propose a search brief" });
   });
 
   test("AC12: saving to the shortlist waits for approval; after it the turn ends without asking the router (#100)", async ({
     app,
-    modelOf,
+    mockLlm,
     mcpOf,
   }) => {
-    modelOf(MainRouter).respond(decide(Shortlist));
-    modelOf(Shortlist).respond(callTool(SaveShortlist, { jobs: [job] }), answer("Saved 1 job."));
+    mockLlm(MainRouter).thenReturn(routeTo(Shortlist));
+    mockLlm(Shortlist).thenReturn(
+      callTool(SaveShortlist, { jobs: [job] }),
+      replyWith("Saved 1 job."),
+    );
     const written: string[] = [];
     mcpOf(ShortlistServer).respond({
       read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
@@ -107,21 +110,24 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
 
     expect(paused).toHavePausedAt(Shortlist);
     expect(done).toFinishWith(ChatWorkflowFinish, { text: "Saved 1 job." });
-    expect(done.stopReason).toBe("the agent answered after the approval decision");
-    expect(modelOf(MainRouter).requests).toHaveLength(1);
-    expect(modelOf(Shortlist)).toHaveCalledTools([SaveShortlist]);
+    expect(done.stopReason).toBe("the agent replyWithed after the approval decision");
+    expect(mockLlm(MainRouter).requests).toHaveLength(1);
+    expect(mockLlm(Shortlist)).toHaveCalledTools([SaveShortlist]);
     expect(written).toEqual([
       "# Shortlist\n- [Backend Engineer — Fireblocks, Tel Aviv](https://example.com/1) · fit 81%\n",
     ]);
   });
 
-  test("AC12: a declined save is not written; the agent answers after the decision", async ({
+  test("AC12: a declined save is not written; the agent replyWiths after the decision", async ({
     app,
-    modelOf,
+    mockLlm,
     mcpOf,
   }) => {
-    modelOf(MainRouter).respond(decide(Shortlist));
-    modelOf(Shortlist).respond(callTool(SaveShortlist, { jobs: [job] }), answer("Not saved."));
+    mockLlm(MainRouter).thenReturn(routeTo(Shortlist));
+    mockLlm(Shortlist).thenReturn(
+      callTool(SaveShortlist, { jobs: [job] }),
+      replyWith("Not saved."),
+    );
     const shortlist = mcpOf(ShortlistServer);
 
     const paused = await app.execute(ChatWorkflowStart, { text: "save the first job" });

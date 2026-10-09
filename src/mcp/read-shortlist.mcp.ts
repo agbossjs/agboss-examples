@@ -1,4 +1,4 @@
-import type { ToolHandler } from "graphcompose";
+import type { ToolHandler } from "graphcompose/tool";
 import { McpTool } from "graphcompose/mcp";
 import { NoInput } from "graphcompose/dto";
 import { SHORTLIST } from "../config/paths.js";

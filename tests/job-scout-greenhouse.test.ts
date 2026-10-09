@@ -1,6 +1,6 @@
-import type { ToolContext } from "graphcompose";
+import type { ToolContext } from "graphcompose/tool";
 import { toolOf } from "graphcompose/testing";
-import { type Router } from "graphcompose";
+import { type Router } from "graphcompose/router";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
@@ -156,7 +156,7 @@ describe("JobFitJudge (Jev per job)", () => {
   };
 
   it("asks the router the fit question and returns P(fit) with its cost", async () => {
-    const route = vi.fn<Router["route"]>(() =>
+    const route = vi.fn<any>(() =>
       Promise.resolve({
         kind: "decided",
         decision: { next: "no_fit", reason: "", confidence: 0.8 },
@@ -171,11 +171,11 @@ describe("JobFitJudge (Jev per job)", () => {
 
     expect(result.fit).toBeCloseTo(0.2);
     expect(result.costUsd).toBe(0.00002);
-    expect(route.mock.calls[0]?.[0].instructions).toBe(FIT_QUESTION);
+    expect((route.mock.calls[0]?.[0] as any).instructions).toBe(FIT_QUESTION);
   });
 
   it("reports a failed decision as no fit value", async () => {
-    const route = vi.fn<Router["route"]>(() => Promise.resolve({ kind: "failed", reason: "down" }));
+    const route = vi.fn<any>(() => Promise.resolve({ kind: "failed", reason: "down" }));
 
     expect(await new JobFitJudge(() => ({ name: "job-fit", route })).rate("x", jobText)).toEqual({
       fit: undefined,

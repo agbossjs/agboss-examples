@@ -8,8 +8,6 @@ const probeBoard = (board: string, words: readonly string[], fetchJson: FetchJso
     fetchJson,
   ).probe(board, words);
 import { workflowOf } from "graphcompose/testing";
-import { workflowOf } from "graphcompose/testing";
-import { workflowOf } from "graphcompose/testing";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { jobScoutPromptVariables } from "../src/config/prompt-variables.js";
 import { jobSearchConfig, JobSearchSchema } from "../src/config/search.config.js";

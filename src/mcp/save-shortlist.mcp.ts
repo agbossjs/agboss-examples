@@ -1,4 +1,4 @@
-import type { ToolHandler } from "graphcompose";
+import type { ToolHandler } from "graphcompose/tool";
 import { McpTool } from "graphcompose/mcp";
 import { TerminalUserChannel } from "graphcompose/channels";
 import { SHORTLIST } from "../config/paths.js";
