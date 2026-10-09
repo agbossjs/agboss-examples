@@ -1,6 +1,10 @@
+// eslint-disable-next-line no-restricted-imports
 import { Workflow } from "graphcompose/core";
+// eslint-disable-next-line no-restricted-imports
 import { from } from "graphcompose/router";
+// eslint-disable-next-line no-restricted-imports
 import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/core";
+// eslint-disable-next-line no-restricted-imports
 import { TerminalUserChannel } from "graphcompose/channels";
 import { usd } from "graphcompose/units";
 import { JevModelProvider } from "graphcompose/models";

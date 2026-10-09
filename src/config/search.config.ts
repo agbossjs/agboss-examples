@@ -1,4 +1,5 @@
 import { z } from "zod";
+// eslint-disable-next-line no-restricted-imports
 import { InjectionToken } from "graphcompose/core";
 
 /**

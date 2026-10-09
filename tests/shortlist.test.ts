@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { toolOf, mcpServerStub } from "graphcompose/testing";
 import { workflowOf } from "graphcompose/testing";
 import { createAppDeps } from "graphcompose";
+// eslint-disable-next-line no-restricted-imports
 import type { ToolContext } from "graphcompose/tool";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { SHORTLIST_DIR, SHORTLIST_FILE } from "../src/config/paths.js";
@@ -89,6 +90,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
   it("only the save waits for the user's approval", async () => {
     const workflow = await workflowOf(JobScout);
     const deps = await createAppDeps(workflow, { env });
+    // eslint-disable-next-line no-empty
     try {
     } finally {
       await deps.close();

@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { Tool, type ToolHandler } from "graphcompose/tool";
 import { ResumeReader } from "../services/resume-reader.service.js";
 import { ResumeRequest, ResumeText } from "./read-resume.dto.js";

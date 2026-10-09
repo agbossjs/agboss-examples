@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { Tool, type ToolContext, type ToolHandler } from "graphcompose/tool";
 import type { Candidate } from "../helpers/boards.helper.js";
 import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";

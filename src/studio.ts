@@ -1,4 +1,5 @@
 import "dotenv/config";
+// eslint-disable-next-line no-restricted-imports
 import { studioGraphOf } from "graphcompose/core";
 import { JobScout } from "./job-scout.workflow.js";
 

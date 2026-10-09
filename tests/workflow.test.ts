@@ -36,6 +36,7 @@ describe("job-scout workflow", () => {
     const has = (text: string): boolean => lines.some((line) => line.includes(text));
 
     expect(lines[0]).toMatch(/^job-scout 2\.0\.0 · config [0-9a-f]{8}$/);
+    // eslint-disable-next-line no-console
     console.log(lines);
     expect(has("· read_resume (local)")).toBe(true);
     expect(

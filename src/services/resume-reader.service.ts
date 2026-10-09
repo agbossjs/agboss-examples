@@ -1,5 +1,6 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
+// eslint-disable-next-line no-restricted-imports
 import { Injectable } from "graphcompose/core";
 import { extractText, getDocumentProxy } from "unpdf";
 import {

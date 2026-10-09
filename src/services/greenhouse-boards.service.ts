@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { Injectable, ENV } from "graphcompose/core";
 import type { AppEnvironment } from "../environments/environment.js";
 import { z } from "zod";

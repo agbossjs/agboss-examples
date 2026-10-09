@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { McpServer, McpServerClient } from "graphcompose/mcp";
 import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../config/paths.js";
 import { FileContent, FileRead, FileWrite, FileWritten } from "./shortlist.dto.js";

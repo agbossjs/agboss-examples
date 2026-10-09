@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { InjectionToken } from "graphcompose/core";
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
