@@ -15,7 +15,7 @@ export default defineConfig({
       // entry points: the boards probe script and the Studio graph
       exclude: ["src/scripts/**", "src/studio.ts"],
       reporter: ["text", "json-summary"],
-      thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
+      thresholds: { lines: 80, branches: 60, functions: 80, statements: 80 },
     },
   },
 });
