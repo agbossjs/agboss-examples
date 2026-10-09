@@ -40,7 +40,7 @@ describe("job-scout on the flow graph (#116)", () => {
       "shortlist",
     ]);
     expect(describeWorkflow(workflow)).toContain(
-      "  main  jev typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the replyWith",
+      "  main  jev typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the answer",
     );
   });
 
@@ -97,9 +97,9 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
       replyWith("Saved 1 job."),
     );
     const written: string[] = [];
-    mcpOf(ShortlistServer).respond({
+    mcpOf(ShortlistServer).thenReturn({
       read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
-      write_file: ({ content }) => {
+      write_file: ({ content }: { content: string }) => {
         written.push(content);
         return Promise.resolve({ content: "ok" });
       },
@@ -110,7 +110,7 @@ describe("job-scout by script (#135): the star, the approval pause and resume, #
 
     expect(paused).toHavePausedAt(Shortlist);
     expect(done).toFinishWith(ChatWorkflowFinish, { text: "Saved 1 job." });
-    expect(done.stopReason).toBe("the agent replyWithed after the approval decision");
+    expect(done.stopReason).toBe("the agent answered after the approval decision");
     expect(mockLlm(MainRouter).requests).toHaveLength(1);
     expect(mockLlm(Shortlist)).toHaveCalledTools([SaveShortlist]);
     expect(written).toEqual([
