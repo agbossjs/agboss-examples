@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-restricted-imports
-import { Injectable, ENV } from "graphcompose/core";
-import type { AppEnvironment } from "../environments/environment.js";
+import { Injectable } from "graphcompose/core";
+import { ENV, type AppEnvironment } from "../environments/environment.js";
 import { z } from "zod";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
 import {

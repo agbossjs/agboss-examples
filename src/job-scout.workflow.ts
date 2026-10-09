@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-restricted-imports
-import { Workflow } from "graphcompose/core";
+import { Workflow, provide } from "graphcompose/core";
 // eslint-disable-next-line no-restricted-imports
 import { from } from "graphcompose/router";
 // eslint-disable-next-line no-restricted-imports
@@ -46,9 +46,9 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
     JobFitJudge,
     ResumeReader,
     GreenhouseBoards,
-    { provide: JOB_SEARCH, useValue: jobSearchConfig },
-    { provide: SHORTLIST, useValue: SHORTLIST_FILE },
-    { provide: NOTES_INDEX, useValue: { folder: NOTES_DIR, dbFile: NOTES_DB } },
+    provide(JOB_SEARCH, jobSearchConfig),
+    provide(SHORTLIST, SHORTLIST_FILE),
+    provide(NOTES_INDEX, { folder: NOTES_DIR, dbFile: NOTES_DB }),
   ],
   promptVariables: jobScoutPromptVariables(jobSearchConfig),
   channelClasses: [TerminalUserChannel],
