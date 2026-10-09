@@ -1,4 +1,3 @@
- 
 // eslint-disable-next-line no-restricted-imports
 import { Agent } from "graphcompose/core";
 import { ReadShortlist } from "../mcp/read-shortlist.mcp.js";
