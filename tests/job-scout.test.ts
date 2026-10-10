@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-restricted-imports
 import type { ToolContext } from "graphcompose/tool";
-import { toolOf } from "graphcompose/testing";
+import { testRunContext, toolOf } from "graphcompose/testing";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,6 +12,7 @@ import { ReadResume } from "../src/tools/read-resume.tool.js";
 import { ResumeReader } from "../src/services/resume-reader.service.js";
 
 const ctx: ToolContext = {
+  run: testRunContext(),
   runId: "r",
   workflow: "job-scout",
   agent: "a",

@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-restricted-imports
 import type { ToolContext } from "graphcompose/tool";
-import { toolOf } from "graphcompose/testing";
+import { testRunContext, toolOf } from "graphcompose/testing";
 // eslint-disable-next-line no-restricted-imports
 import { type Router } from "graphcompose/router";
 import { describe, expect, it, vi } from "vitest";
@@ -29,6 +29,7 @@ import type { JobSearch } from "../src/config/search.config.js";
 import { usageRecord } from "./helpers.js";
 
 const ctx: ToolContext = {
+  run: testRunContext(),
   runId: "r",
   workflow: "job-scout",
   agent: "a",

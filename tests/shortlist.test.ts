@@ -1,7 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { toolOf, mcpServerStub } from "graphcompose/testing";
+import { mcpServerStub, testRunContext, toolOf } from "graphcompose/testing";
 import { workflowOf } from "graphcompose/testing";
 import { createAppDeps, type Environment } from "graphcompose";
 // eslint-disable-next-line no-restricted-imports
@@ -12,6 +12,7 @@ import { SaveShortlist } from "../src/mcp/save-shortlist.mcp.js";
 import { ShortlistServer } from "../src/mcp/shortlist.server.js";
 
 const ctx: ToolContext = {
+  run: testRunContext(),
   runId: "r",
   workflow: "job-scout",
   agent: "shortlist",
