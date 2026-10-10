@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "GraphCompose example: resume \u2192 search brief \u2192 Greenhouse jobs ranked by Jev",
+  "description": "GraphCompose example: resume → search brief → Greenhouse jobs ranked by Jev",
   "scripts": {
     "chat": "graphcompose chat --workflow src/job-scout.workflow.ts",
     "run": "graphcompose run --workflow src/job-scout.workflow.ts",
@@ -26,5 +26,8 @@
     "zod": "^4.6.5",
     "dotenv": "^18.0.3",
     "@modelcontextprotocol/server-filesystem": "^2026.8.31"
+  },
+  "devDependencies": {
+    "graphcompose-cli": "0.1.0"
   }
 }
