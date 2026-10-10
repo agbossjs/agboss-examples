@@ -8,4 +8,6 @@ import { WorkflowStart } from "graphcompose/router";
   description: "A message from the job seeker",
   input: WorkflowStartText,
 })
-export class ChatWorkflowStart {}
+export class ChatWorkflowStart {
+  declare readonly input: WorkflowStartText;
+}
