@@ -1,0 +1,76 @@
+{
+  "interactions": [
+    {
+      "key": "router:guard:prompt_injection",
+      "kind": "decision",
+      "outcome": {
+        "decision": {
+          "confidence": 1,
+          "next": "pass",
+          "reason": "unscripted guard"
+        },
+        "kind": "decided"
+      },
+      "request": "6b2396fdccc918ab331a7bd27d23fce2c209521df3883ff6e4181109b41eb7fd"
+    },
+    {
+      "key": "router:main",
+      "kind": "decision",
+      "outcome": {
+        "decision": {
+          "confidence": 1,
+          "next": "profiler",
+          "reason": "scripted"
+        },
+        "kind": "decided"
+      },
+      "request": "c18e893bbfd276dcb35df20c1f88e34cdfd864efd7bee8143a37b2a5d7703d40"
+    },
+    {
+      "key": "agent:profiler",
+      "kind": "chat",
+      "reply": {
+        "content": "Brief: senior backend, Israel, 20 jobs, all boards",
+        "response_metadata": {
+          "usage": {
+            "cost": 0
+          }
+        },
+        "tool_calls": [],
+        "usage_metadata": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "request": "cb1fafb18bd829edcc23b685efe152c4d80dda9700cfbc8d0c2d7dca8571909f"
+    },
+    {
+      "key": "router:main",
+      "kind": "decision",
+      "outcome": {
+        "decision": {
+          "confidence": 1,
+          "next": "chat",
+          "reason": "scripted"
+        },
+        "kind": "decided"
+      },
+      "request": "119421f498632eed2f64cf1546d6863f0364717cb87c74154dfc1023e9f71be0"
+    },
+    {
+      "key": "router:guard:pii",
+      "kind": "decision",
+      "outcome": {
+        "decision": {
+          "confidence": 1,
+          "next": "pass",
+          "reason": "unscripted guard"
+        },
+        "kind": "decided"
+      },
+      "request": "fdd28d7a4a8e6596f6e6e2d3620165e069a7d117b0919aa8a0df1857c865aaa7"
+    }
+  ],
+  "version": 1
+}
