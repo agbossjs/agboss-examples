@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -21,7 +21,15 @@ const SUFFIXES: Readonly<Record<string, RegExp>> = {
 
 describe("job-scout follows the file conventions (#107)", () => {
   it("AC3: at the top of src/ only the workflow, the Studio entry and folders by theme", () => {
-    expect(readdirSync(src).sort()).toEqual(
+    // a further workflow (`gc g workflow <name>`) keeps all its files in src/<name>/ (#197)
+    const ownWorkflow = (entry: string): boolean =>
+      existsSync(join(src, entry, `${entry}.workflow.ts`));
+
+    expect(
+      readdirSync(src)
+        .filter((entry) => !ownWorkflow(entry))
+        .sort(),
+    ).toEqual(
       [
         "agents",
         "workflow-finishes",
