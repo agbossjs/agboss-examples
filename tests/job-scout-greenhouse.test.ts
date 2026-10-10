@@ -1,8 +1,5 @@
-// eslint-disable-next-line no-restricted-imports
-import type { ToolContext } from "graphcompose/tool";
+import type { ToolContext } from "graphcompose";
 import { testRunContext, toolOf } from "graphcompose/testing";
-// eslint-disable-next-line no-restricted-imports
-import { type Router } from "graphcompose/router";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";

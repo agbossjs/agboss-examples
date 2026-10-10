@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import { Injectable, ROUTER_FACTORY, type Router } from "graphcompose/core";
+import { Injectable, ROUTER_FACTORY, type RouterEngine } from "graphcompose";
 import { FIT, FIT_QUESTION, JOB_TEXT_CHARS, NO_FIT, type JobText } from "../helpers/fit.helper.js";
 
 /** P(the job fits what the candidate wants), undefined when the judge failed; and what it cost. */
@@ -16,9 +15,9 @@ export interface FitRater {
 /** Jev as the fit judge: one cheap decision per job, on the router "job-fit". */
 @Injectable({ deps: [ROUTER_FACTORY] })
 export class JobFitJudge implements FitRater {
-  private readonly router: Router;
+  private readonly router: RouterEngine;
 
-  constructor(routers: (name: string) => Router) {
+  constructor(routers: (name: string) => RouterEngine) {
     this.router = routers("job-fit");
   }
 

@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import { Router } from "graphcompose/router";
+import { Router } from "graphcompose";
 import { Profiler } from "../agents/profiler.agent.js";
 import { Scout } from "../agents/scout.agent.js";
 import { Shortlist } from "../agents/shortlist.agent.js";

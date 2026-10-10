@@ -1,11 +1,11 @@
-// eslint-disable-next-line no-restricted-imports
-import { Workflow, provide } from "graphcompose/core";
-// eslint-disable-next-line no-restricted-imports
-import { from } from "graphcompose/router";
-// eslint-disable-next-line no-restricted-imports
-import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/core";
-// eslint-disable-next-line no-restricted-imports
-import { TerminalUserChannel } from "graphcompose/channels";
+import {
+  Workflow,
+  provide,
+  from,
+  WorkflowSettings,
+  type WorkflowDefinition,
+  TerminalUserChannel,
+} from "graphcompose";
 import { usd } from "graphcompose/units";
 import { DecisionsModelProvider } from "graphcompose/models";
 import { DEFAULTS, GUARDS, KIMI } from "./config/settings.js";

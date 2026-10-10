@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import type { ToolContext } from "graphcompose/tool";
+import type { ToolContext } from "graphcompose";
 import { testRunContext, toolOf } from "graphcompose/testing";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

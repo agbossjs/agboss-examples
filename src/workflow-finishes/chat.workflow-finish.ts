@@ -1,6 +1,5 @@
 import { WorkflowFinishText } from "graphcompose/dto";
-// eslint-disable-next-line no-restricted-imports
-import { WorkflowFinish } from "graphcompose/router";
+import { WorkflowFinish } from "graphcompose";
 
 /** Where a turn of the chat finishes: the answer sent back to the job seeker. */
 @WorkflowFinish({

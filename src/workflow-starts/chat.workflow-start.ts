@@ -1,6 +1,5 @@
 import { WorkflowStartText } from "graphcompose/dto";
-// eslint-disable-next-line no-restricted-imports
-import { WorkflowStart } from "graphcompose/router";
+import { WorkflowStart } from "graphcompose";
 
 /** Where a turn of the chat starts: the job seeker's message. */
 @WorkflowStart({

@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import { Agent } from "graphcompose/core";
+import { Agent } from "graphcompose";
 import { ReadShortlist } from "../mcp/read-shortlist.mcp.js";
 import { SaveShortlist } from "../mcp/save-shortlist.mcp.js";
 import { KIMI } from "../config/settings.js";

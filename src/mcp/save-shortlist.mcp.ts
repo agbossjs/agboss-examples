@@ -1,8 +1,5 @@
-// eslint-disable-next-line no-restricted-imports
-import type { ToolHandler } from "graphcompose/tool";
+import { TerminalUserChannel, type ToolHandler } from "graphcompose";
 import { McpTool } from "graphcompose/mcp";
-// eslint-disable-next-line no-restricted-imports
-import { TerminalUserChannel } from "graphcompose/channels";
 import { SHORTLIST } from "../config/paths.js";
 import { addJobs, isMissingFile } from "../helpers/shortlist.helper.js";
 import { ChosenJobs, SavedJobs } from "./save-shortlist.dto.js";

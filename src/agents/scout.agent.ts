@@ -1,7 +1,5 @@
+import { Agent } from "graphcompose";
 import { GreenhouseJobs } from "../tools/greenhouse-jobs.tool.js";
-
-// eslint-disable-next-line no-restricted-imports
-import { Agent } from "graphcompose/core";
 import { CompanyNotes } from "../rag/company-notes.rag.js";
 import { KIMI } from "../config/settings.js";
 

@@ -1,6 +1,5 @@
 import { Rag, SqliteFtsConnector, type FtsOptions } from "graphcompose/rag";
-// eslint-disable-next-line no-restricted-imports
-import { InjectionToken } from "graphcompose/core";
+import { InjectionToken } from "graphcompose";
 
 /** Where the notes are and where their index lives. */
 export const NOTES_INDEX = new InjectionToken<FtsOptions>("NOTES_INDEX");

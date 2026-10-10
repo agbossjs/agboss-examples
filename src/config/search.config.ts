@@ -1,6 +1,5 @@
 import { z } from "zod";
-// eslint-disable-next-line no-restricted-imports
-import { InjectionToken } from "graphcompose/core";
+import { InjectionToken } from "graphcompose";
 
 /**
  * Where job-scout looks. Change this file to point it at another country or set of companies —

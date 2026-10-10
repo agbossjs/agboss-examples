@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import type { ToolHandler } from "graphcompose/tool";
+import type { ToolHandler } from "graphcompose";
 import { McpTool } from "graphcompose/mcp";
 import { NoInput } from "graphcompose/dto";
 import { SHORTLIST } from "../config/paths.js";
