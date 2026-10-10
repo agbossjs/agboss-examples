@@ -40,7 +40,7 @@ describe("job-scout on the flow graph (#116)", () => {
       "shortlist",
     ]);
     expect(describeWorkflow(workflow)).toContain(
-      "  main  jev typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the answer",
+      "  main  decisions typesafe/jev-1.13 · maxVisits 3 — Sends the job seeker's message to the right agent, or sends the answer",
     );
   });
 

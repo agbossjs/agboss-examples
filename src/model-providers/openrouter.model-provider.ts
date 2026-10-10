@@ -14,8 +14,8 @@ import {
 import { minutes, seconds } from "graphcompose/units";
 
 /**
- * job-scout's chat models: OpenRouter, which returns each call's cost. Jev decides through the
- * framework's `JevModelProvider` (it serves `typesafe/jev-*` for decisions only).
+ * job-scout's chat models: OpenRouter, which returns each call's cost. Decision models (Jev, …)
+ * decide through the framework's `DecisionsModelProvider` (decisions only, no chat).
  */
 @ModelProvider({
   name: "openrouter",

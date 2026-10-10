@@ -7,7 +7,7 @@ import { WorkflowSettings, type WorkflowDefinition } from "graphcompose/core";
 // eslint-disable-next-line no-restricted-imports
 import { TerminalUserChannel } from "graphcompose/channels";
 import { usd } from "graphcompose/units";
-import { JevModelProvider } from "graphcompose/models";
+import { DecisionsModelProvider } from "graphcompose/models";
 import { DEFAULTS, GUARDS, KIMI } from "./config/settings.js";
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { Profiler } from "./agents/profiler.agent.js";
@@ -57,7 +57,7 @@ export class JobScout implements WorkflowDefinition {
   settings(): WorkflowSettings {
     return WorkflowSettings.builder()
       .limits({ perRun: { steps: 12, cost: usd(0.1) }, perDay: { cost: usd(1) } })
-      .modelProviders([OpenRouterModelProvider, JevModelProvider])
+      .modelProviders([OpenRouterModelProvider, DecisionsModelProvider])
       .build();
   }
 }
