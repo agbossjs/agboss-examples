@@ -1,12 +1,10 @@
-// eslint-disable-next-line no-restricted-imports
-import { environmentToken } from "graphcompose/core";
-
-export interface AppEnvironment {
-  readonly greenhouseApiUrl: string;
+// The app's environment contract (#182): the fields every `<name>.environment.ts` here must define.
+// Services get it with `@Injectable({ deps: [ENV] })` and `constructor(env: Environment)`.
+declare module "graphcompose" {
+  interface Environment {
+    /** The Greenhouse job-board API. */
+    readonly greenhouseApiUrl: string;
+  }
 }
 
-export const ENV = environmentToken<AppEnvironment>();
-
-export const environment: AppEnvironment = {
-  greenhouseApiUrl: "https://boards-api.greenhouse.io",
-};
+export {};

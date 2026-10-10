@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { toolOf, mcpServerStub } from "graphcompose/testing";
 import { workflowOf } from "graphcompose/testing";
-import { createAppDeps } from "graphcompose";
+import { createAppDeps, type Environment } from "graphcompose";
 // eslint-disable-next-line no-restricted-imports
 import type { ToolContext } from "graphcompose/tool";
 import { JobScout } from "../src/job-scout.workflow.js";
@@ -28,6 +28,8 @@ const job = (n: number) => ({
   fit: 80 + n,
 });
 const env = { OPENROUTER_API_KEY: "k", TERN_DB: ":memory:" };
+/** The app's environment (`ENV`): no test here reaches Greenhouse. */
+const environment: Environment = { greenhouseApiUrl: "https://greenhouse.test" };
 
 describe("the shortlist: MCP tools with the server injected (#109)", () => {
   afterAll(async () => {
@@ -36,7 +38,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("AC4: save_shortlist knows the file and never adds a job twice — through the real server", async () => {
     expect(SHORTLIST_DIR).toContain("job-scout-tests");
-    const deps = await createAppDeps(await workflowOf(JobScout), { env });
+    const deps = await createAppDeps(await workflowOf(JobScout), { processEnv: env, environment });
     try {
       const first = await deps.tools("save_shortlist").invoke({ jobs: [job(1), job(2)] }, ctx);
       const second = await deps.tools("save_shortlist").invoke({ jobs: [job(2), job(3)] }, ctx);
@@ -89,7 +91,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("only the save waits for the user's approval", async () => {
     const workflow = await workflowOf(JobScout);
-    const deps = await createAppDeps(workflow, { env });
+    const deps = await createAppDeps(workflow, { processEnv: env, environment });
     try {
       // a tool waits for approval when it names a channel (agent-loop/boundary.ts)
       expect(deps.tools("save_shortlist").channel).toBeDefined();
@@ -102,7 +104,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   it("the server may touch only the shortlist folder", async () => {
     const workflow = await workflowOf(JobScout);
-    const deps = await createAppDeps(workflow, { env });
+    const deps = await createAppDeps(workflow, { processEnv: env, environment });
     try {
       const write = workflow.serverTools?.find((tool) => tool.name === "shortlist__write_file");
       const outside = await write?.invoke(

@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import { Injectable } from "graphcompose/core";
-import { ENV, type AppEnvironment } from "../environments/environment.js";
+import { ENV, Injectable, type Environment } from "graphcompose";
 import { z } from "zod";
 import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
 import {
@@ -48,7 +46,7 @@ export class GreenhouseBoards {
 
   constructor(
     private readonly search: JobSearch,
-    private readonly env: AppEnvironment,
+    private readonly env: Environment,
     private readonly fetchJson: FetchJson = fetchJsonOverHttp,
   ) {}
 
