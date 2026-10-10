@@ -90,8 +90,11 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
   it("only the save waits for the user's approval", async () => {
     const workflow = await workflowOf(JobScout);
     const deps = await createAppDeps(workflow, { env });
-    // eslint-disable-next-line no-empty
     try {
+      // a tool waits for approval when it names a channel (agent-loop/boundary.ts)
+      expect(deps.tools("save_shortlist").channel).toBeDefined();
+      expect(deps.tools("read_shortlist").channel).toBeUndefined();
+      expect(deps.tools("greenhouse_jobs").channel).toBeUndefined();
     } finally {
       await deps.close();
     }
