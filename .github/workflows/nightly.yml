@@ -1,0 +1,64 @@
+name: Nightly Extended & Distributed Proofs
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      run_live_models:
+        description: "Enable live model evals & migration benchmark (requires OPENROUTER_API_KEY)"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  nightly:
+    name: Extended Fault-Injection, Multi-Run Evals & P1 Distributed Scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout agboss-examples
+        uses: actions/checkout@v4
+
+      - name: Checkout agbossjs/agboss
+        uses: actions/checkout@v4
+        with:
+          repository: agbossjs/agboss
+          path: .agboss-source
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: "npm"
+
+      - name: Build, pack, verify, and install artifacts
+        env:
+          AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-source
+        run: |
+          npm install --no-audit --no-fund
+          npm --prefix .agboss-source ci --no-audit --no-fund
+          npm run pack:framework
+          npm run verify:package
+          npm run install:packed
+
+      - name: Run full P0 + P1 check, test, and demo suites
+        run: |
+          node scripts/run-all.mjs --include-p1 --mode check
+          node scripts/run-all.mjs --include-p1 --mode test
+          node scripts/run-all.mjs --include-p1 --mode demo
+          node scripts/collect-results.mjs
+
+      - name: Upload Nightly Proof Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-proof-results
+          path: |
+            .packed/manifest.json
+            proof-results.json
+            proof-report.md
+          retention-days: 14

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: AGBoss Documentation
+    url: https://agboss.dev
+    about: Read the official AGBoss documentation and guides
+  - name: Core Framework Issues
+    url: https://github.com/agbossjs/agboss/issues
+    about: Report bugs or request features in the core agboss framework or CLI

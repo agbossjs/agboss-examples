@@ -1,0 +1,27 @@
+name: Example Proof / Feature
+description: Propose a new executable architectural proof or example enhancement
+labels: ["type:feature", "status:triage"]
+body:
+  - type: input
+    id: project
+    attributes:
+      label: Target Example Project
+      placeholder: e.g. travel-booking-saga, support-refund-desk
+    validations:
+      required: true
+  - type: textarea
+    id: promise
+    attributes:
+      label: Promise -> Failure Injection -> Reproducible Proof
+      description: What property does AGBoss claim, what failure threatens it, and how does the test prove it?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: |
+        - [ ] AC1: ...
+        - [ ] AC2: ...
+    validations:
+      required: true

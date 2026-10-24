@@ -1,0 +1,39 @@
+{
+  "name": "hello-agboss",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P0 Proof: Clean AGBoss installation, constructor DI, @Agent, @Router, @Tool, @Workflow, typed DTOs, and CLI scaffolding.",
+  "agboss": {
+    "application": "src/application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx src/demo.ts --live"
+  },
+  "dependencies": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  },
+  "overrides": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz"
+  }
+}

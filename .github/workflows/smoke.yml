@@ -1,0 +1,65 @@
+name: Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: P0 Offline Smoke & Static Proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout agboss-examples
+        uses: actions/checkout@v4
+
+      - name: Checkout agboss framework (for pre-publish local tarball pack if npm package not yet live)
+        uses: actions/checkout@v4
+        with:
+          repository: agbossjs/agboss
+          path: .agboss-source
+        continue-on-error: true
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: "npm"
+
+      - name: Install root tooling dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck shared tooling
+        run: npm run typecheck
+
+      - name: Pack and install framework artifacts if source available
+        if: hashFiles('.agboss-source/package.json') != ''
+        env:
+          AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-source
+        run: |
+          npm --prefix .agboss-source ci --no-audit --no-fund
+          npm run pack:framework
+          npm run verify:package
+          npm run install:packed
+
+      - name: Run P0 static checks and deterministic tests
+        run: |
+          npm run check
+          npm test
+          npm run collect:results
+
+      - name: Upload proof results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-proof-results
+          path: |
+            proof-results.json
+            proof-report.md
+          if-no-files-found: ignore

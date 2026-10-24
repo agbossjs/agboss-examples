@@ -1,0 +1,26 @@
+name: Bug Report
+description: Report a broken example, test failure, or false diagnostic
+labels: ["type:bugfix", "status:triage"]
+body:
+  - type: input
+    id: project
+    attributes:
+      label: Affected Example Project
+      placeholder: e.g. path-scope-proof
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. cd path-scope-proof
+        2. npm test
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual Behavior
+    validations:
+      required: true

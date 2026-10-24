@@ -1,0 +1,29 @@
+{
+  "suite": "refund-desk-eval-suite",
+  "cases": [
+    {
+      "name": "eligible-refund-within-policy",
+      "orderId": "ORD-1001",
+      "expectedDecision": "approved",
+      "expectedRefundUsd": 180,
+      "requiredTools": ["lookup-order-tool", "issue-refund-tool"],
+      "invariantTools": ["issue-refund-tool"]
+    },
+    {
+      "name": "over-cap-refund-escalated",
+      "orderId": "ORD-1002",
+      "expectedDecision": "escalated",
+      "expectedRefundUsd": 0,
+      "requiredTools": ["lookup-order-tool"],
+      "forbiddenTools": ["issue-refund-tool"]
+    },
+    {
+      "name": "policy-drift-past-30-days-denied",
+      "orderId": "ORD-1003",
+      "expectedDecision": "denied",
+      "expectedRefundUsd": 0,
+      "requiredTools": ["lookup-order-tool"],
+      "forbiddenTools": ["issue-refund-tool"]
+    }
+  ]
+}

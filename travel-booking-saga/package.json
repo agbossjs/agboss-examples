@@ -1,0 +1,35 @@
+{
+  "name": "travel-booking-saga",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AGBoss P0 Proof — Transaction compensation, interruption, SQLite recovery, idempotency, 2-of-3 quorum, and HITL pause withdrawal",
+  "type": "module",
+  "agboss": {
+    "application": "src/application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check": "npm run types && npm run typecheck && npm run lint",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts"
+  },
+  "dependencies": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz",
+    "eslint": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  },
+  "overrides": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz"
+  }
+}

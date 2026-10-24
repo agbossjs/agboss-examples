@@ -1,1 +1,111 @@
-# agboss-examples
+# AGBoss Examples — Executable Architecture & Reliability Proofs
+
+[![Docs](https://img.shields.io/badge/docs-agboss.dev-258ceb)](https://agboss.dev)
+[![Framework](https://img.shields.io/badge/framework-agbossjs%2Fagboss-258ceb)](https://github.com/agbossjs/agboss)
+[![License](https://img.shields.io/badge/License-Apache_2.0-258ceb.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Smoke CI](https://github.com/agbossjs/agboss-examples/actions/workflows/smoke.yml/badge.svg?branch=main)](https://github.com/agbossjs/agboss-examples/actions/workflows/smoke.yml)
+
+Independent, runnable [**AGBoss**](https://github.com/agbossjs/agboss) applications that demonstrate and verify the framework's core engineering guarantees against real distributable npm packages (`agboss` and `agboss-cli`).
+
+> **Your coding agent writes the graph. AGBoss proves the properties it can actually verify.**
+
+---
+
+## 1. Purpose & Central Principle
+
+This repository serves three goals:
+
+1. **Developer onboarding:** Help a new developer understand, install, and run AGBoss without familiarity with its internal source tree.
+2. **Executable architectural proofs:** Demonstrate concrete failure classes, inject/reproduce them deterministically, and prove with executable assertions how AGBoss detects, prevents, compensates, or recovers from them.
+3. **External release validation:** Validate the actual packed `.tgz` / published npm artifacts in clean consumer projects outside the `agboss` monorepo.
+
+### Central Principle: `Promise → Failure Injection → Reproducible Proof`
+
+Every project in this repository answers six engineering questions with executable assertions:
+
+1. **Promise:** What engineering property does AGBoss claim to provide?
+2. **Threat:** What concrete error or failure threatens that property?
+3. **Failure Injection:** How is that failure deterministically reproduced?
+4. **Mechanism:** What does AGBoss detect, prevent, compensate, or recover?
+5. **Proof:** What observable state, diagnostic code, or ledger invariant proves the expected behavior?
+6. **Guarantee Boundary:** Where does the framework guarantee end, and what remains the application's or external system's responsibility?
+
+---
+
+## 2. Projects & Release Priorities
+
+| Project | Priority | Mode | Primary Engineering Proof |
+| :--- | :--- | :--- | :--- |
+| [**`hello-agboss`**](./hello-agboss/) | **P0** | Deterministic / Offline (+ optional Live) | Clean `agboss create` installation, constructor DI, `@Agent`, `@Router`, `@Tool`, `@Workflow`, typed DTOs, and first execution |
+| [**`path-scope-proof`**](./path-scope-proof/) | **P0** | Deterministic / Static Analysis | Compile-time detection of `[input.missing-on-path]`, `[input.outdated-on-path]`, `[launch.branch-outdates-sibling]`, and `[flow.uncompensated-action]` vs ordinary TypeScript / LangGraph |
+| [**`travel-booking-saga`**](./travel-booking-saga/) | **P0** | Deterministic / Fault-Injection | LIFO saga compensation, `@Budget` cutoff, `app.cancel()`, worker crash recovery over SQLite WAL, external `idempotencyKey` boundary, `.joinQuorum()` arbitration, and HITL pause withdrawal |
+| [**`support-refund-desk`**](./support-refund-desk/) | **P0** | Deterministic / Offline (+ Eval Pipeline) | `@PiiPolicy` (`replaceWithToken`) trace/log scrubbing, `@ToolInterceptor` & `DecidedBy.Code` guardrails, `@Compaction` vs authoritative `@Rag` policy freshness, and 5-layer evaluation (`pass@k` vs `pass^k`, Cohen's $\kappa$) |
+| [**`langgraph-migration-smoke`**](./langgraph-migration-smoke/) | **P0** | Deterministic Harness (+ Model Benchmark) | Verification that AI coding agents can migrate a 15-field `StateAnnotation` LangGraph app using shipped `AGENTS.md` and `.claude/skills/agboss/` (`13-migrating-from-langgraph.md`) |
+| [**`enterprise-agent-mesh`**](./enterprise-agent-mesh/) | **P1** | Deterministic Multi-Service | 3-service mesh (`triage-gateway`, `billing-service`, `catalog-mcp`) over `@A2AAgent` / `@A2AExpose`, `A2AMeshEnvelope`, `MeshLoopDetectedError`, MCP `_meta.callId` deduplication, and `agboss check --federation` Blast Radius |
+| [**`cluster-work-stealing`**](./cluster-work-stealing/) | **P1** | Deterministic Multi-Instance / Fault-Injection | `ChildPlacement.AnyInstance`, recursive `ThisWorkflow` (`maxDepth`), 30s SQLite leases & fencing, worker crash recovery, `maxConcurrentSteps` backpressure, `@HealthCheck`, and cross-instance `app.cancel()` |
+
+---
+
+## 3. Repository Design Rules
+
+- **R1. Independent projects:** Every example directory has its own `package.json`, `.env.example`, `tsconfig.json`, `README.md`, commands, and tests. You can `cd` into any example and run it standalone.
+- **R2. No direct source dependency:** Examples never import from the `agboss` monorepo `src/`, never use private framework internals, never use `workspace:*` links to the framework, and never use symlinks.
+- **R3. Minimal shared tooling:** [`tooling/`](./tooling/) provides only process execution, temp-directory isolation, diagnostic/ledger assertions, and `proof-results.json` report generation — never a wrapper around AGBoss.
+- **R4. Offline-first (`$0`):** All default checks (`npm run check`), tests (`npm test`), and demos (`npm run demo`) run 100% offline with zero LLM API keys. Live model runs (`npm run demo:live`) are opt-in.
+- **R5. Isolated negative fixtures:** Intentional broken graphs (such as `path-scope-proof/cases/*/agboss-broken`) are invoked by test harnesses that assert their exact failure diagnostics without breaking default green CI.
+- **R6. Zero secrets or real PII:** Only synthetic data is used. `.env` files, real traces, and API keys are strictly git-ignored (see [`.gitignore`](./.gitignore) and [`.env.example`](./.env.example)).
+
+---
+
+## 4. Quick Start
+
+### Run a single example standalone
+
+```bash
+cd hello-agboss
+npm install
+npm run check     # Static graph analysis (agboss check) + TypeScript + ESLint
+npm test          # Deterministic offline unit & workflow tests ($0, no API key)
+npm run demo      # Local offline demonstration
+```
+
+### Validate against local packed release tarballs (`agboss` + `agboss-cli`)
+
+Before publishing a new version of `agboss` to npm, pack the release candidate from the `agboss` monorepo and run the entire verification suite against the `.tgz` artifacts:
+
+```bash
+# 1. Pack agboss & agboss-cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
+npm run pack:framework
+
+# 2. Verify tarball contents, exports, declarations, CLI bin, templates & 13 skill modules
+npm run verify:package
+
+# 3. Install packed tarballs into all example projects
+npm run install:packed
+
+# 4. Run static checks, tests, and demos across all projects and collect proof-results.json
+npm run check
+npm test
+npm run collect:results
+```
+
+---
+
+## 5. Common Project Commands
+
+Every example project exposes a consistent command contract:
+
+| Command | Description | Requires API Key? |
+| :--- | :--- | :--- |
+| `npm run check` | Static graph verification (`agboss check`) and TypeScript typechecking | No (`$0`) |
+| `npm test` | Deterministic offline unit, integration, and failure-injection tests | No (`$0`) |
+| `npm run demo` | Reproducible local demonstration of the project's proofs | No (`$0`) |
+| `npm run demo:live` | Optional live execution via OpenRouter (`OPENROUTER_API_KEY` in `.env`) | Yes |
+
+---
+
+## 6. Contributing & Security
+
+- See [CONTRIBUTING.md](./CONTRIBUTING.md) for issue workflow, branching, and verification rules.
+- See [SECURITY.md](./SECURITY.md) for responsible vulnerability reporting (`security@agboss.dev`).
+- Licensed under the [Apache License 2.0](./LICENSE). Copyright 2026 [Pavel Ravvich](https://github.com/pavelravvich).

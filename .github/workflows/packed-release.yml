@@ -1,0 +1,67 @@
+name: Packed Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      agboss_ref:
+        description: "Git ref (commit SHA, tag, or branch) of agbossjs/agboss to validate"
+        required: false
+        default: "main"
+  repository_dispatch:
+    types: [validate-release-candidate]
+
+permissions:
+  contents: read
+
+jobs:
+  packed-release:
+    name: Validate Packed Release Candidate (${{ inputs.agboss_ref || github.event.client_payload.agboss_ref || 'main' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout agboss-examples
+        uses: actions/checkout@v4
+
+      - name: Checkout agbossjs/agboss at target ref
+        uses: actions/checkout@v4
+        with:
+          repository: agbossjs/agboss
+          ref: ${{ inputs.agboss_ref || github.event.client_payload.agboss_ref || 'main' }}
+          path: .agboss-rc
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: "npm"
+
+      - name: Install root tooling dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build and pack release candidate artifacts
+        env:
+          AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-rc
+        run: |
+          npm --prefix .agboss-rc ci --no-audit --no-fund
+          npm run pack:framework
+          npm run verify:package
+
+      - name: Install packed artifacts into consumer example projects
+        run: npm run install:packed
+
+      - name: Execute all P0 & P1 offline checks and proofs
+        run: |
+          node scripts/run-all.mjs --include-p1 --mode check
+          node scripts/run-all.mjs --include-p1 --mode test
+          node scripts/collect-results.mjs
+
+      - name: Upload Release Candidate Validation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packed-release-validation-report
+          path: |
+            .packed/manifest.json
+            proof-results.json
+            proof-report.md
+          retention-days: 30

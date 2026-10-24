@@ -1,0 +1,35 @@
+services:
+  coordinator:
+    image: node:22-alpine
+    working_dir: /workspace/cluster-work-stealing
+    command: ["npx", "tsx", "coordinator/main.ts"]
+    environment:
+      PORT: "8090"
+      SQLITE_PATH: "/shared/cluster.sqlite"
+    volumes:
+      - cluster-data:/shared
+    ports:
+      - "8090:8090"
+
+  worker-1:
+    image: node:22-alpine
+    working_dir: /workspace/cluster-work-stealing
+    command: ["npx", "tsx", "worker/main.ts"]
+    environment:
+      PORT: "8091"
+      SQLITE_PATH: "/shared/cluster.sqlite"
+    volumes:
+      - cluster-data:/shared
+
+  worker-2:
+    image: node:22-alpine
+    working_dir: /workspace/cluster-work-stealing
+    command: ["npx", "tsx", "worker/main.ts"]
+    environment:
+      PORT: "8092"
+      SQLITE_PATH: "/shared/cluster.sqlite"
+    volumes:
+      - cluster-data:/shared
+
+volumes:
+  cluster-data:

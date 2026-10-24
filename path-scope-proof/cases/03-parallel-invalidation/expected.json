@@ -1,0 +1,6 @@
+{
+  "caseId": "03-parallel-invalidation",
+  "expectedCode": "launch.branch-outdates-sibling",
+  "expectedWorkflowName": "parallel-invalidation-broken-workflow",
+  "expectedStepName": "overwrite-quote-branch-a-action"
+}

@@ -1,0 +1,6 @@
+{
+  "caseId": "01-missing-input",
+  "expectedCode": "input.missing-on-path",
+  "expectedWorkflowName": "missing-input-broken-workflow",
+  "expectedStepName": "render-invoice-action"
+}

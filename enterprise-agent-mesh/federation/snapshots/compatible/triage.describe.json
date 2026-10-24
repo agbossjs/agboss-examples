@@ -1,0 +1,670 @@
+{
+  "schema": 1,
+  "ok": true,
+  "command": "describe",
+  "result": {
+    "application": {
+      "name": "triage-gateway-application",
+      "version": "1.0.0",
+      "workflows": [
+        "triage-workflow"
+      ],
+      "implementations": [
+        {
+          "contract": "Clock",
+          "implementation": "SystemClock",
+          "reason": "default"
+        },
+        {
+          "contract": "IdGenerator",
+          "implementation": "RandomIdGenerator",
+          "reason": "default"
+        },
+        {
+          "contract": "Logger",
+          "implementation": "ConsoleLogger",
+          "reason": "default"
+        },
+        {
+          "contract": "BaseCheckpointSaver",
+          "implementation": "SqliteCheckpointSaver",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionRecordRepository",
+          "implementation": "SqliteExecutionRecordRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "CostLedgerRepository",
+          "implementation": "SqliteCostLedgerRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "PausedExecutionRepository",
+          "implementation": "SqlitePausedExecutionRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionLeaseRepository",
+          "implementation": "SqliteExecutionLeaseRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionTreeRepository",
+          "implementation": "SqliteExecutionTreeRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "RateLimitRepository",
+          "implementation": "SqliteRateLimitRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "MeshRequestRepository",
+          "implementation": "SqliteMeshRequestRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionHistoryRepository",
+          "implementation": "SqliteExecutionHistoryRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ChildExecutionQueueRepository",
+          "implementation": "InMemoryChildExecutionQueueRepository",
+          "reason": "default"
+        }
+      ],
+      "modelProviders": [
+        {
+          "name": "triage-offline-model-provider",
+          "className": "TriageOfflineModelProvider",
+          "reason": "listed",
+          "serves": [
+            "/^offline\\//u"
+          ],
+          "isTransport": true
+        }
+      ],
+      "budgets": [
+        {
+          "name": "triage-app-daily-budget",
+          "scope": "application",
+          "period": "day"
+        },
+        {
+          "name": "triage-tenant-daily-budget",
+          "scope": "tenant",
+          "period": "day"
+        },
+        {
+          "name": "triage-execution-budget",
+          "scope": "execution"
+        }
+      ],
+      "executionBudgets": [
+        {
+          "workflow": "triage-workflow",
+          "name": "triage-execution-budget",
+          "isOwn": false
+        }
+      ],
+      "observers": [],
+      "warnings": [],
+      "maxConcurrentSteps": null,
+      "tree": [
+        {
+          "name": "triage-workflow",
+          "version": "1.0.0",
+          "starts": [
+            "triage-workflow-start (TriageRequestDto)"
+          ],
+          "children": []
+        }
+      ],
+      "channels": [],
+      "contracts": {
+        "exports": [],
+        "imports": [
+          {
+            "kind": "a2a",
+            "client": "billing-a2a-agent",
+            "target": {
+              "application": "billing-application",
+              "start": "billing-workflow-start"
+            },
+            "usedBy": [
+              {
+                "workflow": "triage-workflow",
+                "tool": "ask-billing-tool"
+              }
+            ],
+            "input": {
+              "dto": "BillingInquiryDto",
+              "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964"
+            },
+            "output": {
+              "dto": "BillingResolutionDto",
+              "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
+            },
+            "price": 0.002
+          },
+          {
+            "kind": "mcp",
+            "server": "catalog-mcp-server",
+            "tool": "lookup-sku-tool",
+            "target": {
+              "application": "catalog-application",
+              "expose": "catalog-mcp"
+            },
+            "usedBy": [
+              {
+                "workflow": "triage-workflow",
+                "tool": "search-catalog-tool"
+              }
+            ],
+            "input": {
+              "dto": "SkuLookupInputDto",
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+            },
+            "output": {
+              "dto": "SkuDetailsDto",
+              "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49"
+            }
+          }
+        ],
+        "schemas": {
+          "BillingInquiryDto": {
+            "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "invoiceId": {
+                  "type": "string",
+                  "description": "Invoice ID to inspect (e.g. INV-5001)"
+                },
+                "question": {
+                  "type": "string",
+                  "description": "Customer question about the invoice"
+                }
+              },
+              "required": [
+                "invoiceId",
+                "question"
+              ]
+            }
+          },
+          "BillingResolutionDto": {
+            "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "invoiceId": {
+                  "type": "string",
+                  "description": "Invoice ID inspected"
+                },
+                "resolution": {
+                  "type": "string",
+                  "description": "Billing resolution summary"
+                },
+                "creditedUsd": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Credited amount in USD"
+                },
+                "resolvedTenantId": {
+                  "type": "string",
+                  "description": "Authenticated tenant ID resolved by the A2A host"
+                }
+              },
+              "required": [
+                "invoiceId",
+                "resolution",
+                "creditedUsd",
+                "resolvedTenantId"
+              ]
+            }
+          },
+          "SkuDetailsDto": {
+            "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "description": "Product SKU code"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Product title"
+                },
+                "unitPriceUsd": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Unit price in USD"
+                },
+                "inStockUnits": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Units currently in stock"
+                }
+              },
+              "required": [
+                "sku",
+                "title",
+                "unitPriceUsd",
+                "inStockUnits"
+              ]
+            }
+          },
+          "SkuLookupInputDto": {
+            "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "description": "Product SKU code (e.g. SKU-GPU-900)"
+                }
+              },
+              "required": [
+                "sku"
+              ]
+            }
+          }
+        }
+      },
+      "environment": {
+        "name": "dev",
+        "fields": {
+          "sqlitePath": "\":memory:\"",
+          "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
+          "meshSigningKey": "*** (MESH_SIGNING_KEY)",
+          "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+        }
+      }
+    },
+    "workflows": [
+      {
+        "name": "triage-workflow",
+        "version": "1.0.0",
+        "profile": "base",
+        "config": "6db0a20e",
+        "piiPolicies": [],
+        "flow": [
+          "start(TriageWorkflowStart)",
+          "  .returns(TriageRequestDto)",
+          "  .toAgent(TriageAgent)",
+          "  .onError(MeshLoopDetectedError, toFinish(MeshLoopFallbackWorkflowFinish))",
+          "  .onError(HopsLimitExceededError, toFinish(MeshLoopFallbackWorkflowFinish))",
+          "  .returns(TriageResponseDto)",
+          "  .toFinish(TriageWorkflowFinish)"
+        ],
+        "inputs": [
+          "triage-agent ← request: triage-workflow-start"
+        ],
+        "children": [],
+        "routers": [],
+        "agents": [
+          {
+            "name": "triage-agent",
+            "model": "offline/triage-chat",
+            "description": "Coordinates catalog MCP lookups and billing A2A inquiries",
+            "tools": [
+              "search-catalog-tool",
+              "ask-billing-tool"
+            ],
+            "rag": []
+          }
+        ],
+        "models": [
+          {
+            "key": "agents.triage-agent",
+            "model": "offline/triage-chat",
+            "provider": "triage-offline-model-provider"
+          }
+        ],
+        "tools": [
+          {
+            "name": "ask-billing-tool",
+            "description": "Delegates invoice resolution to BillingApplication over A2A",
+            "kind": "local"
+          },
+          {
+            "name": "search-catalog-tool",
+            "description": "Looks up SKU details on the remote Catalog MCP server",
+            "kind": "mcp",
+            "server": "catalog-mcp-server"
+          }
+        ],
+        "unassignedTools": [],
+        "limits": {
+          "maxSteps": 6,
+          "isMaxStepsSet": true,
+          "steps": {
+            "least": 1,
+            "most": 1
+          },
+          "maxVisits": {},
+          "worstCases": [
+            {
+              "start": "triage-workflow-start",
+              "workflow": "triage-workflow",
+              "executions": 1,
+              "concurrentExecutions": 1,
+              "steps": 1,
+              "isStepsCapped": false,
+              "treeSteps": 1,
+              "depth": 0,
+              "parts": [],
+              "children": []
+            }
+          ],
+          "maxConcurrentExecutions": 10,
+          "isMaxConcurrentExecutionsSet": false
+        },
+        "steps": {
+          "least": 1,
+          "most": 1
+        },
+        "configHash": "6db0a20e94db2c3ed052562199d6efb60031c1efac83e063d5f50acd1aec0461",
+        "starts": [
+          "triage-workflow-start"
+        ],
+        "finishes": [
+          "mesh-loop-fallback-workflow-finish",
+          "triage-workflow-finish"
+        ],
+        "nodes": [
+          {
+            "name": "mesh-loop-fallback-workflow-finish",
+            "kind": "workflow-finish",
+            "description": "Fallback finish when a cyclic A2A/MCP mesh call or hop limit is detected",
+            "schemaHash": "6d72c9e69e1ee63aa1a7ee030bc1e01023327580505a814c5d4e53e52091eb56",
+            "output": {
+              "dto": "TriageRequestDto",
+              "schemaHash": "b6b73605ad462ecb29aea372c28a656e8031d2068a64cac25c9c48ed9769e529"
+            }
+          },
+          {
+            "name": "triage-agent",
+            "kind": "agent",
+            "description": "Coordinates catalog MCP lookups and billing A2A inquiries",
+            "promptHash": "53b4389c6c7e5a0bbe977bb5dc951e582e6faad03c7f436fb204399205c88ba3",
+            "schemaHash": "64644c2ac032604df8c4c966482616cfa53b9e63f7349ec5dcf9f6c2370a0a9e",
+            "input": {
+              "fields": {
+                "request": {
+                  "dto": "TriageRequestDto",
+                  "schemaHash": "b6b73605ad462ecb29aea372c28a656e8031d2068a64cac25c9c48ed9769e529"
+                }
+              }
+            },
+            "output": {
+              "dto": "TriageResponseDto",
+              "schemaHash": "cbea111842bad7638d3c14b54182750850a085da1335c530ae0872c919431562"
+            },
+            "agent": {
+              "model": "offline/triage-chat",
+              "provider": "triage-offline-model-provider",
+              "reasoning": "provider",
+              "maxTokens": 8192,
+              "maxModelCalls": 12,
+              "maxToolCalls": 4,
+              "maxResultSize": 131072,
+              "uncompactedTurns": 5,
+              "tools": [
+                "search-catalog-tool",
+                "ask-billing-tool"
+              ],
+              "rag": [],
+              "guardrails": {
+                "input": [],
+                "output": []
+              },
+              "piiPolicies": [],
+              "judges": [],
+              "maxRetries": 0,
+              "instructions": "Look up the SKU with search-catalog-tool and resolve the invoice with ask-billing-tool, then return the combined triage response."
+            }
+          },
+          {
+            "name": "triage-workflow-finish",
+            "kind": "workflow-finish",
+            "description": "Completed triage response",
+            "schemaHash": "d9f731d5af9b8629d5fba3a68cc66489f1b0dc97ed9474c672967a01a3e3a3c0",
+            "output": {
+              "dto": "TriageResponseDto",
+              "schemaHash": "cbea111842bad7638d3c14b54182750850a085da1335c530ae0872c919431562"
+            }
+          },
+          {
+            "name": "triage-workflow-start",
+            "kind": "workflow-start",
+            "description": "Entry point for enterprise triage requests across A2A and MCP",
+            "schemaHash": "4ba186b9f468b80eba499d7e7ba35b6695c72110c83eca1f2167ed99c60761d2",
+            "input": {
+              "dto": "TriageRequestDto",
+              "schemaHash": "b6b73605ad462ecb29aea372c28a656e8031d2068a64cac25c9c48ed9769e529"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "triage-agent",
+            "to": "mesh-loop-fallback-workflow-finish",
+            "kind": "error",
+            "writes": [],
+            "error": "HopsLimitExceededError"
+          },
+          {
+            "from": "triage-agent",
+            "to": "mesh-loop-fallback-workflow-finish",
+            "kind": "error",
+            "writes": [],
+            "error": "MeshLoopDetectedError"
+          },
+          {
+            "from": "triage-agent",
+            "to": "triage-workflow-finish",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "TriageResponseDto"
+              }
+            ]
+          },
+          {
+            "from": "triage-workflow-start",
+            "to": "triage-agent",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "TriageRequestDto"
+              }
+            ]
+          }
+        ],
+        "onError": [
+          {
+            "at": "triage-agent",
+            "error": "HopsLimitExceededError",
+            "by": "mesh-loop-fallback-workflow-finish",
+            "kind": "error"
+          },
+          {
+            "at": "triage-agent",
+            "error": "MeshLoopDetectedError",
+            "by": "mesh-loop-fallback-workflow-finish",
+            "kind": "error"
+          }
+        ],
+        "launches": [],
+        "modelComponents": [],
+        "schemas": {
+          "dtos": {
+            "TriageRequestDto": {
+              "schemaHash": "b6b73605ad462ecb29aea372c28a656e8031d2068a64cac25c9c48ed9769e529",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID to check with billing (e.g. INV-5001)"
+                  },
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU to check in the catalog (e.g. SKU-GPU-900)"
+                  },
+                  "question": {
+                    "type": "string",
+                    "description": "Customer inquiry text"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "sku",
+                  "question"
+                ]
+              }
+            },
+            "TriageResponseDto": {
+              "schemaHash": "cbea111842bad7638d3c14b54182750850a085da1335c530ae0872c919431562",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID checked"
+                  },
+                  "sku": {
+                    "type": "string",
+                    "description": "SKU checked"
+                  },
+                  "summary": {
+                    "type": "string",
+                    "description": "Combined resolution from billing A2A and catalog MCP"
+                  },
+                  "creditedUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Credited amount in USD from billing"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "sku",
+                  "summary",
+                  "creditedUsd"
+                ]
+              }
+            }
+          },
+          "tools": {
+            "ask-billing-tool": {
+              "promptHash": "d772ccb92d438eb43b8a5845c9b52c82c82500e275b1f5f6362df31de3227b5e",
+              "schemaHash": "e4d6fd6410a5fe2af20296b5fcd525e837f2bdfdf84b93e41d38903fa8d0cf5c",
+              "maxResultSize": 131072,
+              "input": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID to inspect (e.g. INV-5001)"
+                  },
+                  "question": {
+                    "type": "string",
+                    "description": "Customer question about the invoice"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "question"
+                ]
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID inspected"
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "description": "Billing resolution summary"
+                  },
+                  "creditedUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Credited amount in USD"
+                  },
+                  "resolvedTenantId": {
+                    "type": "string",
+                    "description": "Authenticated tenant ID resolved by the A2A host"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "resolution",
+                  "creditedUsd",
+                  "resolvedTenantId"
+                ]
+              }
+            },
+            "search-catalog-tool": {
+              "promptHash": "dda1a14f8da118d3d92b20e218f5b8864503094cf27004581fdb160f48156033",
+              "schemaHash": "7a96293ba122018589b0fab91ec3c449308380b63613d09de6234c769ac7c40c",
+              "maxResultSize": 32768,
+              "input": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code (e.g. SKU-GPU-900)"
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Product title"
+                  },
+                  "unitPriceUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Unit price in USD"
+                  },
+                  "inStockUnits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Units currently in stock"
+                  }
+                },
+                "required": [
+                  "sku",
+                  "title",
+                  "unitPriceUsd",
+                  "inStockUnits"
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "warnings": []
+}

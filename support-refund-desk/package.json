@@ -1,0 +1,42 @@
+{
+  "name": "support-refund-desk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AGBoss P0 Proof: PII masking & token roundtrip, tool interception, guardrails, memory compaction vs policy drift, and 5-layer evaluation.",
+  "agboss": {
+    "application": "src/application.ts"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "describe": "agboss describe",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "demo:pii": "tsx scenarios/pii.ts",
+    "demo:policy": "tsx scenarios/policy.ts",
+    "demo:memory-drift": "tsx scenarios/memory-drift.ts",
+    "demo:evals": "tsx scenarios/evals.ts"
+  },
+  "dependencies": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.13.0",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.0"
+  },
+  "overrides": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz"
+  }
+}

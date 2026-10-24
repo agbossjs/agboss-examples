@@ -1,0 +1,34 @@
+{
+  "name": "path-scope-proof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "agboss": {
+    "application": "src/application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run types && npm run typecheck",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.2.12",
+    "@langchain/langgraph": "^1.4.17",
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  },
+  "overrides": {
+    "agboss": "file:../.packed/agboss-0.1.0.tgz",
+    "agboss-cli": "file:../.packed/agboss-cli-0.1.0.tgz"
+  }
+}

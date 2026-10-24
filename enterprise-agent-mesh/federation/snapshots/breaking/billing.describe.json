@@ -1,0 +1,403 @@
+{
+  "schema": 1,
+  "ok": true,
+  "command": "describe",
+  "result": {
+    "application": {
+      "name": "billing-application",
+      "version": "1.0.0",
+      "workflows": [
+        "billing-workflow"
+      ],
+      "implementations": [
+        {
+          "contract": "Clock",
+          "implementation": "SystemClock",
+          "reason": "default"
+        },
+        {
+          "contract": "IdGenerator",
+          "implementation": "RandomIdGenerator",
+          "reason": "default"
+        },
+        {
+          "contract": "Logger",
+          "implementation": "ConsoleLogger",
+          "reason": "default"
+        },
+        {
+          "contract": "BaseCheckpointSaver",
+          "implementation": "SqliteCheckpointSaver",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionRecordRepository",
+          "implementation": "SqliteExecutionRecordRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "CostLedgerRepository",
+          "implementation": "SqliteCostLedgerRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "PausedExecutionRepository",
+          "implementation": "SqlitePausedExecutionRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionLeaseRepository",
+          "implementation": "SqliteExecutionLeaseRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionTreeRepository",
+          "implementation": "SqliteExecutionTreeRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "RateLimitRepository",
+          "implementation": "SqliteRateLimitRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "MeshRequestRepository",
+          "implementation": "SqliteMeshRequestRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionHistoryRepository",
+          "implementation": "SqliteExecutionHistoryRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ChildExecutionQueueRepository",
+          "implementation": "InMemoryChildExecutionQueueRepository",
+          "reason": "default"
+        }
+      ],
+      "modelProviders": [
+        {
+          "name": "billing-offline-model-provider",
+          "className": "BillingOfflineModelProvider",
+          "reason": "listed",
+          "serves": [
+            "/^offline\\//u"
+          ],
+          "isTransport": true
+        }
+      ],
+      "budgets": [
+        {
+          "name": "billing-app-daily-budget",
+          "scope": "application",
+          "period": "day"
+        },
+        {
+          "name": "billing-tenant-daily-budget",
+          "scope": "tenant",
+          "period": "day"
+        },
+        {
+          "name": "billing-execution-budget",
+          "scope": "execution"
+        }
+      ],
+      "executionBudgets": [
+        {
+          "workflow": "billing-workflow",
+          "name": "billing-execution-budget",
+          "isOwn": false
+        }
+      ],
+      "observers": [],
+      "warnings": [],
+      "maxConcurrentSteps": null,
+      "tree": [
+        {
+          "name": "billing-workflow",
+          "version": "1.0.0",
+          "starts": [
+            "billing-workflow-start (BillingInquiryDto)"
+          ],
+          "children": []
+        }
+      ],
+      "channels": [],
+      "contracts": {
+        "exports": [
+          {
+            "kind": "a2a",
+            "expose": "billing-a2a-expose",
+            "version": "1.0.0",
+            "start": "billing-workflow-start",
+            "workflow": "billing-workflow",
+            "input": {
+              "dto": "BillingInquiryDto",
+              "schemaHash": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            "outputs": [
+              {
+                "finish": "billing-workflow-finish",
+                "dto": "BillingResolutionDto",
+                "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
+              }
+            ]
+          }
+        ],
+        "imports": [],
+        "schemas": {
+          "BillingInquiryDto": {
+            "schemaHash": "0000000000000000000000000000000000000000000000000000000000000001",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "invoiceId": {
+                  "type": "string",
+                  "description": "Invoice ID to inspect (e.g. INV-5001)"
+                },
+                "question": {
+                  "type": "string",
+                  "description": "Customer question about the invoice"
+                },
+                "accountRegion": {
+                  "type": "string",
+                  "description": "Required account billing region added without consumer migration"
+                }
+              },
+              "required": [
+                "invoiceId",
+                "question",
+                "accountRegion"
+              ]
+            }
+          },
+          "BillingResolutionDto": {
+            "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "invoiceId": {
+                  "type": "string",
+                  "description": "Invoice ID inspected"
+                },
+                "resolution": {
+                  "type": "string",
+                  "description": "Billing resolution summary"
+                },
+                "creditedUsd": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Credited amount in USD"
+                },
+                "resolvedTenantId": {
+                  "type": "string",
+                  "description": "Authenticated tenant ID resolved by the A2A host"
+                }
+              },
+              "required": [
+                "invoiceId",
+                "resolution",
+                "creditedUsd",
+                "resolvedTenantId"
+              ]
+            }
+          }
+        }
+      },
+      "environment": {
+        "name": "dev",
+        "fields": {
+          "sqlitePath": "\":memory:\"",
+          "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
+          "meshSigningKey": "*** (MESH_SIGNING_KEY)",
+          "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+        }
+      }
+    },
+    "workflows": [
+      {
+        "name": "billing-workflow",
+        "version": "1.0.0",
+        "profile": "base",
+        "config": "d52cb71e",
+        "piiPolicies": [],
+        "flow": [
+          "start(BillingWorkflowStart)",
+          "  .returns(BillingInquiryDto)",
+          "  .toAction(ResolveBillingInquiryAction)",
+          "  .returns(BillingResolutionDto)",
+          "  .toFinish(BillingWorkflowFinish)"
+        ],
+        "inputs": [
+          "resolve-billing-inquiry-action ← inquiry: billing-workflow-start"
+        ],
+        "children": [],
+        "routers": [],
+        "agents": [],
+        "models": [],
+        "tools": [],
+        "unassignedTools": [],
+        "limits": {
+          "maxSteps": 0,
+          "isMaxStepsSet": false,
+          "steps": {
+            "least": 0,
+            "most": 0
+          },
+          "maxVisits": {},
+          "worstCases": [
+            {
+              "start": "billing-workflow-start",
+              "workflow": "billing-workflow",
+              "executions": 1,
+              "concurrentExecutions": 1,
+              "steps": 0,
+              "isStepsCapped": false,
+              "treeSteps": 0,
+              "depth": 0,
+              "parts": [],
+              "children": []
+            }
+          ],
+          "maxConcurrentExecutions": 10,
+          "isMaxConcurrentExecutionsSet": false
+        },
+        "steps": {
+          "least": 0,
+          "most": 0
+        },
+        "configHash": "d52cb71e2d8d5224aa934555797e0c5c46d1bb37a49d537439474e72641229da",
+        "starts": [
+          "billing-workflow-start"
+        ],
+        "finishes": [
+          "billing-workflow-finish"
+        ],
+        "nodes": [
+          {
+            "name": "billing-workflow-finish",
+            "kind": "workflow-finish",
+            "description": "Returns the billing resolution",
+            "schemaHash": "fbd9b2fcaccfdee875a76bef60cff0620184c26cc0592b924676cda4e96bdd67",
+            "output": {
+              "dto": "BillingResolutionDto",
+              "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
+            }
+          },
+          {
+            "name": "billing-workflow-start",
+            "kind": "workflow-start",
+            "description": "Inspects an invoice and resolves billing inquiries over A2A",
+            "schemaHash": "0467f1ceb094359968ee90ecbbcd5e7277c995305ce42492f80952915ea39c53",
+            "input": {
+              "dto": "BillingInquiryDto",
+              "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964"
+            }
+          },
+          {
+            "name": "resolve-billing-inquiry-action",
+            "kind": "action",
+            "description": "Resolves an invoice inquiry for the authenticated tenant",
+            "schemaHash": "400386c129a28a1bf5b7d8766a28beece43b6345bde86feefcb75f538bae4cd2",
+            "input": {
+              "fields": {
+                "inquiry": {
+                  "dto": "BillingInquiryDto",
+                  "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964"
+                }
+              }
+            },
+            "output": {
+              "dto": "BillingResolutionDto",
+              "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "billing-workflow-start",
+            "to": "resolve-billing-inquiry-action",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "BillingInquiryDto"
+              }
+            ]
+          },
+          {
+            "from": "resolve-billing-inquiry-action",
+            "to": "billing-workflow-finish",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "BillingResolutionDto"
+              }
+            ]
+          }
+        ],
+        "onError": [],
+        "launches": [],
+        "modelComponents": [],
+        "schemas": {
+          "dtos": {
+            "BillingInquiryDto": {
+              "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID to inspect (e.g. INV-5001)"
+                  },
+                  "question": {
+                    "type": "string",
+                    "description": "Customer question about the invoice"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "question"
+                ]
+              }
+            },
+            "BillingResolutionDto": {
+              "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Invoice ID inspected"
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "description": "Billing resolution summary"
+                  },
+                  "creditedUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Credited amount in USD"
+                  },
+                  "resolvedTenantId": {
+                    "type": "string",
+                    "description": "Authenticated tenant ID resolved by the A2A host"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "resolution",
+                  "creditedUsd",
+                  "resolvedTenantId"
+                ]
+              }
+            }
+          },
+          "tools": {}
+        }
+      }
+    ]
+  },
+  "warnings": []
+}

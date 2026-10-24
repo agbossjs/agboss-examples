@@ -1,0 +1,35 @@
+# Dependencies & build output
+node_modules/
+dist/
+coverage/
+
+# Environment & secrets — NEVER commit real keys or .env files (Rule R6)
+.env
+.env.*
+!**/.env.example
+
+# AGBoss generated types, local SQLite databases, and synced skills
+.agboss/
+**/.agboss/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+**/.claude/skills/agboss/
+
+# Packed release tarballs & verification artifacts (Section 4 & 13)
+.packed/
+.artifacts/
+*.tgz
+proof-results.json
+proof-report.md
+eval-report.html
+
+# Migration benchmark run outputs (keep directory placeholder only)
+langgraph-migration-smoke/results/*
+!langgraph-migration-smoke/results/.gitkeep
+
+# OS & editor files
+.DS_Store
+*.log
+.idea/
+.vscode/

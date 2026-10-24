@@ -1,0 +1,46 @@
+[
+  {
+    "orderId": "ORD-1001",
+    "tenantId": "acme",
+    "customerEmail": "alice.synth@example.com",
+    "customerPhone": "+1-415-555-0101",
+    "ticketId": "TCK-402910",
+    "item": "Ergonomic Mechanical Keyboard",
+    "amountUsd": 180,
+    "daysSincePurchase": 12,
+    "status": "delivered"
+  },
+  {
+    "orderId": "ORD-1002",
+    "tenantId": "acme",
+    "customerEmail": "alice.synth@example.com",
+    "customerPhone": "+1-415-555-0101",
+    "ticketId": "TCK-402911",
+    "item": "Enterprise GPU Workstation",
+    "amountUsd": 1450,
+    "daysSincePurchase": 8,
+    "status": "delivered"
+  },
+  {
+    "orderId": "ORD-1003",
+    "tenantId": "acme",
+    "customerEmail": "bob.synth@example.com",
+    "customerPhone": "+1-415-555-0102",
+    "ticketId": "TCK-402912",
+    "item": "USB-C Docking Station",
+    "amountUsd": 220,
+    "daysSincePurchase": 45,
+    "status": "delivered"
+  },
+  {
+    "orderId": "ORD-2001",
+    "tenantId": "globex",
+    "customerEmail": "carol.synth@example.org",
+    "customerPhone": "+1-212-555-0199",
+    "ticketId": "TCK-900101",
+    "item": "Studio Monitor Pair",
+    "amountUsd": 340,
+    "daysSincePurchase": 5,
+    "status": "delivered"
+  }
+]

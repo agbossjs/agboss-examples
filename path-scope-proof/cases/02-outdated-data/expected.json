@@ -1,0 +1,6 @@
+{
+  "caseId": "02-outdated-data",
+  "expectedCode": "input.outdated-on-path",
+  "expectedWorkflowName": "outdated-data-broken-workflow",
+  "expectedStepName": "build-receipt-broken-action"
+}

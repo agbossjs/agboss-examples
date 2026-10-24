@@ -1,0 +1,23 @@
+[
+  {
+    "threadId": "thread-drift-1003",
+    "tenantId": "acme",
+    "turns": [
+      {
+        "turn": 1,
+        "customerMessage": "Hi, my email is bob.synth@example.com and my ticket is TCK-402912. I bought order ORD-1003 (USB-C Docking Station, $220) 45 days ago.",
+        "agentReply": "Hello! I noted your order ORD-1003 ($220, purchased 45 days ago) under ticket TCK-402912. Under our old v1.0 policy, returns were open for 90 days [policy]."
+      },
+      {
+        "turn": 2,
+        "customerMessage": "I am still testing the docking station with my second laptop before deciding whether to return ORD-1003.",
+        "agentReply": "Understood! We have kept order ORD-1003 on file for your thread [policy]."
+      },
+      {
+        "turn": 3,
+        "customerMessage": "Okay, please go ahead and process the refund for my order ORD-1003 now.",
+        "expectedDecision": "denied-past-30-day-window"
+      }
+    ]
+  }
+]

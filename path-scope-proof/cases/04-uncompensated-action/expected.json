@@ -1,0 +1,6 @@
+{
+  "caseId": "04-uncompensated-action",
+  "expectedCode": "flow.uncompensated-action",
+  "expectedWorkflowName": "uncompensated-broken-workflow",
+  "expectedStepName": "reserve-seat-broken-action"
+}

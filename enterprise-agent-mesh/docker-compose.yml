@@ -1,0 +1,35 @@
+services:
+  catalog-mcp:
+    image: node:22-alpine
+    working_dir: /workspace/enterprise-agent-mesh
+    command: ["npx", "tsx", "catalog-mcp/server.ts"]
+    environment:
+      PORT: "8082"
+      SQLITE_PATH: "/data/catalog.sqlite"
+    ports:
+      - "8082:8082"
+
+  billing-service:
+    image: node:22-alpine
+    working_dir: /workspace/enterprise-agent-mesh
+    command: ["npx", "tsx", "billing-service/server.ts"]
+    environment:
+      PORT: "8081"
+      SQLITE_PATH: "/data/billing.sqlite"
+    ports:
+      - "8081:8081"
+
+  triage-gateway:
+    image: node:22-alpine
+    working_dir: /workspace/enterprise-agent-mesh
+    command: ["npx", "tsx", "src/application.ts"]
+    environment:
+      PORT: "8080"
+      BILLING_A2A_URL: "http://billing-service:8081/a2a"
+      CATALOG_MCP_URL: "http://catalog-mcp:8082/mcp"
+      SQLITE_PATH: "/data/triage.sqlite"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - billing-service
+      - catalog-mcp

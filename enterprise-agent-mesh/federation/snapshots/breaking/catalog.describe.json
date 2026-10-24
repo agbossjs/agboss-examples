@@ -1,0 +1,444 @@
+{
+  "schema": 1,
+  "ok": true,
+  "command": "describe",
+  "result": {
+    "application": {
+      "name": "catalog-application",
+      "version": "1.0.0",
+      "workflows": [
+        "catalog-workflow"
+      ],
+      "implementations": [
+        {
+          "contract": "Clock",
+          "implementation": "SystemClock",
+          "reason": "default"
+        },
+        {
+          "contract": "IdGenerator",
+          "implementation": "RandomIdGenerator",
+          "reason": "default"
+        },
+        {
+          "contract": "Logger",
+          "implementation": "ConsoleLogger",
+          "reason": "default"
+        },
+        {
+          "contract": "BaseCheckpointSaver",
+          "implementation": "SqliteCheckpointSaver",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionRecordRepository",
+          "implementation": "SqliteExecutionRecordRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "CostLedgerRepository",
+          "implementation": "SqliteCostLedgerRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "PausedExecutionRepository",
+          "implementation": "SqlitePausedExecutionRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionLeaseRepository",
+          "implementation": "SqliteExecutionLeaseRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionTreeRepository",
+          "implementation": "SqliteExecutionTreeRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "RateLimitRepository",
+          "implementation": "SqliteRateLimitRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "MeshRequestRepository",
+          "implementation": "SqliteMeshRequestRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ExecutionHistoryRepository",
+          "implementation": "SqliteExecutionHistoryRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "ChildExecutionQueueRepository",
+          "implementation": "InMemoryChildExecutionQueueRepository",
+          "reason": "default"
+        }
+      ],
+      "modelProviders": [
+        {
+          "name": "catalog-offline-model-provider",
+          "className": "CatalogOfflineModelProvider",
+          "reason": "listed",
+          "serves": [
+            "/^offline\\//u"
+          ],
+          "isTransport": true
+        }
+      ],
+      "budgets": [
+        {
+          "name": "catalog-app-daily-budget",
+          "scope": "application",
+          "period": "day"
+        },
+        {
+          "name": "catalog-tenant-daily-budget",
+          "scope": "tenant",
+          "period": "day"
+        },
+        {
+          "name": "catalog-execution-budget",
+          "scope": "execution"
+        }
+      ],
+      "executionBudgets": [
+        {
+          "workflow": "catalog-workflow",
+          "name": "catalog-execution-budget",
+          "isOwn": false
+        }
+      ],
+      "observers": [],
+      "warnings": [],
+      "maxConcurrentSteps": null,
+      "tree": [
+        {
+          "name": "catalog-workflow",
+          "version": "1.0.0",
+          "starts": [
+            "catalog-workflow-start (SkuLookupInputDto)"
+          ],
+          "children": []
+        }
+      ],
+      "channels": [],
+      "contracts": {
+        "exports": [
+          {
+            "kind": "mcp",
+            "expose": "catalog-mcp",
+            "version": "1.0.0",
+            "tool": "catalog-workflow-start",
+            "input": {
+              "dto": "SkuLookupInputDto",
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+            }
+          }
+        ],
+        "imports": [],
+        "schemas": {
+          "SkuLookupInputDto": {
+            "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "description": "Product SKU code (e.g. SKU-GPU-900)"
+                }
+              },
+              "required": [
+                "sku"
+              ]
+            }
+          }
+        }
+      },
+      "environment": {
+        "name": "dev",
+        "fields": {
+          "sqlitePath": "\":memory:\"",
+          "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
+          "meshSigningKey": "*** (MESH_SIGNING_KEY)",
+          "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+        }
+      }
+    },
+    "workflows": [
+      {
+        "name": "catalog-workflow",
+        "version": "1.0.0",
+        "profile": "base",
+        "config": "d1b1e325",
+        "piiPolicies": [],
+        "flow": [
+          "start(CatalogWorkflowStart)",
+          "  .returns(SkuLookupInputDto)",
+          "  .toAgent(LookupSkuAgent)",
+          "  .returns(SkuDetailsDto)",
+          "  .toFinish(CatalogWorkflowFinish)"
+        ],
+        "inputs": [
+          "lookup-sku-agent ← request: catalog-workflow-start"
+        ],
+        "children": [],
+        "routers": [],
+        "agents": [
+          {
+            "name": "lookup-sku-agent",
+            "model": "offline/catalog-chat",
+            "description": "Reads SKU details from CatalogInventoryService via lookup-sku-tool",
+            "tools": [
+              "lookup-sku-tool"
+            ],
+            "rag": []
+          }
+        ],
+        "models": [
+          {
+            "key": "agents.lookup-sku-agent",
+            "model": "offline/catalog-chat",
+            "provider": "catalog-offline-model-provider"
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup-sku-tool",
+            "description": "Looks up SKU pricing and stock levels in the enterprise catalog",
+            "kind": "local"
+          }
+        ],
+        "unassignedTools": [],
+        "limits": {
+          "maxSteps": 4,
+          "isMaxStepsSet": true,
+          "steps": {
+            "least": 1,
+            "most": 1
+          },
+          "maxVisits": {},
+          "worstCases": [
+            {
+              "start": "catalog-workflow-start",
+              "workflow": "catalog-workflow",
+              "executions": 1,
+              "concurrentExecutions": 1,
+              "steps": 1,
+              "isStepsCapped": false,
+              "treeSteps": 1,
+              "depth": 0,
+              "parts": [],
+              "children": []
+            }
+          ],
+          "maxConcurrentExecutions": 10,
+          "isMaxConcurrentExecutionsSet": false
+        },
+        "steps": {
+          "least": 1,
+          "most": 1
+        },
+        "configHash": "d1b1e32594be019bde56881753f13bb0029ed43d3a584a57b7ca228863112083",
+        "starts": [
+          "catalog-workflow-start"
+        ],
+        "finishes": [
+          "catalog-workflow-finish"
+        ],
+        "nodes": [
+          {
+            "name": "catalog-workflow-finish",
+            "kind": "workflow-finish",
+            "description": "Returns the SKU details",
+            "schemaHash": "1dca4300fb9f28d0e8589a0f94640a126093f6cc0be3d5f5aac9489f1b5f6fee",
+            "output": {
+              "dto": "SkuDetailsDto",
+              "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49"
+            }
+          },
+          {
+            "name": "catalog-workflow-start",
+            "kind": "workflow-start",
+            "description": "Looks up a SKU in the catalog workflow",
+            "schemaHash": "0b3e75df2283633d7cfc652f7ec1bfb0311129babdb1fa9e2ffd3be3e42ffee7",
+            "input": {
+              "dto": "SkuLookupInputDto",
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+            }
+          },
+          {
+            "name": "lookup-sku-agent",
+            "kind": "agent",
+            "description": "Reads SKU details from CatalogInventoryService via lookup-sku-tool",
+            "promptHash": "af59ddf37543d51edcfb97cac3cd6fe7fbad96169f80caea77c2247003e299ca",
+            "schemaHash": "803a3979b66abddc71afa70e51dc243ec38aea6f3d14eed6d9240d608c09c4af",
+            "input": {
+              "fields": {
+                "request": {
+                  "dto": "SkuLookupInputDto",
+                  "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+                }
+              }
+            },
+            "output": {
+              "dto": "SkuDetailsDto",
+              "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49"
+            },
+            "agent": {
+              "model": "offline/catalog-chat",
+              "provider": "catalog-offline-model-provider",
+              "reasoning": "provider",
+              "maxTokens": 8192,
+              "maxModelCalls": 12,
+              "maxToolCalls": 2,
+              "maxResultSize": 131072,
+              "uncompactedTurns": 5,
+              "tools": [
+                "lookup-sku-tool"
+              ],
+              "rag": [],
+              "guardrails": {
+                "input": [],
+                "output": []
+              },
+              "piiPolicies": [],
+              "judges": [],
+              "maxRetries": 0,
+              "instructions": "Call lookup-sku-tool for the requested SKU and return the SKU details."
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "catalog-workflow-start",
+            "to": "lookup-sku-agent",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "SkuLookupInputDto"
+              }
+            ]
+          },
+          {
+            "from": "lookup-sku-agent",
+            "to": "catalog-workflow-finish",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "SkuDetailsDto"
+              }
+            ]
+          }
+        ],
+        "onError": [],
+        "launches": [],
+        "modelComponents": [],
+        "schemas": {
+          "dtos": {
+            "SkuDetailsDto": {
+              "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Product title"
+                  },
+                  "unitPriceUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Unit price in USD"
+                  },
+                  "inStockUnits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Units currently in stock"
+                  }
+                },
+                "required": [
+                  "sku",
+                  "title",
+                  "unitPriceUsd",
+                  "inStockUnits"
+                ]
+              }
+            },
+            "SkuLookupInputDto": {
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code (e.g. SKU-GPU-900)"
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              }
+            }
+          },
+          "tools": {
+            "lookup-sku-tool": {
+              "promptHash": "3756c7818ce8e15518f1270e8f08b6946366c918421da7746ad2047164691353",
+              "schemaHash": "7a96293ba122018589b0fab91ec3c449308380b63613d09de6234c769ac7c40c",
+              "maxResultSize": 131072,
+              "input": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code (e.g. SKU-GPU-900)"
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Product title"
+                  },
+                  "unitPriceUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Unit price in USD"
+                  },
+                  "inStockUnits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Units currently in stock"
+                  }
+                },
+                "required": [
+                  "sku",
+                  "title",
+                  "unitPriceUsd",
+                  "inStockUnits"
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "warnings": []
+}
