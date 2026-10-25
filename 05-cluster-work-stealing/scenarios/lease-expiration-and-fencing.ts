@@ -10,7 +10,7 @@ import {
   resetClusterLedger,
   type CommittedChunkEffect,
 } from "../src/services/cluster-ledger.service.js";
-import { ChunkWorkerWorkflowStart } from "../src/workflow-starts/chunk-worker.workflow-start.js";
+import { ChunkWorkerWorkflowStart } from "../src/workflows/chunk-worker/chunk-worker.workflow-start.js";
 
 export interface LeaseFencingSummary {
   readonly staleHolderErrorCode: string;

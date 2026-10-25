@@ -18,8 +18,8 @@ export class CalculateQuoteTool
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  run(input: QuoteCalculationInputDto): Promise<QuoteCalculationOutputDto> {
+  async run(input: QuoteCalculationInputDto): Promise<QuoteCalculationOutputDto> {
     this.executionContext.signal.throwIfAborted();
-    return Promise.resolve(this.catalog.computeQuote(input.tier, input.seats));
+    return this.catalog.fetchQuote(input.tier, input.seats);
   }
 }

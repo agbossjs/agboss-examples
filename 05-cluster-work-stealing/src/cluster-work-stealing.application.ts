@@ -19,17 +19,17 @@ import { AppEnvironment } from "./environments/app.environment.js";
 import { StorageClusterHealthCheck } from "./health-checks/storage-cluster.health-check.js";
 import { ClusterLedgerService } from "./services/cluster-ledger.service.js";
 import { StorageBackendProbeService } from "./services/storage-backend-probe.service.js";
-import { ChunkFailedWorkflowFinish } from "./workflow-finishes/chunk-failed.workflow-finish.js";
-import { ChunkWorkerWorkflowFinish } from "./workflow-finishes/chunk-worker.workflow-finish.js";
-import { CoordinatorWorkflowFinish } from "./workflow-finishes/coordinator.workflow-finish.js";
-import { RecursiveDecomposerFailedWorkflowFinish } from "./workflow-finishes/recursive-decomposer-failed.workflow-finish.js";
-import { RecursiveDecomposerWorkflowFinish } from "./workflow-finishes/recursive-decomposer.workflow-finish.js";
-import { ChunkWorkerWorkflowStart } from "./workflow-starts/chunk-worker.workflow-start.js";
-import { CoordinatorWorkflowStart } from "./workflow-starts/coordinator.workflow-start.js";
-import { RecursiveDecomposerWorkflowStart } from "./workflow-starts/recursive-decomposer.workflow-start.js";
-import { ChunkWorkerWorkflow } from "./workflows/chunk-worker.workflow.js";
-import { CoordinatorWorkflow } from "./workflows/coordinator.workflow.js";
-import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer.workflow.js";
+import { ChunkFailedWorkflowFinish } from "./workflows/chunk-worker/chunk-failed.workflow-finish.js";
+import { ChunkWorkerWorkflowFinish } from "./workflows/chunk-worker/chunk-worker.workflow-finish.js";
+import { ChunkWorkerWorkflowStart } from "./workflows/chunk-worker/chunk-worker.workflow-start.js";
+import { ChunkWorkerWorkflow } from "./workflows/chunk-worker/chunk-worker.workflow.js";
+import { CoordinatorWorkflowFinish } from "./workflows/coordinator/coordinator.workflow-finish.js";
+import { CoordinatorWorkflowStart } from "./workflows/coordinator/coordinator.workflow-start.js";
+import { CoordinatorWorkflow } from "./workflows/coordinator/coordinator.workflow.js";
+import { RecursiveDecomposerFailedWorkflowFinish } from "./workflows/recursive-decomposer/recursive-decomposer-failed.workflow-finish.js";
+import { RecursiveDecomposerWorkflowFinish } from "./workflows/recursive-decomposer/recursive-decomposer.workflow-finish.js";
+import { RecursiveDecomposerWorkflowStart } from "./workflows/recursive-decomposer/recursive-decomposer.workflow-start.js";
+import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/recursive-decomposer.workflow.js";
 
 @Application({
   name: "cluster-work-stealing-application",

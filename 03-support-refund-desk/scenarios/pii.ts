@@ -11,7 +11,7 @@ import {
   resetRecordedToolOperations,
 } from "../src/services/order-book.service.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
-import { SupportRefundWorkflowStart } from "../src/workflow-starts/support-refund.workflow-start.js";
+import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
 
 export interface PiiScenarioResult {
   readonly modelSawMaskedEmailToken: boolean;

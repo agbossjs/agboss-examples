@@ -8,7 +8,7 @@ import {
   resetRecordedToolOperations,
 } from "./services/order-book.service.js";
 import { SupportRefundDeskApplication } from "./support-refund-desk.application.js";
-import { LiveSupportRefundWorkflowStart } from "./workflow-starts/live-support-refund.workflow-start.js";
+import { LiveSupportRefundWorkflowStart } from "./workflows/live-support-refund/live-support-refund.workflow-start.js";
 
 const pii = await runPiiScenario();
 const policy = await runPolicyScenario();

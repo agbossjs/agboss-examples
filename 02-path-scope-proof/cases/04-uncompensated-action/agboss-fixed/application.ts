@@ -3,7 +3,7 @@ import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
 import { OfflineNoopModelProvider } from "../../../src/model-providers/offline-noop.model-provider.js";
-import { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated-fixed.workflow.js";
+import { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated-fixed/uncompensated-fixed.workflow.js";
 
 export { CapturePaymentAction } from "../../../src/actions/capture-payment.action.js";
 export { FormatDeclinedReceiptAction } from "../../../src/actions/format-declined-receipt.action.js";
@@ -13,9 +13,9 @@ export { ReserveSeatAction } from "../../../src/actions/reserve-seat.action.js";
 export { BookingRequestDto } from "../../../src/dto/booking-request.dto.js";
 export { PaymentReceiptDto } from "../../../src/dto/payment-receipt.dto.js";
 export { SeatReservationDto } from "../../../src/dto/seat-reservation.dto.js";
-export { UncompensatedFixedFinish } from "../../../src/workflow-finishes/uncompensated-fixed.workflow-finish.js";
-export { UncompensatedFixedStart } from "../../../src/workflow-starts/uncompensated-fixed.workflow-start.js";
-export { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated-fixed.workflow.js";
+export { UncompensatedFixedFinish } from "../../../src/workflows/uncompensated-fixed/uncompensated-fixed.workflow-finish.js";
+export { UncompensatedFixedStart } from "../../../src/workflows/uncompensated-fixed/uncompensated-fixed.workflow-start.js";
+export { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated-fixed/uncompensated-fixed.workflow.js";
 
 @Application({
   name: "case-04-uncompensated-action-fixed-application",

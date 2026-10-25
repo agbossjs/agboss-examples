@@ -1,28 +1,59 @@
-# `enterprise-agent-mesh` — A2A, MCP, Ed25519 Mesh Envelopes & Federation Blast Radius
+# `06-enterprise-agent-mesh` — Multi-Service A2A, MCP, Ed25519 Envelopes, Loop Guard & Federation Blast Radius
 
-> **Priority:** P1 — Advanced Distributed Mesh Proof  
-> **Principle:** Promise → Failure Injection → Reproducible Proof
+## 1. Architecture Diagram & Microservice Topology
 
-## 1. Engineering Promises Tested
+```text
+                       ┌─────────────────────────────────────────────────┐
+                       │  apps/1-order-gateway/src/                      │
+  HTTP / CLI Request ──▶  TriageGatewayApplication                       │
+                       │  workflows/triage/triage.workflow.ts            │
+                       │    └── TriageAgent                              │
+                       │          ├── SearchCatalogTool (@McpTool)       │
+                       │          └── AskBillingTool (@Tool -> @A2AAgent)│
+                       └───────────┬─────────────────────────┬───────────┘
+                                   │                         │
+            MCP (JSON-RPC +        │                         │ A2A (HTTP + Bearer Auth +
+            _meta.callId +         │                         │ Ed25519 agboss-mesh JWS)
+            agboss.dev/mesh JWS)   ▼                         ▼
+┌──────────────────────────────────────────┐   ┌──────────────────────────────────────────┐
+│  apps/3-catalog-mcp/src/                 │   │  apps/2-billing-a2a/src/                 │
+│  CatalogApplication                      │   │  BillingApplication                      │
+│  mcp/catalog.mcp-expose.ts (@McpExpose)  │   │  a2a/billing.a2a-expose.ts (@A2AExpose)  │
+│    ├── LookupSkuTool                     │   │    └── workflows/billing/                │
+│    └── workflows/catalog/                │   │          └── ResolveBillingInquiryAction │
+└──────────────────────────────────────────┘   └──────────────────────────────────────────┘
+```
 
-| Promise | Threat / Failure Injected | AGBoss Mechanism | Executable Proof |
-|---|---|---|---|
-| **Host-controlled A2A authentication & tenant isolation** | Caller sends no Bearer key or attempts to spoof tenant identity | `@A2AExpose` + `a2aHttpListener` + `A2ACallerResolver` (`A2ACallerResolution.unauthenticated` / `.resolved`) | [`tests/a2a-contract-and-auth.test.ts`](./tests/a2a-contract-and-auth.test.ts) |
-| **Cryptographic mesh identity, loop detection & hop limits** | Attacker forges Ed25519 `agboss-mesh` signature, or cyclic A→B→A / deep hop chains occur | `@Application({ mesh: { signingKey, peers }, maxMeshHops })`, `MeshLoopDetectedError`, `HopsLimitExceededError` | [`tests/mesh-loop-and-hops.test.ts`](./tests/mesh-loop-and-hops.test.ts) |
-| **Idempotent MCP tool execution across retries** | Network retry resends `tools/call` with the same `_meta.callId` | `@McpExpose` + `createMcpService` + `SqliteMeshRequestRepository` deduplication | [`tests/mcp-idempotency.test.ts`](./tests/mcp-idempotency.test.ts) |
-| **Cross-repo contract verification & Blast Radius** | Producer (`billing-application` / `catalog-application`) ships breaking DTO changes or drops an MCP tool | `agboss describe --json` + `agboss check --federation <dir>` (`[federation.incompatible-schema]`, `[federation.missing-target]`) + `agboss hub show` | [`tests/federation-blast-radius.test.ts`](./tests/federation-blast-radius.test.ts) |
+## 2. Three Core Engineering Guarantees Proven
 
-## 2. Architecture
+1. **Ed25519 Mesh Envelope + Infinite Loop / Hop Protection (`MeshLoopDetectedError`, `HopsLimitExceededError`):**
+   - Every cross-service call carries a signed `agboss-mesh` Ed25519 JWS envelope recording `origin`, `callChain`, and `bodyHash`.
+   - Forged signatures are rejected before execution with `401 mesh.signature-invalid`.
+   - Cyclic calls (`A → B → A`) throw `MeshLoopDetectedError`, and call chains exceeding `maxMeshHops: 3` throw `HopsLimitExceededError`. `TriageWorkflow` catches both deterministically via `.onError(...)` and routes to `MeshLoopFallbackWorkflowFinish`.
+2. **Idempotent Deduplication of MCP Tool Calls (`_meta.callId`):**
+   - When `1-order-gateway` invokes `lookup-sku-tool` on `3-catalog-mcp` and retries with the same `_meta.callId`, `SqliteMeshRequestRepository` deduplicates the call and returns the cached result without re-running `CatalogInventoryService`.
+3. **Static Cross-Service Contract Verification (`agboss check --federation`):**
+   - `federation/` holds exported contract snapshots (`agboss describe --json`) for all 3 microservices.
+   - If `2-billing-a2a` introduces a breaking DTO change (e.g., adding a required `accountRegion` field to `BillingInquiryDto`) or `3-catalog-mcp` removes an exported MCP tool, `agboss check --federation` fails at CI time (`federation.incompatible-schema`, `federation.missing-target`) and prints the exact consumer blast radius (`triage-gateway-application › triage-workflow`).
 
-- [`src/enterprise-agent-mesh.application.ts`](./src/enterprise-agent-mesh.application.ts) — `TriageGatewayApplication` consuming `BillingA2AAgent` (`@A2AAgent`) and `CatalogMcpServer` (`@McpServer` / `@McpTool`), with `.onError(MeshLoopDetectedError, ...)` and `.onError(HopsLimitExceededError, ...)`.
-- [`billing-service/billing.application.ts`](./billing-service/billing.application.ts) — `BillingApplication` exposing `BillingWorkflowStart` via `@A2AExpose` with `BillingA2aCallerResolver` and `maxMeshHops: 3`.
-- [`catalog-mcp/catalog.application.ts`](./catalog-mcp/catalog.application.ts) — `CatalogApplication` exposing `LookupSkuTool` and `CatalogWorkflowStart` via `@McpExpose`.
-- [`federation/verify-federation.ts`](./federation/verify-federation.ts) — Compares `agboss describe --json` snapshots in [`federation/snapshots/compatible/`](./federation/snapshots/compatible) and [`federation/snapshots/breaking/`](./federation/snapshots/breaking) and stitches the mesh via `agboss hub show --json`.
+## 3. Project Layout
 
-## 3. Commands
+```text
+06-enterprise-agent-mesh/
+  ├── apps/
+  │   ├── 1-order-gateway/src/          # Gateway service calling service 2 via A2A and service 3 via MCP
+  │   ├── 2-billing-a2a/src/            # Remote billing microservice (@A2AExpose)
+  │   └── 3-catalog-mcp/src/            # Remote product catalog microservice (@McpExpose)
+  ├── federation/                       # Contract snapshots for `agboss check --federation` & `agboss hub show`
+  └── tests/                            # Symmetric unit and multi-service mesh integration tests
+      ├── actions/resolve-billing-inquiry.action.test.ts
+      └── workflows/triage/triage.workflow.test.ts
+```
+
+## 4. Commands
 
 ```bash
-npm run check   # Static verification across all 3 applications + TypeScript + ESLint
-npm test        # Run all 4 executable proof suites
-npm run demo    # Run deterministic offline mesh + federation proof
+npm run check   # Validates all 3 microservice applications + TypeScript + ESLint
+npm test        # Runs unit + multi-service A2A, MCP, loop, and federation tests
+npm run demo    # Runs live loopback A2A + federation blast-radius proof
 ```

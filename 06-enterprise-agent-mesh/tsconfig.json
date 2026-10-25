@@ -13,10 +13,7 @@
     "isolatedModules": true
   },
   "include": [
-    "src/**/*.ts",
-    "triage-gateway/**/*.ts",
-    "billing-service/**/*.ts",
-    "catalog-mcp/**/*.ts",
+    "apps/**/*.ts",
     "federation/**/*.ts",
     "tests/**/*.ts",
     ".agboss/**/*.d.ts"

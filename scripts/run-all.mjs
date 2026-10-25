@@ -49,10 +49,10 @@ export const PROJECTS = [
     primaryProof: "A2A, MCP, federation, cross-service tracing",
   },
   {
-    name: "07-langgraph-migration-smoke",
+    name: "07-langgraph-migration",
     priority: "P0",
     mode: "model-assisted",
-    primaryProof: "AI coding agents can migrate and validate an application",
+    primaryProof: "Before/After migration from raw LangGraph God State to AGBoss narrow DTOs & Flow DSL",
   },
 ];
 

@@ -6,8 +6,8 @@ import {
   getClusterLedgerSnapshot,
   resetClusterLedger,
 } from "../src/services/cluster-ledger.service.js";
-import { CoordinatorWorkflowStart } from "../src/workflow-starts/coordinator.workflow-start.js";
-import { RecursiveDecomposerWorkflowStart } from "../src/workflow-starts/recursive-decomposer.workflow-start.js";
+import { CoordinatorWorkflowStart } from "../src/workflows/coordinator/coordinator.workflow-start.js";
+import { RecursiveDecomposerWorkflowStart } from "../src/workflows/recursive-decomposer/recursive-decomposer.workflow-start.js";
 
 export interface WorkStealingScenarioResult {
   readonly batchStatus: ExecutionStatus;

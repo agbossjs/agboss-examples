@@ -16,7 +16,7 @@ import {
   resetOperationLedger,
 } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
-import { HitlHoldSagaWorkflowStart } from "../src/workflow-starts/hitl-hold-saga.workflow-start.js";
+import { HitlHoldSagaWorkflowStart } from "../src/workflows/hitl-hold-saga/hitl-hold-saga.workflow-start.js";
 
 export interface CancelAndRollbackScenarioResult {
   readonly initialStatus: ExecutionStatus;

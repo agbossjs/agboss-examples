@@ -22,8 +22,8 @@ import {
   resetOperationLedger,
 } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
-import { BudgetSagaWorkflowStart } from "../src/workflow-starts/budget-saga.workflow-start.js";
-import { HitlHoldSagaWorkflowStart } from "../src/workflow-starts/hitl-hold-saga.workflow-start.js";
+import { BudgetSagaWorkflowStart } from "../src/workflows/budget-saga/budget-saga.workflow-start.js";
+import { HitlHoldSagaWorkflowStart } from "../src/workflows/hitl-hold-saga/hitl-hold-saga.workflow-start.js";
 
 export interface RollbackCrashScenarioResult {
   readonly compensationFailedErrorSurfaced: boolean;

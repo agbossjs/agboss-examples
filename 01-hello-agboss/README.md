@@ -1,36 +1,86 @@
-# `hello-agboss` — First-Run & Packaging Smoke Proof
+# `01-hello-agboss` — First-Run, Real HTTP Service DI, Web Server & CLI Scaffolding Proof
 
 ## 1. What problem this example addresses
 
-When evaluating an agentic framework, two failures commonly block adoption on day one:
-1. Packaging drift — distributed npm tarballs omit compiled declarations, CLI binaries, templates, or agent skills that existed in the monorepo.
-2. Unverified runtime wiring — dependency injection, router branching, tool execution, and typed DTO assembly fail when imported strictly via public package entrypoints (`agboss`, `agboss/dto`, `agboss/testing`).
+When evaluating an agentic framework, three questions come up on day one:
+1. **Packaging & CLI parity:** Do distributed npm tarballs (`agboss` and `agboss-cli`) include all compiled declarations, CLI generators (`agboss create`, `agboss generate`), templates, and the 13 coding-agent skills?
+2. **Real async DI & HTTP services:** How does an `@Injectable` service (`PricingCatalogService`) read URLs and secrets from `ApplicationContext.environment`, verify endpoint health in `async onInit()`, and pass `ExecutionContext.signal` + `ExecutionContext.step.idempotencyKey` to `fetch(...)` — while remaining trivially mockable in workflow/tool unit tests via `mockOf(PricingCatalogService)`?
+3. **Production HTTP backend integration:** How is an AGBoss application mounted into an HTTP server (`src/http/server.ts`) with multi-tenant headers (`x-tenant-id`, `x-user-id`, `x-thread-id`), `202 Accepted` on pauses, `/api/pauses/:pauseId/resume`, `/api/threads/:threadId/cancel`, and `/health/live` + `/health/ready` probes?
 
-## 2. Why naive implementations fail
+## 2. Canonical Project Layout (`1 class = 1 file`, Spring-style symmetric `tests/`)
 
-Naive examples either import directly from monorepo source paths (`../../packages/agboss/src`) or only print a console string without asserting typed workflow routing, DI resolution, static analyzer output (`.agboss/types.d.ts`), and clean `agboss create` project generation.
+```text
+src/
+  ├── hello-agboss.application.ts
+  ├── demo.ts
+  ├── http/
+  │   └── server.ts
+  ├── contexts/
+  │   ├── hello-tenant.context.ts
+  │   └── hello-execution.context.ts
+  ├── environments/
+  │   ├── app.environment.ts
+  │   ├── dev.environment.ts
+  │   └── test.environment.ts
+  ├── dto/
+  │   ├── customer-inquiry.dto.ts
+  │   ├── quote-calculation-input.dto.ts
+  │   ├── quote-calculation-output.dto.ts
+  │   └── support-reply.dto.ts
+  ├── workflows/
+  │   └── hello-agboss/
+  │       ├── hello-agboss.workflow.ts
+  │       ├── hello.workflow-start.ts
+  │       └── hello.workflow-finish.ts
+  ├── agents/
+  │   ├── quote-advisor/
+  │   │   ├── quote-advisor.agent.ts
+  │   │   └── quote-advisor.prompt.md
+  │   └── support-specialist/
+  │       ├── support-specialist.agent.ts
+  │       └── support-specialist.prompt.md
+  ├── routers/
+  │   └── intake-triage/
+  │       ├── intake-triage.router.ts
+  │       └── intake-triage.prompt.md
+  ├── tools/
+  │   └── calculate-quote.tool.ts
+  ├── services/
+  │   └── pricing-catalog.service.ts
+  ├── budgets/
+  │   ├── hello-application-daily.budget.ts
+  │   ├── hello-tenant-daily.budget.ts
+  │   └── hello-execution.budget.ts
+  └── model-providers/
+      └── openrouter-chat.model-provider.ts
 
-## 3. How AGBoss models and solves it
+tests/
+  ├── services/
+  │   └── pricing-catalog.service.test.ts
+  ├── tools/
+  │   └── calculate-quote.tool.test.ts
+  ├── http/
+  │   └── server.test.ts
+  └── workflows/
+      └── hello-agboss/
+          └── hello-agboss.workflow.test.ts
+```
 
-`hello-agboss` is a standalone consumer package that imports exclusively from the public `agboss` and `agboss-cli` packages:
-- **`@Application` (`HelloAgbossApplication`)** wires workflows, agents, routers, tools, injectable services, and model providers.
-- **`@Workflow` (`HelloAgbossWorkflow`)** defines a typed path from `HelloStart` through `IntakeTriageRouter` to either `SupportSpecialistAgent` (`GeneralQuestionCaseDto`) or `QuoteAdvisorAgent` (`PricingRequestCaseDto`, equipped with `CalculateQuoteTool`), converging on `HelloFinish`.
-- **`@Injectable` (`PricingCatalogService`)** is injected via constructor DI into `CalculateQuoteTool`.
-- **`agboss check`** generates `.agboss/types.d.ts` and `.agboss/execution.d.ts`, validates the flow graph, and syncs the 13 framework skills into `.claude/skills/agboss/`.
-
-## 4. Architecture diagram
+## 3. Architecture diagram
 
 ```mermaid
 flowchart LR
-    Start["HelloStart (CustomerInquiryDto)"] --> Router["IntakeTriageRouter"]
-    Router -- "GeneralQuestionCaseDto" --> Support["SupportSpecialistAgent"]
-    Router -- "PricingRequestCaseDto" --> Quote["QuoteAdvisorAgent"]
-    Quote -. "calls" .-> Tool["CalculateQuoteTool (DI: PricingCatalogService)"]
-    Support --> Finish["HelloFinish (SupportReplyDto)"]
+    HTTP["POST /api/inquiries (src/http/server.ts)"] --> Start["HelloWorkflowStart (CustomerInquiryDto)"]
+    Start --> Router["IntakeTriageRouter"]
+    Router --> Support["SupportSpecialistAgent"]
+    Router --> Quote["QuoteAdvisorAgent"]
+    Quote -. "calls" .-> Tool["CalculateQuoteTool"]
+    Tool -. "DI" .-> Service["PricingCatalogService (fetch /quotes + Idempotency-Key)"]
+    Support --> Finish["HelloWorkflowFinish (SupportReplyDto)"]
     Quote --> Finish
 ```
 
-## 5. Quick start commands
+## 4. Quick start commands
 
 ```bash
 npm install
@@ -38,29 +88,3 @@ npm run check
 npm test
 npm run demo
 ```
-
-## 6. Offline deterministic mode
-
-All three primary commands (`npm run check`, `npm test`, `npm run demo`) run completely offline with zero external API keys:
-- `npm test` uses `testWith(HelloAgbossApplication)` (`agboss/testing`) and runs an isolated `agboss create` smoke test in a temporary directory.
-- `npm run demo` boots `createApp(HelloAgbossApplication)` with an offline deterministic `@ModelProvider` transport and executes both workflow branches end-to-end.
-
-## 7. Optional live-model mode
-
-Set `OPENROUTER_API_KEY` in `.env` (copied from `.env.example`) to run against a live model provider via `OpenRouterModelProvider`.
-
-## 8. Failure scenarios and how to run them
-
-- **Static contract check:** `npm run check` (runs `agboss check && tsc --noEmit && eslint`).
-- **Component & routing test suite:** `npx vitest run tests/smoke.test.ts`
-- **Isolated `agboss create` CLI scaffold proof:** `npx vitest run tests/create-project.test.ts`
-
-## 9. Expected proof output
-
-- `npm run check` exits `0` and generates `.agboss/types.d.ts`, `.agboss/execution.d.ts`, and `.claude/skills/agboss/references/01..13`.
-- `npm test` passes both `tests/smoke.test.ts` and `tests/create-project.test.ts`.
-- `npm run demo` executes both `GeneralQuestionCaseDto` and `PricingRequestCaseDto` paths and prints verified JSON execution summaries.
-
-## 10. Guarantee boundary (what remains the user's responsibility)
-
-AGBoss guarantees compile-time & static-analysis verification of workflow wiring, DTO path availability, constructor DI resolution, and deterministic test execution. Business pricing rules inside `PricingCatalogService` and prompt quality inside `*.prompt.md` remain the application's responsibility.

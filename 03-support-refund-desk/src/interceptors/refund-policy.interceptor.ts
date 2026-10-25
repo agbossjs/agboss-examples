@@ -4,7 +4,7 @@ import {
   type BeforeToolCall,
   type ToolCallContext,
 } from "agboss";
-import { SupportTenantContext } from "../dto/support-tenant-context.dto.js";
+import { SupportTenantContext } from "../contexts/support-tenant.context.js";
 import { OrderBookService } from "../services/order-book.service.js";
 
 @ToolInterceptor({

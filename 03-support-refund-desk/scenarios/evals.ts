@@ -14,7 +14,7 @@ import {
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import { resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
-import { SupportRefundWorkflowStart } from "../src/workflow-starts/support-refund.workflow-start.js";
+import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
 
 const execFileAsync = promisify(execFile);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");

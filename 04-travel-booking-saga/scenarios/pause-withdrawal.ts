@@ -12,7 +12,7 @@ import {
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
-import { QuorumSagaWorkflowStart } from "../src/workflow-starts/quorum-saga.workflow-start.js";
+import { QuorumSagaWorkflowStart } from "../src/workflows/quorum-saga/quorum-saga.workflow-start.js";
 
 export interface PauseWithdrawalScenarioResult {
   readonly status: ExecutionStatus;

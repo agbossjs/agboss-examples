@@ -11,7 +11,7 @@ import {
   resetOperationLedger,
 } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
-import { PaymentSagaWorkflowStart } from "../src/workflow-starts/payment-saga.workflow-start.js";
+import { PaymentSagaWorkflowStart } from "../src/workflows/payment-saga/payment-saga.workflow-start.js";
 
 export interface PaymentFailureScenarioResult {
   readonly status: ExecutionStatus;

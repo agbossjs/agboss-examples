@@ -27,7 +27,7 @@ const TARGET_DIRS = [
   "04-travel-booking-saga",
   "05-cluster-work-stealing",
   "06-enterprise-agent-mesh",
-  "07-langgraph-migration-smoke",
+  "07-langgraph-migration",
 ];
 
 const args = process.argv.slice(2);

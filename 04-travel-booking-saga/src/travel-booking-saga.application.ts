@@ -15,10 +15,10 @@ import { SagaTenantDailyBudget } from "./budgets/saga-tenant-daily.budget.js";
 import { CorporateBookingApprovalChannel } from "./channels/corporate-booking-approval.channel.js";
 import { AppEnvironment } from "./environments/app.environment.js";
 import { SagaOfflineModelProvider } from "./model-providers/saga-offline.model-provider.js";
-import { BudgetSagaWorkflow } from "./workflows/budget-saga.workflow.js";
-import { HitlHoldSagaWorkflow } from "./workflows/hitl-hold-saga.workflow.js";
-import { PaymentSagaWorkflow } from "./workflows/payment-saga.workflow.js";
-import { QuorumSagaWorkflow } from "./workflows/quorum-saga.workflow.js";
+import { BudgetSagaWorkflow } from "./workflows/budget-saga/budget-saga.workflow.js";
+import { HitlHoldSagaWorkflow } from "./workflows/hitl-hold-saga/hitl-hold-saga.workflow.js";
+import { PaymentSagaWorkflow } from "./workflows/payment-saga/payment-saga.workflow.js";
+import { QuorumSagaWorkflow } from "./workflows/quorum-saga/quorum-saga.workflow.js";
 
 @Application({
   name: "travel-booking-saga-application",

@@ -13,9 +13,24 @@ import { CitationCodeJudge } from "../judges/citation-code/citation-code.judge.j
 import { GroundedAnswerJudge } from "../judges/grounded-answer/grounded-answer.judge.js";
 import { IssueRefundTool } from "../tools/issue-refund.tool.js";
 import { LookupOrderTool } from "../tools/lookup-order.tool.js";
-import { SupportRefundWorkflowFinish } from "../workflow-finishes/support-refund.workflow-finish.js";
-import { SupportRefundWorkflowStart } from "../workflow-starts/support-refund.workflow-start.js";
+import { SupportRefundWorkflowFinish } from "../workflows/support-refund/support-refund.workflow-finish.js";
+import { SupportRefundWorkflowStart } from "../workflows/support-refund/support-refund.workflow-start.js";
 
+/**
+ * Why `@EvalSuite` is a first-class declarative component in AGBoss:
+ *
+ * 1. **Static verification (`agboss check`):** The compiler and static analyzer verify that
+ *    `start`, `pastTurn(Start, ..., Finish, ...)`, `toolCall(Tool, ...)`, and `judgedBy(Judge)`
+ *    all match the workflow's real DTO contracts before a single model token is spent.
+ * 2. **Cost-ordered evaluation cascade (`EvalCascade.StopAtFirstFailure`):**
+ *    - `checkTrajectory()` ($0) verifies required/forbidden tool calls and argument invariants first.
+ *    - `judgedBy(CitationCodeJudge)` ($0 `DecidedBy.Code`) checks deterministic policy citation and cap rules.
+ *    - `judgedBy(GroundedAnswerJudge)` (`DecidedBy.Model`) only runs if the $0 checks pass.
+ * 3. **Compact Git baseline vs full local artifacts:**
+ *    - `npx agboss eval run --suite refund-desk-eval-suite --runs 2 --save-baseline eval/baseline/main-baseline.json`
+ *      writes a compact, git-diff-friendly per-case metrics snapshot (`passAtK`, `passHatK`, `flaky`, `avgSpendUsd`, `verdictSummary`).
+ *    - Full execution traces and HTML reports live in git-ignored `.agboss/eval/` for `agboss eval show --html` and `agboss eval ui`.
+ */
 @EvalSuite({
   name: "refund-desk-eval-suite",
   description:

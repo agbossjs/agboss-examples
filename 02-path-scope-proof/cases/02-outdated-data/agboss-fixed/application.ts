@@ -3,7 +3,7 @@ import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
 import { OfflineNoopModelProvider } from "../../../src/model-providers/offline-noop.model-provider.js";
-import { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-fixed.workflow.js";
+import { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-fixed/outdated-data-fixed.workflow.js";
 
 export { BuildReceiptAction } from "../../../src/actions/build-receipt.action.js";
 export { CalculateInitialShippingAction } from "../../../src/actions/calculate-initial-shipping.action.js";
@@ -15,9 +15,9 @@ export { OrderDraftDto } from "../../../src/dto/order-draft.dto.js";
 export { ShippingQuoteDto } from "../../../src/dto/shipping-quote.dto.js";
 export { TaxSummaryDto } from "../../../src/dto/tax-summary.dto.js";
 export { AddressChangeRouter } from "../../../src/routers/address-change/address-change.router.js";
-export { OutdatedDataFixedFinish } from "../../../src/workflow-finishes/outdated-data-fixed.workflow-finish.js";
-export { OutdatedDataFixedStart } from "../../../src/workflow-starts/outdated-data-fixed.workflow-start.js";
-export { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-fixed.workflow.js";
+export { OutdatedDataFixedFinish } from "../../../src/workflows/outdated-data-fixed/outdated-data-fixed.workflow-finish.js";
+export { OutdatedDataFixedStart } from "../../../src/workflows/outdated-data-fixed/outdated-data-fixed.workflow-start.js";
+export { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-fixed/outdated-data-fixed.workflow.js";
 
 @Application({
   name: "case-02-outdated-data-fixed-application",

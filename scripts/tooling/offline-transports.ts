@@ -895,9 +895,89 @@ export abstract class TriageOfflineTransport {
   }
 }
 
-/** 07-langgraph-migration-smoke deterministic transport. */
+/** 07-langgraph-migration deterministic transport. */
 export abstract class MigrationOfflineTransport {
   complete(request: OfflineTransportRequest): Promise<OfflineTransportResponse> {
+    if (request.tools.length === 0) {
+      return Promise.resolve({
+        text: JSON.stringify({
+          next: "research-planner-agent",
+          reason: "Customer requested a refund for a delayed order",
+        }),
+        usage: { inputTokens: 20, outputTokens: 10 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
+    const toolNames = request.tools.map((t) => t.name);
+    if (toolNames.includes("answer-research-question-dto")) {
+      return Promise.resolve({
+        text: "",
+        toolCalls: [
+          {
+            id: "call_plan_1",
+            name: "answer-research-question-dto",
+            arguments: {
+              items: [{ question: "Was the order delivered late?" }],
+            },
+          },
+        ],
+        usage: { inputTokens: 25, outputTokens: 12 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
+    if (toolNames.includes("answer-research-finding-dto")) {
+      return Promise.resolve({
+        text: "",
+        toolCalls: [
+          {
+            id: "call_research_1",
+            name: "answer-research-finding-dto",
+            arguments: {
+              question: "Was the order delivered late?",
+              answer: "Yes, delivered four days late",
+            },
+          },
+        ],
+        usage: { inputTokens: 30, outputTokens: 14 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
+    if (toolNames.includes("answer-reply-draft-dto")) {
+      return Promise.resolve({
+        text: "",
+        toolCalls: [
+          {
+            id: "call_draft_1",
+            name: "answer-reply-draft-dto",
+            arguments: {
+              text: "Four days late — sorry, refund of $15 is on its way.",
+              refundCents: 1_500,
+            },
+          },
+        ],
+        usage: { inputTokens: 35, outputTokens: 16 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
+    if (toolNames.includes("answer-reply-approved-dto")) {
+      return Promise.resolve({
+        text: "",
+        toolCalls: [
+          {
+            id: "call_review_1",
+            name: "answer-reply-approved-dto",
+            arguments: {},
+          },
+        ],
+        usage: { inputTokens: 30, outputTokens: 10 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
     const answerTool = request.tools[0]?.name ?? "answer";
     return Promise.resolve({
       text: "",
