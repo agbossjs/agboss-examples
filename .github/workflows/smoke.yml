@@ -1,65 +1,139 @@
-name: Smoke
+name: Smoke CI (Release Candidate & Examples Gate)
 
 on:
   push:
-    branches: [main]
+    branches: [main, "chore/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      framework_sha:
+        description: "Exact agbossjs/agboss commit SHA to validate (defaults to .agboss-version.json)"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  smoke:
-    name: P0 Offline Smoke & Static Proofs
+  smoke-gate:
+    name: Full P0 + P1 Packed Release-Candidate Gate (Node 24)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Checkout agboss-examples
+      - name: 1a. Checkout agboss-examples
         uses: actions/checkout@v4
 
-      - name: Checkout agboss framework (for pre-publish local tarball pack if npm package not yet live)
+      - name: 1b. Resolve & verify pinned framework SHA
+        id: pin
+        run: |
+          EXAMPLES_SHA="$(git rev-parse HEAD)"
+          PINNED_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('.agboss-version.json', 'utf8')).frameworkSha")"
+          TARGET_SHA="${{ inputs.framework_sha }}"
+          if [ -z "$TARGET_SHA" ]; then
+            TARGET_SHA="$PINNED_SHA"
+          fi
+          if [ -z "$TARGET_SHA" ]; then
+            echo "::error::Missing frameworkSha in .agboss-version.json and workflow_dispatch input"
+            exit 1
+          fi
+          echo "examples_sha=$EXAMPLES_SHA" >> "$GITHUB_OUTPUT"
+          echo "framework_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved examples_sha=$EXAMPLES_SHA"
+          echo "Resolved framework_sha=$TARGET_SHA"
+
+      - name: 1c. Checkout agbossjs/agboss at exact pinned SHA (no fallback to main)
         uses: actions/checkout@v4
         with:
           repository: agbossjs/agboss
+          ref: ${{ steps.pin.outputs.framework_sha }}
           path: .agboss-source
-        continue-on-error: true
 
-      - name: Setup Node.js 22
+      - name: 1d. Assert checked-out framework commit matches target SHA
+        run: |
+          ACTUAL_SHA="$(git -C .agboss-source rev-parse HEAD)"
+          EXPECTED_SHA="${{ steps.pin.outputs.framework_sha }}"
+          echo "Checked-out agboss SHA: $ACTUAL_SHA"
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "::error::Checked-out framework SHA ($ACTUAL_SHA) does not match expected SHA ($EXPECTED_SHA)"
+            exit 1
+          fi
+
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
 
-      - name: Install root tooling dependencies
-        run: npm install --no-audit --no-fund
+      - name: 2. Install root tooling & framework dependencies + run tooling tests
+        run: |
+          npm ci
+          npm run typecheck
+          npm --prefix .agboss-source ci
 
-      - name: Typecheck shared tooling
-        run: npm run typecheck
+      - name: 3. Verify framework source integrity & build agboss + agboss-cli
+        run: |
+          npm --prefix .agboss-source run check:root
+          npm --prefix .agboss-source run check:suppressions
+          npm --prefix .agboss-source run build
+          npm --prefix .agboss-source run check:api
+          npm --prefix .agboss-source run check:docs
 
-      - name: Pack and install framework artifacts if source available
-        if: hashFiles('.agboss-source/package.json') != ''
+      - name: 4. Pack agboss & agboss-cli release tarballs
         env:
-          AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-source
+          AGBOSS_REPO_DIR: .agboss-source
+          VERIFY_PINNED_FRAMEWORK_SHA: "1"
+        run: npm run pack:framework
+
+      - name: 5. Verify tarball inventory, isolated consumer & clean scaffold outside both repos
         run: |
-          npm --prefix .agboss-source ci --no-audit --no-fund
-          npm run pack:framework
           npm run verify:package
-          npm run install:packed
+          npm run verify:published -- --from-packed --version 0.1.0
 
-      - name: Run P0 static checks and deterministic tests
+      - name: 6. Install packed tarballs into example projects (01..07)
+        run: npm run install:packed
+
+      - name: 7. Run static graph & TypeScript checks across P0 + P1 (01..07)
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --reset --mode check
+
+      - name: 8. Run offline deterministic unit & fault-injection tests across P0 + P1 (01..07)
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --mode test
+
+      - name: 9. Run offline deterministic demos across P0 + P1 (01..07)
+        env:
+          AGBOSS_OFFLINE_VERIFY: "1"
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --mode demo
+
+      - name: 10. Collect and enforce fail-closed P0 + P1 proof report
         run: |
-          npm run check
-          npm test
-          npm run collect:results
+          node scripts/collect-results.mjs --provenance rc --require-p1
+          cat proof-report.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload proof results
+      - name: 11. Restore public package.json manifests and verify clean git status
+        run: |
+          npm run install:packed -- --restore
+          git status --short
+          DIRTY_TRACKED="$(git status --porcelain --untracked-files=no)"
+          if [ -n "$DIRTY_TRACKED" ]; then
+            echo "::error::Tracked files were left modified after restore:"
+            echo "$DIRTY_TRACKED"
+            exit 1
+          fi
+
+      - name: 12. Upload release proof artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-proof-results
+          name: agboss-release-proof-${{ steps.pin.outputs.framework_sha }}
           path: |
+            .packed/manifest.json
+            .packed/package-verification.json
+            .packed/published-verification.json
+            .packed/last-run.json
             proof-results.json
             proof-report.md
-          if-no-files-found: ignore
+          if-no-files-found: error

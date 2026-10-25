@@ -1,17 +1,25 @@
 import { createApp, ExecutionStatus } from "agboss";
-import { createHelloOfflineFetch } from "../../scripts/tooling/offline-transports.js";
+import {
+  createHelloOfflineFetch,
+  installOfflineNetworkGuard,
+  isLiveDemoRequested,
+  requireLiveApiKey,
+} from "../../scripts/tooling/offline-transports.js";
 import { HelloAgbossApplication } from "./hello-agboss.application.js";
 import { startPricingApiStubServer } from "./services/pricing-catalog.service.js";
 import { HelloWorkflowStart } from "./workflows/hello-agboss/hello.workflow-start.js";
 
 async function main(): Promise<void> {
-  const isLive = process.env.AGBOSS_LIVE_DEMO === "true";
+  const isLive = isLiveDemoRequested();
+  const liveApiKey = isLive ? requireLiveApiKey() : undefined;
+  const restoreFetch = isLive ? (): void => undefined : installOfflineNetworkGuard();
   const pricingStub = await startPricingApiStubServer();
   process.env.PRICING_API_BASE_URL = pricingStub.baseUrl;
 
   const app = await createApp(HelloAgbossApplication, {
     processEnv: {
       ...process.env,
+      OPENROUTER_API_KEY: liveApiKey ?? "offline-test-openrouter-api-key",
       PRICING_API_BASE_URL: pricingStub.baseUrl,
     },
     ...(isLive ? {} : { providerFetch: createHelloOfflineFetch() }),
@@ -89,6 +97,7 @@ async function main(): Promise<void> {
   } finally {
     await app.close();
     await pricingStub.close();
+    restoreFetch();
   }
 }
 

@@ -21,6 +21,8 @@ coverage/
 *.tgz
 proof-results.json
 proof-report.md
+published-proof-results.json
+published-proof-report.md
 eval-report.html
 
 # Migration benchmark run outputs (keep directory placeholder only)

@@ -9,7 +9,6 @@ import {
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
 } from "agboss";
-import { OpenRouterModelProvider } from "agboss/models";
 import { hours, seconds } from "agboss/units";
 import { SupportAppDailyBudget } from "./budgets/support-app-daily.budget.js";
 import { SupportExecutionBudget } from "./budgets/support-execution.budget.js";
@@ -35,7 +34,6 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
   piiPolicies: [CustomerContactPiiPolicy],
   toolInterceptors: [AuditTrailToolInterceptor],
   providers: [
-    OpenRouterModelProvider,
     SupportOfflineModelProvider,
     SqliteCheckpointSaver,
     SqliteExecutionRecordRepository,

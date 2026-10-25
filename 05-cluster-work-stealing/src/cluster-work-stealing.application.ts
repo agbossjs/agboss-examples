@@ -17,6 +17,7 @@ import { ClusterTenantDailyBudget } from "./budgets/cluster-tenant-daily.budget.
 import { ClusterQueueChunkSignOffChannel } from "./channels/cluster-queue-chunk-sign-off.channel.js";
 import { AppEnvironment } from "./environments/app.environment.js";
 import { StorageClusterHealthCheck } from "./health-checks/storage-cluster.health-check.js";
+import { ClusterOfflineModelProvider } from "./model-providers/cluster-offline.model-provider.js";
 import { ClusterLedgerService } from "./services/cluster-ledger.service.js";
 import { StorageBackendProbeService } from "./services/storage-backend-probe.service.js";
 import { ChunkFailedWorkflowFinish } from "./workflows/chunk-worker/chunk-failed.workflow-finish.js";
@@ -49,6 +50,7 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
   healthChecks: [StorageClusterHealthCheck],
   maxConcurrentSteps: 2,
   providers: [
+    ClusterOfflineModelProvider,
     ClusterQueueChunkSignOffChannel,
     ClusterLedgerService,
     StorageBackendProbeService,
