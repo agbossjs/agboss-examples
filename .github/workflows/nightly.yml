@@ -1,68 +1,110 @@
-name: Nightly Extended & Distributed Proofs
+name: Nightly Full Suite (P0 + P1 + Live Model Opt-In)
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       run_live_models:
-        description: "Enable live model evals & migration benchmark (requires OPENROUTER_API_KEY)"
-        type: boolean
+        description: "Run live LLM model smoke checks (requires OPENROUTER_API_KEY)"
         required: false
         default: false
+        type: boolean
+      framework_sha:
+        description: "Exact agbossjs/agboss commit SHA (defaults to .agboss-version.json)"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
-  nightly:
-    name: Extended Fault-Injection, Multi-Run Evals & P1 Distributed Scenarios
+  nightly-full:
+    name: Full P0 + P1 Verification Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout agboss-examples
         uses: actions/checkout@v4
 
-      - name: Checkout agbossjs/agboss
+      - name: Resolve pinned framework SHA
+        id: pin
+        run: |
+          PINNED_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('.agboss-version.json', 'utf8')).frameworkSha")"
+          TARGET_SHA="${{ inputs.framework_sha }}"
+          if [ -z "$TARGET_SHA" ]; then
+            TARGET_SHA="$PINNED_SHA"
+          fi
+          echo "framework_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout agbossjs/agboss at exact pinned SHA
         uses: actions/checkout@v4
         with:
           repository: agbossjs/agboss
+          ref: ${{ steps.pin.outputs.framework_sha }}
           path: .agboss-source
 
-      - name: Setup Node.js 22
+      - name: Assert checked-out framework commit matches target SHA
+        run: |
+          ACTUAL_SHA="$(git -C .agboss-source rev-parse HEAD)"
+          EXPECTED_SHA="${{ steps.pin.outputs.framework_sha }}"
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "::error::Checked-out framework SHA ($ACTUAL_SHA) does not match expected SHA ($EXPECTED_SHA)"
+            exit 1
+          fi
+
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
 
-      - name: Build, pack, verify, and install artifacts
+      - name: Install dependencies & pack framework
         env:
-          AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-source
+          AGBOSS_REPO_DIR: .agboss-source
+          VERIFY_PINNED_FRAMEWORK_SHA: "1"
         run: |
-          npm install --no-audit --no-fund
-          npm --prefix .agboss-source ci --no-audit --no-fund
+          npm ci
+          npm run typecheck
+          npm --prefix .agboss-source ci
           npm run pack:framework
           npm run verify:package
           npm run install:packed
 
-      - name: Run full P0 + P1 check, test, and demo suites
+      - name: Run P0 + P1 check, test, and demo
+        env:
+          AGBOSS_OFFLINE_VERIFY: "1"
         run: |
-          node scripts/run-all.mjs --reset --include-p1 --mode check
+          node scripts/run-all.mjs --include-p1 --reset --mode check
           node scripts/run-all.mjs --include-p1 --mode test
           node scripts/run-all.mjs --include-p1 --mode demo
 
-      - name: Collect proof results
-        if: always()
-        run: node scripts/collect-results.mjs
+      - name: Optional Live Model Smoke (01-hello-agboss)
+        if: ${{ inputs.run_live_models == true }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -n "$OPENROUTER_API_KEY" ]; then
+            npm --prefix 01-hello-agboss run demo:live
+          else
+            echo "OPENROUTER_API_KEY not configured; skipping live model run."
+          fi
 
-      - name: Upload Nightly Proof Artifacts
+      - name: Collect proof report & restore manifests
+        run: |
+          node scripts/collect-results.mjs --require-p1
+          cat proof-report.md >> "$GITHUB_STEP_SUMMARY"
+          npm run install:packed -- --restore
+
+      - name: Upload nightly proof report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-proof-results
+          name: nightly-proof-report-${{ steps.pin.outputs.framework_sha }}
           path: |
             .packed/manifest.json
             .packed/package-verification.json
+            .packed/last-run.json
             proof-results.json
             proof-report.md
-          retention-days: 14
+          if-no-files-found: error

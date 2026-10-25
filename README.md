@@ -79,11 +79,11 @@ npm run verify:package
 # 4. Install packed tarballs into 01..07/node_modules (restoring clean ^0.1.0 specs in package.json)
 npm run install:packed
 
-# 5. Run P0 static checks, tests, and offline demos (or add --include-p1 for all 7 projects)
-npm run check
-npm test
-npm run demo
-npm run collect:results
+# 5. Run P0 + P1 static checks, tests, and offline demos, then collect fail-closed proof report
+node scripts/run-all.mjs --include-p1 --reset --mode check
+node scripts/run-all.mjs --include-p1 --mode test
+node scripts/run-all.mjs --include-p1 --mode demo
+node scripts/collect-results.mjs --require-p1
 ```
 
 ### Workflow B — Public Consumer Workflow (Post-Publication on npm)

@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 /**
  * Section 4.2 & 4.3 (EX-02): Validate packed `agboss` and `agboss-cli` tarballs and verify
- * isolated installation, exports resolution, CLI `bin`, templates, and all 13 bundled skills
- * in a clean temporary directory outside both repositories.
+ * isolated installation, exports resolution, CLI `bin`, templates, JSON schema, and all 13 bundled
+ * skills in a clean temporary directory outside both repositories.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +23,9 @@ const MANIFEST_PATH = join(ROOT, ".packed", "manifest.json");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
 
 if (!existsSync(MANIFEST_PATH)) {
-  console.error("[verify-package] .packed/manifest.json not found. Run `npm run pack:framework` first.");
+  console.error(
+    "[verify-package] .packed/manifest.json not found. Run `npm run pack:framework` first.",
+  );
   process.exit(1);
 }
 
@@ -42,6 +52,7 @@ assert(agbossFiles.has("dist/a2a/index.js"), "agboss missing dist/a2a/index.js")
 assert(agbossFiles.has("dist/mcp/index.js"), "agboss missing dist/mcp/index.js");
 assert(agbossFiles.has("dist/rag/index.js"), "agboss missing dist/rag/index.js");
 assert(agbossFiles.has("dist/eslint/index.js"), "agboss missing dist/eslint/index.js");
+assert(agbossFiles.has("schema/profile.schema.json"), "agboss missing schema/profile.schema.json");
 assert(agbossFiles.has("skills/agboss/SKILL.md"), "agboss missing skills/agboss/SKILL.md");
 assert(
   agbossFiles.has("skills/agboss/references/13-migrating-from-langgraph.md"),
@@ -113,7 +124,9 @@ try {
     },
   );
 
-  console.log("[verify-package] 3/4 Verifying runtime subpath exports and zero monorepo leakage...");
+  console.log(
+    "[verify-package] 3/4 Verifying runtime subpath exports and zero monorepo leakage...",
+  );
   const probeScript = `
     import * as root from "agboss";
     import * as dto from "agboss/dto";
@@ -153,21 +166,29 @@ try {
   writeFileSync(join(isolatedDir, "probe.mjs"), probeScript, "utf8");
   execFileSync("node", ["probe.mjs"], { cwd: isolatedDir, stdio: "inherit" });
 
-  console.log("[verify-package] 4/4 Verifying packed CLI bin and `agboss create` in isolated workspace...");
+  console.log(
+    "[verify-package] 4/4 Verifying packed CLI bin and `agboss create` in isolated workspace...",
+  );
   const cliBin = join(isolatedDir, "node_modules", ".bin", "agboss");
   const cliExplicitBin = join(isolatedDir, "node_modules", ".bin", "agboss-cli");
   const proxyBin = join(isolatedDir, "node_modules", "agboss", "bin", "agboss.js");
   const helpOut = execFileSync(cliBin, ["--help"], { cwd: isolatedDir, encoding: "utf8" });
   assert(helpOut.includes("agboss"), "CLI --help did not print agboss usage");
-  const explicitHelpOut = execFileSync(cliExplicitBin, ["--help"], { cwd: isolatedDir, encoding: "utf8" });
+  const explicitHelpOut = execFileSync(cliExplicitBin, ["--help"], {
+    cwd: isolatedDir,
+    encoding: "utf8",
+  });
   assert(explicitHelpOut.includes("agboss"), "agboss-cli --help did not print agboss usage");
   const proxyHelpOut = execFileSync(process.execPath, [proxyBin, "--help"], {
     cwd: isolatedDir,
     encoding: "utf8",
   });
-  assert(proxyHelpOut.includes("agboss"), "agboss/bin/agboss.js local delegation did not print agboss usage");
+  assert(
+    proxyHelpOut.includes("agboss"),
+    "agboss/bin/agboss.js local delegation did not print agboss usage",
+  );
 
-  // Also verify empty-folder npx delegation from unpacked agboss-*.tgz using AGBOSS_CLI_PACKAGE_SPEC
+  // Verify empty-folder npx delegation from unpacked agboss-*.tgz using AGBOSS_CLI_PACKAGE_SPEC
   const unpackedAgbossDir = realpathSync(mkdtempSync(join(tmpdir(), "agboss-unpacked-bin-")));
   try {
     execFileSync("tar", ["-xzf", agboss.tarballPath, "-C", unpackedAgbossDir], { stdio: "pipe" });
@@ -220,8 +241,13 @@ try {
   // Verify synced skills (all 13 reference modules)
   const skillsRefsDir = join(scaffoldedDir, ".claude", "skills", "agboss", "references");
   assert(existsSync(skillsRefsDir), "Synced skills references directory missing after install/check");
-  const skillFiles = readdirSync(skillsRefsDir).filter((f) => f.endsWith(".md")).sort();
-  assert(skillFiles.length >= 13, `Expected at least 13 skill reference modules, found ${skillFiles.length}`);
+  const skillFiles = readdirSync(skillsRefsDir)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
+  assert(
+    skillFiles.length >= 13,
+    `Expected at least 13 skill reference modules, found ${skillFiles.length}`,
+  );
   assert(
     skillFiles.includes("13-migrating-from-langgraph.md"),
     "Missing 13-migrating-from-langgraph.md in synced skills",
@@ -238,9 +264,11 @@ try {
   assert(describeOut.includes("scaffolded-app-workflow"), "describe output missing workflow");
 
   const verificationReport = {
+    status: "PASSED",
     verifiedAt: new Date().toISOString(),
     nodeVersion: process.versions.node,
     sourceCommit: manifest.sourceCommit,
+    examplesSourceCommit: manifest.examplesSourceCommit ?? null,
     packages: {
       agboss: {
         name: agboss.name,
@@ -293,7 +321,9 @@ try {
     "utf8",
   );
 
-  console.log("[verify-package] All package verification checks PASSED (wrote .packed/package-verification.json).");
+  console.log(
+    "[verify-package] All package verification checks PASSED (wrote .packed/package-verification.json).",
+  );
 } finally {
   rmSync(isolatedDir, { recursive: true, force: true });
   rmSync(scaffoldParentDir, { recursive: true, force: true });
