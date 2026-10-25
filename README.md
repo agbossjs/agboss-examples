@@ -75,20 +75,36 @@ npm run pack:framework
 
 # 3. Verify tarball contents, isolated consumer imports, CLI bin & clean scaffold outside both repos
 npm run verify:package
+npm run verify:published -- --from-packed --version 0.1.0
 
 # 4. Install packed tarballs into 01..07/node_modules (restoring clean ^0.1.0 specs in package.json)
 npm run install:packed
 
-# 5. Run P0 + P1 static checks, tests, and offline demos, then collect fail-closed proof report
-node scripts/run-all.mjs --include-p1 --reset --mode check
-node scripts/run-all.mjs --include-p1 --mode test
-node scripts/run-all.mjs --include-p1 --mode demo
-node scripts/collect-results.mjs --require-p1
+# 5. Run P0 + P1 static checks, tests, and offline demos, then collect fail-closed RC proof report
+node scripts/run-all.mjs --provenance rc --include-p1 --reset --mode check
+node scripts/run-all.mjs --provenance rc --include-p1 --mode test
+AGBOSS_OFFLINE_VERIFY=1 node scripts/run-all.mjs --provenance rc --include-p1 --mode demo
+node scripts/collect-results.mjs --provenance rc --require-p1
+npm run install:packed -- --restore
 ```
 
-### Workflow B — Public Consumer Workflow (Post-Publication on npm)
+### Workflow B — Public Consumer & Post-Publication Registry Verification (Post-Publication on npm)
 
-Once `agboss@0.1.0` and `agboss-cli@0.1.0` are published to npm, any example directory can be cloned and installed directly from the registry without checking out the framework source tree:
+Once `agboss@0.1.0` and `agboss-cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 7 example projects:
+
+```bash
+# 1. Verify live npm registry metadata, isolated consumer subpath exports, and `agboss create` scaffold:
+npm run verify:published -- --live-registry --version 0.1.0
+
+# 2. Install live registry packages across all 7 examples and collect published-package proof report:
+npm run install:published -- --live-registry --version 0.1.0
+node scripts/run-all.mjs --provenance published --include-p1 --reset --mode check
+node scripts/run-all.mjs --provenance published --include-p1 --mode test
+AGBOSS_OFFLINE_VERIFY=1 node scripts/run-all.mjs --provenance published --include-p1 --mode demo
+npm run collect:published
+```
+
+Or run any individual example directory standalone directly from the registry:
 
 ```bash
 cd 01-hello-agboss

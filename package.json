@@ -18,17 +18,21 @@
     "node": ">=22.13"
   },
   "scripts": {
+    "pin:framework-sha": "node scripts/pin-framework-sha.mjs",
     "pack:framework": "node scripts/pack-framework.mjs",
     "verify:package": "node scripts/verify-package.mjs",
     "install:packed": "node scripts/install-packed.mjs",
+    "install:published": "node scripts/install-published.mjs",
     "restore:public": "node scripts/install-packed.mjs --restore",
     "verify:published": "node scripts/verify-published.mjs",
     "run:all": "node scripts/run-all.mjs",
     "collect:results": "node scripts/collect-results.mjs",
+    "collect:published": "node scripts/collect-results.mjs --provenance published --require-p1",
     "check": "node scripts/run-all.mjs --mode check",
     "test": "node scripts/run-all.mjs --mode test",
     "demo": "node scripts/run-all.mjs --mode demo",
     "test:tooling": "node --test scripts/run-all.test.mjs",
+    "test:harness": "node --test scripts/run-all.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && node --test scripts/run-all.test.mjs"
   },
   "devDependencies": {

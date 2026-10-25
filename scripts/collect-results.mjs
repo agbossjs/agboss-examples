@@ -1,19 +1,17 @@
 #!/usr/bin/env node
 /**
- * Section 13 & Round 2 P0-1: Strict, fail-closed release proof collector.
+ * Section 13, Round 2 P0-1 & Final Audit P0-3: Strict, fail-closed release proof collector
+ * with separated provenance modes (`--provenance rc` vs `--provenance published`).
  *
- * Collects machine-readable `proof-results.json` and human-readable `proof-report.md` from
- * `.packed/manifest.json`, `.packed/package-verification.json`, and `.packed/last-run.json`.
+ * Mode 1 — Release-Candidate Evidence (`--provenance rc`, default):
+ *   Reads `.packed/manifest.json`, `.packed/package-verification.json`, `.packed/last-run.json`.
+ *   Writes `proof-results.json` and `proof-report.md`.
  *
- * Invariants:
- *   - Explicit statuses: PASSED, FAILED, SKIPPED, NOT_RUN, BLOCKED.
- *   - P0 Gate is PASSED only if every P0 project exists on disk and has PASSED for check, test, AND demo.
- *   - P1 Gate is PASSED only if every P1 project exists on disk and has PASSED for check, test, AND demo.
- *     If P1 checks were not run, P1 Gate is NOT_RUN (never PASSED).
- *   - Package Verification Gate is PASSED only if `.packed/package-verification.json` matches `.packed/manifest.json`
- *     provenance (sourceCommit + tarball hashes) and every required verification check passed.
- *   - Provenance Gate is PASSED only if `.packed/last-run.json` matches `.packed/manifest.json`
- *     (sourceCommit + tarball hashes) and the current `agboss-examples` commit.
+ * Mode 2 — Published-Package Evidence (`--provenance published`):
+ *   Reads `.packed/published-manifest.json`, `.packed/published-verification.json`,
+ *   `.packed/last-run-published.json`.
+ *   Writes `published-proof-results.json` and `published-proof-report.md`.
+ *   Rejects any RC artifacts, local tarball installations, or mixed tarball/registry states.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -50,11 +48,7 @@ export function validatePackageVerification(pkgVerify, manifest) {
 
   const reasons = [];
 
-  // Provenance check against manifest.json
-  if (
-    !manifest.sourceCommit ||
-    pkgVerify.sourceCommit !== manifest.sourceCommit
-  ) {
+  if (!manifest.sourceCommit || pkgVerify.sourceCommit !== manifest.sourceCommit) {
     reasons.push(
       `package-verification sourceCommit (${pkgVerify.sourceCommit ?? "none"}) does not match manifest (${manifest.sourceCommit ?? "none"})`,
     );
@@ -78,7 +72,6 @@ export function validatePackageVerification(pkgVerify, manifest) {
     reasons.push("agboss-cli tarball sha256 mismatch in package-verification.json");
   }
 
-  // Required verification check fields
   const checks = pkgVerify.checks;
   if (!checks || typeof checks !== "object") {
     reasons.push("Missing checks object in package-verification.json");
@@ -137,6 +130,12 @@ export function validateRunProvenance({ lastRun, manifest, currentExamplesCommit
     return { status: "NOT_RUN", valid: false, reasons };
   }
 
+  if (lastRun.provenanceType && lastRun.provenanceType !== "RELEASE_CANDIDATE") {
+    reasons.push(
+      `last-run provenanceType '${lastRun.provenanceType}' is not RELEASE_CANDIDATE`,
+    );
+  }
+
   if (
     !manifest.sourceCommit ||
     manifest.sourceCommit === "unknown" ||
@@ -180,21 +179,312 @@ export function validateRunProvenance({ lastRun, manifest, currentExamplesCommit
   return { status: "PASSED", valid: true, reasons: [] };
 }
 
+export function validatePublishedManifest(
+  publishedManifest,
+  currentExamplesCommit,
+  projectsCatalog = PROJECTS,
+) {
+  if (!publishedManifest || typeof publishedManifest !== "object") {
+    return {
+      status: "BLOCKED",
+      valid: false,
+      reasons: ["Missing .packed/published-manifest.json"],
+    };
+  }
+
+  const reasons = [];
+  if (
+    publishedManifest.provenanceType !== "PUBLIC_NPM_REGISTRY" ||
+    publishedManifest.source !== "PUBLIC_NPM_REGISTRY"
+  ) {
+    reasons.push(
+      `published-manifest provenanceType/source ('${publishedManifest.provenanceType ?? "none"}' / '${publishedManifest.source ?? "none"}') is not PUBLIC_NPM_REGISTRY`,
+    );
+  }
+
+  if (
+    currentExamplesCommit &&
+    currentExamplesCommit !== "unknown" &&
+    publishedManifest.examplesSourceCommit !== currentExamplesCommit
+  ) {
+    reasons.push(
+      `published-manifest examplesSourceCommit (${publishedManifest.examplesSourceCommit ?? "none"}) does not match current HEAD (${currentExamplesCommit})`,
+    );
+  }
+
+  const agbossPkg = publishedManifest.packages?.agboss;
+  const cliPkg = publishedManifest.packages?.agbossCli;
+  if (!agbossPkg?.version || !agbossPkg?.integrity) {
+    reasons.push("published-manifest is missing agboss version or dist.integrity");
+  }
+  if (!cliPkg?.version || !cliPkg?.integrity) {
+    reasons.push("published-manifest is missing agboss-cli version or dist.integrity");
+  }
+  if (
+    !agbossPkg?.tarball ||
+    !String(agbossPkg.tarball).startsWith("https://") ||
+    String(agbossPkg.tarball).startsWith("file:")
+  ) {
+    reasons.push(
+      `published-manifest agboss tarball URL is not a remote https registry URL: '${agbossPkg?.tarball ?? "none"}'`,
+    );
+  }
+  if (
+    !cliPkg?.tarball ||
+    !String(cliPkg.tarball).startsWith("https://") ||
+    String(cliPkg.tarball).startsWith("file:")
+  ) {
+    reasons.push(
+      `published-manifest agboss-cli tarball URL is not a remote https registry URL: '${cliPkg?.tarball ?? "none"}'`,
+    );
+  }
+
+  const projectRecords = publishedManifest.projects ?? {};
+  for (const meta of projectsCatalog) {
+    const rec = projectRecords[meta.name];
+    if (!rec) {
+      reasons.push(`Project '${meta.name}' is missing from published-manifest.json`);
+      continue;
+    }
+    if (rec.isRegistryInstall !== true || rec.hasLocalLinks === true) {
+      reasons.push(
+        `Project '${meta.name}' has non-registry or mixed tarball/symlink installation in published-manifest.json`,
+      );
+    }
+    if (agbossPkg?.version && rec.agbossVersion !== agbossPkg.version) {
+      reasons.push(
+        `Project '${meta.name}' installed agboss@${rec.agbossVersion ?? "none"} (expected ${agbossPkg.version})`,
+      );
+    }
+    if (cliPkg?.version && rec.agbossCliVersion !== cliPkg.version) {
+      reasons.push(
+        `Project '${meta.name}' installed agboss-cli@${rec.agbossCliVersion ?? "none"} (expected ${cliPkg.version})`,
+      );
+    }
+    if (agbossPkg?.integrity && rec.agbossIntegrity !== agbossPkg.integrity) {
+      reasons.push(
+        `Project '${meta.name}' agboss integrity '${rec.agbossIntegrity ?? "none"}' does not match registry '${agbossPkg.integrity}'`,
+      );
+    }
+    if (cliPkg?.integrity && rec.agbossCliIntegrity !== cliPkg.integrity) {
+      reasons.push(
+        `Project '${meta.name}' agboss-cli integrity '${rec.agbossCliIntegrity ?? "none"}' does not match registry '${cliPkg.integrity}'`,
+      );
+    }
+    const agbossResolved = String(rec.agbossResolved ?? "");
+    const cliResolved = String(rec.agbossCliResolved ?? "");
+    if (
+      !agbossResolved.startsWith("https://") ||
+      agbossResolved.startsWith("file:") ||
+      !cliResolved.startsWith("https://") ||
+      cliResolved.startsWith("file:")
+    ) {
+      reasons.push(
+        `Project '${meta.name}' resolved URLs are not remote https registry URLs (${agbossResolved}, ${cliResolved})`,
+      );
+    }
+  }
+
+  if (reasons.length > 0) {
+    return { status: "FAILED", valid: false, reasons };
+  }
+  return { status: "PASSED", valid: true, reasons: [] };
+}
+
+export function validatePublishedVerification(pubVerify, publishedManifest) {
+  if (!publishedManifest || typeof publishedManifest !== "object") {
+    return {
+      status: "BLOCKED",
+      valid: false,
+      reasons: ["Missing .packed/published-manifest.json"],
+    };
+  }
+  if (!pubVerify || typeof pubVerify !== "object") {
+    return {
+      status: "NOT_RUN",
+      valid: false,
+      reasons: ["Missing .packed/published-verification.json"],
+    };
+  }
+
+  const reasons = [];
+  if (
+    pubVerify.source !== "PUBLIC_NPM_REGISTRY" ||
+    pubVerify.verificationMode !== "live-registry" ||
+    pubVerify.registryVerified !== true
+  ) {
+    reasons.push(
+      `published-verification.json was not executed in --live-registry mode against PUBLIC_NPM_REGISTRY (source=${pubVerify.source ?? "none"}, mode=${pubVerify.verificationMode ?? "none"})`,
+    );
+  }
+
+  if (pubVerify.status !== "PASSED") {
+    reasons.push(
+      `published-verification.json status is '${pubVerify.status ?? "none"}' (expected 'PASSED')`,
+    );
+  }
+
+  const expectedVersion = publishedManifest.packages?.agboss?.version;
+  if (expectedVersion && pubVerify.requestedVersion !== expectedVersion) {
+    reasons.push(
+      `published-verification requestedVersion '${pubVerify.requestedVersion ?? "none"}' does not match published-manifest version '${expectedVersion}'`,
+    );
+  }
+
+  const verifyRegAgboss = pubVerify.npmRegistryMetadata?.agboss;
+  const verifyRegCli = pubVerify.npmRegistryMetadata?.agbossCli;
+  const manifestAgboss = publishedManifest.packages?.agboss;
+  const manifestCli = publishedManifest.packages?.agbossCli;
+
+  if (!verifyRegAgboss?.integrity || verifyRegAgboss.integrity !== manifestAgboss?.integrity) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agboss.integrity does not match published-manifest",
+    );
+  }
+  if (!verifyRegCli?.integrity || verifyRegCli.integrity !== manifestCli?.integrity) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agbossCli.integrity does not match published-manifest",
+    );
+  }
+
+  const checks = pubVerify.checks;
+  if (!checks || typeof checks !== "object") {
+    reasons.push("Missing checks object in published-verification.json");
+  } else {
+    const requiredPassedFields = [
+      "registryMetadata",
+      "isolatedConsumerInstall",
+      "cliBinVersion",
+      "cliBinHelp",
+      "cliExplicitBinHelp",
+      "cleanScaffoldCreate",
+      "scaffoldCheck",
+      "scaffoldTypecheck",
+      "scaffoldUnitTests",
+      "scaffoldDescribe",
+    ];
+    for (const field of requiredPassedFields) {
+      if (String(checks[field]).toLowerCase() !== "passed") {
+        reasons.push(
+          `Published verification check '${field}' is '${checks[field] ?? "missing"}' (expected 'passed')`,
+        );
+      }
+    }
+    if (checks.generatedTypesVerified !== true) {
+      reasons.push("Published verification check 'generatedTypesVerified' is not true");
+    }
+    if (!Number.isInteger(checks.syncedAiSkillsCount) || checks.syncedAiSkillsCount < 13) {
+      reasons.push(
+        `Published verification check 'syncedAiSkillsCount' is '${checks.syncedAiSkillsCount ?? "missing"}' (expected >= 13)`,
+      );
+    }
+    if (
+      !Array.isArray(checks.subpathExportsVerified) ||
+      checks.subpathExportsVerified.length < 11
+    ) {
+      reasons.push(
+        "Published verification check 'subpathExportsVerified' did not verify all 11 required subpath exports",
+      );
+    }
+  }
+
+  if (reasons.length > 0) {
+    return { status: "FAILED", valid: false, reasons };
+  }
+  return { status: "PASSED", valid: true, reasons: [] };
+}
+
+export function validatePublishedRunProvenance({
+  lastRun,
+  publishedManifest,
+  currentExamplesCommit,
+}) {
+  const manifestCheck = validatePublishedManifest(publishedManifest, currentExamplesCommit);
+  if (!manifestCheck.valid) {
+    return manifestCheck;
+  }
+
+  if (!lastRun || typeof lastRun !== "object" || !lastRun.projects) {
+    return {
+      status: "NOT_RUN",
+      valid: false,
+      reasons: ["Missing .packed/last-run-published.json"],
+    };
+  }
+
+  const reasons = [];
+  if (lastRun.provenanceType !== "PUBLIC_NPM_REGISTRY") {
+    reasons.push(
+      `last-run provenanceType is '${lastRun.provenanceType ?? "RELEASE_CANDIDATE"}' (expected 'PUBLIC_NPM_REGISTRY'). Stale RC run results cannot satisfy the published-package gate.`,
+    );
+  }
+
+  if (
+    currentExamplesCommit &&
+    currentExamplesCommit !== "unknown" &&
+    lastRun.examplesSourceCommit !== currentExamplesCommit
+  ) {
+    reasons.push(
+      `last-run examplesSourceCommit (${lastRun.examplesSourceCommit ?? "none"}) does not match current HEAD (${currentExamplesCommit})`,
+    );
+  }
+
+  const manifestAgboss = publishedManifest.packages?.agboss;
+  const manifestCli = publishedManifest.packages?.agbossCli;
+  if (lastRun.frameworkVersion !== manifestAgboss?.version) {
+    reasons.push(
+      `last-run frameworkVersion (${lastRun.frameworkVersion ?? "none"}) does not match published-manifest (${manifestAgboss?.version ?? "none"})`,
+    );
+  }
+  if (lastRun.cliVersion !== manifestCli?.version) {
+    reasons.push(
+      `last-run cliVersion (${lastRun.cliVersion ?? "none"}) does not match published-manifest (${manifestCli?.version ?? "none"})`,
+    );
+  }
+
+  const runHashes = lastRun.packageHashes ?? {};
+  if (!manifestAgboss?.integrity || runHashes.agboss !== manifestAgboss.integrity) {
+    reasons.push("last-run agboss registry integrity does not match published-manifest.json");
+  }
+  if (!manifestCli?.integrity || runHashes.agbossCli !== manifestCli.integrity) {
+    reasons.push("last-run agboss-cli registry integrity does not match published-manifest.json");
+  }
+
+  if (reasons.length > 0) {
+    return { status: "FAILED", valid: false, reasons };
+  }
+  return { status: "PASSED", valid: true, reasons: [] };
+}
+
 export function evaluateProofReport({
   lastRun,
   manifest,
   pkgVerify,
+  publishedManifest,
+  pubVerify,
+  provenanceMode = "rc",
   currentExamplesCommit,
   projectsCatalog = PROJECTS,
   projectExistsFn = () => true,
   requireP1 = false,
 }) {
-  const pkgValidation = validatePackageVerification(pkgVerify, manifest);
-  const provenanceValidation = validateRunProvenance({
-    lastRun,
-    manifest,
-    currentExamplesCommit,
-  });
+  const isPublishedMode = provenanceMode === "published";
+
+  const pkgValidation = isPublishedMode
+    ? validatePublishedVerification(pubVerify, publishedManifest)
+    : validatePackageVerification(pkgVerify, manifest);
+
+  const provenanceValidation = isPublishedMode
+    ? validatePublishedRunProvenance({
+        lastRun,
+        publishedManifest,
+        currentExamplesCommit,
+      })
+    : validateRunProvenance({
+        lastRun,
+        manifest,
+        currentExamplesCommit,
+      });
 
   const results = [];
   const gateReasons = [...pkgValidation.reasons, ...provenanceValidation.reasons];
@@ -226,7 +516,9 @@ export function evaluateProofReport({
     if (!rawEntry) {
       const missingStatus = meta.priority === "P0" ? "FAILED" : "NOT_RUN";
       if (meta.priority === "P0" || requireP1) {
-        gateReasons.push(`Project '${meta.name}' (${meta.priority}) is missing from last-run.json`);
+        gateReasons.push(
+          `Project '${meta.name}' (${meta.priority}) is missing from ${isPublishedMode ? "last-run-published.json" : "last-run.json"}`,
+        );
       }
       results.push({
         project: meta.name,
@@ -241,7 +533,7 @@ export function evaluateProofReport({
         demoExitCode: null,
         projectGate: missingStatus,
         durationMs: 0,
-        error: "Project missing from last-run.json",
+        error: "Project missing from run state",
       });
       continue;
     }
@@ -317,7 +609,6 @@ export function evaluateProofReport({
   } else if (p1Projects.length > 0 && p1Projects.every((r) => r.projectGate === "NOT_RUN")) {
     p1Gate = requireP1 ? "FAILED" : "NOT_RUN";
   } else {
-    // Partial P1 execution (e.g. one P1 project PASSED and one P1 project NOT_RUN)
     p1Gate = "FAILED";
     gateReasons.push("Partial P1 execution: some P1 projects ran while others were NOT_RUN");
   }
@@ -333,21 +624,35 @@ export function evaluateProofReport({
       ? "PASSED"
       : "FAILED";
 
+  const activeManifest = isPublishedMode ? publishedManifest : manifest;
+
   return {
     schemaVersion: "2.0",
+    provenanceType: isPublishedMode ? "PUBLIC_NPM_REGISTRY" : "RELEASE_CANDIDATE",
     generatedAt: new Date().toISOString(),
     nodeVersion: process.versions.node,
     runId: lastRun?.runId ?? null,
-    frameworkVersion: manifest?.packages?.agboss?.version ?? "0.1.0",
-    cliVersion: manifest?.packages?.agbossCli?.version ?? "0.1.0",
-    sourceCommit: manifest?.sourceCommit ?? "unknown",
+    frameworkVersion: activeManifest?.packages?.agboss?.version ?? "0.1.0",
+    cliVersion: activeManifest?.packages?.agbossCli?.version ?? "0.1.0",
+    sourceCommit: isPublishedMode
+      ? "PUBLIC_NPM_REGISTRY"
+      : (manifest?.sourceCommit ?? "unknown"),
     examplesSourceCommit:
-      currentExamplesCommit ?? manifest?.examplesSourceCommit ?? lastRun?.examplesSourceCommit ?? "unknown",
+      currentExamplesCommit ??
+      activeManifest?.examplesSourceCommit ??
+      lastRun?.examplesSourceCommit ??
+      "unknown",
     packageHashes: {
-      agboss: manifest?.packages?.agboss?.integrity ?? null,
-      agbossSha256: manifest?.packages?.agboss?.sha256 ?? null,
-      agbossCli: manifest?.packages?.agbossCli?.integrity ?? null,
-      agbossCliSha256: manifest?.packages?.agbossCli?.sha256 ?? null,
+      agboss: activeManifest?.packages?.agboss?.integrity ?? null,
+      agbossSha256:
+        (isPublishedMode
+          ? activeManifest?.packages?.agboss?.shasum
+          : activeManifest?.packages?.agboss?.sha256) ?? null,
+      agbossCli: activeManifest?.packages?.agbossCli?.integrity ?? null,
+      agbossCliSha256:
+        (isPublishedMode
+          ? activeManifest?.packages?.agbossCli?.shasum
+          : activeManifest?.packages?.agbossCli?.sha256) ?? null,
     },
     gates: {
       provenanceGate,
@@ -357,7 +662,7 @@ export function evaluateProofReport({
       overallGate,
     },
     gateReasons,
-    packageVerification: pkgVerify?.checks ?? null,
+    packageVerification: isPublishedMode ? (pubVerify?.checks ?? null) : (pkgVerify?.checks ?? null),
     results,
     allP0Passed: p0Gate === "PASSED",
     allP1Passed: p1Gate === "PASSED",
@@ -365,18 +670,25 @@ export function evaluateProofReport({
 }
 
 export function renderProofMarkdown(report) {
+  const isPublished = report.provenanceType === "PUBLIC_NPM_REGISTRY";
+  const channelSuffix = isPublished
+    ? "public npm registry"
+    : "pre-release candidate";
   const mdLines = [
-    "# AGBoss Examples — Executable Architecture & Reliability Proof Report",
+    isPublished
+      ? "# AGBoss Examples — Post-Publication Public Registry Proof Report"
+      : "# AGBoss Examples — Executable Architecture & Reliability Proof Report",
     "",
+    `- **Provenance Type:** \`${report.provenanceType ?? "RELEASE_CANDIDATE"}\``,
     `- **Generated at:** \`${report.generatedAt}\``,
     `- **Run ID:** \`${report.runId ?? "n/a"}\``,
     `- **Node.js:** \`${report.nodeVersion}\``,
-    `- **AGBoss version:** \`${report.frameworkVersion}\` (pre-release candidate)`,
-    `- **AGBoss CLI version:** \`${report.cliVersion}\` (pre-release candidate)`,
-    `- **Framework source commit (\`agbossjs/agboss\`):** \`${report.sourceCommit}\``,
+    `- **AGBoss version:** \`${report.frameworkVersion}\` (${channelSuffix})`,
+    `- **AGBoss CLI version:** \`${report.cliVersion}\` (${channelSuffix})`,
+    `- **Framework source (\`agbossjs/agboss\`):** \`${report.sourceCommit}\``,
     `- **Examples source commit (\`agbossjs/agboss-examples\`):** \`${report.examplesSourceCommit}\``,
-    `- **agboss integrity:** \`${report.packageHashes.agboss ?? "n/a"}\` (\`sha256:${report.packageHashes.agbossSha256 ?? "n/a"}\`)`,
-    `- **agboss-cli integrity:** \`${report.packageHashes.agbossCli ?? "n/a"}\` (\`sha256:${report.packageHashes.agbossCliSha256 ?? "n/a"}\`)`,
+    `- **agboss integrity:** \`${report.packageHashes.agboss ?? "n/a"}\` (\`${report.packageHashes.agbossSha256 ?? "n/a"}\`)`,
+    `- **agboss-cli integrity:** \`${report.packageHashes.agbossCli ?? "n/a"}\` (\`${report.packageHashes.agbossCliSha256 ?? "n/a"}\`)`,
     `- **Provenance Gate:** **${report.gates.provenanceGate}**`,
     `- **Isolated Package & Scaffold Gate:** **${report.gates.packageGate}**`,
     `- **P0 Release Gate:** **${report.gates.p0Gate}**`,
@@ -411,6 +723,71 @@ export function renderProofMarkdown(report) {
 function runMain() {
   const args = process.argv.slice(2);
   const requireP1 = args.includes("--require-p1");
+  const provIdx = args.indexOf("--provenance");
+  const provenanceMode = provIdx >= 0 ? (args[provIdx + 1] ?? "") : "rc";
+  if (provenanceMode !== "rc" && provenanceMode !== "published") {
+    console.error(
+      `[collect-results] Invalid --provenance '${provenanceMode}'. Expected 'rc' or 'published'.`,
+    );
+    process.exit(1);
+  }
+
+  let currentExamplesCommit = "unknown";
+  try {
+    currentExamplesCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: ROOT,
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    currentExamplesCommit = "unknown";
+  }
+
+  if (provenanceMode === "published") {
+    const pubManifestPath = join(ROOT, ".packed", "published-manifest.json");
+    const pubVerifyPath = join(ROOT, ".packed", "published-verification.json");
+    const lastRunPubPath = join(ROOT, ".packed", "last-run-published.json");
+
+    const publishedManifest = existsSync(pubManifestPath)
+      ? JSON.parse(readFileSync(pubManifestPath, "utf8"))
+      : undefined;
+    const pubVerify = existsSync(pubVerifyPath)
+      ? JSON.parse(readFileSync(pubVerifyPath, "utf8"))
+      : undefined;
+    const lastRun = existsSync(lastRunPubPath)
+      ? JSON.parse(readFileSync(lastRunPubPath, "utf8"))
+      : undefined;
+
+    const report = evaluateProofReport({
+      lastRun,
+      publishedManifest,
+      pubVerify,
+      provenanceMode: "published",
+      currentExamplesCommit,
+      projectsCatalog: PROJECTS,
+      projectExistsFn: (projectName) => existsSync(join(ROOT, projectName, "package.json")),
+      requireP1,
+    });
+
+    writeFileSync(
+      join(ROOT, "published-proof-results.json"),
+      JSON.stringify(report, null, 2) + "\n",
+      "utf8",
+    );
+    writeFileSync(
+      join(ROOT, "published-proof-report.md"),
+      renderProofMarkdown(report),
+      "utf8",
+    );
+    console.log(
+      `[collect-results] Wrote published-proof-results.json and published-proof-report.md (Overall Gate: ${report.gates.overallGate}, P0: ${report.gates.p0Gate}, P1: ${report.gates.p1Gate}, Package: ${report.gates.packageGate})`,
+    );
+
+    if (report.gates.overallGate !== "PASSED") {
+      console.error("[collect-results] Published proof gate FAILED:", report.gateReasons);
+      process.exit(1);
+    }
+    return;
+  }
 
   const manifestPath = join(ROOT, ".packed", "manifest.json");
   const pkgVerifyPath = join(ROOT, ".packed", "package-verification.json");
@@ -426,20 +803,11 @@ function runMain() {
     ? JSON.parse(readFileSync(lastRunPath, "utf8"))
     : undefined;
 
-  let currentExamplesCommit = "unknown";
-  try {
-    currentExamplesCommit = execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: ROOT,
-      encoding: "utf8",
-    }).trim();
-  } catch {
-    currentExamplesCommit = "unknown";
-  }
-
   const report = evaluateProofReport({
     lastRun,
     manifest,
     pkgVerify,
+    provenanceMode: "rc",
     currentExamplesCommit,
     projectsCatalog: PROJECTS,
     projectExistsFn: (projectName) => existsSync(join(ROOT, projectName, "package.json")),

@@ -79,25 +79,27 @@ jobs:
         run: npm run pack:framework
 
       - name: 5. Verify tarball inventory, isolated consumer & clean scaffold outside both repos
-        run: npm run verify:package
+        run: |
+          npm run verify:package
+          npm run verify:published -- --from-packed --version 0.1.0
 
       - name: 6. Install packed tarballs into example projects (01..07)
         run: npm run install:packed
 
       - name: 7. Run static graph & TypeScript checks across P0 + P1 (01..07)
-        run: node scripts/run-all.mjs --include-p1 --reset --mode check
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --reset --mode check
 
       - name: 8. Run offline deterministic unit & fault-injection tests across P0 + P1 (01..07)
-        run: node scripts/run-all.mjs --include-p1 --mode test
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --mode test
 
       - name: 9. Run offline deterministic demos across P0 + P1 (01..07)
         env:
           AGBOSS_OFFLINE_VERIFY: "1"
-        run: node scripts/run-all.mjs --include-p1 --mode demo
+        run: node scripts/run-all.mjs --provenance rc --include-p1 --mode demo
 
       - name: 10. Collect and enforce fail-closed P0 + P1 proof report
         run: |
-          node scripts/collect-results.mjs --require-p1
+          node scripts/collect-results.mjs --provenance rc --require-p1
           cat proof-report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: 11. Restore public package.json manifests and verify clean git status
@@ -119,6 +121,7 @@ jobs:
             .packed/*.tgz
             .packed/manifest.json
             .packed/package-verification.json
+            .packed/published-verification.json
             .packed/last-run.json
             proof-results.json
             proof-report.md

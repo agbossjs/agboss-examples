@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
  * Orchestrates `npm run check`, `npm test`, or `npm run demo` (or `--mode all`) across independent
- * example projects and writes provenance-bound per-project status into `.packed/last-run.json`.
+ * example projects and writes provenance-bound per-project status into:
+ *   - `.packed/last-run.json` (when `--provenance rc`, default)
+ *   - `.packed/last-run-published.json` (when `--provenance published`)
  *
- * Status model (P0-1):
+ * Status model (P0-1 & P0-3):
  *   - PASSED: check executed and exited with 0
- *   - FAILED: check executed and exited non-zero, or required project/package.json is missing
+ *   - FAILED: check executed and exited non-zero, or required project/package.json is missing,
+ *             or installed package provenance fails validation
  *   - SKIPPED: explicitly skipped
  *   - NOT_RUN: has not been executed in the current provenance-bound run
  *   - BLOCKED: prerequisite missing
@@ -15,6 +18,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { validateInstalledPackageResolution } from "./verify-published.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
@@ -72,7 +76,14 @@ export function parseRunAllArgs(args) {
   const projectFilterIdx = args.indexOf("--project");
   const projectFilter = projectFilterIdx >= 0 ? args[projectFilterIdx + 1] : undefined;
   const resetState = args.includes("--reset");
-  return { mode, includeP1, projectFilter, resetState };
+  const provIdx = args.indexOf("--provenance");
+  const provenance = provIdx >= 0 ? (args[provIdx + 1] ?? "") : "rc";
+  if (provenance !== "rc" && provenance !== "published") {
+    throw new Error(
+      `Invalid --provenance '${provenance}'. Expected 'rc' or 'published'.`,
+    );
+  }
+  return { mode, includeP1, projectFilter, resetState, provenance };
 }
 
 export function selectProjects(args, projects = PROJECTS) {
@@ -106,8 +117,25 @@ export function createInitialProjectEntry(meta) {
 export function isProvenanceMatching(existingState, currentProvenance) {
   if (!existingState || typeof existingState !== "object") return false;
   if (!currentProvenance || typeof currentProvenance !== "object") return false;
+  const existingType = existingState.provenanceType ?? "RELEASE_CANDIDATE";
+  const currentType = currentProvenance.provenanceType ?? "RELEASE_CANDIDATE";
+  if (existingType !== currentType) return false;
   if (existingState.frameworkSourceCommit !== currentProvenance.frameworkSourceCommit) return false;
   if (existingState.examplesSourceCommit !== currentProvenance.examplesSourceCommit) return false;
+  if (
+    currentProvenance.frameworkVersion &&
+    existingState.frameworkVersion &&
+    existingState.frameworkVersion !== currentProvenance.frameworkVersion
+  ) {
+    return false;
+  }
+  if (
+    currentProvenance.cliVersion &&
+    existingState.cliVersion &&
+    existingState.cliVersion !== currentProvenance.cliVersion
+  ) {
+    return false;
+  }
   const prevHashes = existingState.packageHashes ?? {};
   const currHashes = currentProvenance.packageHashes ?? {};
   if (prevHashes.agboss !== currHashes.agboss) return false;
@@ -128,14 +156,17 @@ export function initializeOrLoadRunState({
   const canReuse =
     !resetState && existingState && isProvenanceMatching(existingState, provenance);
   const now = new Date().toISOString();
+  const provenanceType = provenance.provenanceType ?? "RELEASE_CANDIDATE";
   const base = canReuse
     ? {
         ...existingState,
+        provenanceType,
         updatedAt: now,
         projects: { ...(existingState.projects ?? {}) },
       }
     : {
         runId: randomUUID(),
+        provenanceType,
         startedAt: now,
         updatedAt: now,
         nodeVersion: provenance.nodeVersion,
@@ -164,11 +195,7 @@ export function initializeOrLoadRunState({
   return base;
 }
 
-function readCurrentProvenance() {
-  const manifestPath = join(ROOT, ".packed", "manifest.json");
-  const manifest = existsSync(manifestPath)
-    ? JSON.parse(readFileSync(manifestPath, "utf8"))
-    : undefined;
+function readCurrentProvenance(provenanceMode = "rc") {
   let examplesSourceCommit = "unknown";
   try {
     examplesSourceCommit = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -178,7 +205,42 @@ function readCurrentProvenance() {
   } catch {
     examplesSourceCommit = "unknown";
   }
+
+  if (provenanceMode === "published") {
+    const pubManifestPath = join(ROOT, ".packed", "published-manifest.json");
+    if (!existsSync(pubManifestPath)) {
+      throw new Error(
+        "Missing .packed/published-manifest.json required for `--provenance published`. Run `npm run install:published -- --live-registry --version <ver>` first.",
+      );
+    }
+    const pubManifest = JSON.parse(readFileSync(pubManifestPath, "utf8"));
+    if (pubManifest.provenanceType !== "PUBLIC_NPM_REGISTRY") {
+      throw new Error(
+        `Invalid provenanceType '${pubManifest.provenanceType ?? "none"}' in .packed/published-manifest.json (expected 'PUBLIC_NPM_REGISTRY'). Cannot use RC or local tarball manifests for published provenance.`,
+      );
+    }
+    return {
+      provenanceType: "PUBLIC_NPM_REGISTRY",
+      nodeVersion: process.versions.node,
+      frameworkSourceCommit: "PUBLIC_NPM_REGISTRY",
+      examplesSourceCommit,
+      frameworkVersion: pubManifest.packages?.agboss?.version ?? "unknown",
+      cliVersion: pubManifest.packages?.agbossCli?.version ?? "unknown",
+      packageHashes: {
+        agboss: pubManifest.packages?.agboss?.integrity ?? null,
+        agbossSha256: pubManifest.packages?.agboss?.shasum ?? null,
+        agbossCli: pubManifest.packages?.agbossCli?.integrity ?? null,
+        agbossCliSha256: pubManifest.packages?.agbossCli?.shasum ?? null,
+      },
+    };
+  }
+
+  const manifestPath = join(ROOT, ".packed", "manifest.json");
+  const manifest = existsSync(manifestPath)
+    ? JSON.parse(readFileSync(manifestPath, "utf8"))
+    : undefined;
   return {
+    provenanceType: "RELEASE_CANDIDATE",
     nodeVersion: process.versions.node,
     frameworkSourceCommit: manifest?.sourceCommit ?? "unknown",
     examplesSourceCommit,
@@ -195,19 +257,35 @@ function readCurrentProvenance() {
 
 function runMain() {
   const args = process.argv.slice(2);
-  const { mode, resetState } = parseRunAllArgs(args);
+  let parsed;
+  try {
+    parsed = parseRunAllArgs(args);
+  } catch (err) {
+    console.error(`[run-all] ARGUMENT ERROR: ${err.message}`);
+    process.exit(1);
+  }
+  const { mode, resetState, provenance: provenanceMode } = parsed;
   const modesToRun = mode === "all" ? ["check", "test", "demo"] : [mode];
   const selected = selectProjects(args);
   const selectedNames = new Set(selected.map((p) => p.name));
 
   const stateDir = join(ROOT, ".packed");
   mkdirSync(stateDir, { recursive: true });
-  const statePath = join(stateDir, "last-run.json");
+  const stateFilename =
+    provenanceMode === "published" ? "last-run-published.json" : "last-run.json";
+  const statePath = join(stateDir, stateFilename);
   const rawExisting = existsSync(statePath)
     ? JSON.parse(readFileSync(statePath, "utf8"))
     : undefined;
 
-  const provenance = readCurrentProvenance();
+  let provenance;
+  try {
+    provenance = readCurrentProvenance(provenanceMode);
+  } catch (err) {
+    console.error(`[run-all] PROVENANCE ERROR: ${err.message}`);
+    process.exit(1);
+  }
+
   const state = initializeOrLoadRunState({
     existingState: rawExisting,
     resetState,
@@ -248,9 +326,48 @@ function runMain() {
       continue;
     }
 
+    if (provenanceMode === "published") {
+      const resCheck = validateInstalledPackageResolution({
+        projectDir,
+        expectedVersion: provenance.frameworkVersion,
+        mode: "live-registry",
+        expectedIntegrity: {
+          agboss: provenance.packageHashes.agboss,
+          agbossCli: provenance.packageHashes.agbossCli,
+        },
+      });
+      if (!resCheck.valid) {
+        console.error(
+          `[run-all] PUBLISHED PROVENANCE ERROR in ${meta.name}: ${resCheck.reasons.join("; ")}`,
+        );
+        hasFailure = true;
+        const prev = state.projects[meta.name];
+        const now = new Date().toISOString();
+        for (const m of modesToRun) {
+          if (m === "check") {
+            prev.checkStatus = "FAILED";
+            prev.checkExitCode = 1;
+            prev.checkExecutedAt = now;
+          } else if (m === "test") {
+            prev.testStatus = "FAILED";
+            prev.testExitCode = 1;
+            prev.testExecutedAt = now;
+          } else if (m === "demo") {
+            prev.demoStatus = "FAILED";
+            prev.demoExitCode = 1;
+            prev.demoExecutedAt = now;
+          }
+        }
+        prev.error = `Published package provenance check failed: ${resCheck.reasons.join("; ")}`;
+        continue;
+      }
+    }
+
     for (const currentMode of modesToRun) {
       console.log(`\n============================================================`);
-      console.log(`[run-all] ${meta.name} (${meta.priority}) — mode: ${currentMode}`);
+      console.log(
+        `[run-all] ${meta.name} (${meta.priority}) — mode: ${currentMode} [provenance: ${provenanceMode}]`,
+      );
       console.log(`============================================================`);
 
       const start = Date.now();

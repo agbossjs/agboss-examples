@@ -1,14 +1,25 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { evaluateProofReport, validatePackageVerification } from "./collect-results.mjs";
+import {
+  evaluateProofReport,
+  validatePackageVerification,
+  validatePublishedManifest,
+  validatePublishedVerification,
+} from "./collect-results.mjs";
+import { parsePinShaArgs } from "./pin-framework-sha.mjs";
 import {
   PROJECTS,
   initializeOrLoadRunState,
   parseRunAllArgs,
   selectProjects,
 } from "./run-all.mjs";
+import {
+  REQUIRED_SUBPATH_EXPORTS,
+  parseVerifyPublishedArgs,
+  validateRegistryMetadata,
+} from "./verify-published.mjs";
 
-const FIXTURE_COMMIT = "f22c33254a6eeeb30cf0bbcb72097010eb09f2d5";
+const FIXTURE_COMMIT = "a9f27de065f0f145f927bd78daaaff02c06089b0";
 const FIXTURE_EXAMPLES_COMMIT = "c187739a00000000000000000000000000000001";
 const FIXTURE_AGBOSS_INTEGRITY = "sha512-agbossIntegrityFixture==";
 const FIXTURE_AGBOSS_SHA256 = "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66667777888899990000";
@@ -55,19 +66,7 @@ function makePkgVerify(overrides = {}) {
     checks: {
       tarballInventories: "passed",
       isolatedConsumerInstall: "passed",
-      subpathExportsVerified: [
-        "agboss",
-        "agboss/dto",
-        "agboss/units",
-        "agboss/models",
-        "agboss/testing",
-        "agboss/testing/setup",
-        "agboss/eval",
-        "agboss/mcp",
-        "agboss/rag",
-        "agboss/a2a",
-        "agboss/eslint",
-      ],
+      subpathExportsVerified: [...REQUIRED_SUBPATH_EXPORTS],
       cliBinDelegation: "passed",
       cleanScaffoldCreate: "passed",
       syncedAiSkillsCount: 13,
@@ -80,7 +79,12 @@ function makePkgVerify(overrides = {}) {
   };
 }
 
-function makeLastRun({ p0Status = "PASSED", p1Status = "PASSED", overrides = {} } = {}) {
+function makeLastRun({
+  p0Status = "PASSED",
+  p1Status = "PASSED",
+  provenanceType = "RELEASE_CANDIDATE",
+  overrides = {},
+} = {}) {
   const projects = {};
   for (const meta of PROJECTS) {
     const status = meta.priority === "P0" ? p0Status : p1Status;
@@ -100,8 +104,12 @@ function makeLastRun({ p0Status = "PASSED", p1Status = "PASSED", overrides = {} 
   }
   return {
     runId: "run-fixture-1",
-    frameworkSourceCommit: FIXTURE_COMMIT,
+    provenanceType,
+    frameworkSourceCommit:
+      provenanceType === "PUBLIC_NPM_REGISTRY" ? "PUBLIC_NPM_REGISTRY" : FIXTURE_COMMIT,
     examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
+    frameworkVersion: "0.1.0",
+    cliVersion: "0.1.0",
     packageHashes: {
       agboss: FIXTURE_AGBOSS_INTEGRITY,
       agbossSha256: FIXTURE_AGBOSS_SHA256,
@@ -109,6 +117,107 @@ function makeLastRun({ p0Status = "PASSED", p1Status = "PASSED", overrides = {} 
       agbossCliSha256: FIXTURE_CLI_SHA256,
     },
     projects,
+    ...overrides,
+  };
+}
+
+function makePublishedManifest(overrides = {}) {
+  const projects = {};
+  for (const meta of PROJECTS) {
+    projects[meta.name] = {
+      project: meta.name,
+      installedAt: "2026-10-25T20:00:00.000Z",
+      agbossVersion: "0.1.0",
+      agbossCliVersion: "0.1.0",
+      agbossIntegrity: FIXTURE_AGBOSS_INTEGRITY,
+      agbossCliIntegrity: FIXTURE_CLI_INTEGRITY,
+      agbossResolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+      agbossCliResolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+      isRegistryInstall: true,
+      hasLocalLinks: false,
+    };
+  }
+  return {
+    schemaVersion: "2.0",
+    provenanceType: "PUBLIC_NPM_REGISTRY",
+    source: "PUBLIC_NPM_REGISTRY",
+    installedAt: "2026-10-25T20:00:00.000Z",
+    examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
+    requestedVersion: "0.1.0",
+    requestedDistTag: "latest",
+    packages: {
+      agboss: {
+        name: "agboss",
+        version: "0.1.0",
+        integrity: FIXTURE_AGBOSS_INTEGRITY,
+        shasum: FIXTURE_AGBOSS_SHA256,
+        tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+      },
+      agbossCli: {
+        name: "agboss-cli",
+        version: "0.1.0",
+        integrity: FIXTURE_CLI_INTEGRITY,
+        shasum: FIXTURE_CLI_SHA256,
+        tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+      },
+    },
+    projects,
+    ...overrides,
+  };
+}
+
+function makePublishedVerification(overrides = {}) {
+  return {
+    schemaVersion: "2.0",
+    status: "PASSED",
+    source: "PUBLIC_NPM_REGISTRY",
+    verificationMode: "live-registry",
+    registryVerified: true,
+    requestedVersion: "0.1.0",
+    requestedDistTag: "latest",
+    examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
+    npmRegistryMetadata: {
+      agboss: {
+        name: "agboss",
+        version: "0.1.0",
+        deprecated: null,
+        integrity: FIXTURE_AGBOSS_INTEGRITY,
+        shasum: FIXTURE_AGBOSS_SHA256,
+        tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        distTagVersion: "0.1.0",
+      },
+      agbossCli: {
+        name: "agboss-cli",
+        version: "0.1.0",
+        deprecated: null,
+        integrity: FIXTURE_CLI_INTEGRITY,
+        shasum: FIXTURE_CLI_SHA256,
+        tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        distTagVersion: "0.1.0",
+      },
+    },
+    checks: {
+      registryMetadata: "passed",
+      isolatedConsumerInstall: "passed",
+      subpathExportsVerified: [...REQUIRED_SUBPATH_EXPORTS],
+      cliBinVersion: "passed",
+      cliBinHelp: "passed",
+      cliExplicitBinHelp: "passed",
+      cleanScaffoldCreate: "passed",
+      scaffoldFilesVerified: [
+        "package.json",
+        "tsconfig.json",
+        "eslint.config.js",
+        "AGENTS.md",
+        "CLAUDE.md",
+      ],
+      generatedTypesVerified: true,
+      syncedAiSkillsCount: 13,
+      scaffoldCheck: "passed",
+      scaffoldTypecheck: "passed",
+      scaffoldUnitTests: "passed",
+      scaffoldDescribe: "passed",
+    },
     ...overrides,
   };
 }
@@ -155,12 +264,13 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
     );
   });
 
-  it("parses mode, includeP1, projectFilter, and resetState flags accurately", () => {
+  it("parses mode, includeP1, projectFilter, resetState, and provenance flags accurately", () => {
     assert.deepEqual(parseRunAllArgs([]), {
       mode: "test",
       includeP1: false,
       projectFilter: undefined,
       resetState: false,
+      provenance: "rc",
     });
     assert.deepEqual(
       parseRunAllArgs([
@@ -170,18 +280,127 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
         "--project",
         "06-enterprise-agent-mesh",
         "--reset",
+        "--provenance",
+        "published",
       ]),
       {
         mode: "demo",
         includeP1: true,
         projectFilter: "06-enterprise-agent-mesh",
         resetState: true,
+        provenance: "published",
       },
+    );
+    assert.throws(() => parseRunAllArgs(["--provenance", "invalid"]), /Invalid --provenance/);
+  });
+});
+
+describe("verify-published.mjs explicit mode & registry metadata validation (P0-2)", () => {
+  it("requires an explicit mode flag (--from-packed or --live-registry) and rejects missing or conflicting flags", () => {
+    assert.throws(
+      () => parseVerifyPublishedArgs(["--version", "0.1.0"]),
+      /Missing required mode flag/,
+    );
+    assert.throws(
+      () => parseVerifyPublishedArgs(["--from-packed", "--live-registry", "--version", "0.1.0"]),
+      /Conflicting mode flags/,
+    );
+    assert.throws(
+      () => parseVerifyPublishedArgs(["--live-registry"]),
+      /Missing or invalid --version/,
+    );
+    assert.throws(
+      () => parseVerifyPublishedArgs(["--live-registry", "--version", "not-semver"]),
+      /Missing or invalid --version/,
+    );
+    assert.throws(
+      () => parseVerifyPublishedArgs(["--live-registry", "--version", "0.1.0", "--unknown"]),
+      /Unknown or ambiguous argument/,
+    );
+
+    assert.deepEqual(parseVerifyPublishedArgs(["--from-packed", "--version", "0.1.0"]), {
+      mode: "from-packed",
+      sourceLabel: "LOCAL_PACKED_RELEASE_CANDIDATE",
+      version: "0.1.0",
+      tag: "latest",
+    });
+    assert.deepEqual(parseVerifyPublishedArgs(["--live-registry", "--version", "0.1.0"]), {
+      mode: "live-registry",
+      sourceLabel: "PUBLIC_NPM_REGISTRY",
+      version: "0.1.0",
+      tag: "latest",
+    });
+  });
+
+  it("validates live npm registry metadata and fails closed on deprecated, missing, or mismatched versions", () => {
+    const validMeta = {
+      agbossMeta: {
+        name: "agboss",
+        version: "0.1.0",
+        dist: {
+          integrity: FIXTURE_AGBOSS_INTEGRITY,
+          shasum: FIXTURE_AGBOSS_SHA256,
+          tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        },
+      },
+      agbossCliMeta: {
+        name: "agboss-cli",
+        version: "0.1.0",
+        dist: {
+          integrity: FIXTURE_CLI_INTEGRITY,
+          shasum: FIXTURE_CLI_SHA256,
+          tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        },
+      },
+      agbossDistTags: { latest: "0.1.0" },
+      agbossCliDistTags: { latest: "0.1.0" },
+      expectedVersion: "0.1.0",
+      expectedTag: "latest",
+    };
+
+    const ok = validateRegistryMetadata(validMeta);
+    assert.equal(ok.valid, true);
+    assert.equal(ok.reasons.length, 0);
+
+    // Deprecated version fails closed
+    const deprecated = validateRegistryMetadata({
+      ...validMeta,
+      agbossMeta: { ...validMeta.agbossMeta, deprecated: "Initial setup placeholder" },
+    });
+    assert.equal(deprecated.valid, false);
+    assert.match(deprecated.reasons.join("; "), /deprecated/i);
+
+    // Wrong version or dist-tag fails closed
+    const wrongTag = validateRegistryMetadata({
+      ...validMeta,
+      agbossDistTags: { latest: "0.0.1" },
+    });
+    assert.equal(wrongTag.valid, false);
+    assert.match(wrongTag.reasons.join("; "), /dist-tag 'latest'/);
+
+    // Local file: tarball URL fails closed
+    const localUrl = validateRegistryMetadata({
+      ...validMeta,
+      agbossCliMeta: {
+        ...validMeta.agbossCliMeta,
+        dist: { ...validMeta.agbossCliMeta.dist, tarball: "file:/tmp/agboss-cli-0.1.0.tgz" },
+      },
+    });
+    assert.equal(localUrl.valid, false);
+    assert.match(localUrl.reasons.join("; "), /non-registry dist\.tarball/);
+  });
+
+  it("validates 40-char git SHA in pin-framework-sha.mjs (P1-1)", () => {
+    assert.throws(() => parsePinShaArgs([]), /Invalid or missing --sha/);
+    assert.throws(() => parsePinShaArgs(["--sha", "short123"]), /Invalid or missing --sha/);
+    assert.deepEqual(
+      parsePinShaArgs(["--sha", FIXTURE_COMMIT.toUpperCase(), "--branch", "main"]),
+      { sha: FIXTURE_COMMIT, branch: "main" },
     );
   });
 });
 
-describe("collect-results.mjs fail-closed release proof gates (P0-1: 10 required scenarios)", () => {
+describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 required scenarios)", () => {
   it("1. All required P0 checks pass -> P0 PASSED", () => {
     const report = evaluateProofReport({
       lastRun: makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" }),
@@ -238,7 +457,6 @@ describe("collect-results.mjs fail-closed release proof gates (P0-1: 10 required
     assert.equal(reportOptionalP1.gates.p1Gate, "NOT_RUN");
     assert.equal(reportOptionalP1.allP1Passed, false);
 
-    // Also if only ONE P1 project is skipped while the other passed, P1 gate must be FAILED (never PASSED)
     const partialP1Run = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
     partialP1Run.projects["06-enterprise-agent-mesh"].checkStatus = "SKIPPED";
     partialP1Run.projects["06-enterprise-agent-mesh"].testStatus = "SKIPPED";
@@ -253,7 +471,6 @@ describe("collect-results.mjs fail-closed release proof gates (P0-1: 10 required
     assert.equal(reportPartialP1.gates.p1Gate, "FAILED");
     assert.equal(reportPartialP1.allP1Passed, false);
 
-    // And when --require-p1 is passed, unexecuted P1 is FAILED
     const reportRequiredP1 = evaluateProofReport({
       lastRun,
       manifest: makeManifest(),
@@ -351,6 +568,7 @@ describe("collect-results.mjs fail-closed release proof gates (P0-1: 10 required
   it("10. Previous successful results cannot hide a failed or missing check in a fresh run", () => {
     const previousSuccessState = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
     const newProvenance = {
+      provenanceType: "RELEASE_CANDIDATE",
       nodeVersion: process.versions.node,
       frameworkSourceCommit: "new-commit-9999999999999999999999999999999999999999",
       examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
@@ -374,5 +592,195 @@ describe("collect-results.mjs fail-closed release proof gates (P0-1: 10 required
       assert.equal(initialized.projects[meta.name].testStatus, "NOT_RUN");
       assert.equal(initialized.projects[meta.name].demoStatus, "NOT_RUN");
     }
+  });
+});
+
+describe("Published-package provenance separation & negative tests (P0-3)", () => {
+  it("passes published gate ONLY when published-manifest, live-registry published-verification, and published last-run all pass", () => {
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.provenanceType, "PUBLIC_NPM_REGISTRY");
+    assert.equal(report.gates.provenanceGate, "PASSED");
+    assert.equal(report.gates.packageGate, "PASSED");
+    assert.equal(report.gates.p0Gate, "PASSED");
+    assert.equal(report.gates.p1Gate, "PASSED");
+    assert.equal(report.gates.overallGate, "PASSED");
+  });
+
+  it("1. Stale RC report cannot satisfy published gate -> FAILED", () => {
+    const staleRcRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+      provenanceType: "RELEASE_CANDIDATE",
+    });
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: staleRcRun,
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.gates.provenanceGate, "FAILED");
+    assert.equal(report.gates.overallGate, "FAILED");
+    assert.match(report.gateReasons.join("; "), /Stale RC run results cannot satisfy/);
+
+    // Also initializeOrLoadRunState resets all statuses to NOT_RUN when switching from RC to PUBLIC_NPM_REGISTRY
+    const resetOnSwitch = initializeOrLoadRunState({
+      existingState: staleRcRun,
+      resetState: false,
+      provenance: {
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+        nodeVersion: process.versions.node,
+        frameworkSourceCommit: "PUBLIC_NPM_REGISTRY",
+        examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
+        frameworkVersion: "0.1.0",
+        cliVersion: "0.1.0",
+        packageHashes: staleRcRun.packageHashes,
+      },
+    });
+    for (const meta of PROJECTS) {
+      assert.equal(resetOnSwitch.projects[meta.name].checkStatus, "NOT_RUN");
+      assert.equal(resetOnSwitch.projects[meta.name].testStatus, "NOT_RUN");
+      assert.equal(resetOnSwitch.projects[meta.name].demoStatus, "NOT_RUN");
+    }
+  });
+
+  it("2. Pre-release --from-packed published-verification.json cannot satisfy published gate -> FAILED", () => {
+    const packedVerify = makePublishedVerification({
+      source: "LOCAL_PACKED_RELEASE_CANDIDATE",
+      verificationMode: "from-packed",
+      registryVerified: false,
+    });
+    const vCheck = validatePublishedVerification(packedVerify, makePublishedManifest());
+    assert.equal(vCheck.valid, false);
+    assert.equal(vCheck.status, "FAILED");
+
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: packedVerify,
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.gates.packageGate, "FAILED");
+    assert.equal(report.gates.overallGate, "FAILED");
+  });
+
+  it("3. Missing registry metadata or missing published-manifest.json fails closed -> BLOCKED / FAILED", () => {
+    const mCheck = validatePublishedManifest(undefined, FIXTURE_EXAMPLES_COMMIT);
+    assert.equal(mCheck.status, "BLOCKED");
+    assert.equal(mCheck.valid, false);
+
+    const missingIntegrityManifest = makePublishedManifest();
+    missingIntegrityManifest.packages.agboss.integrity = null;
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: missingIntegrityManifest,
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.gates.provenanceGate, "FAILED");
+    assert.equal(report.gates.overallGate, "FAILED");
+  });
+
+  it("4. Wrong installed package version fails closed -> FAILED", () => {
+    const wrongVerManifest = makePublishedManifest();
+    wrongVerManifest.projects["03-support-refund-desk"].agbossVersion = "0.0.1";
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: wrongVerManifest,
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.gates.provenanceGate, "FAILED");
+    assert.equal(report.gates.overallGate, "FAILED");
+    assert.match(report.gateReasons.join("; "), /installed agboss@0\.0\.1/);
+  });
+
+  it("5. Mixed tarball / registry installation fails closed -> FAILED", () => {
+    const mixedManifest = makePublishedManifest();
+    mixedManifest.projects["05-cluster-work-stealing"].isRegistryInstall = false;
+    mixedManifest.projects["05-cluster-work-stealing"].hasLocalLinks = true;
+    mixedManifest.projects["05-cluster-work-stealing"].agbossResolved =
+      "file:../.packed/agboss-0.1.0.tgz";
+
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: mixedManifest,
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(report.gates.provenanceGate, "FAILED");
+    assert.equal(report.gates.overallGate, "FAILED");
+    assert.match(report.gateReasons.join("; "), /non-registry or mixed tarball/);
+  });
+
+  it("6. Missing tests, partial execution, P0 skipped, P1 skipped with --require-p1, or failed demo -> FAILED", () => {
+    const partialRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+      provenanceType: "PUBLIC_NPM_REGISTRY",
+    });
+    partialRun.projects["02-path-scope-proof"].testStatus = "NOT_RUN";
+    const r1 = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: partialRun,
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(r1.gates.p0Gate, "FAILED");
+    assert.equal(r1.gates.overallGate, "FAILED");
+
+    const p1SkippedRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "SKIPPED",
+      provenanceType: "PUBLIC_NPM_REGISTRY",
+    });
+    const r2 = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: p1SkippedRun,
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(r2.gates.p1Gate, "FAILED");
+    assert.equal(r2.gates.overallGate, "FAILED");
   });
 });
