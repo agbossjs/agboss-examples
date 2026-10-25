@@ -49,11 +49,15 @@ jobs:
       - name: Install packed artifacts into consumer example projects
         run: npm run install:packed
 
-      - name: Execute all P0 & P1 offline checks and proofs
+      - name: Execute all P0 & P1 offline checks, tests, and demos
         run: |
-          node scripts/run-all.mjs --include-p1 --mode check
+          node scripts/run-all.mjs --reset --include-p1 --mode check
           node scripts/run-all.mjs --include-p1 --mode test
-          node scripts/collect-results.mjs
+          node scripts/run-all.mjs --include-p1 --mode demo
+
+      - name: Collect proof results
+        if: always()
+        run: node scripts/collect-results.mjs
 
       - name: Upload Release Candidate Validation Report
         if: always()
@@ -62,6 +66,7 @@ jobs:
           name: packed-release-validation-report
           path: |
             .packed/manifest.json
+            .packed/package-verification.json
             proof-results.json
             proof-report.md
           retention-days: 30

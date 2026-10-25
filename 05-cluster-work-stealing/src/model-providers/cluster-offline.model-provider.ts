@@ -5,7 +5,7 @@ import { ClusterOfflineTransport } from "../../../scripts/tooling/offline-transp
 @ModelProvider({
   name: "cluster-offline-model-provider",
   description: "Deterministic offline model provider for cluster worker and shard agents",
-  serves: [/^offline\//u],
+  serves: [/^openai\//u, /^offline\//u],
   timeout: seconds(30),
   cost: ModelCost.fromResponse(),
   retryPolicy: RetryPolicy.none(),

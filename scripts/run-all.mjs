@@ -6,7 +6,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
@@ -51,73 +51,110 @@ export const PROJECTS = [
   {
     name: "07-langgraph-migration",
     priority: "P0",
-    mode: "model-assisted",
-    primaryProof: "Before/After migration from raw LangGraph God State to AGBoss narrow DTOs & Flow DSL",
+    mode: "deterministic-reference",
+    primaryProof:
+      "Deterministic before/after reference migration from raw LangGraph God State to AGBoss narrow DTOs & Flow DSL",
   },
 ];
 
-const args = process.argv.slice(2);
-const modeIdx = args.indexOf("--mode");
-const mode = modeIdx >= 0 ? (args[modeIdx + 1] ?? "test") : "test";
-const includeP1 = args.includes("--include-p1") || true; // Run all available projects
-const projectFilterIdx = args.indexOf("--project");
-const projectFilter = projectFilterIdx >= 0 ? args[projectFilterIdx + 1] : undefined;
-
-const stateDir = join(ROOT, ".packed");
-mkdirSync(stateDir, { recursive: true });
-const statePath = join(stateDir, "last-run.json");
-const existing = existsSync(statePath)
-  ? JSON.parse(readFileSync(statePath, "utf8"))
-  : { projects: {} };
-
-let hasFailure = false;
-
-for (const meta of PROJECTS) {
-  if (!includeP1 && meta.priority === "P1") continue;
-  if (projectFilter && meta.name !== projectFilter) continue;
-
-  const projectDir = join(ROOT, meta.name);
-  const pkgPath = join(projectDir, "package.json");
-  if (!existsSync(pkgPath)) {
-    console.log(`[run-all] Skipping ${meta.name} (no package.json yet)`);
-    continue;
-  }
-
-  console.log(`\n============================================================`);
-  console.log(`[run-all] ${meta.name} (${meta.priority}) — npm run ${mode}`);
-  console.log(`============================================================`);
-
-  const start = Date.now();
-  const cmdArgs = mode === "test" ? ["test"] : ["run", mode];
-  const res = spawnSync("npm", cmdArgs, {
-    cwd: projectDir,
-    stdio: "inherit",
-    env: { ...process.env, NO_COLOR: "1" },
-  });
-  const durationMs = Date.now() - start;
-  const passed = res.status === 0;
-  if (!passed) hasFailure = true;
-
-  const prev = existing.projects[meta.name] ?? {
-    project: meta.name,
-    priority: meta.priority,
-    primaryProof: meta.primaryProof,
-    mode: meta.mode,
-    checkStatus: "skipped",
-    testStatus: "skipped",
-    durationMs: 0,
-  };
-
-  existing.projects[meta.name] = {
-    ...prev,
-    checkStatus: mode === "check" ? (passed ? "passed" : "failed") : prev.checkStatus,
-    testStatus: mode === "test" ? (passed ? "passed" : "failed") : prev.testStatus,
-    durationMs: prev.durationMs + durationMs,
-  };
+export function parseRunAllArgs(args) {
+  const modeIdx = args.indexOf("--mode");
+  const mode = modeIdx >= 0 ? (args[modeIdx + 1] ?? "test") : "test";
+  const includeP1 = args.includes("--include-p1");
+  const projectFilterIdx = args.indexOf("--project");
+  const projectFilter = projectFilterIdx >= 0 ? args[projectFilterIdx + 1] : undefined;
+  const resetState = args.includes("--reset");
+  return { mode, includeP1, projectFilter, resetState };
 }
 
-writeFileSync(statePath, JSON.stringify(existing, null, 2) + "\n", "utf8");
+export function selectProjects(args, projects = PROJECTS) {
+  const { includeP1, projectFilter } = parseRunAllArgs(args);
+  if (projectFilter !== undefined) {
+    return projects.filter((meta) => meta.name === projectFilter);
+  }
+  return projects.filter((meta) => includeP1 || meta.priority === "P0");
+}
 
-if (hasFailure) {
-  process.exit(1);
+function runMain() {
+  const args = process.argv.slice(2);
+  const { mode, resetState } = parseRunAllArgs(args);
+  const selected = selectProjects(args);
+  const selectedNames = new Set(selected.map((p) => p.name));
+
+  const stateDir = join(ROOT, ".packed");
+  mkdirSync(stateDir, { recursive: true });
+  const statePath = join(stateDir, "last-run.json");
+  const existing =
+    !resetState && existsSync(statePath)
+      ? JSON.parse(readFileSync(statePath, "utf8"))
+      : { projects: {} };
+
+  for (const meta of PROJECTS) {
+    if (!existing.projects[meta.name]) {
+      existing.projects[meta.name] = {
+        project: meta.name,
+        priority: meta.priority,
+        primaryProof: meta.primaryProof,
+        mode: meta.mode,
+        checkStatus: "skipped",
+        testStatus: "skipped",
+        demoStatus: "skipped",
+        durationMs: 0,
+      };
+    } else {
+      existing.projects[meta.name].mode = meta.mode;
+      existing.projects[meta.name].primaryProof = meta.primaryProof;
+      if (!existing.projects[meta.name].demoStatus) {
+        existing.projects[meta.name].demoStatus = "skipped";
+      }
+    }
+  }
+
+  let hasFailure = false;
+
+  for (const meta of PROJECTS) {
+    if (!selectedNames.has(meta.name)) continue;
+
+    const projectDir = join(ROOT, meta.name);
+    const pkgPath = join(projectDir, "package.json");
+    if (!existsSync(pkgPath)) {
+      console.log(`[run-all] Skipping ${meta.name} (no package.json yet)`);
+      continue;
+    }
+
+    console.log(`\n============================================================`);
+    console.log(`[run-all] ${meta.name} (${meta.priority}) — npm run ${mode}`);
+    console.log(`============================================================`);
+
+    const start = Date.now();
+    const cmdArgs = mode === "test" ? ["test"] : ["run", mode];
+    const res = spawnSync("npm", cmdArgs, {
+      cwd: projectDir,
+      stdio: "inherit",
+      env: { ...process.env, NO_COLOR: "1" },
+    });
+    const durationMs = Date.now() - start;
+    const passed = res.status === 0;
+    if (!passed) hasFailure = true;
+
+    const prev = existing.projects[meta.name];
+    existing.projects[meta.name] = {
+      ...prev,
+      checkStatus: mode === "check" ? (passed ? "passed" : "failed") : prev.checkStatus,
+      testStatus: mode === "test" ? (passed ? "passed" : "failed") : prev.testStatus,
+      demoStatus: mode === "demo" ? (passed ? "passed" : "failed") : prev.demoStatus,
+      durationMs: prev.durationMs + durationMs,
+    };
+  }
+
+  writeFileSync(statePath, JSON.stringify(existing, null, 2) + "\n", "utf8");
+
+  if (hasFailure) {
+    process.exit(1);
+  }
+}
+
+const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
+if (import.meta.url === invokedPath) {
+  runMain();
 }

@@ -19,12 +19,11 @@ jobs:
       - name: Checkout agboss-examples
         uses: actions/checkout@v4
 
-      - name: Checkout agboss framework (for pre-publish local tarball pack if npm package not yet live)
+      - name: Checkout agboss framework (for pre-publish local tarball pack)
         uses: actions/checkout@v4
         with:
           repository: agbossjs/agboss
           path: .agboss-source
-        continue-on-error: true
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -35,11 +34,10 @@ jobs:
       - name: Install root tooling dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Typecheck shared tooling
+      - name: Typecheck shared tooling and selection tests
         run: npm run typecheck
 
-      - name: Pack and install framework artifacts if source available
-        if: hashFiles('.agboss-source/package.json') != ''
+      - name: Pack and install framework artifacts
         env:
           AGBOSS_REPO_DIR: ${{ github.workspace }}/.agboss-source
         run: |
@@ -48,11 +46,15 @@ jobs:
           npm run verify:package
           npm run install:packed
 
-      - name: Run P0 static checks and deterministic tests
+      - name: Run P0 static checks, deterministic tests, and offline demos
         run: |
           npm run check
           npm test
-          npm run collect:results
+          npm run demo
+
+      - name: Collect proof results
+        if: always()
+        run: npm run collect:results
 
       - name: Upload proof results
         if: always()
@@ -60,6 +62,8 @@ jobs:
         with:
           name: smoke-proof-results
           path: |
+            .packed/manifest.json
+            .packed/package-verification.json
             proof-results.json
             proof-report.md
           if-no-files-found: ignore

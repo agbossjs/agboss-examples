@@ -27,3 +27,7 @@ npm run check
 npm test
 npm run demo
 ```
+
+## Guarantee Boundary
+
+AGBoss guarantees static compensation coverage checking (`[flow.uncompensated-action]`), reverse-order LIFO compensation dispatch on downstream failure/cancellation/budget cutoff, and deterministic `executionContext.step.idempotencyKey` propagation to every `@Action` and `@Tool`. End-to-end idempotency of external side effects (such as preventing duplicate airline reservations or payment captures across network retries) relies on the external service or downstream ledger honoring the passed `idempotencyKey`.

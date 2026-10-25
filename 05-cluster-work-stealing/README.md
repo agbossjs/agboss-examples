@@ -30,3 +30,7 @@ npm run check   # Run agboss check + TypeScript + ESLint
 npm test        # Run all distributed cluster & isolated component proof suites
 npm run demo    # Run deterministic offline cluster demo
 ```
+
+## 4. Guarantee Boundary (Two-Process SQLite vs Multi-Host Deployment)
+
+The tests in this example (`testWith(ClusterWorkStealingApplication, { instances: 2 })`) verify two application instances coordinating over a shared local SQLite WAL file (`SqliteExecutionLeaseRepository`, `SqliteChildExecutionQueueRepository`, `SqliteCheckpointSaver`, `SqlitePausedExecutionRepository`) on a single machine. For multi-host distributed deployments across separate machines or pods without shared local disk, applications must provide repository implementations backed by a networked transactional store (such as PostgreSQL or Redis) that satisfy the same AGBoss repository contracts.

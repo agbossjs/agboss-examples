@@ -7,7 +7,9 @@
 
 Independent, runnable [**AGBoss**](https://github.com/agbossjs/agboss) applications that demonstrate and verify the framework's core engineering guarantees against real distributable npm packages (`agboss` and `agboss-cli`).
 
-> **Your coding agent writes the graph. AGBoss proves the properties it can actually verify.**
+> **AGBoss is an open-source TypeScript framework with static verification for complex multi-agent workflows.**
+>
+> **Pre-release status (`v0.1.0-rc`):** `agboss@0.1.0` and `agboss-cli@0.1.0` are currently in release-candidate preparation (npm currently hosts the initial `0.0.1` placeholders). Each example's `package.json` declares standard public registry ranges (`"^0.1.0"`). Until `0.1.0` is published to npm, run `npm run pack:framework && npm run verify:package && npm run install:packed` from the repository root to pack and install the local release-candidate tarballs into each example's `node_modules` without dirtying git-tracked manifests.
 
 ---
 
@@ -59,7 +61,34 @@ Every project in this repository answers six engineering questions with executab
 
 ## 4. Quick Start
 
-### Run a single example standalone
+### Workflow A — Pre-Release / Release-Candidate Validation (Local Tarballs)
+
+Until `agboss@0.1.0` and `agboss-cli@0.1.0` are published to the public npm registry, build and pack the release candidate from the `agboss` repository and install the `.tgz` artifacts into the example projects:
+
+```bash
+# 1. Install root tooling dependencies & run tooling tests
+npm install
+npm run typecheck
+
+# 2. Pack agboss & agboss-cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
+npm run pack:framework
+
+# 3. Verify tarball contents, isolated consumer imports, CLI bin & clean scaffold outside both repos
+npm run verify:package
+
+# 4. Install packed tarballs into 01..07/node_modules (restoring clean ^0.1.0 specs in package.json)
+npm run install:packed
+
+# 5. Run P0 static checks, tests, and offline demos (or add --include-p1 for all 7 projects)
+npm run check
+npm test
+npm run demo
+npm run collect:results
+```
+
+### Workflow B — Public Consumer Workflow (Post-Publication on npm)
+
+Once `agboss@0.1.0` and `agboss-cli@0.1.0` are published to npm, any example directory can be cloned and installed directly from the registry without checking out the framework source tree:
 
 ```bash
 cd 01-hello-agboss
@@ -67,26 +96,6 @@ npm install
 npm run check     # Static graph analysis (agboss check) + TypeScript + ESLint
 npm test          # Deterministic offline unit & workflow tests ($0, no API key)
 npm run demo      # Local offline demonstration
-```
-
-### Validate against local packed release tarballs (`agboss` + `agboss-cli`)
-
-Before publishing a new version of `agboss` to npm, pack the release candidate from the `agboss` monorepo and run the entire verification suite against the `.tgz` artifacts:
-
-```bash
-# 1. Pack agboss & agboss-cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
-npm run pack:framework
-
-# 2. Verify tarball contents, exports, declarations, CLI bin, templates & 13 skill modules
-npm run verify:package
-
-# 3. Install packed tarballs into all example projects
-npm run install:packed
-
-# 4. Run static checks, tests, and demos across all projects and collect proof-results.json
-npm run check
-npm test
-npm run collect:results
 ```
 
 ---

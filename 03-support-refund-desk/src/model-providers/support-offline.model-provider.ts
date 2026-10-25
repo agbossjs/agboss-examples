@@ -19,7 +19,7 @@ export {
   name: "support-offline-model-provider",
   description:
     "Deterministic offline model provider for support-refund-desk scenarios and eval suites.",
-  serves: [/^(?:offline|delegate)\//u],
+  serves: [/^(?:offline|delegate|openai)\//u],
   timeout: seconds(30),
   cost: ModelCost.fromResponse(),
   retryPolicy: RetryPolicy.none(),

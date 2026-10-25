@@ -47,10 +47,13 @@ jobs:
 
       - name: Run full P0 + P1 check, test, and demo suites
         run: |
-          node scripts/run-all.mjs --include-p1 --mode check
+          node scripts/run-all.mjs --reset --include-p1 --mode check
           node scripts/run-all.mjs --include-p1 --mode test
           node scripts/run-all.mjs --include-p1 --mode demo
-          node scripts/collect-results.mjs
+
+      - name: Collect proof results
+        if: always()
+        run: node scripts/collect-results.mjs
 
       - name: Upload Nightly Proof Artifacts
         if: always()
@@ -59,6 +62,7 @@ jobs:
           name: nightly-proof-results
           path: |
             .packed/manifest.json
+            .packed/package-verification.json
             proof-results.json
             proof-report.md
           retention-days: 14

@@ -227,15 +227,73 @@ try {
     "Missing 13-migrating-from-langgraph.md in synced skills",
   );
 
-  // Run check and describe on scaffolded project
+  // Run check, tsc, test, and describe on scaffolded project
   execFileSync("npm", ["run", "check"], { cwd: scaffoldedDir, stdio: "pipe" });
+  execFileSync("npx", ["tsc", "--noEmit"], { cwd: scaffoldedDir, stdio: "pipe" });
+  execFileSync("npm", ["test"], { cwd: scaffoldedDir, stdio: "pipe" });
   const describeOut = execFileSync("npm", ["run", "describe"], {
     cwd: scaffoldedDir,
     encoding: "utf8",
   });
   assert(describeOut.includes("scaffolded-app-workflow"), "describe output missing workflow");
 
-  console.log("[verify-package] All package verification checks PASSED.");
+  const verificationReport = {
+    verifiedAt: new Date().toISOString(),
+    nodeVersion: process.versions.node,
+    sourceCommit: manifest.sourceCommit,
+    packages: {
+      agboss: {
+        name: agboss.name,
+        version: agboss.version,
+        filename: agboss.filename,
+        sha256: agboss.sha256,
+        shasum: agboss.shasum,
+        integrity: agboss.integrity,
+        fileCount: agboss.files.length,
+      },
+      agbossCli: {
+        name: agbossCli.name,
+        version: agbossCli.version,
+        filename: agbossCli.filename,
+        sha256: agbossCli.sha256,
+        shasum: agbossCli.shasum,
+        integrity: agbossCli.integrity,
+        fileCount: agbossCli.files.length,
+      },
+    },
+    checks: {
+      tarballInventories: "passed",
+      isolatedConsumerInstall: "passed",
+      subpathExportsVerified: [
+        "agboss",
+        "agboss/dto",
+        "agboss/units",
+        "agboss/models",
+        "agboss/testing",
+        "agboss/testing/setup",
+        "agboss/eval",
+        "agboss/mcp",
+        "agboss/rag",
+        "agboss/a2a",
+        "agboss/eslint",
+      ],
+      cliBinDelegation: "passed",
+      cleanScaffoldCreate: "passed",
+      syncedAiSkillsCount: skillFiles.length,
+      scaffoldCheck: "passed",
+      scaffoldTypecheck: "passed",
+      scaffoldUnitTests: "passed",
+      scaffoldDescribe: "passed",
+      tarballSubstitutedForPreRelease: true,
+    },
+  };
+  writeFileSync(
+    join(ROOT, ".packed", "package-verification.json"),
+    JSON.stringify(verificationReport, null, 2) + "\n",
+    "utf8",
+  );
+
+  console.log("[verify-package] All package verification checks PASSED (wrote .packed/package-verification.json).");
 } finally {
   rmSync(isolatedDir, { recursive: true, force: true });
   rmSync(scaffoldParentDir, { recursive: true, force: true });

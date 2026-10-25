@@ -45,6 +45,57 @@ export interface OfflineTransportResponse {
 const usdBrand = (amount: number): OfflineUsd => amount as unknown as OfflineUsd;
 
 /**
+ * Determines whether the caller explicitly requested live model execution via `--live`
+ * or `AGBOSS_LIVE_DEMO=true`. Offline mode is always the default for `npm run demo`.
+ */
+export function isLiveDemoRequested(
+  argv: readonly string[] = process.argv,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return argv.includes("--live") || env.AGBOSS_LIVE_DEMO === "true";
+}
+
+/**
+ * Validates that a real OpenRouter credential is present when live demo mode is requested.
+ */
+export function requireLiveApiKey(env: NodeJS.ProcessEnv = process.env): string {
+  const key = (env.OPENROUTER_API_KEY ?? env.OPEN_ROUTER_KEY ?? "").trim();
+  if (!key || key === "offline-test-openrouter-api-key") {
+    throw new Error(
+      "Live demo mode (--live or AGBOSS_LIVE_DEMO=true) requires a valid OPENROUTER_API_KEY environment variable.",
+    );
+  }
+  return key;
+}
+
+/**
+ * Intercepts global `fetch` during offline demos so any accidental call to a non-loopback host
+ * (such as `https://openrouter.ai`) fails immediately instead of silently attempting a network call.
+ */
+export function installOfflineNetworkGuard(): () => void {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const rawUrl =
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const parsed = new URL(rawUrl);
+    const isLoopback =
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "::1" ||
+      parsed.hostname === "[::1]";
+    if (!isLoopback) {
+      throw new Error(
+        `Offline demo blocked external network request to ${parsed.origin}${parsed.pathname}. Use --live (or AGBOSS_LIVE_DEMO=true) with OPENROUTER_API_KEY for live model calls.`,
+      );
+    }
+    return originalFetch(input, init);
+  };
+  return () => {
+    globalThis.fetch = originalFetch;
+  };
+}
+
+/**
  * Stub `providerFetch` for `01-hello-agboss` when running `npm run demo` offline without
  * `OPENROUTER_API_KEY`, exercising the real `OpenRouterChatModelProvider` HTTP wire pipeline.
  */
@@ -797,11 +848,25 @@ export abstract class SagaOfflineTransport {
 /** 05-cluster-work-stealing deterministic transport. */
 export abstract class ClusterOfflineTransport {
   complete(request: OfflineTransportRequest): Promise<OfflineTransportResponse> {
-    const answerTool =
-      request.tools.find((t) => t.name.startsWith("answer-"))?.name ?? "answer-chunk-draft-dto";
+    const toolNames = request.tools.map((t) => t.name);
     const userMessage = request.messages.find((m) => m.role === "user")?.text ?? "";
 
-    if (answerTool.includes("decomposed")) {
+    if (toolNames.includes("answer-decompose-split-decision-dto")) {
+      return Promise.resolve({
+        text: "",
+        toolCalls: [
+          {
+            id: "call_split_1",
+            name: "answer-decompose-split-decision-dto",
+            arguments: { reason: "Root shard exceeds single-worker threshold" },
+          },
+        ],
+        usage: { inputTokens: 20, outputTokens: 10 },
+        cost: usdBrand(0.0001),
+      });
+    }
+
+    if (toolNames.includes("answer-decomposed-leaf-dto")) {
       return Promise.resolve({
         text: "",
         toolCalls: [
@@ -816,6 +881,8 @@ export abstract class ClusterOfflineTransport {
       });
     }
 
+    const answerTool =
+      request.tools.find((t) => t.name.startsWith("answer-"))?.name ?? "answer-chunk-draft-dto";
     const chunkMatch = /"chunkId"\s*:\s*"([^"]+)"/u.exec(userMessage);
     const chunkId = chunkMatch?.[1] ?? "chunk-1";
 
