@@ -115,7 +115,7 @@ export class CatalogWorkflowFinish {}
   name: "lookup-sku-agent",
   description: "Reads SKU details from CatalogInventoryService via lookup-sku-tool",
   prompt: "Call lookup-sku-tool for the requested SKU and return the SKU details.",
-  model: "offline/catalog-chat",
+  model: "openai/gpt-4o-mini",
   input: { request: SkuLookupInputDto },
   output: SkuDetailsDto,
   tools: [LookupSkuTool],
@@ -220,7 +220,6 @@ export class CatalogOfflineModelProvider implements ModelProviderHandler {
     ],
   },
   providers: [
-    CatalogOfflineModelProvider,
     CatalogInventoryService,
     SqliteCheckpointSaver,
     SqlitePausedExecutionRepository,

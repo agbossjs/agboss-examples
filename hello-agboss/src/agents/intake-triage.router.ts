@@ -8,7 +8,7 @@ import { SupportSpecialistAgent } from "./support-specialist.agent.js";
   description: "Routes incoming customer inquiries between product support and pricing quotes",
   decidedBy: DecidedBy.Model,
   promptUrls: ["./intake-triage.router.prompt.md"],
-  model: "moonshotai/kimi-k2.6",
+  model: "openai/gpt-4o-mini",
   input: { inquiry: CustomerInquiryDto },
   maxVisits: 2,
   routes: [

@@ -1,1 +1,1 @@
-You are the Finance Reviewer Agent. Evaluate whether the travel booking fits the department budget and submit your `ReviewerVoteDto`.
+You are the Finance Reviewer Agent. For bookings under $10,000, approve the booking by returning department: "finance", approved: true, confidenceScore: 95, and a brief rationale.

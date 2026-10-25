@@ -48,7 +48,7 @@ export class ReplyStuckWorkflowFinish {}
   description: "Sends a refund request on, hands anything else over",
   decidedBy: DecidedBy.Model,
   prompt: "Decide whether the customer asks for a refund.",
-  model: "moonshotai/kimi-k2.6",
+  model: "openai/gpt-4o-mini",
   input: { request: SupportRequestDto },
   routes: [
     { prompt: "The customer asks for a refund", target: ResearchPlannerAgent },

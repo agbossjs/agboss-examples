@@ -6,7 +6,7 @@ import { CustomerInquiryDto, SupportReplyDto } from "../workflows/dtos.js";
   name: "quote-advisor-agent",
   description: "Computes subscription quotes using the injected pricing catalog tool",
   promptUrls: ["./quote-advisor.agent.prompt.md"],
-  model: "moonshotai/kimi-k2.6",
+  model: "openai/gpt-4o-mini",
   input: { inquiry: CustomerInquiryDto },
   output: SupportReplyDto,
   tools: [CalculateQuoteTool],

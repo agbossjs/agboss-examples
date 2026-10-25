@@ -12,5 +12,8 @@ describe("support-refund-desk — Scenario A: PII Token Roundtrip & Boundary Ref
     expect(res.toolReceivedRealEmail).toBe("alice.synth@example.com");
     expect(res.recordMaskedEmail).toBe(true);
     expect(res.blockedCardRefusalKind).toBe(PiiKind.CardNumber);
+    expect(res.langfuseTraceUrlMatchesSession).toBe(true);
+    expect(res.langfuseOtelSpansExported).toBe(true);
+    expect(res.langfuseOtelSpansMaskedPii).toBe(true);
   });
 });

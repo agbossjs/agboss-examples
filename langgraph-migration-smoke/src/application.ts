@@ -98,7 +98,6 @@ export class SupportExecutionBudget implements BudgetHandler {
   workflows: [SupportWorkflow],
   budgets: [SupportApplicationBudget, SupportTenantBudget, SupportExecutionBudget],
   providers: [
-    OfflineMigrationModelProvider,
     SupervisorQueueRefundSignOffChannel,
     SupervisorQueueService,
     SqliteCheckpointSaver,

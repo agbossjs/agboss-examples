@@ -4,7 +4,7 @@
  * Records the tarball substitution in `.packed/install-record.json`.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -59,6 +59,11 @@ for (const relDir of TARGET_DIRS) {
 
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
   console.log(`[install-packed] Installing dependencies in ${relDir}...`);
+  rmSync(join(projectDir, "package-lock.json"), { force: true });
+  rmSync(join(projectDir, "node_modules", "agboss"), { recursive: true, force: true });
+  rmSync(join(projectDir, "node_modules", "agboss-cli"), { recursive: true, force: true });
+  rmSync(join(projectDir, "node_modules", "@opentelemetry"), { recursive: true, force: true });
+  rmSync(join(projectDir, "node_modules", "@langfuse"), { recursive: true, force: true });
   execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
     cwd: projectDir,
     stdio: "inherit",

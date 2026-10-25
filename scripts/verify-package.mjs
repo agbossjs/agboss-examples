@@ -94,6 +94,23 @@ try {
     stdio: "pipe",
   });
 
+  // Verify clean OpenTelemetry / Langfuse / LangGraph dependency tree with zero peer conflicts
+  execFileSync(
+    "npm",
+    [
+      "ls",
+      "@opentelemetry/api",
+      "@opentelemetry/exporter-trace-otlp-http",
+      "@langfuse/otel",
+      "@langfuse/langchain",
+      "@langchain/langgraph",
+    ],
+    {
+      cwd: isolatedDir,
+      stdio: "pipe",
+    },
+  );
+
   console.log("[verify-package] 3/4 Verifying runtime subpath exports and zero monorepo leakage...");
   const probeScript = `
     import * as root from "agboss";

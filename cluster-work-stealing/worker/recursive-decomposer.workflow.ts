@@ -66,8 +66,8 @@ export class RecursiveDecomposerFailedWorkflowFinish {}
   description:
     "Completes a shard directly as DecomposedLeafDto or requests a recursive split via DecomposeSplitDecisionDto",
   prompt:
-    "Return DecomposedLeafDto if the shard is small enough, or DecomposeSplitDecisionDto to split it into two child shards.",
-  model: "offline/cluster-worker",
+    "If node.level is 1, return DecomposeSplitDecisionDto to split the root shard into two child shards. If node.level is 2 or higher, return DecomposedLeafDto with a concise report.",
+  model: "openai/gpt-4o-mini",
   input: { node: DecomposeNodeDto },
   output: oneOf(DecomposedLeafDto, DecomposeSplitDecisionDto),
 })

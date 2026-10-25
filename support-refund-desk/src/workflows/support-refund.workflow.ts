@@ -4,7 +4,10 @@ import {
   WorkflowStart,
   start,
 } from "agboss";
-import { RefundSupportAgent } from "../agents/refund-support.agent.js";
+import {
+  LiveRefundSupportAgent,
+  RefundSupportAgent,
+} from "../agents/refund-support.agent.js";
 import { InjectionDetectorService } from "../guardrails/prompt-injection.guardrail.js";
 import { RefundPolicyToolInterceptor } from "../interceptors/refund-policy.interceptor.js";
 import { PolicyDriftCompactionService } from "../memory/policy-aware.compaction.js";
@@ -47,3 +50,39 @@ export class SupportRefundWorkflowFinish {}
   ],
 })
 export class SupportRefundWorkflow {}
+
+@WorkflowStart({
+  name: "live-support-refund-workflow-start",
+  description: "Incoming customer support refund request (live OpenRouter openai/gpt-4o-mini)",
+  input: SupportRequestDto,
+})
+export class LiveSupportRefundWorkflowStart {}
+
+@WorkflowFinish({
+  name: "live-support-refund-workflow-finish",
+  description: "Final support refund decision (live OpenRouter openai/gpt-4o-mini)",
+  output: SupportAnswerDto,
+})
+export class LiveSupportRefundWorkflowFinish {}
+
+@Workflow({
+  name: "live-support-refund-workflow",
+  version: "1.0.0",
+  flow: [
+    start(LiveSupportRefundWorkflowStart)
+      .returns(SupportRequestDto)
+      .toAgent(LiveRefundSupportAgent)
+      .returns(SupportAnswerDto)
+      .toFinish(LiveSupportRefundWorkflowFinish),
+  ],
+  maxSteps: 4,
+  piiPolicies: [SupportTicketIdPiiPolicy],
+  toolInterceptors: [RefundPolicyToolInterceptor],
+  providers: [
+    OrderBookService,
+    TicketPatternService,
+    InjectionDetectorService,
+    PolicyDriftCompactionService,
+  ],
+})
+export class LiveSupportRefundWorkflow {}

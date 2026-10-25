@@ -180,7 +180,6 @@ export class OfflineDemoModelProvider implements ModelProviderHandler {
   version: "0.1.0",
   environment: AppEnvironment,
   workflows: [HelloAgbossWorkflow],
-  providers: [OfflineDemoModelProvider],
   budgets: [HelloApplicationDailyBudget, HelloTenantDailyBudget, HelloExecutionBudget],
 })
 export class HelloAgbossApplication {}

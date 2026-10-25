@@ -48,7 +48,7 @@ export class ManagerApprovalCoordinatorAgent {}
 @Agent({
   name: "finance-reviewer-agent",
   description: "Evaluates budget compliance for the travel booking",
-  model: "saga-model",
+  model: "openai/gpt-4o-mini",
   promptUrls: ["./finance-reviewer.agent.prompt.md"],
   input: {
     request: TravelBookingRequestDto,
@@ -63,7 +63,7 @@ export class FinanceReviewerAgent {}
 @Agent({
   name: "compliance-reviewer-agent",
   description: "Evaluates corporate travel policy compliance",
-  model: "saga-model",
+  model: "openai/gpt-4o-mini",
   promptUrls: ["./compliance-reviewer.agent.prompt.md"],
   input: {
     request: TravelBookingRequestDto,

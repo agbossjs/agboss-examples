@@ -20,6 +20,8 @@ export const DEFAULT_MESH_PUBLIC_KEY_PEM = createPublicKey(deterministicSeedKey)
 
 process.env.PII_PSEUDONYM_KEY ??= "test-mesh-pseudonym-key-32-bytes-minimum!";
 process.env.MESH_SIGNING_KEY ??= DEFAULT_MESH_PRIVATE_KEY_PEM;
+process.env.OPENROUTER_API_KEY ??=
+  process.env.OPEN_ROUTER_KEY ?? "offline-test-openrouter-api-key";
 
 export class AppEnvironment {
   sqlitePath!: string;
@@ -27,4 +29,5 @@ export class AppEnvironment {
   meshSigningKey!: Secret;
   triageVerifyKey!: string;
   billingVerifyKey!: string;
+  openRouterApiKey!: Secret;
 }

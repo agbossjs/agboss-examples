@@ -16,6 +16,8 @@ export interface MigrationScorecard {
   readonly narrowDtosCount: number;
   readonly agbossCheckPassed: boolean;
   readonly zeroLangGraphImportsInSrc: boolean;
+  readonly studioGraphCompatible: boolean;
+  readonly studioGraphNodesCount: number;
 }
 
 export async function measureMigrationBenchmark(): Promise<MigrationScorecard> {
@@ -44,5 +46,7 @@ export async function measureMigrationBenchmark(): Promise<MigrationScorecard> {
     narrowDtosCount: validation.dtoClassesCount,
     agbossCheckPassed: validation.agbossCheckPassed && validation.agbossCheckProblemCount === 0,
     zeroLangGraphImportsInSrc: validation.zeroLangGraphImportsInSrc,
+    studioGraphCompatible: validation.studioGraphCompatible,
+    studioGraphNodesCount: validation.studioGraphNodesCount,
   };
 }

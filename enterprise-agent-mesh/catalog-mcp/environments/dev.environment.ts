@@ -25,4 +25,5 @@ export const environment = {
   meshSigningKey: secret("MESH_SIGNING_KEY"),
   triageVerifyKey: env("TRIAGE_VERIFY_KEY", { default: publicKeyPem }),
   billingVerifyKey: env("BILLING_VERIFY_KEY", { default: publicKeyPem }),
+  openRouterApiKey: secret("OPENROUTER_API_KEY"),
 };

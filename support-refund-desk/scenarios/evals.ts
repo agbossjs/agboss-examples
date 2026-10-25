@@ -212,6 +212,10 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
     const app = await createApp(SupportRefundDeskApplication, {
       env: "dev",
       processEnv: {
+        OPENROUTER_API_KEY:
+          process.env.OPENROUTER_API_KEY ??
+          process.env.OPEN_ROUTER_KEY ??
+          "offline-test-openrouter-api-key",
         SQLITE_PATH: sqlitePath,
         PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
       },

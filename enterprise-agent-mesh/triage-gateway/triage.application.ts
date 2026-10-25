@@ -196,7 +196,7 @@ export class AskBillingTool implements ToolHandler<BillingInquiryDto, BillingRes
   description: "Coordinates catalog MCP lookups and billing A2A inquiries",
   prompt:
     "Look up the SKU with search-catalog-tool and resolve the invoice with ask-billing-tool, then return the combined triage response.",
-  model: "offline/triage-chat",
+  model: "openai/gpt-4o-mini",
   input: { request: TriageRequestDto },
   output: TriageResponseDto,
   tools: [SearchCatalogTool, AskBillingTool],
@@ -363,7 +363,6 @@ export class TriageExecutionBudget implements BudgetHandler {
     ],
   },
   providers: [
-    TriageOfflineModelProvider,
     SqliteCheckpointSaver,
     SqlitePausedExecutionRepository,
     SqliteCostLedgerRepository,

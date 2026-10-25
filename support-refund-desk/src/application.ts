@@ -16,6 +16,7 @@ import {
 import {
   ModelCost,
   ModelProvider,
+  OpenRouterModelProvider,
   RetryPolicy,
   type ModelProviderHandler,
   type ModelProviderRequest,
@@ -29,7 +30,10 @@ import {
   SupportExecutionContext,
   SupportTenantContext,
 } from "./workflows/dtos.js";
-import { SupportRefundWorkflow } from "./workflows/support-refund.workflow.js";
+import {
+  LiveSupportRefundWorkflow,
+  SupportRefundWorkflow,
+} from "./workflows/support-refund.workflow.js";
 
 export interface SupportModelConfig {
   readonly simulateAttemptOverCap?: boolean;
@@ -424,11 +428,12 @@ export class SupportExecutionBudget implements BudgetHandler {
   tenantContext: SupportTenantContext,
   executionContext: SupportExecutionContext,
   pseudonymKey: "piiPseudonymKey",
-  workflows: [SupportRefundWorkflow],
+  workflows: [SupportRefundWorkflow, LiveSupportRefundWorkflow],
   budgets: [SupportAppDailyBudget, SupportTenantDailyBudget, SupportExecutionBudget],
   piiPolicies: [CustomerContactPiiPolicy],
   toolInterceptors: [AuditTrailToolInterceptor],
   providers: [
+    OpenRouterModelProvider,
     SupportOfflineModelProvider,
     SqliteCheckpointSaver,
     SqliteExecutionRecordRepository,

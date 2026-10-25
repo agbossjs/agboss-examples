@@ -1,6 +1,7 @@
 import { ExecutionStatus } from "agboss";
+import { studioOf } from "agboss/internal";
 import { failWith, ModelFailure, replyWith, testWith } from "agboss/testing";
-import { beforeEach, describe, expect } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   CoordinatorWorkflowFinish,
   CoordinatorWorkflowStart,
@@ -122,4 +123,45 @@ describe("Cluster Work Stealing & Recursive Decomposition (EX-18 / EX-19)", () =
       });
     },
   );
+
+  it("renders child workflows as subgraphs (xray: true) and marks ThisWorkflow with recursive maxDepth in LangGraph Studio", async () => {
+    const studio = await studioOf(ClusterWorkStealingApplication, {
+      processEnv: {
+        ...process.env,
+        OPENROUTER_API_KEY:
+          process.env.OPENROUTER_API_KEY ??
+          process.env.OPEN_ROUTER_KEY ??
+          "offline-test-openrouter-api-key",
+      },
+    });
+    try {
+      expect(studio.names).toEqual(
+        expect.arrayContaining([
+          "coordinator-workflow",
+          "chunk-worker-workflow",
+          "recursive-decomposer-workflow",
+        ]),
+      );
+
+      const coordinatorGraph = await studio
+        .graph("coordinator-workflow")
+        .getGraphAsync({ xray: true });
+      const coordinatorNodeIds = Object.keys(coordinatorGraph.nodes);
+      expect(coordinatorNodeIds).toContain("chunk-worker-workflow:chunk-worker-agent");
+
+      const recursiveGraph = await studio
+        .graph("recursive-decomposer-workflow")
+        .getGraphAsync({ xray: true });
+      const recursiveNodeIds = Object.keys(recursiveGraph.nodes);
+      expect(recursiveNodeIds).toContain("this-workflow");
+      expect(
+        recursiveNodeIds.filter((id) => id.startsWith("this-workflow:")),
+      ).toEqual([]);
+      expect(recursiveGraph.nodes["this-workflow"]?.metadata).toEqual({
+        recursive: "maxDepth 2",
+      });
+    } finally {
+      await studio.close();
+    }
+  });
 });

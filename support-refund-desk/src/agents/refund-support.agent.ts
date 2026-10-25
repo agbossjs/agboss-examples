@@ -26,3 +26,22 @@ import { CitationCodeJudge } from "./judges.js";
   guardrails: [PromptInjectionGuardrail, UnauthorizedPayoutGuardrail],
 })
 export class RefundSupportAgent {}
+
+@Agent({
+  name: "live-refund-support-agent",
+  description: "Live OpenRouter (openai/gpt-4o-mini) refund support agent under PII masking, tool interception, guardrails, and policy RAG.",
+  promptUrls: ["./refund-support.prompt.md"],
+  model: "openai/gpt-4o-mini",
+  input: { request: SupportRequestDto },
+  output: SupportAnswerDto,
+  tools: [LookupOrderTool, IssueRefundTool],
+  maxToolCalls: 5,
+  maxTokens: TokenLimit.MODEL_MAX,
+  rag: [{ use: RefundPolicyRag, mode: RagMode.Context }],
+  judges: [CitationCodeJudge],
+  maxRetries: 1,
+  uncompactedTurns: 2,
+  compaction: PolicyAwareCompaction,
+  guardrails: [PromptInjectionGuardrail, UnauthorizedPayoutGuardrail],
+})
+export class LiveRefundSupportAgent {}

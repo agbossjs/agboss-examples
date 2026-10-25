@@ -3,6 +3,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { studioOf } from "agboss/internal";
+import { SupportApplication } from "../src/application.js";
 
 const execFileAsync = promisify(execFile);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +15,8 @@ export interface MigrationValidationResult {
   readonly zeroLangGraphImportsInSrc: boolean;
   readonly dtoClassesCount: number;
   readonly workflowPathsCount: number;
+  readonly studioGraphCompatible: boolean;
+  readonly studioGraphNodesCount: number;
 }
 
 async function listTypeScriptFiles(dir: string): Promise<readonly string[]> {
@@ -66,11 +70,44 @@ export async function validateMigratedProject(
   const hasStartPath = workflowSource.includes("start(SupportWorkflowStart)");
   const hasReviewerPath = workflowSource.includes("agent(ReplyReviewerAgent)");
 
+  // Verify LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) compatibility
+  const studio = await studioOf(SupportApplication, {
+    processEnv: {
+      ...process.env,
+      OPENROUTER_API_KEY:
+        process.env.OPENROUTER_API_KEY ??
+        process.env.OPEN_ROUTER_KEY ??
+        "offline-test-openrouter-api-key",
+    },
+  });
+  let studioGraphNodesCount = 0;
+  let studioGraphCompatible = false;
+  try {
+    const drawn = await studio.graph("support-workflow").getGraphAsync({ xray: true });
+    const nodeIds = Object.keys(drawn.nodes);
+    studioGraphNodesCount = nodeIds.length;
+    studioGraphCompatible =
+      studio.names.includes("support-workflow") &&
+      nodeIds.includes("support-triage-router") &&
+      nodeIds.includes("research-planner-agent") &&
+      nodeIds.includes("order-researcher-agent") &&
+      nodeIds.includes("reply-writer-agent") &&
+      nodeIds.includes("reply-editor-agent") &&
+      nodeIds.includes("reply-reviewer-agent") &&
+      nodeIds.includes("refund-size-router") &&
+      nodeIds.includes("issue-refund-action") &&
+      nodeIds.includes("refund-sign-off-agent");
+  } finally {
+    await studio.close();
+  }
+
   return {
     agbossCheckPassed: parsed.ok === true,
     agbossCheckProblemCount: parsed.result?.problems?.length ?? 0,
     zeroLangGraphImportsInSrc: !hasLangGraphImport,
     dtoClassesCount: dtoMatches.length,
     workflowPathsCount: (hasStartPath ? 1 : 0) + (hasReviewerPath ? 1 : 0),
+    studioGraphCompatible,
+    studioGraphNodesCount,
   };
 }

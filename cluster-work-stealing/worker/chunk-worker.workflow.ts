@@ -108,8 +108,8 @@ export class RequestChunkSignOffTool
   name: "chunk-worker-agent",
   description: "Processes one work chunk on a cluster worker instance",
   prompt:
-    "Process the chunk payload and return ChunkDraftDto. If the payload requires sign-off, call request-chunk-sign-off-tool first.",
-  model: "offline/cluster-worker",
+    "Process the chunk payload and return ChunkDraftDto with the exact chunkId from task.chunkId and a short summary. Call request-chunk-sign-off-tool only when the payload explicitly asks for operator sign-off.",
+  model: "openai/gpt-4o-mini",
   input: { task: ChunkTaskDto },
   output: ChunkDraftDto,
   tools: [RequestChunkSignOffTool],

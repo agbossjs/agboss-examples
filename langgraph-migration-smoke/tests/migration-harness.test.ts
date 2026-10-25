@@ -65,6 +65,8 @@ describe("langgraph-migration-smoke — Coding-Agent Migration & Acceptance Proo
     expect(scorecard.narrowDtosCount).toBe(10);
     expect(scorecard.agbossCheckPassed).toBe(true);
     expect(scorecard.zeroLangGraphImportsInSrc).toBe(true);
+    expect(scorecard.studioGraphCompatible).toBe(true);
+    expect(scorecard.studioGraphNodesCount).toBeGreaterThanOrEqual(11);
   });
 
   test("small refund: one round of review changes, then issued immediately via IssueRefundAction", async ({

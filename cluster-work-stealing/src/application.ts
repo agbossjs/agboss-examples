@@ -157,7 +157,6 @@ export class ClusterExecutionBudget implements BudgetHandler {
   healthChecks: [StorageClusterHealthCheck],
   maxConcurrentSteps: 2,
   providers: [
-    ClusterOfflineModelProvider,
     ClusterQueueChunkSignOffChannel,
     ClusterLedgerService,
     StorageBackendProbeService,

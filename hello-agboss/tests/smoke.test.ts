@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { secret } from "agboss";
 import { callTool, replyWith, routeTo, testTool, testWith } from "agboss/testing";
 import { describe, expect, it } from "vitest";
 import { IntakeTriageRouter } from "../src/agents/intake-triage.router.js";
@@ -87,7 +88,10 @@ test("routes pricing inquiries to QuoteAdvisorAgent, invokes CalculateQuoteTool 
 
 describe("CalculateQuoteTool unit runner & packaging boundaries", () => {
   const runQuoteTool = testTool(CalculateQuoteTool, {
-    environment: { catalogCurrency: "EUR" },
+    environment: {
+      openRouterApiKey: secret("OPENROUTER_API_KEY"),
+      catalogCurrency: "EUR",
+    },
   });
 
   it("injects PricingCatalogService and reads catalogCurrency from ApplicationContext.environment", async () => {

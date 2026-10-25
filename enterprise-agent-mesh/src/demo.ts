@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { createApp } from "agboss";
+import { createApp, ExecutionStatus } from "agboss";
 import { A2AClient, a2aHttpListener } from "agboss/a2a";
 import {
   BillingA2AExpose,
@@ -9,6 +9,10 @@ import {
   BillingInquiryDto,
   BillingResolutionDto,
 } from "../billing-service/billing.application.js";
+import {
+  CatalogApplication,
+  CatalogWorkflowStart,
+} from "../catalog-mcp/catalog.application.js";
 import { runFederationBlastRadiusProof } from "../federation/verify-federation.js";
 
 const billingApp = await createApp(BillingApplication);
@@ -48,6 +52,23 @@ const billingResult = await client.execute({
 await new Promise<void>((resolve) => httpServer.close(() => resolve()));
 await billingApp.close();
 
+let liveCatalogLookup: Record<string, unknown> | undefined;
+if (process.env.OPEN_ROUTER_KEY || process.argv.includes("--live")) {
+  const catalogApp = await createApp(CatalogApplication);
+  try {
+    const skuRun = await catalogApp.execute(CatalogWorkflowStart, {
+      sku: "SKU-GPU-900",
+    });
+    liveCatalogLookup = {
+      status: skuRun.status,
+      output: skuRun.status === ExecutionStatus.Finished ? skuRun.output : undefined,
+      path: skuRun.path,
+    };
+  } finally {
+    await catalogApp.close();
+  }
+}
+
 const federation = await runFederationBlastRadiusProof();
 
 process.stdout.write(
@@ -55,6 +76,7 @@ process.stdout.write(
     {
       project: "enterprise-agent-mesh",
       a2aResolution: billingResult,
+      ...(liveCatalogLookup ? { liveCatalogLookup } : {}),
       federationProof: federation,
     },
     null,

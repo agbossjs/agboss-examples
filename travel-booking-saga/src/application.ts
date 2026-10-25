@@ -16,6 +16,7 @@ import {
   ModelCost,
   ModelProvider,
   ModelProviderMessageRole,
+  OpenRouterModelProvider,
   RetryPolicy,
   TRANSIENT_FAILURES,
   type ModelProviderHandler,
@@ -70,7 +71,7 @@ export class SagaExecutionBudget implements BudgetHandler {
 @ModelProvider({
   name: "saga-offline-model-provider",
   description: "Deterministic offline transport model provider for travel-booking-saga",
-  serves: [/.*/],
+  serves: [/^saga-model$/u],
   timeout: seconds(30),
   cost: ModelCost.fromPrices({
     "saga-model": { inputPerMillion: usd(1), outputPerMillion: usd(2) },
@@ -278,6 +279,7 @@ export class SagaOfflineModelProvider implements ModelProviderHandler {
     QuorumSagaWorkflow,
   ],
   providers: [
+    OpenRouterModelProvider,
     SagaOfflineModelProvider,
     CorporateBookingApprovalChannel,
     SqliteCheckpointSaver,

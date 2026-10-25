@@ -5,7 +5,7 @@ import { CustomerInquiryDto, SupportReplyDto } from "../workflows/dtos.js";
   name: "support-specialist-agent",
   description: "Answers general product and technical support questions",
   promptUrls: ["./support-specialist.agent.prompt.md"],
-  model: "moonshotai/kimi-k2.6",
+  model: "openai/gpt-4o-mini",
   input: { inquiry: CustomerInquiryDto },
   output: SupportReplyDto,
   maxTokens: 2000,
