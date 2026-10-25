@@ -32,6 +32,7 @@ console.log("[verify-package] 1/4 Checking tarball file inventories...");
 
 // Required files in agboss tarball
 const agbossFiles = new Set(agboss.files);
+assert(agbossFiles.has("bin/agboss.js"), "agboss missing bin/agboss.js");
 assert(agbossFiles.has("dist/index.js"), "agboss missing dist/index.js");
 assert(agbossFiles.has("dist/index.d.ts"), "agboss missing dist/index.d.ts");
 assert(agbossFiles.has("dist/dto/index.js"), "agboss missing dist/dto/index.js");
@@ -55,6 +56,7 @@ assert(cliFiles.has("bin/agboss.js"), "agboss-cli missing bin/agboss.js");
 assert(cliFiles.has("dist/cli.js"), "agboss-cli missing dist/cli.js");
 assert(cliFiles.has("templates/project/package.json.tmpl"), "agboss-cli missing project templates");
 assert(cliFiles.has("LICENSE"), "agboss-cli missing LICENSE");
+assert(cliFiles.has("NOTICE"), "agboss-cli missing NOTICE");
 
 // Node version check
 const [major, minor] = process.versions.node.split(".").map(Number);
@@ -153,14 +155,43 @@ try {
 
   console.log("[verify-package] 4/4 Verifying packed CLI bin and `agboss create` in isolated workspace...");
   const cliBin = join(isolatedDir, "node_modules", ".bin", "agboss");
+  const cliExplicitBin = join(isolatedDir, "node_modules", ".bin", "agboss-cli");
+  const proxyBin = join(isolatedDir, "node_modules", "agboss", "bin", "agboss.js");
   const helpOut = execFileSync(cliBin, ["--help"], { cwd: isolatedDir, encoding: "utf8" });
   assert(helpOut.includes("agboss"), "CLI --help did not print agboss usage");
-
-  // Scaffold a new project in a clean directory without a parent node_modules
-  execFileSync(cliBin, ["create", "scaffolded-app", "--yes", "--skip-install"], {
-    cwd: scaffoldParentDir,
-    stdio: "pipe",
+  const explicitHelpOut = execFileSync(cliExplicitBin, ["--help"], { cwd: isolatedDir, encoding: "utf8" });
+  assert(explicitHelpOut.includes("agboss"), "agboss-cli --help did not print agboss usage");
+  const proxyHelpOut = execFileSync(process.execPath, [proxyBin, "--help"], {
+    cwd: isolatedDir,
+    encoding: "utf8",
   });
+  assert(proxyHelpOut.includes("agboss"), "agboss/bin/agboss.js local delegation did not print agboss usage");
+
+  // Also verify empty-folder npx delegation from unpacked agboss-*.tgz using AGBOSS_CLI_PACKAGE_SPEC
+  const unpackedAgbossDir = realpathSync(mkdtempSync(join(tmpdir(), "agboss-unpacked-bin-")));
+  try {
+    execFileSync("tar", ["-xzf", agboss.tarballPath, "-C", unpackedAgbossDir], { stdio: "pipe" });
+    execFileSync(
+      process.execPath,
+      [
+        join(unpackedAgbossDir, "package", "bin", "agboss.js"),
+        "create",
+        "scaffolded-app",
+        "--yes",
+        "--skip-install",
+      ],
+      {
+        cwd: scaffoldParentDir,
+        env: {
+          ...process.env,
+          AGBOSS_CLI_PACKAGE_SPEC: agbossCli.tarballPath,
+        },
+        stdio: "pipe",
+      },
+    );
+  } finally {
+    rmSync(unpackedAgbossDir, { recursive: true, force: true });
+  }
 
   const scaffoldedDir = join(scaffoldParentDir, "scaffolded-app");
   assert(existsSync(join(scaffoldedDir, "package.json")), "scaffolded-app missing package.json");

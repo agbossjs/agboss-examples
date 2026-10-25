@@ -5,7 +5,7 @@
  * `npm pack --json` output rather than inferring filenames.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,8 +33,12 @@ execFileSync("npm", ["run", "build"], {
   stdio: "inherit",
 });
 
-rmSync(PACKED_DIR, { recursive: true, force: true });
 mkdirSync(PACKED_DIR, { recursive: true });
+for (const entry of readdirSync(PACKED_DIR)) {
+  if (entry !== ".npm-cache") {
+    rmSync(join(PACKED_DIR, entry), { recursive: true, force: true });
+  }
+}
 
 function packPackage(pkgSubdir) {
   const pkgDir = join(AGBOSS_REPO, pkgSubdir);
