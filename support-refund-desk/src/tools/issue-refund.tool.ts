@@ -1,7 +1,8 @@
 import { ExecutionContext, Tool, type ToolHandler } from "agboss";
 import { seconds } from "agboss/units";
-import { IssueRefundInputDto, RefundReceiptDto } from "../workflows/dtos.js";
-import { OrderBookService } from "./order-book.service.js";
+import { IssueRefundInputDto } from "../dto/issue-refund-input.dto.js";
+import { RefundReceiptDto } from "../dto/refund-receipt.dto.js";
+import { OrderBookService } from "../services/order-book.service.js";
 
 @Tool({
   name: "issue-refund-tool",

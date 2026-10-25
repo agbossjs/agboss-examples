@@ -5,14 +5,12 @@ import {
   setAllowIncompatibleResume,
   simulateVersionDriftOnPausedThread,
 } from "../scenarios/cross-instance-cancel-and-resume.js";
-import { ClusterWorkStealingApplication } from "../src/application.js";
-import {
-  ChunkDraftDto,
-  ChunkWorkerAgent,
-  ChunkWorkerWorkflowFinish,
-  ChunkWorkerWorkflowStart,
-  RequestChunkSignOffTool,
-} from "../worker/chunk-worker.workflow.js";
+import { ChunkWorkerAgent } from "../src/agents/chunk-worker/chunk-worker.agent.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
+import { ChunkDraftDto } from "../src/dto/chunk-draft.dto.js";
+import { RequestChunkSignOffTool } from "../src/tools/request-chunk-sign-off.tool.js";
+import { ChunkWorkerWorkflowFinish } from "../src/workflow-finishes/chunk-worker.workflow-finish.js";
+import { ChunkWorkerWorkflowStart } from "../src/workflow-starts/chunk-worker.workflow-start.js";
 
 const clusterTest = testWith(ClusterWorkStealingApplication, { instances: 2 });
 

@@ -40,12 +40,13 @@ npm run demo:evals
 
 ## 3. Architecture
 
-- `src/application.ts` — `SupportRefundDeskApplication` with `SupportOfflineModelProvider`, `CustomerContactPiiPolicy`, `AuditTrailToolInterceptor`, SQLite persistence, and multi-scope budgets.
-- `src/policies/` — `CustomerContactPiiPolicy` and `SupportTicketIdPiiPolicy`.
-- `src/guardrails/` — `PromptInjectionGuardrail` (`DecidedBy.Code`) and `UnauthorizedPayoutGuardrail` (`DecidedBy.Model`).
+- `src/support-refund-desk.application.ts` — `SupportRefundDeskApplication` with `SupportOfflineModelProvider`, `CustomerContactPiiPolicy`, `AuditTrailToolInterceptor`, SQLite persistence, and multi-scope budgets.
+- `src/dto/` — Narrow DTOs (`1 class = 1 file`).
+- `src/pii-policies/` — `CustomerContactPiiPolicy` and `SupportTicketIdPiiPolicy`.
+- `src/guardrails/` — `PromptInjectionGuardrail` (`DecidedBy.Code`) and `UnauthorizedPayoutGuardrail` (`DecidedBy.Model`) in component subdirectories.
 - `src/interceptors/` — `RefundPolicyToolInterceptor` (`replyToModel` + `block`) and `AuditTrailToolInterceptor`.
-- `src/memory/` — `RefundPolicyRag`, `SupportConversationCompaction`, and `PolicyAwareCompaction`.
-- `src/agents/` — `RefundSupportAgent`, `CitationCodeJudge`, and `GroundedAnswerJudge`.
+- `src/rag/` & `src/compactions/` — `RefundPolicyRag`, `SupportConversationCompaction`, and `PolicyAwareCompaction`.
+- `src/agents/` & `src/judges/` — `RefundSupportAgent`, `LiveRefundSupportAgent`, `CitationCodeJudge`, and `GroundedAnswerJudge` in component subdirectories.
 - `src/eval-suites/refund-desk.eval-suite.ts` — `RefundDeskEvalSuite` (`EvalCascade.StopAtFirstFailure`).
 
 ## 4. Failure / scenario matrix

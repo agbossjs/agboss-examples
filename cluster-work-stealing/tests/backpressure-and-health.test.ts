@@ -3,13 +3,11 @@ import { replyWith, testWith, waitFor } from "agboss/testing";
 import { seconds } from "agboss/units";
 import { describe, expect } from "vitest";
 import { summarizeHealthReport } from "../scenarios/backpressure-and-readiness.js";
-import { ClusterWorkStealingApplication } from "../src/application.js";
-import { StorageBackendProbeService } from "../storage/storage-cluster.health-check.js";
-import {
-  ChunkDraftDto,
-  ChunkWorkerAgent,
-  ChunkWorkerWorkflowStart,
-} from "../worker/chunk-worker.workflow.js";
+import { ChunkWorkerAgent } from "../src/agents/chunk-worker/chunk-worker.agent.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
+import { ChunkDraftDto } from "../src/dto/chunk-draft.dto.js";
+import { StorageBackendProbeService } from "../src/services/storage-backend-probe.service.js";
+import { ChunkWorkerWorkflowStart } from "../src/workflow-starts/chunk-worker.workflow-start.js";
 
 const test = testWith(ClusterWorkStealingApplication);
 

@@ -6,4 +6,5 @@ process.env.OPENROUTER_API_KEY ??=
 export class AppEnvironment {
   catalogCurrency!: string;
   openRouterApiKey!: Secret;
+  sqlitePath!: string;
 }

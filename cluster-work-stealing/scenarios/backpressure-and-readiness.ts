@@ -4,7 +4,7 @@ import {
   HealthStatus,
   type HealthReport,
 } from "agboss";
-import { ClusterWorkStealingApplication } from "../src/application.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 
 export interface BackpressureHealthSummary {
   readonly livenessStatus: HealthStatus;

@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { studioOf } from "agboss/internal";
-import { SupportApplication } from "../src/application.js";
+import { SupportApplication } from "../src/langgraph-migration-smoke.application.js";
 
 const execFileAsync = promisify(execFile);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -57,14 +57,15 @@ export async function validateMigratedProject(
     }
   }
 
-  const dtoSource = await readFile(
-    join(projectRoot, "src", "support", "support.dto.ts"),
-    "utf8",
-  );
-  const dtoMatches = dtoSource.match(/export class \w+Dto/gu) ?? [];
+  const dtoFiles = await listTypeScriptFiles(join(projectRoot, "src", "dto"));
+  let dtoCount = 0;
+  for (const dtoFile of dtoFiles) {
+    const dtoSource = await readFile(dtoFile, "utf8");
+    dtoCount += (dtoSource.match(/export class \w+Dto/gu) ?? []).length;
+  }
 
   const workflowSource = await readFile(
-    join(projectRoot, "src", "support", "support.workflow.ts"),
+    join(projectRoot, "src", "workflows", "support.workflow.ts"),
     "utf8",
   );
   const hasStartPath = workflowSource.includes("start(SupportWorkflowStart)");
@@ -105,7 +106,7 @@ export async function validateMigratedProject(
     agbossCheckPassed: parsed.ok === true,
     agbossCheckProblemCount: parsed.result?.problems?.length ?? 0,
     zeroLangGraphImportsInSrc: !hasLangGraphImport,
-    dtoClassesCount: dtoMatches.length,
+    dtoClassesCount: dtoCount,
     workflowPathsCount: (hasStartPath ? 1 : 0) + (hasReviewerPath ? 1 : 0),
     studioGraphCompatible,
     studioGraphNodesCount,

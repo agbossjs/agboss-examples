@@ -4,14 +4,14 @@ import {
   createApp,
   ExecutionStatus,
 } from "agboss";
-import { TravelBookingSagaApplication } from "../src/application.js";
+import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import {
   getOperationLedgerEntries,
   getResourceState,
   resetOperationLedger,
-} from "../src/infrastructure/operation-ledger.js";
-import { TravelBookingRequestDto } from "../src/workflows/dtos.js";
-import { PaymentSagaWorkflowStart } from "../src/workflows/travel-booking.workflow.js";
+} from "../src/services/operation-ledger.service.js";
+import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
+import { PaymentSagaWorkflowStart } from "../src/workflow-starts/payment-saga.workflow-start.js";
 
 export interface PaymentFailureScenarioResult {
   readonly status: ExecutionStatus;

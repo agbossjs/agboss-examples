@@ -5,7 +5,7 @@
   "type": "module",
   "description": "AGBoss P0 Proof: PII masking & token roundtrip, tool interception, guardrails, memory compaction vs policy drift, and 5-layer evaluation.",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/support-refund-desk.application.ts"
   },
   "engines": {
     "node": ">=22.13"

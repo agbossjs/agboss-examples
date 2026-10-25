@@ -1,7 +1,8 @@
 import { ExecutionContext, Tool, type ToolHandler } from "agboss";
 import { seconds } from "agboss/units";
-import { OrderDetailsDto, OrderLookupInputDto } from "../workflows/dtos.js";
-import { OrderBookService } from "./order-book.service.js";
+import { OrderDetailsDto } from "../dto/order-details.dto.js";
+import { OrderLookupInputDto } from "../dto/order-lookup-input.dto.js";
+import { OrderBookService } from "../services/order-book.service.js";
 
 @Tool({
   name: "lookup-order-tool",

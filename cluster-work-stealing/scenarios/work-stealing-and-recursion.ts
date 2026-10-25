@@ -1,17 +1,13 @@
 import { createApp, ExecutionStatus } from "agboss";
-import {
-  CoordinatorWorkflowStart,
-  type BatchJobSummaryDto,
-} from "../coordinator/coordinator.workflow.js";
-import { ClusterWorkStealingApplication } from "../src/application.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
+import type { BatchJobSummaryDto } from "../src/dto/batch-job-summary.dto.js";
+import type { DecomposedLeafDto } from "../src/dto/decomposed-leaf.dto.js";
 import {
   getClusterLedgerSnapshot,
   resetClusterLedger,
-} from "../storage/cluster-ledger.service.js";
-import {
-  RecursiveDecomposerWorkflowStart,
-  type DecomposedLeafDto,
-} from "../worker/recursive-decomposer.workflow.js";
+} from "../src/services/cluster-ledger.service.js";
+import { CoordinatorWorkflowStart } from "../src/workflow-starts/coordinator.workflow-start.js";
+import { RecursiveDecomposerWorkflowStart } from "../src/workflow-starts/recursive-decomposer.workflow-start.js";
 
 export interface WorkStealingScenarioResult {
   readonly batchStatus: ExecutionStatus;

@@ -5,12 +5,12 @@
   "description": "AGBoss P1 proof: Distributed cluster work-stealing, 30s SQLite leases, crash recovery, backpressure, and cross-instance cancellation",
   "type": "module",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/cluster-work-stealing.application.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/application.js",
-    "dev": "tsx watch src/application.ts",
+    "start": "node dist/cluster-work-stealing.application.js",
+    "dev": "tsx watch src/cluster-work-stealing.application.ts",
     "demo": "tsx src/demo.ts",
     "check": "agboss check && tsc --noEmit && eslint .",
     "lint": "eslint .",

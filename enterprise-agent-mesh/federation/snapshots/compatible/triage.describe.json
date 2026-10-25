@@ -78,13 +78,22 @@
       ],
       "modelProviders": [
         {
-          "name": "triage-offline-model-provider",
-          "className": "TriageOfflineModelProvider",
-          "reason": "listed",
+          "name": "openrouter-model-provider",
+          "className": "OpenRouterModelProvider",
+          "reason": "default",
           "serves": [
-            "/^offline\\//u"
+            "/^(?!(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide))/"
           ],
-          "isTransport": true
+          "isTransport": false
+        },
+        {
+          "name": "decisions-model-provider",
+          "className": "DecisionsModelProvider",
+          "reason": "default",
+          "serves": [
+            "/^(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide)/"
+          ],
+          "isTransport": false
         }
       ],
       "budgets": [
@@ -283,7 +292,8 @@
           "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
           "meshSigningKey": "*** (MESH_SIGNING_KEY)",
           "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "openRouterApiKey": "*** (OPENROUTER_API_KEY)"
         }
       }
     },
@@ -292,7 +302,7 @@
         "name": "triage-workflow",
         "version": "1.0.0",
         "profile": "base",
-        "config": "6db0a20e",
+        "config": "d66e7e90",
         "piiPolicies": [],
         "flow": [
           "start(TriageWorkflowStart)",
@@ -311,7 +321,7 @@
         "agents": [
           {
             "name": "triage-agent",
-            "model": "offline/triage-chat",
+            "model": "openai/gpt-4o-mini",
             "description": "Coordinates catalog MCP lookups and billing A2A inquiries",
             "tools": [
               "search-catalog-tool",
@@ -323,8 +333,8 @@
         "models": [
           {
             "key": "agents.triage-agent",
-            "model": "offline/triage-chat",
-            "provider": "triage-offline-model-provider"
+            "model": "openai/gpt-4o-mini",
+            "provider": "openrouter-model-provider"
           }
         ],
         "tools": [
@@ -370,7 +380,7 @@
           "least": 1,
           "most": 1
         },
-        "configHash": "6db0a20e94db2c3ed052562199d6efb60031c1efac83e063d5f50acd1aec0461",
+        "configHash": "d66e7e90a45c9fc70aebb25a7d0cd438c40a28b90fb557bbac7a2a0d74b3d9b1",
         "starts": [
           "triage-workflow-start"
         ],
@@ -408,8 +418,8 @@
               "schemaHash": "cbea111842bad7638d3c14b54182750850a085da1335c530ae0872c919431562"
             },
             "agent": {
-              "model": "offline/triage-chat",
-              "provider": "triage-offline-model-provider",
+              "model": "openai/gpt-4o-mini",
+              "provider": "openrouter-model-provider",
               "reasoning": "provider",
               "maxTokens": 8192,
               "maxModelCalls": 12,

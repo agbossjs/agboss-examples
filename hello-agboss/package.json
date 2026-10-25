@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "description": "P0 Proof: Clean AGBoss installation, constructor DI, @Agent, @Router, @Tool, @Workflow, typed DTOs, and CLI scaffolding.",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/hello-agboss.application.ts"
   },
   "scripts": {
     "types": "agboss check",

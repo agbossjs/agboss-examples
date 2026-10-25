@@ -5,17 +5,17 @@ import {
   ToolCallStatus,
 } from "agboss";
 import { pathToFileURL } from "node:url";
+import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import {
   configureSupportModel,
   resetSupportModel,
-  SupportRefundDeskApplication,
-} from "../src/application.js";
-import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
+} from "../src/model-providers/support-offline.model-provider.js";
 import {
   getRecordedToolOperations,
   resetRecordedToolOperations,
-} from "../src/tools/order-book.service.js";
-import { SupportRefundWorkflowStart } from "../src/workflows/support-refund.workflow.js";
+} from "../src/services/order-book.service.js";
+import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
+import { SupportRefundWorkflowStart } from "../src/workflow-starts/support-refund.workflow-start.js";
 
 export interface PolicyScenarioResult {
   readonly overCapInterceptedStatus: string;

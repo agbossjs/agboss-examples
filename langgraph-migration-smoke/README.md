@@ -5,7 +5,7 @@
 `langgraph-migration-smoke` proves that AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) can migrate a conventional LangGraph application to AGBoss using the 13 coding-agent skills shipped inside the `agboss` npm package (`node_modules/agboss/skills/agboss/`), specifically `references/13-migrating-from-langgraph.md`:
 
 1. **Skill Packaging & Sync Verification:** Confirms that `SKILL.md` and all 13 reference guides (`01` through `13-migrating-from-langgraph.md`) are present in the packed tarball and synced by `agboss skills sync`.
-2. **15-Field God State Decomposition:** Replaces `LegacySupportState` (15 mutable fields in `source/legacy-langgraph/support.graph.ts`) with 10 narrow producer DTOs (`src/support/support.dto.ts`).
+2. **15-Field God State Decomposition:** Replaces `LegacySupportState` (15 mutable fields in `source/legacy-langgraph/support.graph.ts`) with 10 narrow producer DTOs (`src/dto/*.dto.ts`).
 3. **Elimination of Latent LangGraph Shared-State Bugs:**
    - Splits `write` into `ReplyWriterAgent` and `ReplyEditorAgent` so no node reads `draft` or `critique` when `undefined` (`[input.missing-on-path]`).
    - Annotates the review cycle with `caseOf(ChangesRequestedDto, { about: ReplyDraftDto })` and `historyOf(ReplyDraftDto, { limit: 2 })` (`[input.outdated-on-path]`, `[io.ambiguous-cycle]`).
@@ -30,7 +30,7 @@ MIGRATION_AGENT_CMD="claude -p prompts/migrate.md" npm test
 
 - `source/legacy-langgraph/support.graph.ts` — Legacy 15-field `SupportState` LangGraph implementation and latent-bug trace inspector.
 - `prompts/migrate.md` — Vendor-neutral coding-agent migration prompt.
-- `src/support/` — Migrated AGBoss DTOs, services, channel role, tools, agents, routers, actions, and `SupportWorkflow`.
+- `src/` — Migrated AGBoss DTOs (`src/dto/`), services (`src/services/`), channels (`src/channels/`), tools (`src/tools/`), agents (`src/agents/`), routers (`src/routers/`), actions (`src/actions/`), workflow (`src/workflows/support.workflow.ts`), and `src/langgraph-migration-smoke.application.ts`.
 - `harness/` — Clean project verification (`create-clean-project.ts`), agent runner (`run-coding-agent.ts`), static & AST validator (`validate-output.ts`), and benchmark scorecard (`measure-results.ts`).
 - `expected/acceptance-tests/` — Held-out acceptance test inputs and assertions.
 

@@ -14,10 +14,10 @@
 
 ## 2. Architecture
 
-- [`coordinator/coordinator.workflow.ts`](./coordinator/coordinator.workflow.ts) — `CoordinatorWorkflow` partitioning a batch into chunks and launching `ChunkWorkerWorkflow` with `placement: ChildPlacement.AnyInstance`.
-- [`worker/chunk-worker.workflow.ts`](./worker/chunk-worker.workflow.ts) — `ChunkWorkerWorkflow` with `ClusterQueueChunkSignOffChannel` (`@Channel`), `CommitChunkEffectAction` recording `executionContext.step.idempotencyKey`, soft-failure path, and `.onIncompatibleResume(...)` version guard.
-- [`worker/recursive-decomposer.workflow.ts`](./worker/recursive-decomposer.workflow.ts) — `RecursiveDecomposerWorkflow` demonstrating bounded `ThisWorkflow` recursion (`maxDepth: 2`).
-- [`storage/cluster-ledger.service.ts`](./storage/cluster-ledger.service.ts) & [`storage/storage-cluster.health-check.ts`](./storage/storage-cluster.health-check.ts) — Idempotent external ledger and `@HealthCheck` probe.
+- [`src/workflows/coordinator.workflow.ts`](./src/workflows/coordinator.workflow.ts) — `CoordinatorWorkflow` partitioning a batch into chunks and launching `ChunkWorkerWorkflow` with `placement: ChildPlacement.AnyInstance`.
+- [`src/workflows/chunk-worker.workflow.ts`](./src/workflows/chunk-worker.workflow.ts) — `ChunkWorkerWorkflow` with `ClusterQueueChunkSignOffChannel` (`@Channel`), `CommitChunkEffectAction` recording `executionContext.step.idempotencyKey`, soft-failure path, and `.onIncompatibleResume(...)` version guard.
+- [`src/workflows/recursive-decomposer.workflow.ts`](./src/workflows/recursive-decomposer.workflow.ts) — `RecursiveDecomposerWorkflow` demonstrating bounded `ThisWorkflow` recursion (`maxDepth: 2`).
+- [`src/services/cluster-ledger.service.ts`](./src/services/cluster-ledger.service.ts) & [`src/health-checks/storage-cluster.health-check.ts`](./src/health-checks/storage-cluster.health-check.ts) — Idempotent external ledger and `@HealthCheck` probe.
 
 ## 3. Commands
 

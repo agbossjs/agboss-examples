@@ -9,13 +9,12 @@ import {
   toolInvariant,
   turn,
 } from "agboss/eval";
-import { CitationCodeJudge, GroundedAnswerJudge } from "../agents/judges.js";
+import { CitationCodeJudge } from "../judges/citation-code/citation-code.judge.js";
+import { GroundedAnswerJudge } from "../judges/grounded-answer/grounded-answer.judge.js";
 import { IssueRefundTool } from "../tools/issue-refund.tool.js";
 import { LookupOrderTool } from "../tools/lookup-order.tool.js";
-import {
-  SupportRefundWorkflowFinish,
-  SupportRefundWorkflowStart,
-} from "../workflows/support-refund.workflow.js";
+import { SupportRefundWorkflowFinish } from "../workflow-finishes/support-refund.workflow-finish.js";
+import { SupportRefundWorkflowStart } from "../workflow-starts/support-refund.workflow-start.js";
 
 @EvalSuite({
   name: "refund-desk-eval-suite",

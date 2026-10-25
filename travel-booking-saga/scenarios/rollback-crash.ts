@@ -8,24 +8,22 @@ import {
   ExecutionStatus,
 } from "agboss";
 import { ToolCallApprovalDecisionDto } from "agboss/dto";
-import { TravelBookingSagaApplication } from "../src/application.js";
 import {
   getSentChannelAsks,
   resetChannelRecords,
-} from "../src/channels/booking-approval.channel.js";
-import { FakeAirlineService } from "../src/infrastructure/fake-airline.js";
-import { FakeHotelService } from "../src/infrastructure/fake-hotel.js";
+} from "../src/channels/corporate-booking-approval.channel.js";
+import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
+import { FakeAirlineService } from "../src/services/fake-airline.service.js";
+import { FakeHotelService } from "../src/services/fake-hotel.service.js";
 import {
   getOperationLedgerEntries,
   getResourceState,
   injectTransientCancelFailureOnce,
   resetOperationLedger,
-} from "../src/infrastructure/operation-ledger.js";
-import { TravelBookingRequestDto } from "../src/workflows/dtos.js";
-import {
-  BudgetSagaWorkflowStart,
-  HitlHoldSagaWorkflowStart,
-} from "../src/workflows/travel-booking.workflow.js";
+} from "../src/services/operation-ledger.service.js";
+import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
+import { BudgetSagaWorkflowStart } from "../src/workflow-starts/budget-saga.workflow-start.js";
+import { HitlHoldSagaWorkflowStart } from "../src/workflow-starts/hitl-hold-saga.workflow-start.js";
 
 export interface RollbackCrashScenarioResult {
   readonly compensationFailedErrorSurfaced: boolean;

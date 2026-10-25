@@ -1,4 +1,4 @@
-import { SupportRequestDto } from "../../src/support/support.dto.js";
+import { SupportRequestDto } from "../../src/dto/support-request.dto.js";
 
 export const MIGRATION_ACCEPTANCE_REQUEST: SupportRequestDto = {
   orderId: "7",

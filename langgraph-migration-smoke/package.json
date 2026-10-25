@@ -5,12 +5,12 @@
   "description": "AGBoss P0 proof: LangGraph-to-AGBoss migration harness, 15-field StateAnnotation decomposition, and coding-agent skill verification",
   "type": "module",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/langgraph-migration-smoke.application.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/application.js",
-    "dev": "tsx watch src/application.ts",
+    "start": "node dist/langgraph-migration-smoke.application.js",
+    "dev": "tsx watch src/langgraph-migration-smoke.application.ts",
     "demo": "tsx src/demo.ts",
     "check": "agboss check && tsc --noEmit && eslint .",
     "lint": "eslint .",

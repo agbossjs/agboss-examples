@@ -22,7 +22,7 @@ services:
   triage-gateway:
     image: node:22-alpine
     working_dir: /workspace/enterprise-agent-mesh
-    command: ["npx", "tsx", "src/application.ts"]
+    command: ["npx", "tsx", "src/enterprise-agent-mesh.application.ts"]
     environment:
       PORT: "8080"
       BILLING_A2A_URL: "http://billing-service:8081/a2a"

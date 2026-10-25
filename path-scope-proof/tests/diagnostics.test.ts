@@ -67,7 +67,7 @@ async function runAgbossCheck(applicationRelPath: string) {
 describe("path-scope-proof — Static Graph Safety & Path-Scope Proofs", () => {
   afterAll(async () => {
     // Restore .agboss/types.d.ts for the full 4-workflow suite
-    await runAgbossCheck("src/application.ts");
+    await runAgbossCheck("src/path-scope-proof.application.ts");
   });
 
   it("verifies that all 3 LangGraph broken cases pass TypeScript compilation without errors", async () => {

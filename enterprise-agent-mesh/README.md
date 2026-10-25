@@ -14,7 +14,7 @@
 
 ## 2. Architecture
 
-- [`triage-gateway/triage.application.ts`](./triage-gateway/triage.application.ts) — `TriageGatewayApplication` consuming `BillingA2AAgent` (`@A2AAgent`) and `CatalogMcpServer` (`@McpServer` / `@McpTool`), with `.onError(MeshLoopDetectedError, ...)` and `.onError(HopsLimitExceededError, ...)`.
+- [`src/enterprise-agent-mesh.application.ts`](./src/enterprise-agent-mesh.application.ts) — `TriageGatewayApplication` consuming `BillingA2AAgent` (`@A2AAgent`) and `CatalogMcpServer` (`@McpServer` / `@McpTool`), with `.onError(MeshLoopDetectedError, ...)` and `.onError(HopsLimitExceededError, ...)`.
 - [`billing-service/billing.application.ts`](./billing-service/billing.application.ts) — `BillingApplication` exposing `BillingWorkflowStart` via `@A2AExpose` with `BillingA2aCallerResolver` and `maxMeshHops: 3`.
 - [`catalog-mcp/catalog.application.ts`](./catalog-mcp/catalog.application.ts) — `CatalogApplication` exposing `LookupSkuTool` and `CatalogWorkflowStart` via `@McpExpose`.
 - [`federation/verify-federation.ts`](./federation/verify-federation.ts) — Compares `agboss describe --json` snapshots in [`federation/snapshots/compatible/`](./federation/snapshots/compatible) and [`federation/snapshots/breaking/`](./federation/snapshots/breaking) and stitches the mesh via `agboss hub show --json`.

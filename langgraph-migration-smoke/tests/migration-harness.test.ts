@@ -13,36 +13,28 @@ import {
   verifyPackagedCodingAgentSkills,
 } from "../harness/create-clean-project.js";
 import { measureMigrationBenchmark } from "../harness/measure-results.js";
-import { SupportApplication } from "../src/application.js";
-import {
-  OrderResearcherAgent,
-  RefundSignOffAgent,
-  ReplyEditorAgent,
-  ReplyReviewerAgent,
-  ReplyWriterAgent,
-  ResearchPlannerAgent,
-} from "../src/support/support.agents.js";
-import {
-  ChangesRequestedDto,
-  RefundIssuedDto,
-  ReplyApprovedDto,
-  ReplyDraftDto,
-  ResearchFindingDto,
-  ResearchQuestionDto,
-} from "../src/support/support.dto.js";
-import {
-  HandOverWorkflowFinish,
-  IssueRefundAction,
-  RefundIssuedWorkflowFinish,
-  RefundSizeRouter,
-  ReplyStuckWorkflowFinish,
-  SupportTriageRouter,
-  SupportWorkflowStart,
-} from "../src/support/support.nodes.js";
-import {
-  IssueSignedOffRefundTool,
-  OrderLookupTool,
-} from "../src/support/support.tools.js";
+import { IssueRefundAction } from "../src/actions/issue-refund.action.js";
+import { OrderResearcherAgent } from "../src/agents/order-researcher/order-researcher.agent.js";
+import { RefundSignOffAgent } from "../src/agents/refund-sign-off/refund-sign-off.agent.js";
+import { ReplyEditorAgent } from "../src/agents/reply-editor/reply-editor.agent.js";
+import { ReplyReviewerAgent } from "../src/agents/reply-reviewer/reply-reviewer.agent.js";
+import { ReplyWriterAgent } from "../src/agents/reply-writer/reply-writer.agent.js";
+import { ResearchPlannerAgent } from "../src/agents/research-planner/research-planner.agent.js";
+import { ChangesRequestedDto } from "../src/dto/changes-requested.dto.js";
+import { RefundIssuedDto } from "../src/dto/refund-issued.dto.js";
+import { ReplyApprovedDto } from "../src/dto/reply-approved.dto.js";
+import { ReplyDraftDto } from "../src/dto/reply-draft.dto.js";
+import { ResearchFindingDto } from "../src/dto/research-finding.dto.js";
+import { ResearchQuestionDto } from "../src/dto/research-question.dto.js";
+import { SupportApplication } from "../src/langgraph-migration-smoke.application.js";
+import { RefundSizeRouter } from "../src/routers/refund-size/refund-size.router.js";
+import { SupportTriageRouter } from "../src/routers/support-triage/support-triage.router.js";
+import { IssueSignedOffRefundTool } from "../src/tools/issue-signed-off-refund.tool.js";
+import { OrderLookupTool } from "../src/tools/order-lookup.tool.js";
+import { HandOverWorkflowFinish } from "../src/workflow-finishes/hand-over.workflow-finish.js";
+import { RefundIssuedWorkflowFinish } from "../src/workflow-finishes/refund-issued.workflow-finish.js";
+import { ReplyStuckWorkflowFinish } from "../src/workflow-finishes/reply-stuck.workflow-finish.js";
+import { SupportWorkflowStart } from "../src/workflow-starts/support.workflow-start.js";
 
 const test = testWith(SupportApplication);
 

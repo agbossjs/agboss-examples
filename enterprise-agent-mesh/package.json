@@ -5,12 +5,12 @@
   "description": "AGBoss P1 proof: Multi-service A2A, MCP, Ed25519 mesh envelopes, loop detection, and federation blast-radius verification",
   "type": "module",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/enterprise-agent-mesh.application.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/application.js",
-    "dev": "tsx watch src/application.ts",
+    "start": "node dist/enterprise-agent-mesh.application.js",
+    "dev": "tsx watch src/enterprise-agent-mesh.application.ts",
     "demo": "tsx src/demo.ts",
     "check": "agboss check --application billing-service/billing.application.ts && agboss check --application catalog-mcp/catalog.application.ts && agboss check && tsc --noEmit && eslint .",
     "lint": "eslint .",

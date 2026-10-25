@@ -12,13 +12,11 @@ import {
   simulateHolderLeaseWindowExpiredInStore,
   verifyLeaseRepositoryPing,
 } from "../scenarios/lease-expiration-and-fencing.js";
-import { ClusterWorkStealingApplication } from "../src/application.js";
-import {
-  ChunkDraftDto,
-  ChunkWorkerAgent,
-  ChunkWorkerWorkflowFinish,
-  ChunkWorkerWorkflowStart,
-} from "../worker/chunk-worker.workflow.js";
+import { ChunkWorkerAgent } from "../src/agents/chunk-worker/chunk-worker.agent.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
+import { ChunkDraftDto } from "../src/dto/chunk-draft.dto.js";
+import { ChunkWorkerWorkflowFinish } from "../src/workflow-finishes/chunk-worker.workflow-finish.js";
+import { ChunkWorkerWorkflowStart } from "../src/workflow-starts/chunk-worker.workflow-start.js";
 
 const clusterTest = testWith(ClusterWorkStealingApplication, { instances: 2 });
 

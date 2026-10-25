@@ -78,13 +78,22 @@
       ],
       "modelProviders": [
         {
-          "name": "catalog-offline-model-provider",
-          "className": "CatalogOfflineModelProvider",
-          "reason": "listed",
+          "name": "openrouter-model-provider",
+          "className": "OpenRouterModelProvider",
+          "reason": "default",
           "serves": [
-            "/^offline\\//u"
+            "/^(?!(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide))/"
           ],
-          "isTransport": true
+          "isTransport": false
+        },
+        {
+          "name": "decisions-model-provider",
+          "className": "DecisionsModelProvider",
+          "reason": "default",
+          "serves": [
+            "/^(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide)/"
+          ],
+          "isTransport": false
         }
       ],
       "budgets": [
@@ -173,7 +182,8 @@
           "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
           "meshSigningKey": "*** (MESH_SIGNING_KEY)",
           "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "openRouterApiKey": "*** (OPENROUTER_API_KEY)"
         }
       }
     },
@@ -182,7 +192,7 @@
         "name": "catalog-workflow",
         "version": "1.0.0",
         "profile": "base",
-        "config": "d1b1e325",
+        "config": "3c235ead",
         "piiPolicies": [],
         "flow": [
           "start(CatalogWorkflowStart)",
@@ -199,7 +209,7 @@
         "agents": [
           {
             "name": "lookup-sku-agent",
-            "model": "offline/catalog-chat",
+            "model": "openai/gpt-4o-mini",
             "description": "Reads SKU details from CatalogInventoryService via lookup-sku-tool",
             "tools": [
               "lookup-sku-tool"
@@ -210,8 +220,8 @@
         "models": [
           {
             "key": "agents.lookup-sku-agent",
-            "model": "offline/catalog-chat",
-            "provider": "catalog-offline-model-provider"
+            "model": "openai/gpt-4o-mini",
+            "provider": "openrouter-model-provider"
           }
         ],
         "tools": [
@@ -251,7 +261,7 @@
           "least": 1,
           "most": 1
         },
-        "configHash": "d1b1e32594be019bde56881753f13bb0029ed43d3a584a57b7ca228863112083",
+        "configHash": "3c235ead59cc079e06e01f95caf4877e1206af43f772be0c917f05431729b2b4",
         "starts": [
           "catalog-workflow-start"
         ],
@@ -298,8 +308,8 @@
               "schemaHash": "532cca6211bf80f65f14cfbbf79b6ef92f2a6d970fedb1733bdcacf75581ae49"
             },
             "agent": {
-              "model": "offline/catalog-chat",
-              "provider": "catalog-offline-model-provider",
+              "model": "openai/gpt-4o-mini",
+              "provider": "openrouter-model-provider",
               "reasoning": "provider",
               "maxTokens": 8192,
               "maxModelCalls": 12,

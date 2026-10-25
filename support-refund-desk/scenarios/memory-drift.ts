@@ -3,14 +3,14 @@ import { pathToFileURL } from "node:url";
 import {
   getRecordedModelRequests,
   resetSupportModel,
-  SupportRefundDeskApplication,
-} from "../src/application.js";
-import { setActivePolicyVersion } from "../src/memory/refund-policy.rag.js";
+} from "../src/model-providers/support-offline.model-provider.js";
+import { setActivePolicyVersion } from "../src/rag/refund-policy.rag.js";
 import {
   getRecordedToolOperations,
   resetRecordedToolOperations,
-} from "../src/tools/order-book.service.js";
-import { SupportRefundWorkflowStart } from "../src/workflows/support-refund.workflow.js";
+} from "../src/services/order-book.service.js";
+import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
+import { SupportRefundWorkflowStart } from "../src/workflow-starts/support-refund.workflow-start.js";
 
 export interface MemoryDriftScenarioResult {
   readonly threadId: string;

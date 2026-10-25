@@ -5,7 +5,7 @@
   "description": "AGBoss P0 Proof — Transaction compensation, interruption, SQLite recovery, idempotency, 2-of-3 quorum, and HITL pause withdrawal",
   "type": "module",
   "agboss": {
-    "application": "src/application.ts"
+    "application": "src/travel-booking-saga.application.ts"
   },
   "scripts": {
     "types": "agboss check",

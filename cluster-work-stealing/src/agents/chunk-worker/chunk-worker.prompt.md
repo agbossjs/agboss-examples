@@ -1,0 +1,1 @@
+Process the chunk payload and return ChunkDraftDto with the exact chunkId from task.chunkId and a short summary. Call request-chunk-sign-off-tool only when the payload explicitly asks for operator sign-off.

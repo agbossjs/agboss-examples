@@ -3,12 +3,12 @@ import { runEvalScenario } from "../scenarios/evals.js";
 import { runMemoryDriftScenario } from "../scenarios/memory-drift.js";
 import { runPiiScenario } from "../scenarios/pii.js";
 import { runPolicyScenario } from "../scenarios/policy.js";
-import { SupportRefundDeskApplication } from "./application.js";
 import {
   getRecordedToolOperations,
   resetRecordedToolOperations,
-} from "./tools/order-book.service.js";
-import { LiveSupportRefundWorkflowStart } from "./workflows/support-refund.workflow.js";
+} from "./services/order-book.service.js";
+import { SupportRefundDeskApplication } from "./support-refund-desk.application.js";
+import { LiveSupportRefundWorkflowStart } from "./workflow-starts/live-support-refund.workflow-start.js";
 
 const pii = await runPiiScenario();
 const policy = await runPolicyScenario();

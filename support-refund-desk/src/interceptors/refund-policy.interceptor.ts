@@ -4,8 +4,8 @@ import {
   type BeforeToolCall,
   type ToolCallContext,
 } from "agboss";
-import { OrderBookService } from "../tools/order-book.service.js";
-import { SupportTenantContext } from "../workflows/dtos.js";
+import { SupportTenantContext } from "../dto/support-tenant-context.dto.js";
+import { OrderBookService } from "../services/order-book.service.js";
 
 @ToolInterceptor({
   name: "refund-policy-tool-interceptor",

@@ -207,7 +207,8 @@
           "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
           "meshSigningKey": "*** (MESH_SIGNING_KEY)",
           "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\""
+          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
+          "openRouterApiKey": "*** (OPENROUTER_API_KEY)"
         }
       }
     },

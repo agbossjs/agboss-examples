@@ -1,8 +1,8 @@
 import { createApp, ExecutionStatus } from "agboss";
 import { createServer } from "node:http";
 import { measureMigrationBenchmark } from "../harness/measure-results.js";
-import { SupportApplication } from "./application.js";
-import { SupportWorkflowStart } from "./support/support.nodes.js";
+import { SupportApplication } from "./langgraph-migration-smoke.application.js";
+import { SupportWorkflowStart } from "./workflow-starts/support.workflow-start.js";
 
 const scorecard = await measureMigrationBenchmark();
 

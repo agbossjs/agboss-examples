@@ -2,26 +2,20 @@ import { ExecutionStatus } from "agboss";
 import { studioOf } from "agboss/internal";
 import { failWith, ModelFailure, replyWith, testWith } from "agboss/testing";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  CoordinatorWorkflowFinish,
-  CoordinatorWorkflowStart,
-} from "../coordinator/coordinator.workflow.js";
-import { ClusterWorkStealingApplication } from "../src/application.js";
+import { ChunkWorkerAgent } from "../src/agents/chunk-worker/chunk-worker.agent.js";
+import { ShardAnalyzerAgent } from "../src/agents/shard-analyzer/shard-analyzer.agent.js";
+import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
+import { ChunkDraftDto } from "../src/dto/chunk-draft.dto.js";
+import { DecomposeSplitDecisionDto } from "../src/dto/decompose-split-decision.dto.js";
+import { DecomposedLeafDto } from "../src/dto/decomposed-leaf.dto.js";
 import {
   getClusterLedgerSnapshot,
   resetClusterLedger,
-} from "../storage/cluster-ledger.service.js";
-import {
-  ChunkDraftDto,
-  ChunkWorkerAgent,
-} from "../worker/chunk-worker.workflow.js";
-import {
-  DecomposedLeafDto,
-  DecomposeSplitDecisionDto,
-  RecursiveDecomposerWorkflowFinish,
-  RecursiveDecomposerWorkflowStart,
-  ShardAnalyzerAgent,
-} from "../worker/recursive-decomposer.workflow.js";
+} from "../src/services/cluster-ledger.service.js";
+import { CoordinatorWorkflowFinish } from "../src/workflow-finishes/coordinator.workflow-finish.js";
+import { RecursiveDecomposerWorkflowFinish } from "../src/workflow-finishes/recursive-decomposer.workflow-finish.js";
+import { CoordinatorWorkflowStart } from "../src/workflow-starts/coordinator.workflow-start.js";
+import { RecursiveDecomposerWorkflowStart } from "../src/workflow-starts/recursive-decomposer.workflow-start.js";
 
 const clusterTest = testWith(ClusterWorkStealingApplication, { instances: 2 });
 

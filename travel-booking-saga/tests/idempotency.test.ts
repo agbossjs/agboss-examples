@@ -4,16 +4,16 @@ import {
   assertIdempotencyKeysPresent,
   assertNoDuplicateSideEffects,
 } from "../../tooling/assertions/idempotency.js";
-import { TravelBookingSagaApplication } from "../src/application.js";
-import { FakeAirlineService } from "../src/infrastructure/fake-airline.js";
-import { FakeHotelService } from "../src/infrastructure/fake-hotel.js";
-import { FakePaymentService } from "../src/infrastructure/fake-payments.js";
+import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
+import { FakeAirlineService } from "../src/services/fake-airline.service.js";
+import { FakeHotelService } from "../src/services/fake-hotel.service.js";
+import { FakePaymentService } from "../src/services/fake-payment.service.js";
 import {
   getOperationLedgerEntries,
   resetOperationLedger,
-} from "../src/infrastructure/operation-ledger.js";
-import { TravelBookingRequestDto } from "../src/workflows/dtos.js";
-import { PaymentSagaWorkflowStart } from "../src/workflows/travel-booking.workflow.js";
+} from "../src/services/operation-ledger.service.js";
+import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
+import { PaymentSagaWorkflowStart } from "../src/workflow-starts/payment-saga.workflow-start.js";
 
 describe("travel-booking-saga — Idempotency & Zero-Double-Charge Proofs", () => {
   it("deduplicates repeated reserve, authorize, confirm, and release calls with identical idempotency keys", async () => {

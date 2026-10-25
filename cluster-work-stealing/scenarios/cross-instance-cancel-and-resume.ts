@@ -3,7 +3,7 @@ import {
   PausedExecutionRepository,
   type App,
 } from "agboss";
-import { setAllowIncompatibleResume } from "../worker/chunk-worker.workflow.js";
+import { setAllowIncompatibleResume } from "../src/workflows/chunk-worker.workflow.js";
 
 export async function simulateVersionDriftOnPausedThread(
   app: Pick<App, "resolve">,

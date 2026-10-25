@@ -4,10 +4,10 @@ import {
   createApp,
   ExecutionStatus,
 } from "agboss";
-import { TravelBookingSagaApplication } from "../src/application.js";
-import { resetOperationLedger } from "../src/infrastructure/operation-ledger.js";
-import { TravelBookingRequestDto } from "../src/workflows/dtos.js";
-import { QuorumSagaWorkflowStart } from "../src/workflows/travel-booking.workflow.js";
+import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
+import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
+import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
+import { QuorumSagaWorkflowStart } from "../src/workflow-starts/quorum-saga.workflow-start.js";
 
 export interface QuorumApprovalScenarioResult {
   readonly status: ExecutionStatus;

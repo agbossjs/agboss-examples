@@ -4,19 +4,19 @@ import {
   NotPausedError,
 } from "agboss";
 import { ToolCallApprovalDecisionDto } from "agboss/dto";
-import { TravelBookingSagaApplication } from "../src/application.js";
 import {
   getSentChannelAsks,
   getWithdrawnChannelAsks,
   resetChannelRecords,
-} from "../src/channels/booking-approval.channel.js";
+} from "../src/channels/corporate-booking-approval.channel.js";
+import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import {
   getOperationLedgerEntries,
   getResourceState,
   resetOperationLedger,
-} from "../src/infrastructure/operation-ledger.js";
-import { TravelBookingRequestDto } from "../src/workflows/dtos.js";
-import { HitlHoldSagaWorkflowStart } from "../src/workflows/travel-booking.workflow.js";
+} from "../src/services/operation-ledger.service.js";
+import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
+import { HitlHoldSagaWorkflowStart } from "../src/workflow-starts/hitl-hold-saga.workflow-start.js";
 
 export interface CancelAndRollbackScenarioResult {
   readonly initialStatus: ExecutionStatus;

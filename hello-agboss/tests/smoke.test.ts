@@ -5,13 +5,14 @@ import { fileURLToPath } from "node:url";
 import { secret } from "agboss";
 import { callTool, replyWith, routeTo, testTool, testWith } from "agboss/testing";
 import { describe, expect, it } from "vitest";
-import { IntakeTriageRouter } from "../src/agents/intake-triage.router.js";
-import { QuoteAdvisorAgent } from "../src/agents/quote-advisor.agent.js";
-import { SupportSpecialistAgent } from "../src/agents/support-specialist.agent.js";
-import { HelloAgbossApplication } from "../src/application.js";
+import { QuoteAdvisorAgent } from "../src/agents/quote-advisor/quote-advisor.agent.js";
+import { SupportSpecialistAgent } from "../src/agents/support-specialist/support-specialist.agent.js";
+import { SupportReplyDto } from "../src/dto/support-reply.dto.js";
+import { HelloAgbossApplication } from "../src/hello-agboss.application.js";
+import { IntakeTriageRouter } from "../src/routers/intake-triage/intake-triage.router.js";
 import { CalculateQuoteTool } from "../src/tools/calculate-quote.tool.js";
-import { SupportReplyDto } from "../src/workflows/dtos.js";
-import { HelloFinish, HelloStart } from "../src/workflows/hello-agboss.workflow.js";
+import { HelloWorkflowFinish as HelloFinish } from "../src/workflow-finishes/hello.workflow-finish.js";
+import { HelloWorkflowStart as HelloStart } from "../src/workflow-starts/hello.workflow-start.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const test = testWith(HelloAgbossApplication);
@@ -91,6 +92,7 @@ describe("CalculateQuoteTool unit runner & packaging boundaries", () => {
     environment: {
       openRouterApiKey: secret("OPENROUTER_API_KEY"),
       catalogCurrency: "EUR",
+      sqlitePath: ":memory:",
     },
   });
 

@@ -1,11 +1,11 @@
 import { createApp, ExecutionStatus } from "agboss";
-import { HelloAgbossApplication } from "./application.js";
-import { HelloStart } from "./workflows/hello-agboss.workflow.js";
+import { HelloAgbossApplication } from "./hello-agboss.application.js";
+import { HelloWorkflowStart } from "./workflow-starts/hello.workflow-start.js";
 
 async function main(): Promise<void> {
   const app = await createApp(HelloAgbossApplication);
   try {
-    const supportRun = await app.execute(HelloStart, {
+    const supportRun = await app.execute(HelloWorkflowStart, {
       customerId: "cust-101",
       question: "How does AGBoss verify workflow path safety before runtime?",
       seats: 1,
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
       throw new Error(`Expected support-specialist-agent path, got ${supportRun.path.join(" -> ")}`);
     }
 
-    const pricingRun = await app.execute(HelloStart, {
+    const pricingRun = await app.execute(HelloWorkflowStart, {
       customerId: "cust-202",
       question: "Can we get a pricing quote for the pro tier?",
       seats: 12,
