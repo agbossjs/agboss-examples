@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0",
+  "files": {
+    "SKILL.md": "sha256-6d04986dbaaa85d2583c94a42ef39821f5f978412098d7ec41aa5151100e7eb5",
+    "references/01-composition-and-architecture.md": "sha256-5046750203837b4f43f6e862bd2092fdf2a006f1ab911a2c15196e442d44ba93",
+    "references/02-flow-dsl-all-combinations.md": "sha256-b2c5c6a2ddc2a4a57256c6a2e2f8b404b0c0ca30ab0e0a43ef778a98cc48378a",
+    "references/03-components-di-and-lifecycle.md": "sha256-77c9934a7f69c029e043ee385d6ffcdab8622e03847b49b73d67ee2093945226",
+    "references/04-mcp-and-a2a.md": "sha256-78e8d69c52316183f03b9492d32e2d03b05bd654441300382deb7f745a51ebd8",
+    "references/05-channels-and-human-in-the-loop.md": "sha256-f4930fde855b2276bbc6503b77ef4c123e33c8b4206334a4e45778b531d4efb4",
+    "references/06-finops-providers-and-queues.md": "sha256-d12e279e4849c133183b214d170bfbb728becd9f5474fbef170bef4a9b235589",
+    "references/07-guardrails-pii-and-security.md": "sha256-73d8355d61d23c856faf50fff084120b25fbacd6d6a7d99ccf0d95f779b9c502",
+    "references/08-observability-and-tracing.md": "sha256-b4080d80f643a4834e3dbd59ca45306c4cc1c7fa0a201df3333200c12c37e1c4",
+    "references/09-persistence-k8s-and-deploy.md": "sha256-7d6919c7524447d7eb5ac8d94a6e8393cfca87d0c9e19704ac8c30952737b39b",
+    "references/10-testing-vcr-and-evals.md": "sha256-d60991845e8fc3681c17aa0f4bc53be1ba3c05a2d3071d2e0e4b4a0143bfabf9",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-dff23790e3a29c404ee660e7ce42ae9191b1cd7a66058412feb62aae1f3a9fb4",
+    "references/12-end-to-end-recipes.md": "sha256-2421769216f82da496f902329175e9221d7806d4cb02545d66425f3b12d47899",
+    "references/13-migrating-from-langgraph.md": "sha256-fcf3ad85495d135429b445ff4d90d9ce185c5ce0916d53bfbbf1145628ccfdfc"
+  }
+}

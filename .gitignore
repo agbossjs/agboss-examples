@@ -8,13 +8,12 @@ coverage/
 .env.*
 !**/.env.example
 
-# AGBoss generated types, local SQLite databases, and synced skills
+# AGBoss generated types and local SQLite databases
 .agboss/
 **/.agboss/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
-**/.claude/skills/agboss/
 
 # Packed release tarballs & verification artifacts (Section 4 & 13)
 .packed/
@@ -25,8 +24,8 @@ proof-report.md
 eval-report.html
 
 # Migration benchmark run outputs (keep directory placeholder only)
-langgraph-migration-smoke/results/*
-!langgraph-migration-smoke/results/.gitkeep
+07-langgraph-migration-smoke/results/*
+!07-langgraph-migration-smoke/results/.gitkeep
 
 # OS & editor files
 .DS_Store

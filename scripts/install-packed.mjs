@@ -21,13 +21,13 @@ const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
 const { agboss, agbossCli } = manifest.packages;
 
 const TARGET_DIRS = [
-  "hello-agboss",
-  "path-scope-proof",
-  "travel-booking-saga",
-  "support-refund-desk",
-  "langgraph-migration-smoke",
-  "enterprise-agent-mesh",
-  "cluster-work-stealing",
+  "01-hello-agboss",
+  "02-path-scope-proof",
+  "03-support-refund-desk",
+  "04-travel-booking-saga",
+  "05-cluster-work-stealing",
+  "06-enterprise-agent-mesh",
+  "07-langgraph-migration-smoke",
 ];
 
 const args = process.argv.slice(2);

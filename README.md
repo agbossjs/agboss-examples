@@ -36,23 +36,23 @@ Every project in this repository answers six engineering questions with executab
 
 | Project | Priority | Mode | Primary Engineering Proof |
 | :--- | :--- | :--- | :--- |
-| [**`hello-agboss`**](./hello-agboss/) | **P0** | Deterministic / Offline (+ optional Live) | Clean `agboss create` installation, constructor DI, `@Agent`, `@Router`, `@Tool`, `@Workflow`, typed DTOs, and first execution |
-| [**`path-scope-proof`**](./path-scope-proof/) | **P0** | Deterministic / Static Analysis | Compile-time detection of `[input.missing-on-path]`, `[input.outdated-on-path]`, `[launch.branch-outdates-sibling]`, and `[flow.uncompensated-action]` vs ordinary TypeScript / LangGraph |
-| [**`travel-booking-saga`**](./travel-booking-saga/) | **P0** | Deterministic / Fault-Injection | LIFO saga compensation, `@Budget` cutoff, `app.cancel()`, worker crash recovery over SQLite WAL, external `idempotencyKey` boundary, `.joinQuorum()` arbitration, and HITL pause withdrawal |
-| [**`support-refund-desk`**](./support-refund-desk/) | **P0** | Deterministic / Offline (+ Eval Pipeline) | `@PiiPolicy` (`replaceWithToken`) trace/log scrubbing, `@ToolInterceptor` & `DecidedBy.Code` guardrails, `@Compaction` vs authoritative `@Rag` policy freshness, and 5-layer evaluation (`pass@k` vs `pass^k`, Cohen's $\kappa$) |
-| [**`langgraph-migration-smoke`**](./langgraph-migration-smoke/) | **P0** | Deterministic Harness (+ Model Benchmark) | Verification that AI coding agents can migrate a 15-field `StateAnnotation` LangGraph app using shipped `AGENTS.md` and `.claude/skills/agboss/` (`13-migrating-from-langgraph.md`) |
-| [**`enterprise-agent-mesh`**](./enterprise-agent-mesh/) | **P1** | Deterministic Multi-Service | 3-service mesh (`triage-gateway`, `billing-service`, `catalog-mcp`) over `@A2AAgent` / `@A2AExpose`, `A2AMeshEnvelope`, `MeshLoopDetectedError`, MCP `_meta.callId` deduplication, and `agboss check --federation` Blast Radius |
-| [**`cluster-work-stealing`**](./cluster-work-stealing/) | **P1** | Deterministic Multi-Instance / Fault-Injection | `ChildPlacement.AnyInstance`, recursive `ThisWorkflow` (`maxDepth`), 30s SQLite leases & fencing, worker crash recovery, `maxConcurrentSteps` backpressure, `@HealthCheck`, and cross-instance `app.cancel()` |
+| [**`01-hello-agboss`**](./01-hello-agboss/) | **P0** | Deterministic / Offline (+ optional Live) | Clean `agboss create` installation, constructor DI, `@Agent`, `@Router`, `@Tool`, `@Workflow`, typed DTOs, unit testing, and first execution |
+| [**`02-path-scope-proof`**](./02-path-scope-proof/) | **P0** | Deterministic / Static Analysis | Compile-time detection of `[input.missing-on-path]`, `[input.outdated-on-path]`, `[launch.branch-outdates-sibling]`, and `[flow.uncompensated-action]` vs ordinary TypeScript / LangGraph |
+| [**`03-support-refund-desk`**](./03-support-refund-desk/) | **P0** | Deterministic / Offline (+ Eval Pipeline) | `@PiiPolicy` (`replaceWithToken`) trace/log scrubbing, `@ToolInterceptor` & `DecidedBy.Code` guardrails, `@Compaction` vs authoritative `@Rag` policy freshness, and 5-layer evaluation (`pass@k` vs `pass^k`, Cohen's $\kappa$) |
+| [**`04-travel-booking-saga`**](./04-travel-booking-saga/) | **P0** | Deterministic / Fault-Injection | LIFO saga compensation, `@Budget` cutoff, `app.cancel()`, worker crash recovery over SQLite WAL, external `idempotencyKey` boundary, `.joinQuorum()` arbitration, and HITL pause withdrawal |
+| [**`05-cluster-work-stealing`**](./05-cluster-work-stealing/) | **P1** | Deterministic Multi-Instance / Fault-Injection | `ChildPlacement.AnyInstance`, recursive `ThisWorkflow` (`maxDepth`), 30s SQLite leases & fencing, worker crash recovery, `maxConcurrentSteps` backpressure, `@HealthCheck`, and cross-instance `app.cancel()` |
+| [**`06-enterprise-agent-mesh`**](./06-enterprise-agent-mesh/) | **P1** | Deterministic Multi-Service | 3-service mesh (`triage-gateway`, `billing-service`, `catalog-mcp`) over `@A2AAgent` / `@A2AExpose`, `A2AMeshEnvelope`, `MeshLoopDetectedError`, MCP `_meta.callId` deduplication, and `agboss check --federation` Blast Radius |
+| [**`07-langgraph-migration-smoke`**](./07-langgraph-migration-smoke/) | **P0** | Deterministic Harness (+ Model Benchmark) | Verification that AI coding agents can migrate a 15-field `StateAnnotation` LangGraph app using shipped `AGENTS.md` and `.claude/skills/agboss/` (`13-migrating-from-langgraph.md`) |
 
 ---
 
 ## 3. Repository Design Rules
 
-- **R1. Independent projects:** Every example directory has its own `package.json`, `.env.example`, `tsconfig.json`, `README.md`, commands, and tests. You can `cd` into any example and run it standalone.
+- **R1. Independent projects:** Every example directory has its own `package.json`, `.env.example`, `tsconfig.json`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/skills/agboss/`, commands, and unit/integration tests. You can `cd` into any example and run it standalone.
 - **R2. No direct source dependency:** Examples never import from the `agboss` monorepo `src/`, never use private framework internals, never use `workspace:*` links to the framework, and never use symlinks.
-- **R3. Minimal shared tooling:** [`tooling/`](./tooling/) provides only process execution, temp-directory isolation, diagnostic/ledger assertions, and `proof-results.json` report generation — never a wrapper around AGBoss.
+- **R3. Minimal shared tooling:** [`scripts/tooling/`](./scripts/tooling/) provides only process execution, temp-directory isolation, diagnostic/ledger assertions, and `proof-results.json` report generation — never a wrapper around AGBoss.
 - **R4. Offline-first (`$0`):** All default checks (`npm run check`), tests (`npm test`), and demos (`npm run demo`) run 100% offline with zero LLM API keys. Live model runs (`npm run demo:live`) are opt-in.
-- **R5. Isolated negative fixtures:** Intentional broken graphs (such as `path-scope-proof/cases/*/agboss-broken`) are invoked by test harnesses that assert their exact failure diagnostics without breaking default green CI.
+- **R5. Isolated negative fixtures:** Intentional broken graphs (such as `02-path-scope-proof/cases/*/agboss-broken`) are invoked by test harnesses that assert their exact failure diagnostics without breaking default green CI.
 - **R6. Zero secrets or real PII:** Only synthetic data is used. `.env` files, real traces, and API keys are strictly git-ignored (see [`.gitignore`](./.gitignore) and [`.env.example`](./.env.example)).
 
 ---
@@ -62,7 +62,7 @@ Every project in this repository answers six engineering questions with executab
 ### Run a single example standalone
 
 ```bash
-cd hello-agboss
+cd 01-hello-agboss
 npm install
 npm run check     # Static graph analysis (agboss check) + TypeScript + ESLint
 npm test          # Deterministic offline unit & workflow tests ($0, no API key)

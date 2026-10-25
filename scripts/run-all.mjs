@@ -13,46 +13,46 @@ process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
 
 export const PROJECTS = [
   {
-    name: "hello-agboss",
+    name: "01-hello-agboss",
     priority: "P0",
     mode: "offline-deterministic",
     primaryProof: "Independent installation, DI, workflow assembly, first execution",
   },
   {
-    name: "path-scope-proof",
+    name: "02-path-scope-proof",
     priority: "P0",
     mode: "offline-deterministic",
     primaryProof: "Static graph safety, data availability, freshness, parallel dataflow",
   },
   {
-    name: "travel-booking-saga",
-    priority: "P0",
-    mode: "fault-injection",
-    primaryProof: "Transaction compensation, interruption, recovery, quorum, HITL",
-  },
-  {
-    name: "support-refund-desk",
+    name: "03-support-refund-desk",
     priority: "P0",
     mode: "offline-deterministic",
     primaryProof: "Guardrails, PII, tool interception, memory, evals",
   },
   {
-    name: "langgraph-migration-smoke",
+    name: "04-travel-booking-saga",
     priority: "P0",
-    mode: "model-assisted",
-    primaryProof: "AI coding agents can migrate and validate an application",
+    mode: "fault-injection",
+    primaryProof: "Transaction compensation, interruption, recovery, quorum, HITL",
   },
   {
-    name: "enterprise-agent-mesh",
+    name: "05-cluster-work-stealing",
+    priority: "P1",
+    mode: "fault-injection",
+    primaryProof: "Distributed scheduling, leases, failure recovery, backpressure",
+  },
+  {
+    name: "06-enterprise-agent-mesh",
     priority: "P1",
     mode: "multi-service",
     primaryProof: "A2A, MCP, federation, cross-service tracing",
   },
   {
-    name: "cluster-work-stealing",
-    priority: "P1",
-    mode: "fault-injection",
-    primaryProof: "Distributed scheduling, leases, failure recovery, backpressure",
+    name: "07-langgraph-migration-smoke",
+    priority: "P0",
+    mode: "model-assisted",
+    primaryProof: "AI coding agents can migrate and validate an application",
   },
 ];
 
