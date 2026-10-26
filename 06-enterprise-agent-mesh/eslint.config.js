@@ -1,6 +1,6 @@
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
-import { FLOW_CHAIN_RULE, agbossPlugin } from "agboss/eslint";
+import { FLOW_CHAIN_RULE, agbossPlugin } from "@agboss/core/eslint";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(

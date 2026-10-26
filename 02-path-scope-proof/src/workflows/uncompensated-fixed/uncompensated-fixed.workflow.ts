@@ -1,4 +1,4 @@
-import { Workflow, start, toAction } from "agboss";
+import { Workflow, start, toAction } from "@agboss/core";
 import { CapturePaymentAction } from "../../actions/capture-payment.action.js";
 import { FormatDeclinedReceiptAction } from "../../actions/format-declined-receipt.action.js";
 import { PaymentCaptureError } from "../../actions/payment-capture.error.js";

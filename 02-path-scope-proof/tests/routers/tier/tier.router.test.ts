@@ -1,4 +1,4 @@
-import { testRouter } from "agboss/testing";
+import { testRouter } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { ApplyVipCouponAction } from "../../../src/actions/apply-vip-coupon.action.js";
 import { ComputeTaxAction } from "../../../src/actions/compute-tax.action.js";

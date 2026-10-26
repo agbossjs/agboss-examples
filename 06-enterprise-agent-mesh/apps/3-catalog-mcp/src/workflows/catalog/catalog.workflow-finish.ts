@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { SkuDetailsDto } from "../../dto/sku-details.dto.js";
 
 @WorkflowFinish({

@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class BillingInquiryDto {
   @Text({ prompt: "Invoice ID to inspect (e.g. INV-5001)" })

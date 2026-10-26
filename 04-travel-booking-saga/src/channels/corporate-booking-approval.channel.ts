@@ -3,7 +3,7 @@ import {
   type ChannelAsk,
   ChannelOutcome,
   type ChannelWithdrawal,
-} from "agboss";
+} from "@agboss/core";
 import { BookingApprovalChannelRole } from "./booking-approval.channel-role.js";
 
 export interface RecordedPauseAsk {

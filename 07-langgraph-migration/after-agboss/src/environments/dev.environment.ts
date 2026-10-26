@@ -1,4 +1,4 @@
-import { env, secret } from "agboss";
+import { env, secret } from "@agboss/core";
 import type { AppEnvironment } from "./app.environment.js";
 
 process.env.PII_PSEUDONYM_KEY ??= "agboss-migration-pseudonym-key";

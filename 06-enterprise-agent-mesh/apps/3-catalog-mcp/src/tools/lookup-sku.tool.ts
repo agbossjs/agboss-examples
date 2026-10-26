@@ -1,4 +1,4 @@
-import { ExecutionContext, Tool, type ToolHandler } from "agboss";
+import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import { SkuDetailsDto } from "../dto/sku-details.dto.js";
 import { SkuLookupInputDto } from "../dto/sku-lookup-input.dto.js";
 import { CatalogInventoryService } from "../services/catalog-inventory.service.js";

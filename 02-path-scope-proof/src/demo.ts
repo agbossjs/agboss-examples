@@ -1,4 +1,4 @@
-import { createApp, ExecutionStatus } from "agboss";
+import { createApp, ExecutionStatus } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
 import {
   CheckoutRequestDto,

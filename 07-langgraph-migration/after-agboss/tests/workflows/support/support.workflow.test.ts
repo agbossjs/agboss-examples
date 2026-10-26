@@ -1,10 +1,10 @@
-import { ExecutionStatus } from "agboss";
+import { ExecutionStatus } from "@agboss/core";
 import {
   callTool,
   replyWith,
   routeTo,
   testWith,
-} from "agboss/testing";
+} from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import {
   LEGACY_STATE_FIELD_NAMES,

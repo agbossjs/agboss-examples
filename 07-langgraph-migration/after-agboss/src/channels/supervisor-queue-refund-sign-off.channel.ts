@@ -1,4 +1,4 @@
-import { Channel, ChannelOutcome, type ChannelAsk } from "agboss";
+import { Channel, ChannelOutcome, type ChannelAsk } from "@agboss/core";
 import { SupervisorQueueService } from "../services/supervisor-queue.service.js";
 import { RefundSignOffChannel } from "./refund-sign-off.channel-role.js";
 

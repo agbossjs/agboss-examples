@@ -3,7 +3,7 @@ import {
   GuardrailBlockedError,
   ToolBlockedError,
   ToolCallStatus,
-} from "agboss";
+} from "@agboss/core";
 import { pathToFileURL } from "node:url";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import {

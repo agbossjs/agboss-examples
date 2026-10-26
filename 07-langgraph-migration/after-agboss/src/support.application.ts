@@ -8,8 +8,8 @@ import {
   SqliteExecutionTreeRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-} from "agboss";
-import { hours, seconds } from "agboss/units";
+} from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { SupportApplicationBudget } from "./budgets/support-application.budget.js";
 import { SupportExecutionBudget } from "./budgets/support-execution.budget.js";
 import { SupportTenantBudget } from "./budgets/support-tenant.budget.js";

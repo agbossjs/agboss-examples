@@ -1,4 +1,4 @@
-import { testRouter } from "agboss/testing";
+import { testRouter } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { IssueRefundAction } from "../../../src/actions/issue-refund.action.js";
 import { RefundSignOffAgent } from "../../../src/agents/refund-sign-off/refund-sign-off.agent.js";

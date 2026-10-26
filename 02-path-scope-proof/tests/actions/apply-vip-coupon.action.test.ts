@@ -1,4 +1,4 @@
-import { testAction } from "agboss/testing";
+import { testAction } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { ApplyVipCouponAction } from "../../src/actions/apply-vip-coupon.action.js";
 import { BuildReceiptAction } from "../../src/actions/build-receipt.action.js";

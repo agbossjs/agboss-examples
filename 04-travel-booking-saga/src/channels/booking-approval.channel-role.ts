@@ -1,4 +1,4 @@
-import { ChannelOf, ChannelRole, PauseAnswerer } from "agboss";
+import { ChannelOf, ChannelRole, PauseAnswerer } from "@agboss/core";
 import { HighValueHoldInputDto } from "../dto/high-value-hold-input.dto.js";
 
 @ChannelRole({

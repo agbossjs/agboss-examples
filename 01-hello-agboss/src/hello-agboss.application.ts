@@ -1,4 +1,4 @@
-import { Application, SqliteCostLedgerRepository } from "agboss";
+import { Application, SqliteCostLedgerRepository } from "@agboss/core";
 import { HelloApplicationDailyBudget } from "./budgets/hello-application-daily.budget.js";
 import { HelloExecutionBudget } from "./budgets/hello-execution.budget.js";
 import { HelloTenantDailyBudget } from "./budgets/hello-tenant-daily.budget.js";

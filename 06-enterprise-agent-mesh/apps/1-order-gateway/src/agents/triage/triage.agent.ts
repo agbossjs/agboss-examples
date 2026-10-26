@@ -1,4 +1,4 @@
-import { Agent } from "agboss";
+import { Agent } from "@agboss/core";
 import { TriageRequestDto } from "../../dto/triage-request.dto.js";
 import { TriageResponseDto } from "../../dto/triage-response.dto.js";
 import { SearchCatalogTool } from "../../mcp/search-catalog.mcp-tool.js";

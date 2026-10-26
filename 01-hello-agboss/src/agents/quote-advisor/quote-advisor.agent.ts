@@ -1,4 +1,4 @@
-import { Agent } from "agboss";
+import { Agent } from "@agboss/core";
 import { CustomerInquiryDto } from "../../dto/customer-inquiry.dto.js";
 import { SupportReplyDto } from "../../dto/support-reply.dto.js";
 import { CalculateQuoteTool } from "../../tools/calculate-quote.tool.js";

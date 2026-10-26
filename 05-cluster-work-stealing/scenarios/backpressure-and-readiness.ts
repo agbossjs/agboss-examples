@@ -3,7 +3,7 @@ import {
   HealthComponentKind,
   HealthStatus,
   type HealthReport,
-} from "agboss";
+} from "@agboss/core";
 import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 
 export interface BackpressureHealthSummary {

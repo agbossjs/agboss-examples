@@ -1,4 +1,4 @@
-import type { Secret } from "agboss";
+import type { Secret } from "@agboss/core";
 
 export class AppEnvironment {
   openRouterApiKey!: Secret;

@@ -3,7 +3,7 @@ import {
   CompensationStatus,
   createApp,
   ExecutionStatus,
-} from "agboss";
+} from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import {
   getOperationLedgerEntries,

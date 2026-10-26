@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 
 const FIXTURES_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures");
 const CURRENT_POLICY_MD = readFileSync(join(FIXTURES_DIR, "refund-policy-current.md"), "utf8");

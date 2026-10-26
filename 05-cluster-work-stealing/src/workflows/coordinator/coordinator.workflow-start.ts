@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { BatchJobRequestDto } from "../../dto/batch-job-request.dto.js";
 
 @WorkflowStart({

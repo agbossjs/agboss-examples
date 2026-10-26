@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { DecomposeFailedDto } from "../../dto/decompose-failed.dto.js";
 
 @WorkflowFinish({

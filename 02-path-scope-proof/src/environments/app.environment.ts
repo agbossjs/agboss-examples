@@ -1,4 +1,4 @@
-import type { Secret } from "agboss";
+import type { Secret } from "@agboss/core";
 
 process.env.PII_PSEUDONYM_KEY ??= "offline-path-scope-pseudonym-key";
 

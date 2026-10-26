@@ -4,7 +4,7 @@ import {
   JudgeVerdict,
   type JudgeHandler,
   type JudgeInput,
-} from "agboss";
+} from "@agboss/core";
 import { SupportAnswerDto } from "../../dto/support-answer.dto.js";
 
 @Judge({

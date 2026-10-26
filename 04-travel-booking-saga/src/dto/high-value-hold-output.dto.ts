@@ -1,4 +1,4 @@
-import { Flag, Text } from "agboss/dto";
+import { Flag, Text } from "@agboss/core/dto";
 
 export class HighValueHoldOutputDto {
   @Text({ prompt: "Approval confirmation token" })

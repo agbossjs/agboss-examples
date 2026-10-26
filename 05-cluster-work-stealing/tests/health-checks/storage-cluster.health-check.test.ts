@@ -1,6 +1,6 @@
-import { HealthComponentKind, HealthStatus } from "agboss";
-import { replyWith, testWith, waitFor } from "agboss/testing";
-import { seconds } from "agboss/units";
+import { HealthComponentKind, HealthStatus } from "@agboss/core";
+import { replyWith, testWith, waitFor } from "@agboss/core/testing";
+import { seconds } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
 import { summarizeHealthReport } from "../../scenarios/backpressure-and-readiness.js";
 import { ChunkWorkerAgent } from "../../src/agents/chunk-worker/chunk-worker.agent.js";

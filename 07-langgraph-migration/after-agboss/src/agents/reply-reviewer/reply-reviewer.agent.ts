@@ -1,4 +1,4 @@
-import { Agent, historyOf, listOf, oneOf } from "agboss";
+import { Agent, historyOf, listOf, oneOf } from "@agboss/core";
 import { ChangesRequestedDto } from "../../dto/changes-requested.dto.js";
 import { ReplyApprovedDto } from "../../dto/reply-approved.dto.js";
 import { ReplyDraftDto } from "../../dto/reply-draft.dto.js";

@@ -1,4 +1,4 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 import type { SkuDetailsDto } from "../dto/sku-details.dto.js";
 
 let catalogExecutionCount = 0;

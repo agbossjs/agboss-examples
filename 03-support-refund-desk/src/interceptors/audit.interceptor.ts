@@ -2,7 +2,7 @@ import {
   ToolInterceptor,
   type AfterToolCall,
   type ToolCallResultContext,
-} from "agboss";
+} from "@agboss/core";
 
 export interface AuditedToolCallEntry {
   readonly toolName: string;

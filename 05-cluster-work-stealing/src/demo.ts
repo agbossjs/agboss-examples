@@ -1,4 +1,4 @@
-import { ExecutionStatus, HealthStatus } from "agboss";
+import { ExecutionStatus, HealthStatus } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
 import { runBackpressureAndReadinessScenario } from "../scenarios/backpressure-and-readiness.js";
 import { runWorkStealingAndRecursionScenario } from "../scenarios/work-stealing-and-recursion.js";

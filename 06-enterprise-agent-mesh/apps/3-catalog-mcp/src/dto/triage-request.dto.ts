@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class TriageRequestDto {
   @Text({ prompt: "Invoice ID to check with billing (e.g. INV-5001)" })

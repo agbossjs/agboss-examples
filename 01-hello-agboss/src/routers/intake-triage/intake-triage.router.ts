@@ -1,4 +1,4 @@
-import { DecidedBy, Router } from "agboss";
+import { DecidedBy, Router } from "@agboss/core";
 import { QuoteAdvisorAgent } from "../../agents/quote-advisor/quote-advisor.agent.js";
 import { SupportSpecialistAgent } from "../../agents/support-specialist/support-specialist.agent.js";
 import { CustomerInquiryDto } from "../../dto/customer-inquiry.dto.js";

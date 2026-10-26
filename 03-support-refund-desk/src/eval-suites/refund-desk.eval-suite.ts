@@ -8,7 +8,7 @@ import {
   toolCall,
   toolInvariant,
   turn,
-} from "agboss/eval";
+} from "@agboss/core/eval";
 import { CitationCodeJudge } from "../judges/citation-code/citation-code.judge.js";
 import { GroundedAnswerJudge } from "../judges/grounded-answer/grounded-answer.judge.js";
 import { IssueRefundTool } from "../tools/issue-refund.tool.js";

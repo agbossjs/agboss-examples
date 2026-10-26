@@ -1,4 +1,4 @@
-import { Agent, RagMode, TokenLimit } from "agboss";
+import { Agent, RagMode, TokenLimit } from "@agboss/core";
 import { PolicyAwareCompaction } from "../../compactions/policy-aware/policy-aware.compaction.js";
 import { SupportAnswerDto } from "../../dto/support-answer.dto.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";

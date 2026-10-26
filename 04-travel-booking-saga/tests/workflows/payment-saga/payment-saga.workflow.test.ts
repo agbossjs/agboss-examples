@@ -5,7 +5,7 @@ import {
   createApp,
   ExecutionStatus,
   PauseResolution,
-} from "agboss";
+} from "@agboss/core";
 import { describe, expect, it } from "vitest";
 import { assertLifoCompensationOrder } from "../../../../scripts/tooling/assertions/execution-events.js";
 import {

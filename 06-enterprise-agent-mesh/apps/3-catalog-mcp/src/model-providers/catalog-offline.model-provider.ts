@@ -1,5 +1,5 @@
-import { ModelCost, ModelProvider, RetryPolicy } from "agboss/models";
-import { minutes, seconds } from "agboss/units";
+import { ModelCost, ModelProvider, RetryPolicy } from "@agboss/core/models";
+import { minutes, seconds } from "@agboss/core/units";
 import { OfflineNoopTransport } from "../../../../../scripts/tooling/offline-transports.js";
 
 @ModelProvider({

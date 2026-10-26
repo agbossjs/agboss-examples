@@ -1,5 +1,5 @@
-import { TenantContext } from "agboss";
-import { OneOf } from "agboss/dto";
+import { TenantContext } from "@agboss/core";
+import { OneOf } from "@agboss/core/dto";
 
 export class HelloTenantContext extends TenantContext {
   @OneOf({ values: ["starter", "pro", "enterprise"] })

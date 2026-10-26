@@ -5,11 +5,11 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-258ceb.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Smoke CI](https://github.com/agbossjs/agboss-examples/actions/workflows/smoke.yml/badge.svg?branch=main)](https://github.com/agbossjs/agboss-examples/actions/workflows/smoke.yml)
 
-Independent, runnable [**AGBoss**](https://github.com/agbossjs/agboss) applications that demonstrate and verify the framework's core engineering guarantees against real distributable npm packages (`agboss` and `agboss-cli`).
+Independent, runnable [**AGBoss**](https://github.com/agbossjs/agboss) applications that demonstrate and verify the framework's core engineering guarantees against real distributable npm packages (`@agboss/core` and `@agboss/cli`).
 
 > **AGBoss is an open-source TypeScript framework with static verification for complex multi-agent workflows.**
 >
-> **Pre-release status (`v0.1.0-rc`):** `agboss@0.1.0` and `agboss-cli@0.1.0` are currently in release-candidate preparation (npm currently hosts the initial `0.0.1` placeholders). Each example's `package.json` declares standard public registry ranges (`"^0.1.0"`). Until `0.1.0` is published to npm, run `npm run pack:framework && npm run verify:package && npm run install:packed` from the repository root to pack and install the local release-candidate tarballs into each example's `node_modules` without dirtying git-tracked manifests.
+> **Pre-release status (`v0.1.0-rc`):** `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are currently in release-candidate preparation (npm currently hosts the initial `0.0.1` placeholders). Each example's `package.json` declares standard public registry ranges (`"^0.1.0"`). Until `0.1.0` is published to npm, run `npm run pack:framework && npm run verify:package && npm run install:packed` from the repository root to pack and install the local release-candidate tarballs into each example's `node_modules` without dirtying git-tracked manifests.
 
 ---
 
@@ -63,14 +63,14 @@ Every project in this repository answers six engineering questions with executab
 
 ### Workflow A — Pre-Release / Release-Candidate Validation (Local Tarballs)
 
-Until `agboss@0.1.0` and `agboss-cli@0.1.0` are published to the public npm registry, build and pack the release candidate from the `agboss` repository and install the `.tgz` artifacts into the example projects:
+Until `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to the public npm registry, build and pack the release candidate from the `agboss` repository and install the `.tgz` artifacts into the example projects:
 
 ```bash
 # 1. Install root tooling dependencies & run tooling tests
 npm install
 npm run typecheck
 
-# 2. Pack agboss & agboss-cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
+# 2. Pack @agboss/core & @agboss/cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
 npm run pack:framework
 
 # 3. Verify tarball contents, isolated consumer imports, CLI bin & clean scaffold outside both repos
@@ -90,7 +90,7 @@ npm run install:packed -- --restore
 
 ### Workflow B — Public Consumer & Post-Publication Registry Verification (Post-Publication on npm)
 
-Once `agboss@0.1.0` and `agboss-cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 7 example projects:
+Once `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 7 example projects:
 
 ```bash
 # 1. Verify live npm registry metadata, isolated consumer subpath exports, and `agboss create` scaffold:

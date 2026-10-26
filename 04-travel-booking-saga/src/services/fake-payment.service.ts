@@ -1,4 +1,4 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 import { recordIdempotentOperation } from "./operation-ledger.service.js";
 import { PaymentDeclinedError } from "./payment-declined.error.js";
 

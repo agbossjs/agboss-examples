@@ -1,4 +1,4 @@
-import { Application, SqliteCostLedgerRepository } from "agboss";
+import { Application, SqliteCostLedgerRepository } from "@agboss/core";
 import { SuiteAppBudget } from "./budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "./budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "./budgets/suite-tenant.budget.js";

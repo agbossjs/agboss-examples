@@ -1,4 +1,4 @@
-import { secret } from "agboss";
+import { secret } from "@agboss/core";
 import type { AppEnvironment } from "./app.environment.js";
 
 export const environment: AppEnvironment = {

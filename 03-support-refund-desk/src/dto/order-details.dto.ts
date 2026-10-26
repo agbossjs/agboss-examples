@@ -1,4 +1,4 @@
-import { Decimal, Flag, Integer, Text } from "agboss/dto";
+import { Decimal, Flag, Integer, Text } from "@agboss/core/dto";
 
 export class OrderDetailsDto {
   @Text({ prompt: "Order ID" })

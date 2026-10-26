@@ -1,4 +1,4 @@
-import { ExecutionContext, Tool, type ToolHandler } from "agboss";
+import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import { QuoteCalculationInputDto } from "../dto/quote-calculation-input.dto.js";
 import { QuoteCalculationOutputDto } from "../dto/quote-calculation-output.dto.js";
 import { PricingCatalogService } from "../services/pricing-catalog.service.js";

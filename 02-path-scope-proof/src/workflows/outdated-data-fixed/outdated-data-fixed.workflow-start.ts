@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { OrderDraftDto } from "../../dto/order-draft.dto.js";
 
 @WorkflowStart({

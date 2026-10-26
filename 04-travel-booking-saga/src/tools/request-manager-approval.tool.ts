@@ -1,4 +1,4 @@
-import { Tool, type ToolHandler } from "agboss";
+import { Tool, type ToolHandler } from "@agboss/core";
 import { BookingApprovalChannelRole } from "../channels/booking-approval.channel-role.js";
 import { HighValueHoldInputDto } from "../dto/high-value-hold-input.dto.js";
 import { HighValueHoldOutputDto } from "../dto/high-value-hold-output.dto.js";

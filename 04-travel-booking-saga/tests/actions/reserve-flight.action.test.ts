@@ -1,5 +1,5 @@
-import { testAction, testArbiter, testTool } from "agboss/testing";
-import { usd } from "agboss/units";
+import { testAction, testArbiter, testTool } from "@agboss/core/testing";
+import { usd } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
 import { CancelFlightCompensationAction } from "../../src/actions/cancel-flight-compensation.action.js";
 import { CancelHotelCompensationAction } from "../../src/actions/cancel-hotel-compensation.action.js";

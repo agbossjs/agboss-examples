@@ -8,7 +8,7 @@ import {
   type IncompatibleResume,
   type ResumeDecision,
   type WorkflowDefinition,
-} from "agboss";
+} from "@agboss/core";
 import { CommitChunkEffectAction } from "../../actions/commit-chunk-effect.action.js";
 import { MarkChunkFailedAction } from "../../actions/mark-chunk-failed.action.js";
 import { ChunkWorkerAgent } from "../../agents/chunk-worker/chunk-worker.agent.js";

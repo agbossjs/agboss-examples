@@ -1,6 +1,6 @@
-import { ExecutionContext, type ToolHandler } from "agboss";
-import { McpTool } from "agboss/mcp";
-import { kilobytes, seconds } from "agboss/units";
+import { ExecutionContext, type ToolHandler } from "@agboss/core";
+import { McpTool } from "@agboss/core/mcp";
+import { kilobytes, seconds } from "@agboss/core/units";
 import { SkuDetailsDto } from "../dto/sku-details.dto.js";
 import { SkuLookupInputDto } from "../dto/sku-lookup-input.dto.js";
 import { CatalogMcpServer } from "./catalog.mcp-server.js";

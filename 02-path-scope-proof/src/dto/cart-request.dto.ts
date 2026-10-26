@@ -1,4 +1,4 @@
-import { Integer, Text } from "agboss/dto";
+import { Integer, Text } from "@agboss/core/dto";
 
 export class CartRequestDto {
   @Text({ prompt: "Cart ID" })

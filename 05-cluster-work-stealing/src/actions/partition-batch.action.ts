@@ -4,7 +4,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { BatchJobRequestDto } from "../dto/batch-job-request.dto.js";
 import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
 

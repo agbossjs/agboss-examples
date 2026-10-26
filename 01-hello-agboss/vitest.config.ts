@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
-    setupFiles: ["agboss/testing/setup"],
+    setupFiles: ["@agboss/core/testing/setup"],
     testTimeout: 120_000,
   },
 });

@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class OrderFactsDto {
   @Text({ prompt: "What is known about the order" })

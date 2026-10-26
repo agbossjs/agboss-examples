@@ -5,7 +5,7 @@
 Please report security vulnerabilities privately by email to **security@agboss.dev** — never in a public issue, pull request, or discussion. You may also use GitHub's private vulnerability reporting on [`agbossjs/agboss`](https://github.com/agbossjs/agboss/security/advisories/new).
 
 Please include:
-- The affected example or package (`agboss`, `agboss-cli`, or `agboss-examples`) and version/commit;
+- The affected example or package (`@agboss/core`, `@agboss/cli`, or `agboss-examples`) and version/commit;
 - What an attacker can do and under which conditions;
 - Minimal reproduction steps (using synthetic data only — never send real credentials or personal data).
 

@@ -1,4 +1,4 @@
-import { Integer, Text } from "agboss/dto";
+import { Integer, Text } from "@agboss/core/dto";
 
 export class OrderDraftDto {
   @Text({ prompt: "Order identifier" })

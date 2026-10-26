@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { ApplicationContext, ExecutionContext, Injectable } from "agboss";
+import { ApplicationContext, ExecutionContext, Injectable } from "@agboss/core";
 import type { QuoteCalculationOutputDto } from "../dto/quote-calculation-output.dto.js";
 
 const TIER_RATES: Readonly<Record<string, number>> = {

@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class ChunkFailedDto {
   @Text({ prompt: "Chunk identifier that failed" })

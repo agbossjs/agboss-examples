@@ -2,7 +2,7 @@ import {
   Channel,
   ChannelOutcome,
   type ChannelAsk,
-} from "agboss";
+} from "@agboss/core";
 import { ChunkSignOffChannel } from "./chunk-sign-off.channel-role.js";
 
 @Channel({

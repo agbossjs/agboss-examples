@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { TravelBookingOutcomeDto } from "../../dto/travel-booking-outcome.dto.js";
 
 @WorkflowFinish({

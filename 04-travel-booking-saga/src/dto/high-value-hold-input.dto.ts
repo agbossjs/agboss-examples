@@ -1,4 +1,4 @@
-import { Decimal, Text } from "agboss/dto";
+import { Decimal, Text } from "@agboss/core/dto";
 
 export class HighValueHoldInputDto {
   @Text({ prompt: "Booking ID requiring manager approval" })

@@ -1,4 +1,4 @@
-import { Workflow, start } from "agboss";
+import { Workflow, start } from "@agboss/core";
 import { LookupSkuAgent } from "../../agents/lookup-sku/lookup-sku.agent.js";
 import { SkuDetailsDto } from "../../dto/sku-details.dto.js";
 import { SkuLookupInputDto } from "../../dto/sku-lookup-input.dto.js";

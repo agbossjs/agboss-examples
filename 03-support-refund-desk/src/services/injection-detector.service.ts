@@ -1,4 +1,4 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 
 const INJECTION_PATTERNS: readonly RegExp[] = [
   /ignore\s+(?:all\s+)?previous\s+instructions/iu,

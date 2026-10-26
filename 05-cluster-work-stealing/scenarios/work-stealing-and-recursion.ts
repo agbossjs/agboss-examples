@@ -1,4 +1,4 @@
-import { createApp, ExecutionStatus } from "agboss";
+import { createApp, ExecutionStatus } from "@agboss/core";
 import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 import type { BatchJobSummaryDto } from "../src/dto/batch-job-summary.dto.js";
 import type { DecomposedLeafDto } from "../src/dto/decomposed-leaf.dto.js";

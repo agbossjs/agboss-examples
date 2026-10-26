@@ -5,7 +5,7 @@ import {
   ExecutionStatus,
   HealthStatus,
   type App,
-} from "agboss";
+} from "@agboss/core";
 import type { CustomerInquiryDto } from "../dto/customer-inquiry.dto.js";
 import { HelloAgbossApplication } from "../hello-agboss.application.js";
 import { HelloWorkflowStart } from "../workflows/hello-agboss/hello.workflow-start.js";

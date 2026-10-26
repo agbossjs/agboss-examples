@@ -1,4 +1,4 @@
-import { Tool, type ToolHandler } from "agboss";
+import { Tool, type ToolHandler } from "@agboss/core";
 import { OrderFactsDto } from "../dto/order-facts.dto.js";
 import { OrderLookupDto } from "../dto/order-lookup.dto.js";
 import { OrderBookService } from "../services/order-book.service.js";

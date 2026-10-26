@@ -1,4 +1,4 @@
-import { Decimal, Flag, Text } from "agboss/dto";
+import { Decimal, Flag, Text } from "@agboss/core/dto";
 
 export class TravelBookingRequestDto {
   @Text({ prompt: "Unique booking reference ID" })

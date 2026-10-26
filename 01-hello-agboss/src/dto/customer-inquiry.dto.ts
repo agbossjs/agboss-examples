@@ -1,4 +1,4 @@
-import { Integer, Text } from "agboss/dto";
+import { Integer, Text } from "@agboss/core/dto";
 
 export class CustomerInquiryDto {
   @Text({ prompt: "customer identifier", minLength: 1 })

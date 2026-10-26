@@ -37,13 +37,15 @@ export const TARGET_DIRS = [
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
   const copy = structuredClone(pkg);
-  if (copy.dependencies?.agboss !== undefined) {
-    copy.dependencies.agboss = `^${frameworkVersion}`;
+  if (copy.dependencies?.["@agboss/core"] !== undefined) {
+    copy.dependencies["@agboss/core"] = `^${frameworkVersion}`;
   }
-  if (copy.devDependencies?.["agboss-cli"] !== undefined) {
-    copy.devDependencies["agboss-cli"] = `^${cliVersion}`;
+  if (copy.devDependencies?.["@agboss/cli"] !== undefined) {
+    copy.devDependencies["@agboss/cli"] = `^${cliVersion}`;
   }
   if (copy.overrides && typeof copy.overrides === "object") {
+    delete copy.overrides["@agboss/core"];
+    delete copy.overrides["@agboss/cli"];
     delete copy.overrides.agboss;
     delete copy.overrides["agboss-cli"];
     if (Object.keys(copy.overrides).length === 0) {
@@ -198,17 +200,17 @@ function runMain() {
     const installPkg = structuredClone(publicPkg);
 
     if (mode === "live-registry") {
-      installPkg.dependencies.agboss = version;
-      installPkg.devDependencies["agboss-cli"] = version;
+      installPkg.dependencies["@agboss/core"] = version;
+      installPkg.devDependencies["@agboss/cli"] = version;
     } else {
       const relAgboss = `file:${relative(projectDir, packagesSummary.agboss.tarball.replace(/^file:/, ""))}`;
       const relCli = `file:${relative(projectDir, packagesSummary.agbossCli.tarball.replace(/^file:/, ""))}`;
-      installPkg.dependencies.agboss = relAgboss;
-      installPkg.devDependencies["agboss-cli"] = relCli;
+      installPkg.dependencies["@agboss/core"] = relAgboss;
+      installPkg.devDependencies["@agboss/cli"] = relCli;
       installPkg.overrides = {
         ...(installPkg.overrides ?? {}),
-        agboss: relAgboss,
-        "agboss-cli": relCli,
+        "@agboss/core": relAgboss,
+        "@agboss/cli": relCli,
       };
     }
 
@@ -218,6 +220,7 @@ function runMain() {
         `[install-published] Installing ${mode === "live-registry" ? "public npm registry" : "packed"} packages (${version}) in ${relDir}...`,
       );
       rmSync(join(projectDir, "package-lock.json"), { force: true });
+      rmSync(join(projectDir, "node_modules", "@agboss"), { recursive: true, force: true });
       rmSync(join(projectDir, "node_modules", "agboss"), { recursive: true, force: true });
       rmSync(join(projectDir, "node_modules", "agboss-cli"), { recursive: true, force: true });
 

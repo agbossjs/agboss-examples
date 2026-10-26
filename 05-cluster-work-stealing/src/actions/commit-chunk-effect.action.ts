@@ -4,7 +4,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { ChunkDraftDto } from "../dto/chunk-draft.dto.js";
 import { ChunkResultDto } from "../dto/chunk-result.dto.js";
 import { ClusterLedgerService } from "../services/cluster-ledger.service.js";

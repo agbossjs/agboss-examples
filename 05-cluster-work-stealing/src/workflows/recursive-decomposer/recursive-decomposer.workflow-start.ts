@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { DecomposeNodeDto } from "../../dto/decompose-node.dto.js";
 
 @WorkflowStart({

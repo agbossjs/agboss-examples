@@ -6,8 +6,8 @@ import {
   CompensationStatus,
   createApp,
   ExecutionStatus,
-} from "agboss";
-import { ToolCallApprovalDecisionDto } from "agboss/dto";
+} from "@agboss/core";
+import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import {
   getSentChannelAsks,
   resetChannelRecords,

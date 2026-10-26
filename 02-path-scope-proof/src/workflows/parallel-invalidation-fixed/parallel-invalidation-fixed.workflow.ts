@@ -1,4 +1,4 @@
-import { Workflow, start } from "agboss";
+import { Workflow, start } from "@agboss/core";
 import { ComputeLoyaltyAdjustmentAction } from "../../actions/compute-loyalty-adjustment.action.js";
 import { ComputeTaxBranchBAction } from "../../actions/compute-tax-branch-b.action.js";
 import { InitialQuoteAction } from "../../actions/initial-quote.action.js";

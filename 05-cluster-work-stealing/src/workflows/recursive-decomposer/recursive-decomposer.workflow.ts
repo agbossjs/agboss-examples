@@ -7,7 +7,7 @@ import {
   oneOf,
   start,
   toAction,
-} from "agboss";
+} from "@agboss/core";
 import { MarkShardFailedAction } from "../../actions/mark-shard-failed.action.js";
 import { MergeShardsAction } from "../../actions/merge-shards.action.js";
 import { SplitShardAction } from "../../actions/split-shard.action.js";

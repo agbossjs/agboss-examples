@@ -3,8 +3,8 @@ import {
   ExecutionLeaseRepository,
   ExecutionStatus,
   IncompatibleResumeError,
-} from "agboss";
-import { studioOf } from "agboss/internal";
+} from "@agboss/core";
+import { studioOf } from "@agboss/core/internal";
 import {
   callTool,
   failWith,
@@ -12,8 +12,8 @@ import {
   replyWith,
   testWith,
   waitFor,
-} from "agboss/testing";
-import { seconds } from "agboss/units";
+} from "@agboss/core/testing";
+import { seconds } from "@agboss/core/units";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   setAllowIncompatibleResume,

@@ -8,7 +8,7 @@ import {
   route,
   start,
   toFinish,
-} from "agboss";
+} from "@agboss/core";
 import { IssueRefundAction } from "../../actions/issue-refund.action.js";
 import { OrderResearcherAgent } from "../../agents/order-researcher/order-researcher.agent.js";
 import { RefundSignOffAgent } from "../../agents/refund-sign-off/refund-sign-off.agent.js";

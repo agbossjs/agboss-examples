@@ -1,10 +1,10 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 import {
   A2ACallerResolution,
   A2ARoute,
   type A2ACallerRequest,
   type A2ACallerResolver,
-} from "agboss/a2a";
+} from "@agboss/core/a2a";
 import type { BillingWorkflowStart } from "../workflows/billing/billing.workflow-start.js";
 import { BillingApiKeyDirectory } from "./billing-api-key-directory.service.js";
 

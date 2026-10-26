@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { createApp, ExecutionStatus, HealthStatus, type App } from "agboss";
-import { ToolCallApprovalDecisionDto } from "agboss/dto";
+import { createApp, ExecutionStatus, HealthStatus, type App } from "@agboss/core";
+import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks } from "../channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 import { TravelBookingSagaApplication } from "../travel-booking-saga.application.js";

@@ -3,7 +3,7 @@ import {
   ToolInterceptor,
   type BeforeToolCall,
   type ToolCallContext,
-} from "agboss";
+} from "@agboss/core";
 import { SupportTenantContext } from "../contexts/support-tenant.context.js";
 import { OrderBookService } from "../services/order-book.service.js";
 

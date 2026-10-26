@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { ChunkTaskDto } from "../../dto/chunk-task.dto.js";
 
 @WorkflowStart({

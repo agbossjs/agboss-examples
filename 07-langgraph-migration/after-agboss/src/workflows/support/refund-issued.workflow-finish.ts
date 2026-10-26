@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { RefundIssuedDto } from "../../dto/refund-issued.dto.js";
 
 @WorkflowFinish({
