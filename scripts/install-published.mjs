@@ -13,7 +13,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   fetchLiveRegistryMetadata,
@@ -107,10 +107,16 @@ function runMain() {
       );
       process.exit(1);
     }
+    const canonicalManifestPath = join(ROOT, ".packed", "manifest.json");
+    const canonicalManifest = existsSync(canonicalManifestPath)
+      ? JSON.parse(readFileSync(canonicalManifestPath, "utf8"))
+      : undefined;
     const validation = validateRegistryMetadata({
       ...rawMeta,
+      canonicalManifest,
       expectedVersion: version,
       expectedTag: tag,
+      requireMeasuredTarballs: true,
     });
     if (!validation.valid) {
       console.error(
@@ -146,20 +152,33 @@ function runMain() {
       agboss: agboss.integrity,
       agbossCli: agbossCli.integrity,
     };
+    const resolvePackedPath = (pkg) => {
+      if (pkg?.tarballPath && existsSync(pkg.tarballPath)) return pkg.tarballPath;
+      const fname = pkg?.filename || (pkg?.tarballPath ? basename(pkg.tarballPath) : null);
+      if (fname) {
+        const candidate = join(ROOT, ".packed", basename(fname));
+        if (existsSync(candidate)) return candidate;
+      }
+      return pkg?.tarballPath;
+    };
+    const agbossTarballPath = resolvePackedPath(agboss);
+    const cliTarballPath = resolvePackedPath(agbossCli);
     packagesSummary = {
       agboss: {
         name: agboss.name,
         version: agboss.version,
         integrity: agboss.integrity,
+        sha256: agboss.sha256,
         shasum: agboss.shasum,
-        tarball: `file:${agboss.tarballPath}`,
+        tarball: `file:${agbossTarballPath}`,
       },
       agbossCli: {
         name: agbossCli.name,
         version: agbossCli.version,
         integrity: agbossCli.integrity,
+        sha256: agbossCli.sha256,
         shasum: agbossCli.shasum,
-        tarball: `file:${agbossCli.tarballPath}`,
+        tarball: `file:${cliTarballPath}`,
       },
     };
   }
@@ -182,8 +201,8 @@ function runMain() {
       installPkg.dependencies.agboss = version;
       installPkg.devDependencies["agboss-cli"] = version;
     } else {
-      const relAgboss = `file:${relative(projectDir, packedManifest.packages.agboss.tarballPath)}`;
-      const relCli = `file:${relative(projectDir, packedManifest.packages.agbossCli.tarballPath)}`;
+      const relAgboss = `file:${relative(projectDir, packagesSummary.agboss.tarball.replace(/^file:/, ""))}`;
+      const relCli = `file:${relative(projectDir, packagesSummary.agbossCli.tarball.replace(/^file:/, ""))}`;
       installPkg.dependencies.agboss = relAgboss;
       installPkg.devDependencies["agboss-cli"] = relCli;
       installPkg.overrides = {

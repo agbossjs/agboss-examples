@@ -18,6 +18,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { PROJECTS } from "./run-all.mjs";
+import { SHA1_HEX_RE, SHA256_HEX_RE, SHA512_SRI_RE } from "./verify-published.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -59,17 +60,53 @@ export function validatePackageVerification(pkgVerify, manifest) {
   const verifyAgboss = pkgVerify.packages?.agboss;
   const verifyCli = pkgVerify.packages?.agbossCli;
 
-  if (!manifestAgboss?.integrity || verifyAgboss?.integrity !== manifestAgboss.integrity) {
+  if (
+    !manifestAgboss?.integrity ||
+    !SHA512_SRI_RE.test(String(manifestAgboss.integrity)) ||
+    verifyAgboss?.integrity !== manifestAgboss.integrity
+  ) {
     reasons.push("agboss tarball integrity mismatch in package-verification.json");
   }
-  if (!manifestCli?.integrity || verifyCli?.integrity !== manifestCli.integrity) {
+  if (
+    !manifestCli?.integrity ||
+    !SHA512_SRI_RE.test(String(manifestCli.integrity)) ||
+    verifyCli?.integrity !== manifestCli.integrity
+  ) {
     reasons.push("agboss-cli tarball integrity mismatch in package-verification.json");
   }
-  if (manifestAgboss?.sha256 && verifyAgboss?.sha256 !== manifestAgboss.sha256) {
+  if (
+    !manifestAgboss?.sha256 ||
+    !SHA256_HEX_RE.test(String(manifestAgboss.sha256)) ||
+    verifyAgboss?.sha256 !== manifestAgboss.sha256
+  ) {
     reasons.push("agboss tarball sha256 mismatch in package-verification.json");
   }
-  if (manifestCli?.sha256 && verifyCli?.sha256 !== manifestCli.sha256) {
+  if (
+    !manifestCli?.sha256 ||
+    !SHA256_HEX_RE.test(String(manifestCli.sha256)) ||
+    verifyCli?.sha256 !== manifestCli.sha256
+  ) {
     reasons.push("agboss-cli tarball sha256 mismatch in package-verification.json");
+  }
+  if (
+    manifestAgboss?.shasum !== undefined &&
+    manifestAgboss?.shasum !== null &&
+    (!SHA1_HEX_RE.test(String(manifestAgboss.shasum)) ||
+      (verifyAgboss?.shasum !== undefined &&
+        verifyAgboss?.shasum !== null &&
+        verifyAgboss.shasum !== manifestAgboss.shasum))
+  ) {
+    reasons.push("agboss tarball shasum (SHA-1) mismatch in package-verification.json");
+  }
+  if (
+    manifestCli?.shasum !== undefined &&
+    manifestCli?.shasum !== null &&
+    (!SHA1_HEX_RE.test(String(manifestCli.shasum)) ||
+      (verifyCli?.shasum !== undefined &&
+        verifyCli?.shasum !== null &&
+        verifyCli.shasum !== manifestCli.shasum))
+  ) {
+    reasons.push("agboss-cli tarball shasum (SHA-1) mismatch in package-verification.json");
   }
 
   const checks = pkgVerify.checks;
@@ -160,17 +197,57 @@ export function validateRunProvenance({ lastRun, manifest, currentExamplesCommit
   const manifestCli = manifest.packages?.agbossCli;
   const runHashes = lastRun.packageHashes ?? {};
 
-  if (!manifestAgboss?.integrity || runHashes.agboss !== manifestAgboss.integrity) {
+  if (
+    !manifestAgboss?.integrity ||
+    !SHA512_SRI_RE.test(String(manifestAgboss.integrity)) ||
+    runHashes.agboss !== manifestAgboss.integrity
+  ) {
     reasons.push("last-run agboss tarball integrity does not match manifest.json");
   }
-  if (!manifestCli?.integrity || runHashes.agbossCli !== manifestCli.integrity) {
+  if (
+    !manifestCli?.integrity ||
+    !SHA512_SRI_RE.test(String(manifestCli.integrity)) ||
+    runHashes.agbossCli !== manifestCli.integrity
+  ) {
     reasons.push("last-run agboss-cli tarball integrity does not match manifest.json");
   }
-  if (manifestAgboss?.sha256 && runHashes.agbossSha256 !== manifestAgboss.sha256) {
+  if (
+    !manifestAgboss?.sha256 ||
+    !SHA256_HEX_RE.test(String(manifestAgboss.sha256)) ||
+    !SHA256_HEX_RE.test(String(runHashes.agbossSha256 ?? "")) ||
+    runHashes.agbossSha256 !== manifestAgboss.sha256
+  ) {
     reasons.push("last-run agboss tarball sha256 does not match manifest.json");
   }
-  if (manifestCli?.sha256 && runHashes.agbossCliSha256 !== manifestCli.sha256) {
+  if (
+    !manifestCli?.sha256 ||
+    !SHA256_HEX_RE.test(String(manifestCli.sha256)) ||
+    !SHA256_HEX_RE.test(String(runHashes.agbossCliSha256 ?? "")) ||
+    runHashes.agbossCliSha256 !== manifestCli.sha256
+  ) {
     reasons.push("last-run agboss-cli tarball sha256 does not match manifest.json");
+  }
+  if (
+    manifestAgboss?.shasum !== undefined &&
+    manifestAgboss?.shasum !== null &&
+    (!SHA1_HEX_RE.test(String(manifestAgboss.shasum)) ||
+      (runHashes.agbossShasum !== undefined &&
+        runHashes.agbossShasum !== null &&
+        (!SHA1_HEX_RE.test(String(runHashes.agbossShasum)) ||
+          runHashes.agbossShasum !== manifestAgboss.shasum)))
+  ) {
+    reasons.push("last-run agboss tarball shasum (SHA-1) does not match manifest.json");
+  }
+  if (
+    manifestCli?.shasum !== undefined &&
+    manifestCli?.shasum !== null &&
+    (!SHA1_HEX_RE.test(String(manifestCli.shasum)) ||
+      (runHashes.agbossCliShasum !== undefined &&
+        runHashes.agbossCliShasum !== null &&
+        (!SHA1_HEX_RE.test(String(runHashes.agbossCliShasum)) ||
+          runHashes.agbossCliShasum !== manifestCli.shasum)))
+  ) {
+    reasons.push("last-run agboss-cli tarball shasum (SHA-1) does not match manifest.json");
   }
 
   if (reasons.length > 0) {
@@ -183,6 +260,7 @@ export function validatePublishedManifest(
   publishedManifest,
   currentExamplesCommit,
   projectsCatalog = PROJECTS,
+  canonicalManifest = undefined,
 ) {
   if (!publishedManifest || typeof publishedManifest !== "object") {
     return {
@@ -214,11 +292,37 @@ export function validatePublishedManifest(
 
   const agbossPkg = publishedManifest.packages?.agboss;
   const cliPkg = publishedManifest.packages?.agbossCli;
-  if (!agbossPkg?.version || !agbossPkg?.integrity) {
-    reasons.push("published-manifest is missing agboss version or dist.integrity");
+  if (
+    !agbossPkg?.version ||
+    !agbossPkg?.integrity ||
+    !SHA512_SRI_RE.test(String(agbossPkg.integrity))
+  ) {
+    reasons.push("published-manifest is missing agboss version or valid SHA-512 dist.integrity");
   }
-  if (!cliPkg?.version || !cliPkg?.integrity) {
-    reasons.push("published-manifest is missing agboss-cli version or dist.integrity");
+  if (!cliPkg?.version || !cliPkg?.integrity || !SHA512_SRI_RE.test(String(cliPkg.integrity))) {
+    reasons.push(
+      "published-manifest is missing agboss-cli version or valid SHA-512 dist.integrity",
+    );
+  }
+  if (!agbossPkg?.sha256 || !SHA256_HEX_RE.test(String(agbossPkg.sha256))) {
+    reasons.push(
+      `published-manifest agboss.sha256 ('${agbossPkg?.sha256 ?? "none"}') is missing or not a 64-character SHA-256 hex digest`,
+    );
+  }
+  if (!cliPkg?.sha256 || !SHA256_HEX_RE.test(String(cliPkg.sha256))) {
+    reasons.push(
+      `published-manifest agbossCli.sha256 ('${cliPkg?.sha256 ?? "none"}') is missing or not a 64-character SHA-256 hex digest`,
+    );
+  }
+  if (!agbossPkg?.shasum || !SHA1_HEX_RE.test(String(agbossPkg.shasum))) {
+    reasons.push(
+      `published-manifest agboss.shasum ('${agbossPkg?.shasum ?? "none"}') is missing or not a 40-character SHA-1 hex digest`,
+    );
+  }
+  if (!cliPkg?.shasum || !SHA1_HEX_RE.test(String(cliPkg.shasum))) {
+    reasons.push(
+      `published-manifest agbossCli.shasum ('${cliPkg?.shasum ?? "none"}') is missing or not a 40-character SHA-1 hex digest`,
+    );
   }
   if (
     !agbossPkg?.tarball ||
@@ -237,6 +341,43 @@ export function validatePublishedManifest(
     reasons.push(
       `published-manifest agboss-cli tarball URL is not a remote https registry URL: '${cliPkg?.tarball ?? "none"}'`,
     );
+  }
+
+  const canonicalAgboss = canonicalManifest?.packages?.agboss;
+  if (canonicalAgboss && canonicalAgboss.version === agbossPkg?.version) {
+    if (canonicalAgboss.sha256 && agbossPkg?.sha256 !== canonicalAgboss.sha256) {
+      reasons.push(
+        `published-manifest agboss.sha256 (${agbossPkg?.sha256 ?? "none"}) does not match canonical .packed/manifest.json (${canonicalAgboss.sha256})`,
+      );
+    }
+    if (canonicalAgboss.shasum && agbossPkg?.shasum !== canonicalAgboss.shasum) {
+      reasons.push(
+        `published-manifest agboss.shasum (${agbossPkg?.shasum ?? "none"}) does not match canonical .packed/manifest.json (${canonicalAgboss.shasum})`,
+      );
+    }
+    if (canonicalAgboss.integrity && agbossPkg?.integrity !== canonicalAgboss.integrity) {
+      reasons.push(
+        `published-manifest agboss.integrity (${agbossPkg?.integrity ?? "none"}) does not match canonical .packed/manifest.json (${canonicalAgboss.integrity})`,
+      );
+    }
+  }
+  const canonicalCli = canonicalManifest?.packages?.agbossCli;
+  if (canonicalCli && canonicalCli.version === cliPkg?.version) {
+    if (canonicalCli.sha256 && cliPkg?.sha256 !== canonicalCli.sha256) {
+      reasons.push(
+        `published-manifest agbossCli.sha256 (${cliPkg?.sha256 ?? "none"}) does not match canonical .packed/manifest.json (${canonicalCli.sha256})`,
+      );
+    }
+    if (canonicalCli.shasum && cliPkg?.shasum !== canonicalCli.shasum) {
+      reasons.push(
+        `published-manifest agbossCli.shasum (${cliPkg?.shasum ?? "none"}) does not match canonical .packed/manifest.json (${canonicalCli.shasum})`,
+      );
+    }
+    if (canonicalCli.integrity && cliPkg?.integrity !== canonicalCli.integrity) {
+      reasons.push(
+        `published-manifest agbossCli.integrity (${cliPkg?.integrity ?? "none"}) does not match canonical .packed/manifest.json (${canonicalCli.integrity})`,
+      );
+    }
   }
 
   const projectRecords = publishedManifest.projects ?? {};
@@ -346,6 +487,42 @@ export function validatePublishedVerification(pubVerify, publishedManifest) {
       "published-verification npmRegistryMetadata.agbossCli.integrity does not match published-manifest",
     );
   }
+  if (
+    !verifyRegAgboss?.sha256 ||
+    !SHA256_HEX_RE.test(String(verifyRegAgboss.sha256)) ||
+    verifyRegAgboss.sha256 !== manifestAgboss?.sha256
+  ) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agboss.sha256 is missing, invalid, or does not match published-manifest",
+    );
+  }
+  if (
+    !verifyRegCli?.sha256 ||
+    !SHA256_HEX_RE.test(String(verifyRegCli.sha256)) ||
+    verifyRegCli.sha256 !== manifestCli?.sha256
+  ) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agbossCli.sha256 is missing, invalid, or does not match published-manifest",
+    );
+  }
+  if (
+    !verifyRegAgboss?.shasum ||
+    !SHA1_HEX_RE.test(String(verifyRegAgboss.shasum)) ||
+    verifyRegAgboss.shasum !== manifestAgboss?.shasum
+  ) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agboss.shasum is missing, invalid, or does not match published-manifest",
+    );
+  }
+  if (
+    !verifyRegCli?.shasum ||
+    !SHA1_HEX_RE.test(String(verifyRegCli.shasum)) ||
+    verifyRegCli.shasum !== manifestCli?.shasum
+  ) {
+    reasons.push(
+      "published-verification npmRegistryMetadata.agbossCli.shasum is missing, invalid, or does not match published-manifest",
+    );
+  }
 
   const checks = pubVerify.checks;
   if (!checks || typeof checks !== "object") {
@@ -398,8 +575,15 @@ export function validatePublishedRunProvenance({
   lastRun,
   publishedManifest,
   currentExamplesCommit,
+  projectsCatalog = PROJECTS,
+  canonicalManifest = undefined,
 }) {
-  const manifestCheck = validatePublishedManifest(publishedManifest, currentExamplesCommit);
+  const manifestCheck = validatePublishedManifest(
+    publishedManifest,
+    currentExamplesCommit,
+    projectsCatalog,
+    canonicalManifest,
+  );
   if (!manifestCheck.valid) {
     return manifestCheck;
   }
@@ -449,6 +633,44 @@ export function validatePublishedRunProvenance({
   if (!manifestCli?.integrity || runHashes.agbossCli !== manifestCli.integrity) {
     reasons.push("last-run agboss-cli registry integrity does not match published-manifest.json");
   }
+  if (
+    !manifestAgboss?.sha256 ||
+    !SHA256_HEX_RE.test(String(runHashes.agbossSha256 ?? "")) ||
+    runHashes.agbossSha256 !== manifestAgboss.sha256
+  ) {
+    reasons.push(
+      "last-run agbossSha256 is missing, not a 64-character SHA-256 hex digest, or does not match published-manifest.json",
+    );
+  }
+  if (
+    !manifestCli?.sha256 ||
+    !SHA256_HEX_RE.test(String(runHashes.agbossCliSha256 ?? "")) ||
+    runHashes.agbossCliSha256 !== manifestCli.sha256
+  ) {
+    reasons.push(
+      "last-run agbossCliSha256 is missing, not a 64-character SHA-256 hex digest, or does not match published-manifest.json",
+    );
+  }
+  if (
+    runHashes.agbossShasum !== undefined &&
+    runHashes.agbossShasum !== null &&
+    (!SHA1_HEX_RE.test(String(runHashes.agbossShasum)) ||
+      runHashes.agbossShasum !== manifestAgboss?.shasum)
+  ) {
+    reasons.push(
+      "last-run agbossShasum is not a 40-character SHA-1 hex digest or does not match published-manifest.json",
+    );
+  }
+  if (
+    runHashes.agbossCliShasum !== undefined &&
+    runHashes.agbossCliShasum !== null &&
+    (!SHA1_HEX_RE.test(String(runHashes.agbossCliShasum)) ||
+      runHashes.agbossCliShasum !== manifestCli?.shasum)
+  ) {
+    reasons.push(
+      "last-run agbossCliShasum is not a 40-character SHA-1 hex digest or does not match published-manifest.json",
+    );
+  }
 
   if (reasons.length > 0) {
     return { status: "FAILED", valid: false, reasons };
@@ -479,6 +701,8 @@ export function evaluateProofReport({
         lastRun,
         publishedManifest,
         currentExamplesCommit,
+        projectsCatalog,
+        canonicalManifest: manifest,
       })
     : validateRunProvenance({
         lastRun,
@@ -644,15 +868,11 @@ export function evaluateProofReport({
       "unknown",
     packageHashes: {
       agboss: activeManifest?.packages?.agboss?.integrity ?? null,
-      agbossSha256:
-        (isPublishedMode
-          ? activeManifest?.packages?.agboss?.shasum
-          : activeManifest?.packages?.agboss?.sha256) ?? null,
+      agbossSha256: activeManifest?.packages?.agboss?.sha256 ?? null,
+      agbossShasum: activeManifest?.packages?.agboss?.shasum ?? null,
       agbossCli: activeManifest?.packages?.agbossCli?.integrity ?? null,
-      agbossCliSha256:
-        (isPublishedMode
-          ? activeManifest?.packages?.agbossCli?.shasum
-          : activeManifest?.packages?.agbossCli?.sha256) ?? null,
+      agbossCliSha256: activeManifest?.packages?.agbossCli?.sha256 ?? null,
+      agbossCliShasum: activeManifest?.packages?.agbossCli?.shasum ?? null,
     },
     gates: {
       provenanceGate,
@@ -687,8 +907,12 @@ export function renderProofMarkdown(report) {
     `- **AGBoss CLI version:** \`${report.cliVersion}\` (${channelSuffix})`,
     `- **Framework source (\`agbossjs/agboss\`):** \`${report.sourceCommit}\``,
     `- **Examples source commit (\`agbossjs/agboss-examples\`):** \`${report.examplesSourceCommit}\``,
-    `- **agboss integrity:** \`${report.packageHashes.agboss ?? "n/a"}\` (\`${report.packageHashes.agbossSha256 ?? "n/a"}\`)`,
-    `- **agboss-cli integrity:** \`${report.packageHashes.agbossCli ?? "n/a"}\` (\`${report.packageHashes.agbossCliSha256 ?? "n/a"}\`)`,
+    `- **agboss integrity (SHA-512):** \`${report.packageHashes.agboss ?? "n/a"}\``,
+    `- **agboss SHA-256:** \`${report.packageHashes.agbossSha256 ?? "n/a"}\``,
+    `- **agboss npm shasum (SHA-1):** \`${report.packageHashes.agbossShasum ?? "n/a"}\``,
+    `- **agboss-cli integrity (SHA-512):** \`${report.packageHashes.agbossCli ?? "n/a"}\``,
+    `- **agboss-cli SHA-256:** \`${report.packageHashes.agbossCliSha256 ?? "n/a"}\``,
+    `- **agboss-cli npm shasum (SHA-1):** \`${report.packageHashes.agbossCliShasum ?? "n/a"}\``,
     `- **Provenance Gate:** **${report.gates.provenanceGate}**`,
     `- **Isolated Package & Scaffold Gate:** **${report.gates.packageGate}**`,
     `- **P0 Release Gate:** **${report.gates.p0Gate}**`,
@@ -743,10 +967,14 @@ function runMain() {
   }
 
   if (provenanceMode === "published") {
+    const manifestPath = join(ROOT, ".packed", "manifest.json");
     const pubManifestPath = join(ROOT, ".packed", "published-manifest.json");
     const pubVerifyPath = join(ROOT, ".packed", "published-verification.json");
     const lastRunPubPath = join(ROOT, ".packed", "last-run-published.json");
 
+    const manifest = existsSync(manifestPath)
+      ? JSON.parse(readFileSync(manifestPath, "utf8"))
+      : undefined;
     const publishedManifest = existsSync(pubManifestPath)
       ? JSON.parse(readFileSync(pubManifestPath, "utf8"))
       : undefined;
@@ -759,6 +987,7 @@ function runMain() {
 
     const report = evaluateProofReport({
       lastRun,
+      manifest,
       publishedManifest,
       pubVerify,
       provenanceMode: "published",

@@ -12,6 +12,7 @@
  * Writes `.packed/published-verification.json` with explicit PASSED / FAILED / NOT_RUN / BLOCKED statuses.
  */
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -24,11 +25,152 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
+
+export const SHA256_HEX_RE = /^[0-9a-f]{64}$/;
+export const SHA1_HEX_RE = /^[0-9a-f]{40}$/;
+export const SHA512_SRI_RE = /^sha512-[A-Za-z0-9+/]+={0,2}$/;
+export const MAX_REGISTRY_TARBALL_BYTES = 25 * 1024 * 1024;
+export const REGISTRY_TARBALL_TIMEOUT_MS = 30_000;
+
+const MEASURED_TARBALL_CACHE = new Map();
+
+export function computeTarballDigests(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error("Cannot compute tarball digests from empty or non-Buffer input");
+  }
+  return {
+    sha256: createHash("sha256").update(buffer).digest("hex"),
+    shasum: createHash("sha1").update(buffer).digest("hex"),
+    integrity: `sha512-${createHash("sha512").update(buffer).digest("base64")}`,
+    size: buffer.length,
+  };
+}
+
+export function validateOfficialRegistryTarballUrl(
+  tarballUrl,
+  packageName,
+  expectedVersion,
+) {
+  if (
+    typeof tarballUrl !== "string" ||
+    !tarballUrl.startsWith("https://registry.npmjs.org/") ||
+    tarballUrl.startsWith("file:") ||
+    tarballUrl.includes("..") ||
+    tarballUrl.includes(".packed") ||
+    !tarballUrl.endsWith(".tgz")
+  ) {
+    return false;
+  }
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(tarballUrl);
+  } catch {
+    return false;
+  }
+  if (
+    parsedUrl.protocol !== "https:" ||
+    parsedUrl.hostname !== "registry.npmjs.org" ||
+    parsedUrl.port !== "" ||
+    parsedUrl.username !== "" ||
+    parsedUrl.password !== "" ||
+    parsedUrl.search !== "" ||
+    parsedUrl.hash !== ""
+  ) {
+    return false;
+  }
+  if (packageName && expectedVersion) {
+    const expectedUrl = `https://registry.npmjs.org/${packageName}/-/${packageName}-${expectedVersion}.tgz`;
+    return tarballUrl === expectedUrl;
+  }
+  return true;
+}
+
+export function measureRegistryTarball(
+  tarballUrl,
+  {
+    packageName,
+    expectedVersion,
+    timeoutMs = REGISTRY_TARBALL_TIMEOUT_MS,
+    maxBytes = MAX_REGISTRY_TARBALL_BYTES,
+  } = {},
+) {
+  if (!validateOfficialRegistryTarballUrl(tarballUrl, packageName, expectedVersion)) {
+    throw new Error(
+      `Invalid or untrusted registry tarball URL '${String(tarballUrl)}' for ${packageName ?? "package"}@${expectedVersion ?? "*"}`,
+    );
+  }
+  const cached = MEASURED_TARBALL_CACHE.get(tarballUrl);
+  if (cached) {
+    return { ...cached };
+  }
+
+  const downloadScript = `
+    import crypto from "node:crypto";
+    const url = process.argv[1];
+    const timeoutMs = Number(process.argv[2]);
+    const maxBytes = Number(process.argv[3]);
+    const res = await fetch(url, {
+      redirect: "error",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok || !res.body) {
+      throw new Error(\`HTTP \${res.status} fetching \${url}\`);
+    }
+    const chunks = [];
+    let total = 0;
+    for await (const chunk of res.body) {
+      const buf = Buffer.from(chunk);
+      total += buf.length;
+      if (total > maxBytes) {
+        throw new Error(\`Registry tarball exceeded maxBytes limit (\${maxBytes}) for \${url}\`);
+      }
+      chunks.push(buf);
+    }
+    if (total === 0) {
+      throw new Error(\`Empty registry tarball response for \${url}\`);
+    }
+    const full = Buffer.concat(chunks, total);
+    const out = {
+      sha256: crypto.createHash("sha256").update(full).digest("hex"),
+      shasum: crypto.createHash("sha1").update(full).digest("hex"),
+      integrity: "sha512-" + crypto.createHash("sha512").update(full).digest("base64"),
+      size: total,
+    };
+    process.stdout.write(JSON.stringify(out));
+  `;
+
+  const rawOut = execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      downloadScript,
+      tarballUrl,
+      String(timeoutMs),
+      String(maxBytes),
+    ],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  const parsed = JSON.parse(rawOut);
+  if (
+    !SHA256_HEX_RE.test(parsed.sha256) ||
+    !SHA1_HEX_RE.test(parsed.shasum) ||
+    !SHA512_SRI_RE.test(parsed.integrity)
+  ) {
+    throw new Error(`Invalid measured digest format returned for ${tarballUrl}`);
+  }
+  MEASURED_TARBALL_CACHE.set(tarballUrl, parsed);
+  return { ...parsed };
+}
 
 export const REQUIRED_SUBPATH_EXPORTS = [
   "agboss",
@@ -119,8 +261,11 @@ export function validateRegistryMetadata({
   agbossCliMeta,
   agbossDistTags,
   agbossCliDistTags,
+  measuredTarballs,
+  canonicalManifest,
   expectedVersion,
   expectedTag = "latest",
+  requireMeasuredTarballs = false,
 }) {
   const reasons = [];
 
@@ -137,13 +282,22 @@ export function validateRegistryMetadata({
         `Registry agboss@${expectedVersion} is marked deprecated: ${agbossMeta.deprecated}`,
       );
     }
-    if (!agbossMeta.dist?.integrity) {
-      reasons.push(`Registry agboss@${expectedVersion} is missing dist.integrity`);
+    if (!agbossMeta.dist?.integrity || !SHA512_SRI_RE.test(String(agbossMeta.dist.integrity))) {
+      reasons.push(
+        `Registry agboss@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossMeta.dist?.integrity ?? "none"}'`,
+      );
+    }
+    if (!agbossMeta.dist?.shasum || !SHA1_HEX_RE.test(String(agbossMeta.dist.shasum))) {
+      reasons.push(
+        `Registry agboss@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossMeta.dist?.shasum ?? "none"}'`,
+      );
     }
     if (
-      !agbossMeta.dist?.tarball ||
-      !String(agbossMeta.dist.tarball).startsWith("https://") ||
-      String(agbossMeta.dist.tarball).startsWith("file:")
+      !validateOfficialRegistryTarballUrl(
+        agbossMeta.dist?.tarball,
+        "agboss",
+        expectedVersion,
+      )
     ) {
       reasons.push(
         `Registry agboss@${expectedVersion} has non-registry dist.tarball '${agbossMeta.dist?.tarball ?? "none"}'`,
@@ -164,13 +318,25 @@ export function validateRegistryMetadata({
         `Registry agboss-cli@${expectedVersion} is marked deprecated: ${agbossCliMeta.deprecated}`,
       );
     }
-    if (!agbossCliMeta.dist?.integrity) {
-      reasons.push(`Registry agboss-cli@${expectedVersion} is missing dist.integrity`);
+    if (
+      !agbossCliMeta.dist?.integrity ||
+      !SHA512_SRI_RE.test(String(agbossCliMeta.dist.integrity))
+    ) {
+      reasons.push(
+        `Registry agboss-cli@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossCliMeta.dist?.integrity ?? "none"}'`,
+      );
+    }
+    if (!agbossCliMeta.dist?.shasum || !SHA1_HEX_RE.test(String(agbossCliMeta.dist.shasum))) {
+      reasons.push(
+        `Registry agboss-cli@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossCliMeta.dist?.shasum ?? "none"}'`,
+      );
     }
     if (
-      !agbossCliMeta.dist?.tarball ||
-      !String(agbossCliMeta.dist.tarball).startsWith("https://") ||
-      String(agbossCliMeta.dist.tarball).startsWith("file:")
+      !validateOfficialRegistryTarballUrl(
+        agbossCliMeta.dist?.tarball,
+        "agboss-cli",
+        expectedVersion,
+      )
     ) {
       reasons.push(
         `Registry agboss-cli@${expectedVersion} has non-registry dist.tarball '${agbossCliMeta.dist?.tarball ?? "none"}'`,
@@ -189,6 +355,92 @@ export function validateRegistryMetadata({
     );
   }
 
+  if (requireMeasuredTarballs || measuredTarballs !== undefined) {
+    const mAgboss = measuredTarballs?.agboss;
+    const mCli = measuredTarballs?.agbossCli;
+    if (!mAgboss || !SHA256_HEX_RE.test(String(mAgboss.sha256 ?? ""))) {
+      reasons.push(
+        `Missing or invalid measured 64-char SHA-256 for agboss registry tarball ('${mAgboss?.sha256 ?? "none"}')`,
+      );
+    } else {
+      if (agbossMeta?.dist?.shasum && mAgboss.shasum !== agbossMeta.dist.shasum) {
+        reasons.push(
+          `Measured agboss tarball SHA-1 (${mAgboss.shasum}) does not match registry dist.shasum (${agbossMeta.dist.shasum})`,
+        );
+      }
+      if (agbossMeta?.dist?.integrity && mAgboss.integrity !== agbossMeta.dist.integrity) {
+        reasons.push(
+          `Measured agboss tarball SHA-512 (${mAgboss.integrity}) does not match registry dist.integrity (${agbossMeta.dist.integrity})`,
+        );
+      }
+    }
+
+    if (!mCli || !SHA256_HEX_RE.test(String(mCli.sha256 ?? ""))) {
+      reasons.push(
+        `Missing or invalid measured 64-char SHA-256 for agboss-cli registry tarball ('${mCli?.sha256 ?? "none"}')`,
+      );
+    } else {
+      if (agbossCliMeta?.dist?.shasum && mCli.shasum !== agbossCliMeta.dist.shasum) {
+        reasons.push(
+          `Measured agboss-cli tarball SHA-1 (${mCli.shasum}) does not match registry dist.shasum (${agbossCliMeta.dist.shasum})`,
+        );
+      }
+      if (agbossCliMeta?.dist?.integrity && mCli.integrity !== agbossCliMeta.dist.integrity) {
+        reasons.push(
+          `Measured agboss-cli tarball SHA-512 (${mCli.integrity}) does not match registry dist.integrity (${agbossCliMeta.dist.integrity})`,
+        );
+      }
+    }
+  }
+
+  if (
+    canonicalManifest &&
+    typeof canonicalManifest === "object" &&
+    canonicalManifest.packages?.agboss?.version === expectedVersion &&
+    canonicalManifest.packages?.agbossCli?.version === expectedVersion
+  ) {
+    const cAgboss = canonicalManifest.packages.agboss;
+    const cCli = canonicalManifest.packages.agbossCli;
+    if (cAgboss.integrity && agbossMeta?.dist?.integrity !== cAgboss.integrity) {
+      reasons.push(
+        `Registry agboss dist.integrity (${agbossMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cAgboss.integrity})`,
+      );
+    }
+    if (cAgboss.shasum && agbossMeta?.dist?.shasum !== cAgboss.shasum) {
+      reasons.push(
+        `Registry agboss dist.shasum (${agbossMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cAgboss.shasum})`,
+      );
+    }
+    if (
+      measuredTarballs?.agboss?.sha256 &&
+      cAgboss.sha256 &&
+      measuredTarballs.agboss.sha256 !== cAgboss.sha256
+    ) {
+      reasons.push(
+        `Measured registry agboss SHA-256 (${measuredTarballs.agboss.sha256}) does not match canonical CI manifest (${cAgboss.sha256})`,
+      );
+    }
+    if (cCli.integrity && agbossCliMeta?.dist?.integrity !== cCli.integrity) {
+      reasons.push(
+        `Registry agboss-cli dist.integrity (${agbossCliMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cCli.integrity})`,
+      );
+    }
+    if (cCli.shasum && agbossCliMeta?.dist?.shasum !== cCli.shasum) {
+      reasons.push(
+        `Registry agboss-cli dist.shasum (${agbossCliMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cCli.shasum})`,
+      );
+    }
+    if (
+      measuredTarballs?.agbossCli?.sha256 &&
+      cCli.sha256 &&
+      measuredTarballs.agbossCli.sha256 !== cCli.sha256
+    ) {
+      reasons.push(
+        `Measured registry agboss-cli SHA-256 (${measuredTarballs.agbossCli.sha256}) does not match canonical CI manifest (${cCli.sha256})`,
+      );
+    }
+  }
+
   return {
     valid: reasons.length === 0,
     reasons,
@@ -199,6 +451,10 @@ export function validateRegistryMetadata({
             version: agbossMeta.version,
             deprecated: agbossMeta.deprecated ?? null,
             integrity: agbossMeta.dist?.integrity ?? null,
+            sha256: measuredTarballs?.agboss?.sha256 ?? null,
+            sha256Source: measuredTarballs?.agboss?.sha256
+              ? "MEASURED_FROM_REGISTRY_TARBALL"
+              : null,
             shasum: agbossMeta.dist?.shasum ?? null,
             tarball: agbossMeta.dist?.tarball ?? null,
             distTagVersion: agbossDistTags?.[expectedTag] ?? null,
@@ -210,6 +466,10 @@ export function validateRegistryMetadata({
             version: agbossCliMeta.version,
             deprecated: agbossCliMeta.deprecated ?? null,
             integrity: agbossCliMeta.dist?.integrity ?? null,
+            sha256: measuredTarballs?.agbossCli?.sha256 ?? null,
+            sha256Source: measuredTarballs?.agbossCli?.sha256
+              ? "MEASURED_FROM_REGISTRY_TARBALL"
+              : null,
             shasum: agbossCliMeta.dist?.shasum ?? null,
             tarball: agbossCliMeta.dist?.tarball ?? null,
             distTagVersion: agbossCliDistTags?.[expectedTag] ?? null,
@@ -387,7 +647,28 @@ export function fetchLiveRegistryMetadata(version) {
   const agbossDistTags = fetchJson(["view", "agboss", "dist-tags", "--json"]);
   const agbossCliDistTags = fetchJson(["view", "agboss-cli", "dist-tags", "--json"]);
 
-  return { agbossMeta, agbossCliMeta, agbossDistTags, agbossCliDistTags };
+  const measuredTarballs = {
+    agboss: agbossMeta?.dist?.tarball
+      ? measureRegistryTarball(agbossMeta.dist.tarball, {
+          packageName: "agboss",
+          expectedVersion: version,
+        })
+      : null,
+    agbossCli: agbossCliMeta?.dist?.tarball
+      ? measureRegistryTarball(agbossCliMeta.dist.tarball, {
+          packageName: "agboss-cli",
+          expectedVersion: version,
+        })
+      : null,
+  };
+
+  return {
+    agbossMeta,
+    agbossCliMeta,
+    agbossDistTags,
+    agbossCliDistTags,
+    measuredTarballs,
+  };
 }
 
 function getExamplesCommit() {
@@ -479,12 +760,18 @@ function runMain() {
     baseReport.sourceCommit = manifest.sourceCommit ?? null;
     const packedAgboss = manifest.packages?.agboss;
     const packedCli = manifest.packages?.agbossCli;
-    if (
-      !packedAgboss?.tarballPath ||
-      !existsSync(packedAgboss.tarballPath) ||
-      !packedCli?.tarballPath ||
-      !existsSync(packedCli.tarballPath)
-    ) {
+    const resolvePackedTarball = (pkg) => {
+      if (pkg?.tarballPath && existsSync(pkg.tarballPath)) return pkg.tarballPath;
+      const fname = pkg?.filename || (pkg?.tarballPath ? basename(pkg.tarballPath) : null);
+      if (fname) {
+        const candidate = join(ROOT, ".packed", basename(fname));
+        if (existsSync(candidate)) return candidate;
+      }
+      return null;
+    };
+    const agbossTarballPath = resolvePackedTarball(packedAgboss);
+    const cliTarballPath = resolvePackedTarball(packedCli);
+    if (!agbossTarballPath || !cliTarballPath) {
       baseReport.status = "BLOCKED";
       baseReport.reasons.push("Packed tarball files listed in .packed/manifest.json do not exist on disk.");
       writeVerificationOutput(baseReport);
@@ -500,8 +787,8 @@ function runMain() {
       console.error(`[verify-published] FAILED: ${baseReport.reasons.join("; ")}`);
       process.exit(1);
     }
-    agbossSpec = `file:${packedAgboss.tarballPath}`;
-    cliSpec = `file:${packedCli.tarballPath}`;
+    agbossSpec = `file:${agbossTarballPath}`;
+    cliSpec = `file:${cliTarballPath}`;
     expectedIntegrity = {
       agboss: packedAgboss.integrity,
       agbossCli: packedCli.integrity,
@@ -509,11 +796,17 @@ function runMain() {
   } else {
     // --live-registry mode: NEVER fall back to packed tarballs
     try {
+      const canonicalManifestPath = join(ROOT, ".packed", "manifest.json");
+      const canonicalManifest = existsSync(canonicalManifestPath)
+        ? JSON.parse(readFileSync(canonicalManifestPath, "utf8"))
+        : undefined;
       const rawMeta = fetchLiveRegistryMetadata(version);
       const validation = validateRegistryMetadata({
         ...rawMeta,
+        canonicalManifest,
         expectedVersion: version,
         expectedTag: tag,
+        requireMeasuredTarballs: true,
       });
       baseReport.npmRegistryMetadata = validation.summary;
       if (!validation.valid) {
