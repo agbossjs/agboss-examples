@@ -1,5 +1,5 @@
-import { JudgeVerdict } from "agboss";
-import { replyWith, testCompaction, testJudge, testTool } from "agboss/testing";
+import { JudgeVerdict } from "@agboss/core";
+import { replyWith, testCompaction, testJudge, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { PolicyAwareCompaction } from "../../../src/compactions/policy-aware/policy-aware.compaction.js";
 import { SupportAnswerDto } from "../../../src/dto/support-answer.dto.js";

@@ -1,4 +1,4 @@
-import { Workflow, start, toAction } from "agboss";
+import { Workflow, start, toAction } from "@agboss/core";
 import { CancelFlightCompensationAction } from "../../actions/cancel-flight-compensation.action.js";
 import { CancelHotelCompensationAction } from "../../actions/cancel-hotel-compensation.action.js";
 import { CapturePaymentAction } from "../../actions/capture-payment.action.js";

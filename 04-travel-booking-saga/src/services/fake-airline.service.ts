@@ -1,4 +1,4 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 import { AirlineCompensationCrashError } from "./airline-compensation-crash.error.js";
 import {
   recordIdempotentOperation,

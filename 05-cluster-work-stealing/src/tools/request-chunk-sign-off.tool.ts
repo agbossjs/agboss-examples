@@ -1,5 +1,5 @@
-import { Tool, type ToolHandler } from "agboss";
-import { seconds } from "agboss/units";
+import { Tool, type ToolHandler } from "@agboss/core";
+import { seconds } from "@agboss/core/units";
 import { ChunkSignOffChannel } from "../channels/chunk-sign-off.channel-role.js";
 import { ChunkDraftDto } from "../dto/chunk-draft.dto.js";
 import { ChunkTaskDto } from "../dto/chunk-task.dto.js";

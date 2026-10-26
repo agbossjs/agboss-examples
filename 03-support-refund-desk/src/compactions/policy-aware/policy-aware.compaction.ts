@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   type CompactionHandler,
   type CompactionInput,
-} from "agboss";
+} from "@agboss/core";
 import { PolicyDriftCompactionService } from "../../services/policy-drift-compaction.service.js";
 
 @Compaction({

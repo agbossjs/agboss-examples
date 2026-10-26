@@ -1,4 +1,4 @@
-import { OutputGuardrail } from "agboss";
+import { OutputGuardrail } from "@agboss/core";
 
 @OutputGuardrail({
   name: "unauthorized-payout-guardrail",

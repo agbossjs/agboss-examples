@@ -1,4 +1,4 @@
-import { env, secret } from "agboss";
+import { env, secret } from "@agboss/core";
 
 process.env.PII_PSEUDONYM_KEY ??= "cluster-work-stealing-pseudonym-key-32b!!";
 

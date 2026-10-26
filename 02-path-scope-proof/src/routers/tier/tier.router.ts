@@ -1,4 +1,4 @@
-import { DecidedBy, Router, type InputOf, type Route, type RouterHandler } from "agboss";
+import { DecidedBy, Router, type InputOf, type Route, type RouterHandler } from "@agboss/core";
 import { ApplyVipCouponAction } from "../../actions/apply-vip-coupon.action.js";
 import { RenderStandardInvoiceAction } from "../../actions/render-standard-invoice.action.js";
 import { CheckoutRequestDto } from "../../dto/checkout-request.dto.js";

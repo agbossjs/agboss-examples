@@ -3,7 +3,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { ChunkFailedDto } from "../dto/chunk-failed.dto.js";
 import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
 

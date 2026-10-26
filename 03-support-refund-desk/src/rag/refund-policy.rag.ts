@@ -1,4 +1,4 @@
-import { Rag, type RagConnector, type RagRetrieval } from "agboss/rag";
+import { Rag, type RagConnector, type RagRetrieval } from "@agboss/core/rag";
 import { RefundPolicyRetriever } from "../retrievers/refund-policy.retriever.js";
 import {
   getActivePolicyVersion,

@@ -9,8 +9,8 @@ import {
   SqliteExecutionTreeRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-} from "agboss";
-import { hours, seconds } from "agboss/units";
+} from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { ClusterAppDailyBudget } from "./budgets/cluster-app-daily.budget.js";
 import { ClusterExecutionBudget } from "./budgets/cluster-execution.budget.js";
 import { ClusterTenantDailyBudget } from "./budgets/cluster-tenant-daily.budget.js";

@@ -17,13 +17,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "agboss": "^0.1.0"
+    "@agboss/core": "^0.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@stylistic/eslint-plugin": "^4.2.0",
     "@types/node": "^22.13.10",
-    "agboss-cli": "^0.1.0",
+    "@agboss/cli": "^0.1.0",
     "eslint": "^9.22.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",

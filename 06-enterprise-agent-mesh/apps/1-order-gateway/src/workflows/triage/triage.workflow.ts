@@ -4,7 +4,7 @@ import {
   Workflow,
   start,
   toFinish,
-} from "agboss";
+} from "@agboss/core";
 import { BillingA2AAgent } from "../../a2a/billing.a2a-agent.js";
 import { TriageAgent } from "../../agents/triage/triage.agent.js";
 import { TriageRequestDto } from "../../dto/triage-request.dto.js";

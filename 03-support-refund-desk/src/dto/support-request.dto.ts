@@ -1,5 +1,5 @@
-import { PiiAction } from "agboss";
-import { Text } from "agboss/dto";
+import { PiiAction } from "@agboss/core";
+import { Text } from "@agboss/core/dto";
 
 export class SupportRequestDto {
   @Text({ prompt: "Customer support message" })

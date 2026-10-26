@@ -7,10 +7,10 @@ import {
   HopsLimitExceededError,
   MeshLoopDetectedError,
   type MeshEnvelope,
-} from "agboss";
-import { A2ACallerRejectedError, A2AClient, a2aHttpListener } from "agboss/a2a";
-import { createMcpService } from "agboss/mcp";
-import { callTool, replyWith, testWith } from "agboss/testing";
+} from "@agboss/core";
+import { A2ACallerRejectedError, A2AClient, a2aHttpListener } from "@agboss/core/a2a";
+import { createMcpService } from "@agboss/core/mcp";
+import { callTool, replyWith, testWith } from "@agboss/core/testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_MESH_PRIVATE_KEY_PEM } from "../../../apps/1-order-gateway/src/environments/app.environment.js";
 import {

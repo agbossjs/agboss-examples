@@ -4,7 +4,7 @@ import {
   listOf,
   oneOf,
   start,
-} from "agboss";
+} from "@agboss/core";
 import { AggregateBatchResultsAction } from "../../actions/aggregate-batch-results.action.js";
 import { PartitionBatchAction } from "../../actions/partition-batch.action.js";
 import { BatchJobRequestDto } from "../../dto/batch-job-request.dto.js";

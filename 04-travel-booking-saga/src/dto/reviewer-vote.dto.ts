@@ -1,4 +1,4 @@
-import { Flag, Integer, Text } from "agboss/dto";
+import { Flag, Integer, Text } from "@agboss/core/dto";
 
 export class ReviewerVoteDto {
   @Text({ prompt: "Reviewer department (finance | compliance | risk)" })

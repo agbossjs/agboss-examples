@@ -1,4 +1,4 @@
-import { Agent } from "agboss";
+import { Agent } from "@agboss/core";
 import { SkuDetailsDto } from "../../dto/sku-details.dto.js";
 import { SkuLookupInputDto } from "../../dto/sku-lookup-input.dto.js";
 import { LookupSkuTool } from "../../tools/lookup-sku.tool.js";

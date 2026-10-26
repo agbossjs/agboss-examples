@@ -1,4 +1,4 @@
-import { testRag } from "agboss/testing";
+import { testRag } from "@agboss/core/testing";
 import { beforeEach, describe, expect, it } from "vitest";
 import { RefundPolicyRag, setActivePolicyVersion } from "../../src/rag/refund-policy.rag.js";
 import { RefundPolicyRetriever } from "../../src/retrievers/refund-policy.retriever.js";

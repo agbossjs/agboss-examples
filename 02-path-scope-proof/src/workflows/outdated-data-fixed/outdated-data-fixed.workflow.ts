@@ -1,4 +1,4 @@
-import { Workflow, action, route, start } from "agboss";
+import { Workflow, action, route, start } from "@agboss/core";
 import { BuildReceiptAction } from "../../actions/build-receipt.action.js";
 import { CalculateInitialShippingAction } from "../../actions/calculate-initial-shipping.action.js";
 import { ComputeTaxAction } from "../../actions/compute-tax.action.js";

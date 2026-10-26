@@ -1,4 +1,4 @@
-import { Injectable, type PiiMatch } from "agboss";
+import { Injectable, type PiiMatch } from "@agboss/core";
 
 @Injectable()
 export class TicketPatternService {

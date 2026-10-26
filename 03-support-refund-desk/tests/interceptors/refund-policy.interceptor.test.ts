@@ -1,5 +1,5 @@
-import { ToolCallDecision } from "agboss";
-import { testToolInterceptor } from "agboss/testing";
+import { ToolCallDecision } from "@agboss/core";
+import { testToolInterceptor } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { SupportTenantContext } from "../../src/contexts/support-tenant.context.js";
 import {

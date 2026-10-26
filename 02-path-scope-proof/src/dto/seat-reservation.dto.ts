@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class SeatReservationDto {
   @Text({ prompt: "Reservation code" })

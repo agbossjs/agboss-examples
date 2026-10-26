@@ -14,9 +14,9 @@ import {
   WorkflowStart,
   start,
   toAction,
-} from "agboss";
-import { Integer, Text } from "agboss/dto";
-import { usd, type Usd } from "agboss/units";
+} from "@agboss/core";
+import { Integer, Text } from "@agboss/core/dto";
+import { usd, type Usd } from "@agboss/core/units";
 
 export class PaymentCaptureError extends Error {
   constructor(message: string) {

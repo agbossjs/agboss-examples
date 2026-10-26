@@ -3,7 +3,7 @@ import {
   type ActionHandler,
   ExecutionContext,
   type InputOf,
-} from "agboss";
+} from "@agboss/core";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 import { FakeHotelService } from "../services/fake-hotel.service.js";

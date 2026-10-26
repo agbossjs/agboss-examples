@@ -1,5 +1,5 @@
-import { PiiRefusedError } from "agboss";
-import { decideWith, testGuardrail, testPii } from "agboss/testing";
+import { PiiRefusedError } from "@agboss/core";
+import { decideWith, testGuardrail, testPii } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { SupportExecutionContext } from "../../../src/contexts/support-execution.context.js";
 import { UnauthorizedPayoutGuardrail } from "../../../src/guardrails/policy-promise/policy-promise.guardrail.js";

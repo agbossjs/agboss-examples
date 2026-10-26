@@ -11,8 +11,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { studioOf } from "agboss/internal";
-import { callTool, replyWith, routeTo, testWith } from "agboss/testing";
+import { studioOf } from "@agboss/core/internal";
+import { callTool, replyWith, routeTo, testWith } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import {
   resolveScaffoldTestConfig,
@@ -146,13 +146,13 @@ describe("LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) & Pack
     }
   });
 
-  it("resolves agboss exclusively from packaged node_modules and generates .agboss type contracts", () => {
+  it("resolves @agboss/core exclusively from packaged node_modules and generates .agboss type contracts", () => {
     const resolvedAgboss = execFileSync(
       process.execPath,
       [
         "--input-type=module",
         "-e",
-        'import { fileURLToPath } from "node:url"; import { realpathSync } from "node:fs"; process.stdout.write(realpathSync(fileURLToPath(import.meta.resolve("agboss"))));',
+        'import { fileURLToPath } from "node:url"; import { realpathSync } from "node:fs"; process.stdout.write(realpathSync(fileURLToPath(import.meta.resolve("@agboss/core"))));',
       ],
       { cwd: PROJECT_ROOT, encoding: "utf8" },
     );
@@ -248,17 +248,17 @@ describe("LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) & Pack
         devDependencies: Record<string, string>;
         overrides?: Record<string, string>;
       };
-      expect(pkg.dependencies["agboss"]).toBeDefined();
-      expect(pkg.dependencies["agboss"]?.startsWith("file:")).toBe(false);
-      expect(pkg.devDependencies["agboss-cli"]).toBeDefined();
-      expect(pkg.devDependencies["agboss-cli"]?.startsWith("file:")).toBe(false);
+      expect(pkg.dependencies["@agboss/core"]).toBeDefined();
+      expect(pkg.dependencies["@agboss/core"]?.startsWith("file:")).toBe(false);
+      expect(pkg.devDependencies["@agboss/cli"]).toBeDefined();
+      expect(pkg.devDependencies["@agboss/cli"]?.startsWith("file:")).toBe(false);
 
-      pkg.dependencies["agboss"] = scaffoldConfig.agbossSpec;
-      pkg.devDependencies["agboss-cli"] = scaffoldConfig.cliSpec;
+      pkg.dependencies["@agboss/core"] = scaffoldConfig.agbossSpec;
+      pkg.devDependencies["@agboss/cli"] = scaffoldConfig.cliSpec;
       if (scaffoldConfig.useOverrides) {
         pkg.overrides = {
-          agboss: scaffoldConfig.agbossSpec,
-          "agboss-cli": scaffoldConfig.cliSpec,
+          "@agboss/core": scaffoldConfig.agbossSpec,
+          "@agboss/cli": scaffoldConfig.cliSpec,
         };
       }
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");

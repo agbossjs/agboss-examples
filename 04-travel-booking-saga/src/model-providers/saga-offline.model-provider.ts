@@ -1,5 +1,5 @@
-import { ModelCost, ModelProvider, RetryPolicy, TRANSIENT_FAILURES } from "agboss/models";
-import { minutes, seconds, usd } from "agboss/units";
+import { ModelCost, ModelProvider, RetryPolicy, TRANSIENT_FAILURES } from "@agboss/core/models";
+import { minutes, seconds, usd } from "@agboss/core/units";
 import { SagaOfflineTransport } from "../../../scripts/tooling/offline-transports.js";
 import { waitForChannelAskSent } from "../channels/corporate-booking-approval.channel.js";
 

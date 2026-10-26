@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, type InputOf, type OutputOf, listOf } from "agboss";
+import { Action, type ActionHandler, type InputOf, type OutputOf, listOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { ReviewerVoteDto } from "../dto/reviewer-vote.dto.js";

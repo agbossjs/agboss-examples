@@ -9,8 +9,8 @@ import {
   SqliteMeshRequestRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-} from "agboss";
-import { hours, seconds } from "agboss/units";
+} from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { BillingA2AExpose } from "./a2a/billing.a2a-expose.js";
 import { BillingAppDailyBudget } from "./budgets/billing-app-daily.budget.js";
 import { BillingExecutionBudget } from "./budgets/billing-execution.budget.js";

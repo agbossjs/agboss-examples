@@ -4,7 +4,7 @@ import {
   type Route,
   Router,
   type RouterHandler,
-} from "agboss";
+} from "@agboss/core";
 import { ComputeTaxAction } from "../../actions/compute-tax.action.js";
 import { MutateDestinationAction } from "../../actions/mutate-destination.action.js";
 import { OrderDraftDto } from "../../dto/order-draft.dto.js";

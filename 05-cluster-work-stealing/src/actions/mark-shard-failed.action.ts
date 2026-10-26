@@ -3,7 +3,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { DecomposeFailedDto } from "../dto/decompose-failed.dto.js";
 import { DecomposeNodeDto } from "../dto/decompose-node.dto.js";
 

@@ -1,4 +1,4 @@
-import { Arbiter, DecidedBy, OnAnswer } from "agboss";
+import { Arbiter, DecidedBy, OnAnswer } from "@agboss/core";
 import { ComplianceReviewerAgent } from "../../agents/compliance-reviewer/compliance-reviewer.agent.js";
 import { FinanceReviewerAgent } from "../../agents/finance-reviewer/finance-reviewer.agent.js";
 import { RiskReviewerAgent } from "../../agents/risk-reviewer/risk-reviewer.agent.js";

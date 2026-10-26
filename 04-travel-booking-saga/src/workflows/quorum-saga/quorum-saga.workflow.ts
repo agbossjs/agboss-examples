@@ -1,5 +1,5 @@
-import { Workflow, listOf, start } from "agboss";
-import { seconds } from "agboss/units";
+import { Workflow, listOf, start } from "@agboss/core";
+import { seconds } from "@agboss/core/units";
 import { FinalizeQuorumBookingAction } from "../../actions/finalize-quorum-booking.action.js";
 import { ReserveFlightAction } from "../../actions/reserve-flight.action.js";
 import { ReserveHotelAction } from "../../actions/reserve-hotel.action.js";

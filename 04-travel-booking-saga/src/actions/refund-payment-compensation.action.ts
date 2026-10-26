@@ -3,7 +3,7 @@ import {
   type ActionHandler,
   ExecutionContext,
   type InputOf,
-} from "agboss";
+} from "@agboss/core";
 import { PaymentCaptureDto } from "../dto/payment-capture.dto.js";
 import { FakePaymentService } from "../services/fake-payment.service.js";
 

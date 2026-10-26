@@ -1,4 +1,4 @@
-import { McpExpose } from "agboss/mcp";
+import { McpExpose } from "@agboss/core/mcp";
 import { LookupSkuTool } from "../tools/lookup-sku.tool.js";
 import { CatalogWorkflowStart } from "../workflows/catalog/catalog.workflow-start.js";
 

@@ -1,4 +1,4 @@
-import { Workflow, start } from "agboss";
+import { Workflow, start } from "@agboss/core";
 import { ResolveBillingInquiryAction } from "../../actions/resolve-billing-inquiry.action.js";
 import { BillingInquiryDto } from "../../dto/billing-inquiry.dto.js";
 import { BillingResolutionDto } from "../../dto/billing-resolution.dto.js";

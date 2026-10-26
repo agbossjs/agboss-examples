@@ -87,17 +87,17 @@ try {
     private: true,
     type: "module",
     dependencies: {
-      agboss: `file:${agboss.tarballPath}`,
+      "@agboss/core": `file:${agboss.tarballPath}`,
     },
     devDependencies: {
-      "agboss-cli": `file:${agbossCli.tarballPath}`,
+      "@agboss/cli": `file:${agbossCli.tarballPath}`,
       eslint: "^9.39.0",
       "typescript-eslint": "^8.40.0",
       vitest: "^3.2.0",
     },
     overrides: {
-      agboss: `file:${agboss.tarballPath}`,
-      "agboss-cli": `file:${agbossCli.tarballPath}`,
+      "@agboss/core": `file:${agboss.tarballPath}`,
+      "@agboss/cli": `file:${agbossCli.tarballPath}`,
     },
   };
   writeFileSync(join(isolatedDir, "package.json"), JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
@@ -106,6 +106,15 @@ try {
     cwd: isolatedDir,
     stdio: "pipe",
   });
+
+  assert(
+    !existsSync(join(isolatedDir, "node_modules", "agboss")),
+    "Unscoped node_modules/agboss must not be installed",
+  );
+  assert(
+    !existsSync(join(isolatedDir, "node_modules", "agboss-cli")),
+    "Unscoped node_modules/agboss-cli must not be installed",
+  );
 
   // Verify clean OpenTelemetry / Langfuse / LangGraph dependency tree with zero peer conflicts
   execFileSync(
@@ -128,27 +137,27 @@ try {
     "[verify-package] 3/4 Verifying runtime subpath exports and zero monorepo leakage...",
   );
   const probeScript = `
-    import * as root from "agboss";
-    import * as dto from "agboss/dto";
-    import * as units from "agboss/units";
-    import * as models from "agboss/models";
-    import * as mcp from "agboss/mcp";
-    import * as rag from "agboss/rag";
-    import * as a2a from "agboss/a2a";
-    import * as evalMod from "agboss/eval";
-    import * as eslintMod from "agboss/eslint";
+    import * as root from "@agboss/core";
+    import * as dto from "@agboss/core/dto";
+    import * as units from "@agboss/core/units";
+    import * as models from "@agboss/core/models";
+    import * as mcp from "@agboss/core/mcp";
+    import * as rag from "@agboss/core/rag";
+    import * as a2a from "@agboss/core/a2a";
+    import * as evalMod from "@agboss/core/eval";
+    import * as eslintMod from "@agboss/core/eslint";
     import { fileURLToPath } from "node:url";
     import { realpathSync } from "node:fs";
 
     const expectedPrefix = realpathSync(${JSON.stringify(isolatedDir)});
-    const resolvedRoot = realpathSync(fileURLToPath(import.meta.resolve("agboss")));
-    const resolvedTesting = realpathSync(fileURLToPath(import.meta.resolve("agboss/testing")));
-    const resolvedTestingSetup = realpathSync(fileURLToPath(import.meta.resolve("agboss/testing/setup")));
+    const resolvedRoot = realpathSync(fileURLToPath(import.meta.resolve("@agboss/core")));
+    const resolvedTesting = realpathSync(fileURLToPath(import.meta.resolve("@agboss/core/testing")));
+    const resolvedTestingSetup = realpathSync(fileURLToPath(import.meta.resolve("@agboss/core/testing/setup")));
     if (!resolvedRoot.startsWith(expectedPrefix) || !resolvedTesting.startsWith(expectedPrefix) || !resolvedTestingSetup.startsWith(expectedPrefix)) {
-      throw new Error("agboss resolved outside isolated dir: " + resolvedRoot);
+      throw new Error("@agboss/core resolved outside isolated dir: " + resolvedRoot);
     }
     if (typeof root.Application !== "function" || typeof root.Workflow !== "function") {
-      throw new Error("Missing core decorators on agboss root export");
+      throw new Error("Missing core decorators on @agboss/core root export");
     }
     if (typeof dto.Text !== "function" || typeof units.usd !== "function") {
       throw new Error("Missing dto/units exports");
@@ -171,7 +180,7 @@ try {
   );
   const cliBin = join(isolatedDir, "node_modules", ".bin", "agboss");
   const cliExplicitBin = join(isolatedDir, "node_modules", ".bin", "agboss-cli");
-  const proxyBin = join(isolatedDir, "node_modules", "agboss", "bin", "agboss.js");
+  const proxyBin = join(isolatedDir, "node_modules", "@agboss", "core", "bin", "agboss.js");
   const helpOut = execFileSync(cliBin, ["--help"], { cwd: isolatedDir, encoding: "utf8" });
   assert(helpOut.includes("agboss"), "CLI --help did not print agboss usage");
   const explicitHelpOut = execFileSync(cliExplicitBin, ["--help"], {
@@ -185,10 +194,10 @@ try {
   });
   assert(
     proxyHelpOut.includes("agboss"),
-    "agboss/bin/agboss.js local delegation did not print agboss usage",
+    "@agboss/core/bin/agboss.js local delegation did not print agboss usage",
   );
 
-  // Verify empty-folder npx delegation from unpacked agboss-*.tgz using AGBOSS_CLI_PACKAGE_SPEC
+  // Verify empty-folder npx delegation from unpacked agboss-core-*.tgz using AGBOSS_CLI_PACKAGE_SPEC
   const unpackedAgbossDir = realpathSync(mkdtempSync(join(tmpdir(), "agboss-unpacked-bin-")));
   try {
     execFileSync("tar", ["-xzf", agboss.tarballPath, "-C", unpackedAgbossDir], { stdio: "pipe" });
@@ -222,14 +231,22 @@ try {
   // Substitute packed tarballs into the scaffolded project (Section 4.3)
   const genPkgPath = join(scaffoldedDir, "package.json");
   const genPkg = JSON.parse(readFileSync(genPkgPath, "utf8"));
-  genPkg.dependencies.agboss = `file:${agboss.tarballPath}`;
-  genPkg.devDependencies["agboss-cli"] = `file:${agbossCli.tarballPath}`;
+  assert(
+    genPkg.dependencies?.["@agboss/core"] !== undefined,
+    "scaffolded-app package.json must declare @agboss/core in dependencies",
+  );
+  assert(
+    genPkg.devDependencies?.["@agboss/cli"] !== undefined,
+    "scaffolded-app package.json must declare @agboss/cli in devDependencies",
+  );
+  genPkg.dependencies["@agboss/core"] = `file:${agboss.tarballPath}`;
+  genPkg.devDependencies["@agboss/cli"] = `file:${agbossCli.tarballPath}`;
   if (genPkg.devDependencies["typescript-eslint"]) {
     genPkg.devDependencies["typescript-eslint"] = "^8.0.0";
   }
   genPkg.overrides = {
-    agboss: `file:${agboss.tarballPath}`,
-    "agboss-cli": `file:${agbossCli.tarballPath}`,
+    "@agboss/core": `file:${agboss.tarballPath}`,
+    "@agboss/cli": `file:${agbossCli.tarballPath}`,
   };
   writeFileSync(genPkgPath, JSON.stringify(genPkg, null, 2) + "\n", "utf8");
 
@@ -293,17 +310,17 @@ try {
       tarballInventories: "passed",
       isolatedConsumerInstall: "passed",
       subpathExportsVerified: [
-        "agboss",
-        "agboss/dto",
-        "agboss/units",
-        "agboss/models",
-        "agboss/testing",
-        "agboss/testing/setup",
-        "agboss/eval",
-        "agboss/mcp",
-        "agboss/rag",
-        "agboss/a2a",
-        "agboss/eslint",
+        "@agboss/core",
+        "@agboss/core/dto",
+        "@agboss/core/units",
+        "@agboss/core/models",
+        "@agboss/core/testing",
+        "@agboss/core/testing/setup",
+        "@agboss/core/eval",
+        "@agboss/core/mcp",
+        "@agboss/core/rag",
+        "@agboss/core/a2a",
+        "@agboss/core/eslint",
       ],
       cliBinDelegation: "passed",
       cleanScaffoldCreate: "passed",

@@ -1,5 +1,5 @@
-import { secret } from "agboss";
-import { testExecutionContext } from "agboss/testing";
+import { secret } from "@agboss/core";
+import { testExecutionContext } from "@agboss/core/testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   PricingCatalogService,

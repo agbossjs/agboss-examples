@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, type InputOf, type OutputOf } from "agboss";
+import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { LoyaltyAdjustmentDto } from "../dto/loyalty-adjustment.dto.js";
 import { PricingQuoteDto } from "../dto/pricing-quote.dto.js";
 

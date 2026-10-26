@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { BillingResolutionDto } from "../../dto/billing-resolution.dto.js";
 
 @WorkflowFinish({

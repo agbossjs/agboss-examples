@@ -17,7 +17,7 @@ Thanks for contributing to the AGBoss executable architecture & reliability proo
 When adding or updating an example:
 
 - **R1 (Standalone):** The example must have its own `package.json`, `tsconfig.json`, `.env.example`, `README.md` (with all 10 required sections), `npm run check`, `npm test`, and `npm run demo`.
-- **R2 (No internal imports):** Never import from the `agboss` source monorepo or `agboss/internal`. Depend only on public package entry points (`agboss`, `agboss/dto`, `agboss/testing`, `agboss/units`, `agboss/models`, `agboss/eval`, `agboss/mcp`, `agboss/rag`, `agboss/a2a`, `agboss/eslint`).
+- **R2 (No internal imports):** Never import from the `agboss` source monorepo or `@agboss/core/internal`. Depend only on public package entry points (`agboss`, `@agboss/core/dto`, `@agboss/core/testing`, `@agboss/core/units`, `@agboss/core/models`, `@agboss/core/eval`, `@agboss/core/mcp`, `@agboss/core/rag`, `@agboss/core/a2a`, `@agboss/core/eslint`).
 - **R3 (Minimal tooling):** Keep `scripts/tooling/` limited to process runners, isolated directory helpers, diagnostic/event assertions, and report generation.
 - **R4 (Offline-first):** `npm run check`, `npm test`, and `npm run demo` must pass deterministically with zero network calls and no API keys.
 - **R5 (Green CI):** Negative fixtures (intentionally broken flows) must be isolated under fixture subdirectories and asserted by tests so top-level `npm test` and `npm run check` exit `0`.

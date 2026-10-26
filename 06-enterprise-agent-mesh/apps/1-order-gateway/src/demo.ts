@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { createApp, ExecutionStatus } from "agboss";
-import { A2AClient, a2aHttpListener } from "agboss/a2a";
+import { createApp, ExecutionStatus } from "@agboss/core";
+import { A2AClient, a2aHttpListener } from "@agboss/core/a2a";
 import { runFederationBlastRadiusProof } from "../../../federation/verify-federation.js";
 import {
   installOfflineNetworkGuard,

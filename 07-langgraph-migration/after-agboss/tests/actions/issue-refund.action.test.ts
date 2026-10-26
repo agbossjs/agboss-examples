@@ -1,4 +1,4 @@
-import { testAction, testTool } from "agboss/testing";
+import { testAction, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { IssueRefundAction } from "../../src/actions/issue-refund.action.js";
 import { ReplyWriterAgent } from "../../src/agents/reply-writer/reply-writer.agent.js";

@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { ChunkFailedDto } from "../../dto/chunk-failed.dto.js";
 
 @WorkflowFinish({

@@ -1,4 +1,4 @@
-import { Agent, oneOf } from "agboss";
+import { Agent, oneOf } from "@agboss/core";
 import { DecomposeNodeDto } from "../../dto/decompose-node.dto.js";
 import { DecomposeSplitDecisionDto } from "../../dto/decompose-split-decision.dto.js";
 import { DecomposedLeafDto } from "../../dto/decomposed-leaf.dto.js";

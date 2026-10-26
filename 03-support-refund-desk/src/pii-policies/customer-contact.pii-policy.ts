@@ -5,7 +5,7 @@ import {
   PiiPolicy,
   pii,
   type PiiRefusal,
-} from "agboss";
+} from "@agboss/core";
 
 @PiiPolicy({
   name: "customer-contact-pii-policy",

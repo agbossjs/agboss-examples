@@ -9,8 +9,8 @@ import {
   SqliteMeshRequestRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-} from "agboss";
-import { hours, seconds } from "agboss/units";
+} from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { CatalogAppDailyBudget } from "./budgets/catalog-app-daily.budget.js";
 import { CatalogExecutionBudget } from "./budgets/catalog-execution.budget.js";
 import { CatalogTenantDailyBudget } from "./budgets/catalog-tenant-daily.budget.js";

@@ -4,7 +4,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { BillingInquiryDto } from "../dto/billing-inquiry.dto.js";
 import { BillingResolutionDto } from "../dto/billing-resolution.dto.js";
 

@@ -1,4 +1,4 @@
-import type { Secret } from "agboss";
+import type { Secret } from "@agboss/core";
 
 process.env.PII_PSEUDONYM_KEY ??= "agboss-migration-pseudonym-key-32b!";
 process.env.OPENROUTER_API_KEY ??=

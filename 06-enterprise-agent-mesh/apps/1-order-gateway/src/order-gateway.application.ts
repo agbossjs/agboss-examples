@@ -9,8 +9,8 @@ import {
   SqliteMeshRequestRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-} from "agboss";
-import { hours, seconds } from "agboss/units";
+} from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { TriageAppDailyBudget } from "./budgets/triage-app-daily.budget.js";
 import { TriageExecutionBudget } from "./budgets/triage-execution.budget.js";
 import { TriageTenantDailyBudget } from "./budgets/triage-tenant-daily.budget.js";

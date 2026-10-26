@@ -4,7 +4,7 @@ import {
   type InputOf,
   type Route,
   type RouterHandler,
-} from "agboss";
+} from "@agboss/core";
 import { IssueRefundAction } from "../../actions/issue-refund.action.js";
 import { RefundSignOffAgent } from "../../agents/refund-sign-off/refund-sign-off.agent.js";
 import { ReplyDraftDto } from "../../dto/reply-draft.dto.js";

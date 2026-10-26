@@ -1,5 +1,5 @@
-import { ThisWorkflow } from "agboss";
-import { testAction, testTool } from "agboss/testing";
+import { ThisWorkflow } from "@agboss/core";
+import { testAction, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { AggregateBatchResultsAction } from "../../src/actions/aggregate-batch-results.action.js";
 import { CommitChunkEffectAction } from "../../src/actions/commit-chunk-effect.action.js";

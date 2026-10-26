@@ -1,4 +1,4 @@
-import { createApp, PiiKind, PiiRefusedError } from "agboss";
+import { createApp, PiiKind, PiiRefusedError } from "@agboss/core";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";

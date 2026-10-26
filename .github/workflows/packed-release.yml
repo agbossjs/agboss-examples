@@ -120,7 +120,7 @@ jobs:
             import fs from "node:fs";
 
             const requiredFiles = [
-              ".packed/agboss-0.1.0.tgz",
+              ".packed/agboss-core-0.1.0.tgz",
               ".packed/agboss-cli-0.1.0.tgz",
               ".packed/manifest.json",
               ".packed/package-verification.json",
@@ -139,7 +139,7 @@ jobs:
 
             const manifest = JSON.parse(fs.readFileSync(".packed/manifest.json", "utf8"));
             for (const [key, relPath] of [
-              ["agboss", ".packed/agboss-0.1.0.tgz"],
+              ["agboss", ".packed/agboss-core-0.1.0.tgz"],
               ["agbossCli", ".packed/agboss-cli-0.1.0.tgz"],
             ]) {
               const buf = fs.readFileSync(relPath);
@@ -158,7 +158,7 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           path: |
-            .packed/agboss-0.1.0.tgz
+            .packed/agboss-core-0.1.0.tgz
             .packed/agboss-cli-0.1.0.tgz
             .packed/manifest.json
             .packed/package-verification.json

@@ -4,13 +4,13 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { createApp } from "agboss";
+import { createApp } from "@agboss/core";
 import {
   CaseComparison,
   type EvalCalibration,
   type EvalRunComparison,
   type EvalRunReport,
-} from "agboss/eval";
+} from "@agboss/core/eval";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import { resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";

@@ -3,7 +3,7 @@ import {
   BranchVerdict,
   createApp,
   ExecutionStatus,
-} from "agboss";
+} from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";

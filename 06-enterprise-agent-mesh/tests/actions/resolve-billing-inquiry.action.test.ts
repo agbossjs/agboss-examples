@@ -1,6 +1,6 @@
 import type { IncomingMessage } from "node:http";
-import { A2ARoute } from "agboss/a2a";
-import { testAction, testTool } from "agboss/testing";
+import { A2ARoute } from "@agboss/core/a2a";
+import { testAction, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import {
   BillingA2aCallerResolver,

@@ -29,13 +29,15 @@ const TARGET_DIRS = [
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
   const copy = structuredClone(pkg);
-  if (copy.dependencies?.["agboss"] !== undefined) {
-    copy.dependencies["agboss"] = `^${frameworkVersion}`;
+  if (copy.dependencies?.["@agboss/core"] !== undefined) {
+    copy.dependencies["@agboss/core"] = `^${frameworkVersion}`;
   }
-  if (copy.devDependencies?.["agboss-cli"] !== undefined) {
-    copy.devDependencies["agboss-cli"] = `^${cliVersion}`;
+  if (copy.devDependencies?.["@agboss/cli"] !== undefined) {
+    copy.devDependencies["@agboss/cli"] = `^${cliVersion}`;
   }
   if (copy.overrides && typeof copy.overrides === "object") {
+    delete copy.overrides["@agboss/core"];
+    delete copy.overrides["@agboss/cli"];
     delete copy.overrides["agboss"];
     delete copy.overrides["agboss-cli"];
     if (Object.keys(copy.overrides).length === 0) {
@@ -70,8 +72,8 @@ if (!existsSync(MANIFEST_PATH)) {
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
 const { agboss, agbossCli } = manifest.packages;
-const agbossTarballPath = resolvePortablePackedTarballPath(ROOT, agboss.filename, "agboss");
-const cliTarballPath = resolvePortablePackedTarballPath(ROOT, agbossCli.filename, "agboss-cli");
+const agbossTarballPath = resolvePortablePackedTarballPath(ROOT, agboss.filename, "@agboss/core");
+const cliTarballPath = resolvePortablePackedTarballPath(ROOT, agbossCli.filename, "@agboss/cli");
 
 const records = [];
 
@@ -88,22 +90,23 @@ for (const relDir of TARGET_DIRS) {
   const relAgboss = `file:${relative(projectDir, agbossTarballPath)}`;
   const relCli = `file:${relative(projectDir, cliTarballPath)}`;
 
-  if (packedPkg.dependencies?.["agboss"] !== undefined) {
-    packedPkg.dependencies["agboss"] = relAgboss;
+  if (packedPkg.dependencies?.["@agboss/core"] !== undefined) {
+    packedPkg.dependencies["@agboss/core"] = relAgboss;
   }
-  if (packedPkg.devDependencies?.["agboss-cli"] !== undefined) {
-    packedPkg.devDependencies["agboss-cli"] = relCli;
+  if (packedPkg.devDependencies?.["@agboss/cli"] !== undefined) {
+    packedPkg.devDependencies["@agboss/cli"] = relCli;
   }
   packedPkg.overrides = {
     ...(packedPkg.overrides ?? {}),
-    agboss: relAgboss,
-    "agboss-cli": relCli,
+    "@agboss/core": relAgboss,
+    "@agboss/cli": relCli,
   };
 
   try {
     writeFileSync(pkgPath, JSON.stringify(packedPkg, null, 2) + "\n", "utf8");
     console.log(`[install-packed] Installing packed RC dependencies in ${relDir}...`);
     rmSync(join(projectDir, "package-lock.json"), { force: true });
+    rmSync(join(projectDir, "node_modules", "@agboss"), { recursive: true, force: true });
     rmSync(join(projectDir, "node_modules", "agboss"), { recursive: true, force: true });
     rmSync(join(projectDir, "node_modules", "agboss-cli"), { recursive: true, force: true });
     rmSync(join(projectDir, "node_modules", "@opentelemetry"), { recursive: true, force: true });

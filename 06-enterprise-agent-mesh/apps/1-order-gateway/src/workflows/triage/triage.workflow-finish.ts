@@ -1,4 +1,4 @@
-import { WorkflowFinish } from "agboss";
+import { WorkflowFinish } from "@agboss/core";
 import { TriageResponseDto } from "../../dto/triage-response.dto.js";
 
 @WorkflowFinish({

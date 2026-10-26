@@ -1,5 +1,5 @@
-import { Injectable } from "agboss";
-import type { RagRetrieval } from "agboss/rag";
+import { Injectable } from "@agboss/core";
+import type { RagRetrieval } from "@agboss/core/rag";
 import {
   InMemoryKnowledgeIndexService,
   type ScoredPolicyChunk,

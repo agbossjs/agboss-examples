@@ -1,4 +1,4 @@
-import { createApp } from "agboss";
+import { createApp } from "@agboss/core";
 import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,

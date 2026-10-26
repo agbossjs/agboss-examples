@@ -4,7 +4,7 @@ import {
   ExecutionStatus,
   SqliteConnection,
   type App,
-} from "agboss";
+} from "@agboss/core";
 import {
   getClusterLedgerSnapshot,
   resetClusterLedger,

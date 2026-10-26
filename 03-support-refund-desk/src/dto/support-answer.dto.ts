@@ -1,4 +1,4 @@
-import { Decimal, OneOf, Text } from "agboss/dto";
+import { Decimal, OneOf, Text } from "@agboss/core/dto";
 
 export class SupportAnswerDto {
   @OneOf({

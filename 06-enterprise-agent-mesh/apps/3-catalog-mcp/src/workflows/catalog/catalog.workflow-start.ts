@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { SkuLookupInputDto } from "../../dto/sku-lookup-input.dto.js";
 
 @WorkflowStart({

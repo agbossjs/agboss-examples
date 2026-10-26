@@ -1,6 +1,6 @@
-import { ExecutionContext, Tool, type ToolHandler } from "agboss";
-import { A2AClient } from "agboss/a2a";
-import { seconds } from "agboss/units";
+import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
+import { A2AClient } from "@agboss/core/a2a";
+import { seconds } from "@agboss/core/units";
 import {
   BillingA2AAgent,
   getActiveBillingApiKey,

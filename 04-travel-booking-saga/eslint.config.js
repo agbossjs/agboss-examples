@@ -1,5 +1,5 @@
 import js from "@eslint/js";
-import { agbossPlugin } from "agboss/eslint";
+import { agbossPlugin } from "@agboss/core/eslint";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(

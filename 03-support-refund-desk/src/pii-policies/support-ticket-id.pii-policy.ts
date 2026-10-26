@@ -3,7 +3,7 @@ import {
   PiiPolicy,
   type PiiMatch,
   type PiiPolicyHandler,
-} from "agboss";
+} from "@agboss/core";
 import { TicketPatternService } from "../services/ticket-pattern.service.js";
 
 @PiiPolicy({

@@ -1,4 +1,4 @@
-import { Workflow, start } from "agboss";
+import { Workflow, start } from "@agboss/core";
 import { FinalizeApprovedHoldAction } from "../../actions/finalize-approved-hold.action.js";
 import { ReserveFlightAction } from "../../actions/reserve-flight.action.js";
 import { ReserveHotelAction } from "../../actions/reserve-hotel.action.js";

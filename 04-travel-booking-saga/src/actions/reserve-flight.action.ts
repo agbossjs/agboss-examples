@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 import { FakeAirlineService } from "../services/fake-airline.service.js";

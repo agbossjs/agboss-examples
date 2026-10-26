@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "agboss";
+import { Application, EmptyEnvironment } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";

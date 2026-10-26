@@ -1,4 +1,4 @@
-import { Decimal, Integer, Text } from "agboss/dto";
+import { Decimal, Integer, Text } from "@agboss/core/dto";
 
 export class SkuDetailsDto {
   @Text({ prompt: "Product SKU code" })

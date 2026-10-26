@@ -1,4 +1,4 @@
-import { Agent } from "agboss";
+import { Agent } from "@agboss/core";
 import { ChunkDraftDto } from "../../dto/chunk-draft.dto.js";
 import { ChunkTaskDto } from "../../dto/chunk-task.dto.js";
 import { RequestChunkSignOffTool } from "../../tools/request-chunk-sign-off.tool.js";

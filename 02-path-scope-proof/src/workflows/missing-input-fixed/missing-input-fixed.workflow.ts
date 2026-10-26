@@ -1,4 +1,4 @@
-import { Workflow, route, start } from "agboss";
+import { Workflow, route, start } from "@agboss/core";
 import { ApplyVipCouponAction } from "../../actions/apply-vip-coupon.action.js";
 import { RenderInvoiceAction } from "../../actions/render-invoice.action.js";
 import { RenderStandardInvoiceAction } from "../../actions/render-standard-invoice.action.js";

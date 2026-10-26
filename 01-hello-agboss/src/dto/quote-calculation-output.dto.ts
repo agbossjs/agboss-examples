@@ -1,4 +1,4 @@
-import { Decimal, Flag, Integer, Text } from "agboss/dto";
+import { Decimal, Flag, Integer, Text } from "@agboss/core/dto";
 
 export class QuoteCalculationOutputDto {
   @Text({ prompt: "normalized tier name" })

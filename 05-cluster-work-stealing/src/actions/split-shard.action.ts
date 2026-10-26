@@ -4,7 +4,7 @@ import {
   type ActionHandler,
   type InputOf,
   type OutputOf,
-} from "agboss";
+} from "@agboss/core";
 import { DecomposeNodeDto } from "../dto/decompose-node.dto.js";
 
 @Action({

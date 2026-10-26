@@ -1,4 +1,4 @@
-import { A2AExpose } from "agboss/a2a";
+import { A2AExpose } from "@agboss/core/a2a";
 import { BillingWorkflowStart } from "../workflows/billing/billing.workflow-start.js";
 
 @A2AExpose({

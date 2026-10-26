@@ -1,4 +1,4 @@
-import { DecidedBy, Router } from "agboss";
+import { DecidedBy, Router } from "@agboss/core";
 import { ResearchPlannerAgent } from "../../agents/research-planner/research-planner.agent.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";
 import { HandOverWorkflowFinish } from "../../workflows/support/hand-over.workflow-finish.js";

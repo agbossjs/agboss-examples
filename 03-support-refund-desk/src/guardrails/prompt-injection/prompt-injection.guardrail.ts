@@ -4,7 +4,7 @@ import {
   InputGuardrail,
   type GuardrailHandler,
   type GuardrailRefusal,
-} from "agboss";
+} from "@agboss/core";
 import { SupportExecutionContext } from "../../contexts/support-execution.context.js";
 import { InjectionDetectorService } from "../../services/injection-detector.service.js";
 

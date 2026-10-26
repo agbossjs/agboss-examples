@@ -1,4 +1,4 @@
-import { Workflow, start } from "agboss";
+import { Workflow, start } from "@agboss/core";
 import { RefundSupportAgent } from "../../agents/refund-support/refund-support.agent.js";
 import { SupportAnswerDto } from "../../dto/support-answer.dto.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";

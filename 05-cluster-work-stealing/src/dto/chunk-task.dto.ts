@@ -1,4 +1,4 @@
-import { Text } from "agboss/dto";
+import { Text } from "@agboss/core/dto";
 
 export class ChunkTaskDto {
   @Text({ prompt: "Unique chunk identifier (e.g. chunk-01)" })

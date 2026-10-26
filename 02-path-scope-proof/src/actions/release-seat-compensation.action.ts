@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, type InputOf } from "agboss";
+import { Action, type ActionHandler, type InputOf } from "@agboss/core";
 import { SeatReservationDto } from "../dto/seat-reservation.dto.js";
 
 @Action({

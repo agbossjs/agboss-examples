@@ -1,4 +1,4 @@
-import { Compaction, CompactionStrategy } from "agboss";
+import { Compaction, CompactionStrategy } from "@agboss/core";
 
 @Compaction({
   name: "support-conversation-compaction",

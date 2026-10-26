@@ -2,8 +2,8 @@ import {
   HealthCheck,
   HealthCheckResult,
   type HealthCheckHandler,
-} from "agboss";
-import { seconds } from "agboss/units";
+} from "@agboss/core";
+import { seconds } from "@agboss/core/units";
 import { StorageBackendProbeService } from "../services/storage-backend-probe.service.js";
 
 @HealthCheck({

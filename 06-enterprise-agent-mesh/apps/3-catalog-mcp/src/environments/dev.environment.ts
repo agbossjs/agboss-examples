@@ -1,5 +1,5 @@
 import { createPrivateKey, createPublicKey } from "node:crypto";
-import { env, secret } from "agboss";
+import { env, secret } from "@agboss/core";
 
 const deterministicSeedKey = createPrivateKey({
   key: Buffer.from(

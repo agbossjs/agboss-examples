@@ -1,4 +1,4 @@
-import { Decimal, Text } from "agboss/dto";
+import { Decimal, Text } from "@agboss/core/dto";
 
 export class BillingResolutionDto {
   @Text({ prompt: "Invoice ID inspected" })

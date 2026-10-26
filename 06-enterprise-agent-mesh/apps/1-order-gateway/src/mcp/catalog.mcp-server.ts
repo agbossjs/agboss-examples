@@ -1,4 +1,4 @@
-import { McpServer, McpServerClient } from "agboss/mcp";
+import { McpServer, McpServerClient } from "@agboss/core/mcp";
 import { SkuDetailsDto } from "../dto/sku-details.dto.js";
 import { SkuLookupInputDto } from "../dto/sku-lookup-input.dto.js";
 

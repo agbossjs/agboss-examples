@@ -1,4 +1,4 @@
-import { env, secret } from "agboss";
+import { env, secret } from "@agboss/core";
 import type { AppEnvironment } from "./app.environment.js";
 
 // Provide deterministic offline default so `agboss check`, `demo`, and `eval run` work with zero setup

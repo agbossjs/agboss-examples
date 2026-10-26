@@ -84,7 +84,8 @@ export function validateOfficialRegistryTarballUrl(
     return false;
   }
   if (packageName && expectedVersion) {
-    const expectedUrl = `https://registry.npmjs.org/${packageName}/-/${packageName}-${expectedVersion}.tgz`;
+    const unscopedName = packageName.replace(/^@[^/]+\//, "");
+    const expectedUrl = `https://registry.npmjs.org/${packageName}/-/${unscopedName}-${expectedVersion}.tgz`;
     return tarballUrl === expectedUrl;
   }
   return true;
@@ -173,17 +174,17 @@ export function measureRegistryTarball(
 }
 
 export const REQUIRED_SUBPATH_EXPORTS = [
-  "agboss",
-  "agboss/dto",
-  "agboss/units",
-  "agboss/models",
-  "agboss/testing",
-  "agboss/testing/setup",
-  "agboss/eval",
-  "agboss/mcp",
-  "agboss/rag",
-  "agboss/a2a",
-  "agboss/eslint",
+  "@agboss/core",
+  "@agboss/core/dto",
+  "@agboss/core/units",
+  "@agboss/core/models",
+  "@agboss/core/testing",
+  "@agboss/core/testing/setup",
+  "@agboss/core/eval",
+  "@agboss/core/mcp",
+  "@agboss/core/rag",
+  "@agboss/core/a2a",
+  "@agboss/core/eslint",
 ];
 
 export const REQUIRED_SKILL_REFERENCES = [
@@ -269,53 +270,66 @@ export function validateRegistryMetadata({
 }) {
   const reasons = [];
 
-  if (!agbossMeta || typeof agbossMeta !== "object" || agbossMeta.name !== "agboss") {
-    reasons.push("Registry metadata for 'agboss' is missing or invalid");
+  if (!agbossMeta || typeof agbossMeta !== "object" || agbossMeta.name !== "@agboss/core") {
+    reasons.push("Registry metadata for '@agboss/core' is missing or invalid");
   } else {
     if (agbossMeta.version !== expectedVersion) {
       reasons.push(
-        `Registry agboss version '${agbossMeta.version ?? "none"}' does not match requested '${expectedVersion}'`,
+        `Registry @agboss/core version '${agbossMeta.version ?? "none"}' does not match requested '${expectedVersion}'`,
       );
     }
     if (agbossMeta.deprecated) {
       reasons.push(
-        `Registry agboss@${expectedVersion} is marked deprecated: ${agbossMeta.deprecated}`,
+        `Registry @agboss/core@${expectedVersion} is marked deprecated: ${agbossMeta.deprecated}`,
       );
     }
     if (!agbossMeta.dist?.integrity || !SHA512_SRI_RE.test(String(agbossMeta.dist.integrity))) {
       reasons.push(
-        `Registry agboss@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossMeta.dist?.integrity ?? "none"}'`,
+        `Registry @agboss/core@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossMeta.dist?.integrity ?? "none"}'`,
       );
     }
     if (!agbossMeta.dist?.shasum || !SHA1_HEX_RE.test(String(agbossMeta.dist.shasum))) {
       reasons.push(
-        `Registry agboss@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossMeta.dist?.shasum ?? "none"}'`,
+        `Registry @agboss/core@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossMeta.dist?.shasum ?? "none"}'`,
       );
     }
     if (
       !validateOfficialRegistryTarballUrl(
         agbossMeta.dist?.tarball,
-        "agboss",
+        "@agboss/core",
         expectedVersion,
       )
     ) {
       reasons.push(
-        `Registry agboss@${expectedVersion} has non-registry dist.tarball '${agbossMeta.dist?.tarball ?? "none"}'`,
+        `Registry @agboss/core@${expectedVersion} has non-registry dist.tarball '${agbossMeta.dist?.tarball ?? "none"}'`,
       );
     }
   }
 
-  if (!agbossCliMeta || typeof agbossCliMeta !== "object" || agbossCliMeta.name !== "agboss-cli") {
-    reasons.push("Registry metadata for 'agboss-cli' is missing or invalid");
+  if (!agbossCliMeta || typeof agbossCliMeta !== "object" || agbossCliMeta.name !== "@agboss/cli") {
+    reasons.push("Registry metadata for '@agboss/cli' is missing or invalid");
   } else {
     if (agbossCliMeta.version !== expectedVersion) {
       reasons.push(
-        `Registry agboss-cli version '${agbossCliMeta.version ?? "none"}' does not match requested '${expectedVersion}'`,
+        `Registry @agboss/cli version '${agbossCliMeta.version ?? "none"}' does not match requested '${expectedVersion}'`,
       );
     }
     if (agbossCliMeta.deprecated) {
       reasons.push(
-        `Registry agboss-cli@${expectedVersion} is marked deprecated: ${agbossCliMeta.deprecated}`,
+        `Registry @agboss/cli@${expectedVersion} is marked deprecated: ${agbossCliMeta.deprecated}`,
+      );
+    }
+    if (
+      agbossCliMeta.dependencies &&
+      agbossCliMeta.dependencies["@agboss/core"] !== expectedVersion
+    ) {
+      reasons.push(
+        `Registry @agboss/cli@${expectedVersion} dependency on '@agboss/core' is '${agbossCliMeta.dependencies["@agboss/core"] ?? "none"}' (expected '${expectedVersion}')`,
+      );
+    }
+    if (agbossCliMeta.dependencies?.agboss) {
+      reasons.push(
+        `Registry @agboss/cli@${expectedVersion} still depends on unscoped 'agboss'`,
       );
     }
     if (
@@ -323,35 +337,35 @@ export function validateRegistryMetadata({
       !SHA512_SRI_RE.test(String(agbossCliMeta.dist.integrity))
     ) {
       reasons.push(
-        `Registry agboss-cli@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossCliMeta.dist?.integrity ?? "none"}'`,
+        `Registry @agboss/cli@${expectedVersion} is missing or has invalid SHA-512 dist.integrity '${agbossCliMeta.dist?.integrity ?? "none"}'`,
       );
     }
     if (!agbossCliMeta.dist?.shasum || !SHA1_HEX_RE.test(String(agbossCliMeta.dist.shasum))) {
       reasons.push(
-        `Registry agboss-cli@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossCliMeta.dist?.shasum ?? "none"}'`,
+        `Registry @agboss/cli@${expectedVersion} is missing or has invalid 40-char SHA-1 dist.shasum '${agbossCliMeta.dist?.shasum ?? "none"}'`,
       );
     }
     if (
       !validateOfficialRegistryTarballUrl(
         agbossCliMeta.dist?.tarball,
-        "agboss-cli",
+        "@agboss/cli",
         expectedVersion,
       )
     ) {
       reasons.push(
-        `Registry agboss-cli@${expectedVersion} has non-registry dist.tarball '${agbossCliMeta.dist?.tarball ?? "none"}'`,
+        `Registry @agboss/cli@${expectedVersion} has non-registry dist.tarball '${agbossCliMeta.dist?.tarball ?? "none"}'`,
       );
     }
   }
 
   if (!agbossDistTags || agbossDistTags[expectedTag] !== expectedVersion) {
     reasons.push(
-      `agboss dist-tag '${expectedTag}' resolves to '${agbossDistTags?.[expectedTag] ?? "none"}' (expected '${expectedVersion}')`,
+      `@agboss/core dist-tag '${expectedTag}' resolves to '${agbossDistTags?.[expectedTag] ?? "none"}' (expected '${expectedVersion}')`,
     );
   }
   if (!agbossCliDistTags || agbossCliDistTags[expectedTag] !== expectedVersion) {
     reasons.push(
-      `agboss-cli dist-tag '${expectedTag}' resolves to '${agbossCliDistTags?.[expectedTag] ?? "none"}' (expected '${expectedVersion}')`,
+      `@agboss/cli dist-tag '${expectedTag}' resolves to '${agbossCliDistTags?.[expectedTag] ?? "none"}' (expected '${expectedVersion}')`,
     );
   }
 
@@ -360,34 +374,34 @@ export function validateRegistryMetadata({
     const mCli = measuredTarballs?.agbossCli;
     if (!mAgboss || !SHA256_HEX_RE.test(String(mAgboss.sha256 ?? ""))) {
       reasons.push(
-        `Missing or invalid measured 64-char SHA-256 for agboss registry tarball ('${mAgboss?.sha256 ?? "none"}')`,
+        `Missing or invalid measured 64-char SHA-256 for @agboss/core registry tarball ('${mAgboss?.sha256 ?? "none"}')`,
       );
     } else {
       if (agbossMeta?.dist?.shasum && mAgboss.shasum !== agbossMeta.dist.shasum) {
         reasons.push(
-          `Measured agboss tarball SHA-1 (${mAgboss.shasum}) does not match registry dist.shasum (${agbossMeta.dist.shasum})`,
+          `Measured @agboss/core tarball SHA-1 (${mAgboss.shasum}) does not match registry dist.shasum (${agbossMeta.dist.shasum})`,
         );
       }
       if (agbossMeta?.dist?.integrity && mAgboss.integrity !== agbossMeta.dist.integrity) {
         reasons.push(
-          `Measured agboss tarball SHA-512 (${mAgboss.integrity}) does not match registry dist.integrity (${agbossMeta.dist.integrity})`,
+          `Measured @agboss/core tarball SHA-512 (${mAgboss.integrity}) does not match registry dist.integrity (${agbossMeta.dist.integrity})`,
         );
       }
     }
 
     if (!mCli || !SHA256_HEX_RE.test(String(mCli.sha256 ?? ""))) {
       reasons.push(
-        `Missing or invalid measured 64-char SHA-256 for agboss-cli registry tarball ('${mCli?.sha256 ?? "none"}')`,
+        `Missing or invalid measured 64-char SHA-256 for @agboss/cli registry tarball ('${mCli?.sha256 ?? "none"}')`,
       );
     } else {
       if (agbossCliMeta?.dist?.shasum && mCli.shasum !== agbossCliMeta.dist.shasum) {
         reasons.push(
-          `Measured agboss-cli tarball SHA-1 (${mCli.shasum}) does not match registry dist.shasum (${agbossCliMeta.dist.shasum})`,
+          `Measured @agboss/cli tarball SHA-1 (${mCli.shasum}) does not match registry dist.shasum (${agbossCliMeta.dist.shasum})`,
         );
       }
       if (agbossCliMeta?.dist?.integrity && mCli.integrity !== agbossCliMeta.dist.integrity) {
         reasons.push(
-          `Measured agboss-cli tarball SHA-512 (${mCli.integrity}) does not match registry dist.integrity (${agbossCliMeta.dist.integrity})`,
+          `Measured @agboss/cli tarball SHA-512 (${mCli.integrity}) does not match registry dist.integrity (${agbossCliMeta.dist.integrity})`,
         );
       }
     }
@@ -403,12 +417,12 @@ export function validateRegistryMetadata({
     const cCli = canonicalManifest.packages.agbossCli;
     if (cAgboss.integrity && agbossMeta?.dist?.integrity !== cAgboss.integrity) {
       reasons.push(
-        `Registry agboss dist.integrity (${agbossMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cAgboss.integrity})`,
+        `Registry @agboss/core dist.integrity (${agbossMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cAgboss.integrity})`,
       );
     }
     if (cAgboss.shasum && agbossMeta?.dist?.shasum !== cAgboss.shasum) {
       reasons.push(
-        `Registry agboss dist.shasum (${agbossMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cAgboss.shasum})`,
+        `Registry @agboss/core dist.shasum (${agbossMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cAgboss.shasum})`,
       );
     }
     if (
@@ -417,17 +431,17 @@ export function validateRegistryMetadata({
       measuredTarballs.agboss.sha256 !== cAgboss.sha256
     ) {
       reasons.push(
-        `Measured registry agboss SHA-256 (${measuredTarballs.agboss.sha256}) does not match canonical CI manifest (${cAgboss.sha256})`,
+        `Measured registry @agboss/core SHA-256 (${measuredTarballs.agboss.sha256}) does not match canonical CI manifest (${cAgboss.sha256})`,
       );
     }
     if (cCli.integrity && agbossCliMeta?.dist?.integrity !== cCli.integrity) {
       reasons.push(
-        `Registry agboss-cli dist.integrity (${agbossCliMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cCli.integrity})`,
+        `Registry @agboss/cli dist.integrity (${agbossCliMeta?.dist?.integrity ?? "none"}) does not match canonical CI manifest (${cCli.integrity})`,
       );
     }
     if (cCli.shasum && agbossCliMeta?.dist?.shasum !== cCli.shasum) {
       reasons.push(
-        `Registry agboss-cli dist.shasum (${agbossCliMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cCli.shasum})`,
+        `Registry @agboss/cli dist.shasum (${agbossCliMeta?.dist?.shasum ?? "none"}) does not match canonical CI manifest (${cCli.shasum})`,
       );
     }
     if (
@@ -436,7 +450,7 @@ export function validateRegistryMetadata({
       measuredTarballs.agbossCli.sha256 !== cCli.sha256
     ) {
       reasons.push(
-        `Measured registry agboss-cli SHA-256 (${measuredTarballs.agbossCli.sha256}) does not match canonical CI manifest (${cCli.sha256})`,
+        `Measured registry @agboss/cli SHA-256 (${measuredTarballs.agbossCli.sha256}) does not match canonical CI manifest (${cCli.sha256})`,
       );
     }
   }
@@ -488,14 +502,21 @@ export function validateInstalledPackageResolution({
   const reasons = [];
   const realProjectDir = realpathSync(projectDir);
   const nodeModulesDir = join(realProjectDir, "node_modules");
-  const agbossDir = join(nodeModulesDir, "agboss");
-  const cliDir = join(nodeModulesDir, "agboss-cli");
+  const agbossDir = join(nodeModulesDir, "@agboss", "core");
+  const cliDir = join(nodeModulesDir, "@agboss", "cli");
+
+  if (existsSync(join(nodeModulesDir, "agboss"))) {
+    reasons.push(`Unscoped node_modules/agboss must not be installed in ${projectDir}`);
+  }
+  if (existsSync(join(nodeModulesDir, "agboss-cli"))) {
+    reasons.push(`Unscoped node_modules/agboss-cli must not be installed in ${projectDir}`);
+  }
 
   if (!existsSync(join(agbossDir, "package.json"))) {
-    reasons.push(`Missing node_modules/agboss/package.json in ${projectDir}`);
+    reasons.push(`Missing node_modules/@agboss/core/package.json in ${projectDir}`);
   }
   if (!existsSync(join(cliDir, "package.json"))) {
-    reasons.push(`Missing node_modules/agboss-cli/package.json in ${projectDir}`);
+    reasons.push(`Missing node_modules/@agboss/cli/package.json in ${projectDir}`);
   }
   if (reasons.length > 0) {
     return { valid: false, reasons, details: null };
@@ -506,14 +527,20 @@ export function validateInstalledPackageResolution({
   const agbossPkg = JSON.parse(readFileSync(join(agbossDir, "package.json"), "utf8"));
   const cliPkg = JSON.parse(readFileSync(join(cliDir, "package.json"), "utf8"));
 
+  if (agbossPkg.name !== "@agboss/core") {
+    reasons.push(`Installed core package name '${agbossPkg.name}' is not '@agboss/core'`);
+  }
+  if (cliPkg.name !== "@agboss/cli") {
+    reasons.push(`Installed CLI package name '${cliPkg.name}' is not '@agboss/cli'`);
+  }
   if (agbossPkg.version !== expectedVersion) {
     reasons.push(
-      `Installed agboss version '${agbossPkg.version}' does not match expected '${expectedVersion}'`,
+      `Installed @agboss/core version '${agbossPkg.version}' does not match expected '${expectedVersion}'`,
     );
   }
   if (cliPkg.version !== expectedVersion) {
     reasons.push(
-      `Installed agboss-cli version '${cliPkg.version}' does not match expected '${expectedVersion}'`,
+      `Installed @agboss/cli version '${cliPkg.version}' does not match expected '${expectedVersion}'`,
     );
   }
 
@@ -521,12 +548,12 @@ export function validateInstalledPackageResolution({
   const cliInNodeModules = realCliDir.startsWith(nodeModulesDir);
   if (!agbossInNodeModules) {
     reasons.push(
-      `agboss resolved outside project node_modules (symlink/workspace leak): ${realAgbossDir}`,
+      `@agboss/core resolved outside project node_modules (symlink/workspace leak): ${realAgbossDir}`,
     );
   }
   if (!cliInNodeModules) {
     reasons.push(
-      `agboss-cli resolved outside project node_modules (symlink/workspace leak): ${realCliDir}`,
+      `@agboss/cli resolved outside project node_modules (symlink/workspace leak): ${realCliDir}`,
     );
   }
 
@@ -540,8 +567,11 @@ export function validateInstalledPackageResolution({
   let cliLockEntry = null;
   if (lockPath) {
     const lock = JSON.parse(readFileSync(lockPath, "utf8"));
-    agbossLockEntry = lock.packages?.["node_modules/agboss"] ?? null;
-    cliLockEntry = lock.packages?.["node_modules/agboss-cli"] ?? null;
+    agbossLockEntry = lock.packages?.["node_modules/@agboss/core"] ?? null;
+    cliLockEntry = lock.packages?.["node_modules/@agboss/cli"] ?? null;
+    if (lock.packages?.["node_modules/agboss"] || lock.packages?.["node_modules/agboss-cli"]) {
+      reasons.push(`Lockfile in ${projectDir} contains forbidden unscoped agboss/agboss-cli entries`);
+    }
   }
 
   const pkgJsonPath = join(projectDir, "package.json");
@@ -550,8 +580,8 @@ export function validateInstalledPackageResolution({
     : {};
 
   if (mode === "live-registry") {
-    const depSpec = pkgJson.dependencies?.agboss ?? "";
-    const devDepSpec = pkgJson.devDependencies?.["agboss-cli"] ?? "";
+    const depSpec = pkgJson.dependencies?.["@agboss/core"] ?? "";
+    const devDepSpec = pkgJson.devDependencies?.["@agboss/cli"] ?? "";
     if (
       String(depSpec).startsWith("file:") ||
       String(depSpec).endsWith(".tgz") ||
@@ -564,7 +594,7 @@ export function validateInstalledPackageResolution({
     }
 
     if (!agbossLockEntry || !cliLockEntry) {
-      reasons.push(`Missing lockfile entries for agboss / agboss-cli in ${projectDir}`);
+      reasons.push(`Missing lockfile entries for @agboss/core / @agboss/cli in ${projectDir}`);
     } else {
       if (agbossLockEntry.link === true || cliLockEntry.link === true) {
         reasons.push("Lockfile indicates symlink/workspace link in live-registry mode");
@@ -577,7 +607,7 @@ export function validateInstalledPackageResolution({
         agbossResolved.includes(".packed")
       ) {
         reasons.push(
-          `agboss lockfile resolved URL is not a remote https registry tarball: '${agbossResolved}'`,
+          `@agboss/core lockfile resolved URL is not a remote https registry tarball: '${agbossResolved}'`,
         );
       }
       if (
@@ -586,7 +616,7 @@ export function validateInstalledPackageResolution({
         cliResolved.includes(".packed")
       ) {
         reasons.push(
-          `agboss-cli lockfile resolved URL is not a remote https registry tarball: '${cliResolved}'`,
+          `@agboss/cli lockfile resolved URL is not a remote https registry tarball: '${cliResolved}'`,
         );
       }
       if (
@@ -594,7 +624,7 @@ export function validateInstalledPackageResolution({
         agbossLockEntry.integrity !== expectedIntegrity.agboss
       ) {
         reasons.push(
-          `agboss lockfile integrity '${agbossLockEntry.integrity ?? "none"}' does not match registry integrity '${expectedIntegrity.agboss}'`,
+          `@agboss/core lockfile integrity '${agbossLockEntry.integrity ?? "none"}' does not match registry integrity '${expectedIntegrity.agboss}'`,
         );
       }
       if (
@@ -602,7 +632,7 @@ export function validateInstalledPackageResolution({
         cliLockEntry.integrity !== expectedIntegrity.agbossCli
       ) {
         reasons.push(
-          `agboss-cli lockfile integrity '${cliLockEntry.integrity ?? "none"}' does not match registry integrity '${expectedIntegrity.agbossCli}'`,
+          `@agboss/cli lockfile integrity '${cliLockEntry.integrity ?? "none"}' does not match registry integrity '${expectedIntegrity.agbossCli}'`,
         );
       }
     }
@@ -642,21 +672,21 @@ export function fetchLiveRegistryMetadata(version) {
     return JSON.parse(out);
   };
 
-  const agbossMeta = fetchJson(["view", `agboss@${version}`, "--json"]);
-  const agbossCliMeta = fetchJson(["view", `agboss-cli@${version}`, "--json"]);
-  const agbossDistTags = fetchJson(["view", "agboss", "dist-tags", "--json"]);
-  const agbossCliDistTags = fetchJson(["view", "agboss-cli", "dist-tags", "--json"]);
+  const agbossMeta = fetchJson(["view", `@agboss/core@${version}`, "--json"]);
+  const agbossCliMeta = fetchJson(["view", `@agboss/cli@${version}`, "--json"]);
+  const agbossDistTags = fetchJson(["view", "@agboss/core", "dist-tags", "--json"]);
+  const agbossCliDistTags = fetchJson(["view", "@agboss/cli", "dist-tags", "--json"]);
 
   const measuredTarballs = {
     agboss: agbossMeta?.dist?.tarball
       ? measureRegistryTarball(agbossMeta.dist.tarball, {
-          packageName: "agboss",
+          packageName: "@agboss/core",
           expectedVersion: version,
         })
       : null,
     agbossCli: agbossCliMeta?.dist?.tarball
       ? measureRegistryTarball(agbossCliMeta.dist.tarball, {
-          packageName: "agboss-cli",
+          packageName: "@agboss/cli",
           expectedVersion: version,
         })
       : null,
@@ -830,7 +860,7 @@ function runMain() {
       baseReport.status = "FAILED";
       baseReport.checks.registryMetadata = "failed";
       baseReport.reasons.push(
-        `Failed to query live npm registry for agboss@${version} / agboss-cli@${version}: ${err.message}`,
+        `Failed to query live npm registry for @agboss/core@${version} / @agboss/cli@${version}: ${err.message}`,
       );
       writeVerificationOutput(baseReport);
       console.error(`[verify-published] LIVE REGISTRY QUERY FAILED: ${err.message}`);
@@ -843,7 +873,7 @@ function runMain() {
 
   try {
     console.log(
-      `[verify-published] 1/5 Installing agboss (${agbossSpec}) & agboss-cli (${cliSpec}) in isolated consumer ${tempWorkspace}...`,
+      `[verify-published] 1/5 Installing @agboss/core (${agbossSpec}) & @agboss/cli (${cliSpec}) in isolated consumer ${tempWorkspace}...`,
     );
 
     const consumerPkg = {
@@ -851,15 +881,15 @@ function runMain() {
       version: "0.0.1",
       private: true,
       type: "module",
-      dependencies: { agboss: agbossSpec },
+      dependencies: { "@agboss/core": agbossSpec },
       devDependencies: {
-        "agboss-cli": cliSpec,
+        "@agboss/cli": cliSpec,
         eslint: "^9.39.0",
         "typescript-eslint": "^8.40.0",
         vitest: "^3.2.0",
       },
       ...(mode === "from-packed"
-        ? { overrides: { agboss: agbossSpec, "agboss-cli": cliSpec } }
+        ? { overrides: { "@agboss/core": agbossSpec, "@agboss/cli": cliSpec } }
         : {}),
     };
     writeFileSync(
@@ -890,14 +920,14 @@ function runMain() {
     }
     baseReport.checks.isolatedConsumerInstall = "passed";
 
-    console.log("[verify-published] 2/5 Verifying all 11 public subpath exports...");
+    console.log("[verify-published] 2/5 Verifying all public subpath exports...");
     const probeScript = `
       import { fileURLToPath } from "node:url";
       import { existsSync, realpathSync } from "node:fs";
 
       const expectedPrefix = realpathSync(${JSON.stringify(join(tempWorkspace, "node_modules"))});
       const subpaths = ${JSON.stringify(REQUIRED_SUBPATH_EXPORTS)};
-      const vitestPeerSubpaths = new Set(["agboss/testing", "agboss/testing/setup"]);
+      const vitestPeerSubpaths = new Set(["@agboss/core/testing", "@agboss/core/testing/setup"]);
       const verified = [];
 
       for (const spec of subpaths) {
@@ -914,33 +944,33 @@ function runMain() {
         verified.push(spec);
       }
 
-      const root = await import("agboss");
-      const dto = await import("agboss/dto");
-      const units = await import("agboss/units");
-      const models = await import("agboss/models");
-      const evalMod = await import("agboss/eval");
-      const mcp = await import("agboss/mcp");
-      const rag = await import("agboss/rag");
-      const a2a = await import("agboss/a2a");
-      const eslintMod = await import("agboss/eslint");
+      const root = await import("@agboss/core");
+      const dto = await import("@agboss/core/dto");
+      const units = await import("@agboss/core/units");
+      const models = await import("@agboss/core/models");
+      const evalMod = await import("@agboss/core/eval");
+      const mcp = await import("@agboss/core/mcp");
+      const rag = await import("@agboss/core/rag");
+      const a2a = await import("@agboss/core/a2a");
+      const eslintMod = await import("@agboss/core/eslint");
 
       if (typeof root.Application !== "function" || typeof root.Workflow !== "function") {
-        throw new Error("Missing Application/Workflow on agboss");
+        throw new Error("Missing Application/Workflow on @agboss/core");
       }
       if (typeof dto.Text !== "function" || typeof units.usd !== "function") {
-        throw new Error("Missing Text/usd on agboss/dto or agboss/units");
+        throw new Error("Missing Text/usd on @agboss/core/dto or @agboss/core/units");
       }
       if (typeof models.ModelProvider !== "function") {
-        throw new Error("Missing ModelProvider on agboss/models");
+        throw new Error("Missing ModelProvider on @agboss/core/models");
       }
       if (typeof evalMod.EvalSuite !== "function") {
-        throw new Error("Missing EvalSuite on agboss/eval");
+        throw new Error("Missing EvalSuite on @agboss/core/eval");
       }
       if (typeof mcp.McpServer !== "function" || typeof rag.Rag !== "function" || typeof a2a.A2AAgent !== "function") {
         throw new Error("Missing McpServer/Rag/A2AAgent exports");
       }
       if (typeof eslintMod.agbossPlugin !== "object") {
-        throw new Error("Missing agbossPlugin on agboss/eslint");
+        throw new Error("Missing agbossPlugin on @agboss/core/eslint");
       }
 
       console.log(JSON.stringify({ verified }));
@@ -957,7 +987,7 @@ function runMain() {
     console.log("[verify-published] 3/5 Verifying CLI binary resolution (--help, help --json, agboss-cli --help)...");
     const cliBin = join(tempWorkspace, "node_modules", ".bin", "agboss");
     const cliExplicitBin = join(tempWorkspace, "node_modules", ".bin", "agboss-cli");
-    const proxyBin = join(tempWorkspace, "node_modules", "agboss", "bin", "agboss.js");
+    const proxyBin = join(tempWorkspace, "node_modules", "@agboss", "core", "bin", "agboss.js");
 
     if (
       consumerResValidation.details.agboss.version !== version ||
@@ -993,7 +1023,7 @@ function runMain() {
     });
     if (!proxyHelpOut.includes("agboss") || !proxyHelpOut.includes("create")) {
       baseReport.checks.cliBinHelp = "failed";
-      throw new Error("'agboss/bin/agboss.js --help' delegation output missing expected command descriptions");
+      throw new Error("'@agboss/core/bin/agboss.js --help' delegation output missing expected command descriptions");
     }
     baseReport.checks.cliBinHelp = "passed";
 
@@ -1010,10 +1040,31 @@ function runMain() {
     console.log(
       "[verify-published] 4/5 Running `agboss create published-smoke-app --yes --skip-install`...",
     );
-    execFileSync(cliBin, ["create", "published-smoke-app", "--yes", "--skip-install"], {
-      cwd: scaffoldParentDir,
-      stdio: "pipe",
-    });
+    if (mode === "live-registry") {
+      execFileSync(
+        "npm",
+        [
+          "exec",
+          "--yes",
+          `--package=@agboss/cli@${version}`,
+          "--",
+          "agboss",
+          "create",
+          "published-smoke-app",
+          "--yes",
+          "--skip-install",
+        ],
+        {
+          cwd: scaffoldParentDir,
+          stdio: "pipe",
+        },
+      );
+    } else {
+      execFileSync(cliBin, ["create", "published-smoke-app", "--yes", "--skip-install"], {
+        cwd: scaffoldParentDir,
+        stdio: "pipe",
+      });
+    }
 
     const appDir = join(scaffoldParentDir, "published-smoke-app");
     const expectedScaffoldFiles = [
@@ -1036,22 +1087,22 @@ function runMain() {
 
     const appPkgPath = join(appDir, "package.json");
     const appPkg = JSON.parse(readFileSync(appPkgPath, "utf8"));
-    if (!appPkg.dependencies?.agboss || !appPkg.devDependencies?.["agboss-cli"]) {
+    if (!appPkg.dependencies?.["@agboss/core"] || !appPkg.devDependencies?.["@agboss/cli"]) {
       throw new Error(
-        "Scaffolded package.json missing agboss in dependencies or agboss-cli in devDependencies",
+        "Scaffolded package.json missing @agboss/core in dependencies or @agboss/cli in devDependencies",
       );
     }
 
     if (mode === "from-packed") {
-      appPkg.dependencies.agboss = agbossSpec;
-      appPkg.devDependencies["agboss-cli"] = cliSpec;
+      appPkg.dependencies["@agboss/core"] = agbossSpec;
+      appPkg.devDependencies["@agboss/cli"] = cliSpec;
       if (appPkg.devDependencies["typescript-eslint"]) {
         appPkg.devDependencies["typescript-eslint"] = "^8.0.0";
       }
-      appPkg.overrides = { agboss: agbossSpec, "agboss-cli": cliSpec };
+      appPkg.overrides = { "@agboss/core": agbossSpec, "@agboss/cli": cliSpec };
     } else {
-      appPkg.dependencies.agboss = version;
-      appPkg.devDependencies["agboss-cli"] = version;
+      appPkg.dependencies["@agboss/core"] = version;
+      appPkg.devDependencies["@agboss/cli"] = version;
       if (appPkg.devDependencies["typescript-eslint"]) {
         appPkg.devDependencies["typescript-eslint"] = "^8.0.0";
       }
@@ -1150,7 +1201,7 @@ function runMain() {
     writeVerificationOutput(baseReport);
 
     console.log(
-      `[verify-published] Verified resolved versions: agboss@${scaffoldResValidation.details.agboss.version}, agboss-cli@${scaffoldResValidation.details.agbossCli.version} (SOURCE: ${sourceLabel})`,
+      `[verify-published] Verified resolved versions: @agboss/core@${scaffoldResValidation.details.agboss.version}, @agboss/cli@${scaffoldResValidation.details.agbossCli.version} (SOURCE: ${sourceLabel})`,
     );
     console.log(
       `[verify-published] Clean environment verification PASSED (wrote .packed/published-verification.json).`,

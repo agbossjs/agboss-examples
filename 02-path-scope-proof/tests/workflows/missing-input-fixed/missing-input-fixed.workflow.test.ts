@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createApp, ExecutionStatus } from "agboss";
+import { createApp, ExecutionStatus } from "@agboss/core";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   type ExpectedDiagnostic,
@@ -53,7 +53,8 @@ async function runAgbossCheck(applicationRelPath: string) {
   const cliBin = join(
     PROJECT_ROOT,
     "node_modules",
-    "agboss-cli",
+    "@agboss",
+    "cli",
     "bin",
     "agboss.js",
   );

@@ -45,14 +45,14 @@ function makeManifest(overrides = {}) {
     examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
     packages: {
       agboss: {
-        name: "agboss",
+        name: "@agboss/core",
         version: "0.1.0",
         integrity: FIXTURE_AGBOSS_INTEGRITY,
         sha256: FIXTURE_AGBOSS_SHA256,
         shasum: FIXTURE_AGBOSS_SHASUM,
       },
       agbossCli: {
-        name: "agboss-cli",
+        name: "@agboss/cli",
         version: "0.1.0",
         integrity: FIXTURE_CLI_INTEGRITY,
         sha256: FIXTURE_CLI_SHA256,
@@ -150,8 +150,8 @@ function makePublishedManifest(overrides = {}) {
       agbossCliVersion: "0.1.0",
       agbossIntegrity: FIXTURE_AGBOSS_INTEGRITY,
       agbossCliIntegrity: FIXTURE_CLI_INTEGRITY,
-      agbossResolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
-      agbossCliResolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+      agbossResolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+      agbossCliResolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
       isRegistryInstall: true,
       hasLocalLinks: false,
     };
@@ -166,22 +166,22 @@ function makePublishedManifest(overrides = {}) {
     requestedDistTag: "latest",
     packages: {
       agboss: {
-        name: "agboss",
+        name: "@agboss/core",
         version: "0.1.0",
         integrity: FIXTURE_AGBOSS_INTEGRITY,
         sha256: FIXTURE_AGBOSS_SHA256,
         sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
         shasum: FIXTURE_AGBOSS_SHASUM,
-        tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        tarball: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
       },
       agbossCli: {
-        name: "agboss-cli",
+        name: "@agboss/cli",
         version: "0.1.0",
         integrity: FIXTURE_CLI_INTEGRITY,
         sha256: FIXTURE_CLI_SHA256,
         sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
         shasum: FIXTURE_CLI_SHASUM,
-        tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        tarball: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
       },
     },
     projects,
@@ -201,25 +201,25 @@ function makePublishedVerification(overrides = {}) {
     examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
     npmRegistryMetadata: {
       agboss: {
-        name: "agboss",
+        name: "@agboss/core",
         version: "0.1.0",
         deprecated: null,
         integrity: FIXTURE_AGBOSS_INTEGRITY,
         sha256: FIXTURE_AGBOSS_SHA256,
         sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
         shasum: FIXTURE_AGBOSS_SHASUM,
-        tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        tarball: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
         distTagVersion: "0.1.0",
       },
       agbossCli: {
-        name: "agboss-cli",
+        name: "@agboss/cli",
         version: "0.1.0",
         deprecated: null,
         integrity: FIXTURE_CLI_INTEGRITY,
         sha256: FIXTURE_CLI_SHA256,
         sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
         shasum: FIXTURE_CLI_SHASUM,
-        tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        tarball: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
         distTagVersion: "0.1.0",
       },
     },
@@ -362,21 +362,22 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
   it("validates live npm registry metadata and fails closed on deprecated, missing, or mismatched versions", () => {
     const validMeta = {
       agbossMeta: {
-        name: "agboss",
+        name: "@agboss/core",
         version: "0.1.0",
         dist: {
           integrity: FIXTURE_AGBOSS_INTEGRITY,
           shasum: FIXTURE_AGBOSS_SHASUM,
-          tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+          tarball: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
         },
       },
       agbossCliMeta: {
-        name: "agboss-cli",
+        name: "@agboss/cli",
         version: "0.1.0",
+        dependencies: { "@agboss/core": "0.1.0" },
         dist: {
           integrity: FIXTURE_CLI_INTEGRITY,
           shasum: FIXTURE_CLI_SHASUM,
-          tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+          tarball: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
         },
       },
       agbossDistTags: { latest: "0.1.0" },
@@ -835,15 +836,15 @@ function createFixtureWorkspace() {
   const packedDir = join(repoRoot, ".packed");
   const nodeModulesDir = join(projectRoot, "node_modules");
   mkdirSync(packedDir, { recursive: true });
-  mkdirSync(join(nodeModulesDir, "agboss"), { recursive: true });
-  mkdirSync(join(nodeModulesDir, "agboss-cli"), { recursive: true });
+  mkdirSync(join(nodeModulesDir, "@agboss", "core"), { recursive: true });
+  mkdirSync(join(nodeModulesDir, "@agboss", "cli"), { recursive: true });
   writeFileSync(
-    join(nodeModulesDir, "agboss", "package.json"),
-    JSON.stringify({ name: "agboss", version: "0.1.0" }),
+    join(nodeModulesDir, "@agboss", "core", "package.json"),
+    JSON.stringify({ name: "@agboss/core", version: "0.1.0" }),
   );
   writeFileSync(
-    join(nodeModulesDir, "agboss-cli", "package.json"),
-    JSON.stringify({ name: "agboss-cli", version: "0.1.0" }),
+    join(nodeModulesDir, "@agboss", "cli", "package.json"),
+    JSON.stringify({ name: "@agboss/cli", version: "0.1.0" }),
   );
   return { root, repoRoot, projectRoot, packedDir, nodeModulesDir };
 }
@@ -852,7 +853,7 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
   it("resolves RC tarballs portably from repoRoot/.packed/<filename> even when manifest.json has foreign CI runner paths", () => {
     const ws = createFixtureWorkspace();
     try {
-      writeFileSync(join(ws.packedDir, "agboss-0.1.0.tgz"), "dummy-core");
+      writeFileSync(join(ws.packedDir, "agboss-core-0.1.0.tgz"), "dummy-core");
       writeFileSync(join(ws.packedDir, "agboss-cli-0.1.0.tgz"), "dummy-cli");
       writeFileSync(
         join(ws.packedDir, "manifest.json"),
@@ -860,14 +861,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
           sourceCommit: FIXTURE_COMMIT,
           packages: {
             agboss: {
-              name: "agboss",
+              name: "@agboss/core",
               version: "0.1.0",
-              filename: "agboss-0.1.0.tgz",
-              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-0.1.0.tgz",
+              filename: "agboss-core-0.1.0.tgz",
+              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
             agbossCli: {
-              name: "agboss-cli",
+              name: "@agboss/cli",
               version: "0.1.0",
               filename: "agboss-cli-0.1.0.tgz",
               tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-cli-0.1.0.tgz",
@@ -880,12 +881,12 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(ws.nodeModulesDir, ".package-lock.json"),
         JSON.stringify({
           packages: {
-            "node_modules/agboss": {
+            "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "file:../.packed/agboss-0.1.0.tgz",
+              resolved: "file:../.packed/agboss-core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
-            "node_modules/agboss-cli": {
+            "node_modules/@agboss/cli": {
               version: "0.1.0",
               resolved: "file:../.packed/agboss-cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
@@ -902,7 +903,7 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
 
       assert.equal(cfg.provenance, "rc");
       assert.equal(cfg.useOverrides, true);
-      assert.equal(cfg.agbossSpec, `file:${join(ws.repoRoot, ".packed", "agboss-0.1.0.tgz")}`);
+      assert.equal(cfg.agbossSpec, `file:${join(ws.repoRoot, ".packed", "agboss-core-0.1.0.tgz")}`);
       assert.equal(cfg.cliSpec, `file:${join(ws.repoRoot, ".packed", "agboss-cli-0.1.0.tgz")}`);
       assert.deepEqual(cfg.expectedVersion, { agboss: "0.1.0", agbossCli: "0.1.0" });
       assert.deepEqual(cfg.expectedIntegrity, {
@@ -932,14 +933,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(ws.nodeModulesDir, ".package-lock.json"),
         JSON.stringify({
           packages: {
-            "node_modules/agboss": {
+            "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+              resolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
-            "node_modules/agboss-cli": {
+            "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -957,8 +958,8 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
       assert.equal(cfg.agbossSpec, "0.1.0");
       assert.equal(cfg.cliSpec, "0.1.0");
       assert.deepEqual(cfg.expectedResolved, {
-        agboss: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
-        agbossCli: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        agboss: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+        agbossCli: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
       });
 
       const verified = verifyScaffoldInstalledPackages({
@@ -967,11 +968,11 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
       });
       assert.equal(
         verified.agboss.resolved,
-        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
       );
       assert.equal(
         verified.agbossCli.resolved,
-        "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
       );
     } finally {
       rmSync(ws.root, { recursive: true, force: true });
@@ -995,7 +996,7 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
       // Missing lockfile entries
       writeFileSync(
         join(ws.nodeModulesDir, ".package-lock.json"),
-        JSON.stringify({ packages: { "node_modules/agboss": { version: "0.1.0" } } }),
+        JSON.stringify({ packages: { "node_modules/@agboss/core": { version: "0.1.0" } } }),
       );
       assert.throws(
         () =>
@@ -1012,14 +1013,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(ws.nodeModulesDir, ".package-lock.json"),
         JSON.stringify({
           packages: {
-            "node_modules/agboss": {
+            "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "file:../.packed/agboss-0.1.0.tgz",
+              resolved: "file:../.packed/agboss-core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
-            "node_modules/agboss-cli": {
+            "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1040,14 +1041,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(ws.nodeModulesDir, ".package-lock.json"),
         JSON.stringify({
           packages: {
-            "node_modules/agboss": {
+            "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://evil.example.com/agboss/-/agboss-0.1.0.tgz",
+              resolved: "https://evil.example.com/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
-            "node_modules/agboss-cli": {
+            "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://evil.example.com/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              resolved: "https://evil.example.com/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1068,14 +1069,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(ws.nodeModulesDir, ".package-lock.json"),
         JSON.stringify({
           packages: {
-            "node_modules/agboss": {
+            "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+              resolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
-            "node_modules/agboss-cli": {
+            "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1108,15 +1109,15 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
     const ws = createFixtureWorkspace();
     try {
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "../agboss-0.1.0.tgz", "agboss"),
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "../agboss-core-0.1.0.tgz", "@agboss/core"),
         /Invalid or unsafe tarball filename/,
       );
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "sub/agboss-0.1.0.tgz", "agboss"),
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "sub/agboss-core-0.1.0.tgz", "@agboss/core"),
         /Invalid or unsafe tarball filename/,
       );
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "agboss-0.1.0.zip", "agboss"),
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "agboss-core-0.1.0.zip", "@agboss/core"),
         /Invalid or unsafe tarball filename/,
       );
 
@@ -1125,10 +1126,10 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
       mkdirSync(outsideAgboss, { recursive: true });
       writeFileSync(
         join(outsideAgboss, "package.json"),
-        JSON.stringify({ name: "agboss", version: "0.1.0" }),
+        JSON.stringify({ name: "@agboss/core", version: "0.1.0" }),
       );
-      rmSync(join(ws.nodeModulesDir, "agboss"), { recursive: true, force: true });
-      symlinkSync(outsideAgboss, join(ws.nodeModulesDir, "agboss"));
+      rmSync(join(ws.nodeModulesDir, "@agboss", "core"), { recursive: true, force: true });
+      symlinkSync(outsideAgboss, join(ws.nodeModulesDir, "@agboss", "core"));
 
       assert.throws(
         () =>
@@ -1158,8 +1159,8 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
   it("validates official npm registry tarball URLs and rejects unsafe or non-official URLs", () => {
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
-        "agboss",
+        "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+        "@agboss/core",
         "0.1.0",
       ),
       true,
@@ -1167,40 +1168,40 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
 
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "http://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
-        "agboss",
+        "http://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+        "@agboss/core",
         "0.1.0",
       ),
       false,
     );
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "https://evil.example.com/agboss/-/agboss-0.1.0.tgz",
-        "agboss",
+        "https://evil.example.com/@agboss/core/-/core-0.1.0.tgz",
+        "@agboss/core",
         "0.1.0",
       ),
       false,
     );
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz?redirect=1",
-        "agboss",
+        "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz?redirect=1",
+        "@agboss/core",
         "0.1.0",
       ),
       false,
     );
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "https://user:pass@registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
-        "agboss",
+        "https://user:pass@registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+        "@agboss/core",
         "0.1.0",
       ),
       false,
     );
     assert.equal(
       validateOfficialRegistryTarballUrl(
-        "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
-        "agboss",
+        "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
+        "@agboss/core",
         "0.1.0",
       ),
       false,
@@ -1210,21 +1211,22 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
   it("enforces measured tarball parity with registry metadata and canonical .packed/manifest.json", () => {
     const baseMeta = {
       agbossMeta: {
-        name: "agboss",
+        name: "@agboss/core",
         version: "0.1.0",
         dist: {
           integrity: FIXTURE_AGBOSS_INTEGRITY,
           shasum: FIXTURE_AGBOSS_SHASUM,
-          tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+          tarball: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
         },
       },
       agbossCliMeta: {
-        name: "agboss-cli",
+        name: "@agboss/cli",
         version: "0.1.0",
+        dependencies: { "@agboss/core": "0.1.0" },
         dist: {
           integrity: FIXTURE_CLI_INTEGRITY,
           shasum: FIXTURE_CLI_SHASUM,
-          tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+          tarball: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
         },
       },
       agbossDistTags: { latest: "0.1.0" },

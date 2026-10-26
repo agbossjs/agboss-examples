@@ -57,7 +57,7 @@ export function createIsolatedDirectory(prefix = "agboss-isolated-"): IsolatedPr
 
 /**
  * Copies a template or generated project into an isolated directory and, when a packed manifest
- * is provided, rewrites `agboss` and `agboss-cli` version specs in `package.json` to point to
+ * is provided, rewrites `@agboss/core` and `@agboss/cli` version specs in `package.json` to point to
  * the exact local `.tgz` tarballs while recording the substitution (Section 4.3).
  */
 export function substitutePackedTarballs(
@@ -75,28 +75,30 @@ export function substitutePackedTarballs(
   const agbossTar = `file:${resolve(manifest.packages.agboss.tarballPath)}`;
   const cliTar = `file:${resolve(manifest.packages.agbossCli.tarballPath)}`;
 
-  if (raw.dependencies?.["agboss"] !== undefined) {
-    recorded.push(`dependencies.agboss: ${raw.dependencies["agboss"]} -> ${agbossTar}`);
-    raw.dependencies["agboss"] = agbossTar;
+  if (raw.dependencies?.["@agboss/core"] !== undefined) {
+    recorded.push(`dependencies.@agboss/core: ${raw.dependencies["@agboss/core"]} -> ${agbossTar}`);
+    raw.dependencies["@agboss/core"] = agbossTar;
   }
-  if (raw.devDependencies?.["agboss-cli"] !== undefined) {
-    recorded.push(`devDependencies.agboss-cli: ${raw.devDependencies["agboss-cli"]} -> ${cliTar}`);
-    raw.devDependencies["agboss-cli"] = cliTar;
+  if (raw.devDependencies?.["@agboss/cli"] !== undefined) {
+    recorded.push(
+      `devDependencies.@agboss/cli: ${raw.devDependencies["@agboss/cli"]} -> ${cliTar}`,
+    );
+    raw.devDependencies["@agboss/cli"] = cliTar;
   }
   if (raw.devDependencies?.["typescript-eslint"] === "^8.70.0") {
     recorded.push("devDependencies.typescript-eslint: ^8.70.0 -> ^8.0.0");
     raw.devDependencies["typescript-eslint"] = "^8.0.0";
   }
-  if (raw.dependencies?.["agboss-cli"] !== undefined) {
-    recorded.push(`dependencies.agboss-cli: ${raw.dependencies["agboss-cli"]} -> ${cliTar}`);
-    raw.dependencies["agboss-cli"] = cliTar;
+  if (raw.dependencies?.["@agboss/cli"] !== undefined) {
+    recorded.push(`dependencies.@agboss/cli: ${raw.dependencies["@agboss/cli"]} -> ${cliTar}`);
+    raw.dependencies["@agboss/cli"] = cliTar;
   }
   raw.overrides = {
     ...(raw.overrides ?? {}),
-    agboss: agbossTar,
-    "agboss-cli": cliTar,
+    "@agboss/core": agbossTar,
+    "@agboss/cli": cliTar,
   };
-  recorded.push(`overrides.agboss -> ${agbossTar}`);
+  recorded.push(`overrides.@agboss/core -> ${agbossTar}`);
   writeFileSync(pkgPath, JSON.stringify(raw, null, 2) + "\n", "utf8");
   return recorded;
 }

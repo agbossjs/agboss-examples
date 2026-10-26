@@ -1,4 +1,4 @@
-import { WorkflowStart } from "agboss";
+import { WorkflowStart } from "@agboss/core";
 import { BillingInquiryDto } from "../../dto/billing-inquiry.dto.js";
 
 @WorkflowStart({

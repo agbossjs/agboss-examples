@@ -1,4 +1,4 @@
-import { Injectable, type CompactionTurn } from "agboss";
+import { Injectable, type CompactionTurn } from "@agboss/core";
 
 @Injectable()
 export class PolicyDriftCompactionService {

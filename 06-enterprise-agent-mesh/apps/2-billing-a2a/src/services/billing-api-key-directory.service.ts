@@ -1,4 +1,4 @@
-import { Injectable } from "agboss";
+import { Injectable } from "@agboss/core";
 
 export interface BillingApiKeyGrant {
   readonly clientId: string;

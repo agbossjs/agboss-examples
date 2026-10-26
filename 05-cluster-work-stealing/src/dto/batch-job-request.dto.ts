@@ -1,4 +1,4 @@
-import { Integer, Text } from "agboss/dto";
+import { Integer, Text } from "@agboss/core/dto";
 
 export class BatchJobRequestDto {
   @Text({ prompt: "Batch job identifier (e.g. batch-100)" })

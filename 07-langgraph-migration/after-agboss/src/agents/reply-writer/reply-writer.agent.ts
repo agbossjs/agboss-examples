@@ -1,4 +1,4 @@
-import { Agent, listOf } from "agboss";
+import { Agent, listOf } from "@agboss/core";
 import { ReplyDraftDto } from "../../dto/reply-draft.dto.js";
 import { ResearchFindingDto } from "../../dto/research-finding.dto.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";

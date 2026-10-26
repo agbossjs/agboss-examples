@@ -1,4 +1,4 @@
-import { Agent } from "agboss";
+import { Agent } from "@agboss/core";
 import { ResearchFindingDto } from "../../dto/research-finding.dto.js";
 import { ResearchQuestionDto } from "../../dto/research-question.dto.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";
