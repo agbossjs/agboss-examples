@@ -124,11 +124,37 @@ jobs:
             exit 1
           fi
 
+      - name: 11b. Verify required smoke proof artifacts exist and are non-empty
+        run: |
+          node --input-type=module -e '
+            import assert from "node:assert/strict";
+            import fs from "node:fs";
+
+            const requiredFiles = [
+              ".packed/manifest.json",
+              ".packed/package-verification.json",
+              ".packed/published-verification.json",
+              ".packed/last-run.json",
+              "proof-results.json",
+              "proof-report.md",
+            ];
+
+            for (const relPath of requiredFiles) {
+              assert.equal(fs.existsSync(relPath), true, `Missing required artifact file: ${relPath}`);
+              const stat = fs.statSync(relPath);
+              assert.equal(stat.isFile(), true, `Not a regular file: ${relPath}`);
+              assert.equal(stat.size > 0, true, `Empty artifact file: ${relPath}`);
+            }
+            console.log("[verify-artifacts] All 6 smoke proof files exist and are non-empty.");
+          '
+
       - name: 12. Upload release proof artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: agboss-release-proof-${{ steps.pin.outputs.framework_sha }}
+          include-hidden-files: true
+          if-no-files-found: error
           path: |
             .packed/manifest.json
             .packed/package-verification.json
@@ -136,4 +162,8 @@ jobs:
             .packed/last-run.json
             proof-results.json
             proof-report.md
-          if-no-files-found: error
+            !**/.env*
+            !**/.npmrc
+            !**/.git/**
+            !**/.packed/.npm-cache/**
+            !**/.packed/install-record.json

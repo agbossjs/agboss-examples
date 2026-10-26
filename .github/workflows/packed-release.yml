@@ -112,17 +112,62 @@ jobs:
             exit 1
           fi
 
+      - name: 11b. Verify required release proof artifacts exist and are non-empty
+        run: |
+          node --input-type=module -e '
+            import assert from "node:assert/strict";
+            import crypto from "node:crypto";
+            import fs from "node:fs";
+
+            const requiredFiles = [
+              ".packed/agboss-0.1.0.tgz",
+              ".packed/agboss-cli-0.1.0.tgz",
+              ".packed/manifest.json",
+              ".packed/package-verification.json",
+              ".packed/published-verification.json",
+              ".packed/last-run.json",
+              "proof-results.json",
+              "proof-report.md",
+            ];
+
+            for (const relPath of requiredFiles) {
+              assert.equal(fs.existsSync(relPath), true, `Missing required artifact file: ${relPath}`);
+              const stat = fs.statSync(relPath);
+              assert.equal(stat.isFile(), true, `Not a regular file: ${relPath}`);
+              assert.equal(stat.size > 0, true, `Empty artifact file: ${relPath}`);
+            }
+
+            const manifest = JSON.parse(fs.readFileSync(".packed/manifest.json", "utf8"));
+            for (const [key, relPath] of [
+              ["agboss", ".packed/agboss-0.1.0.tgz"],
+              ["agbossCli", ".packed/agboss-cli-0.1.0.tgz"],
+            ]) {
+              const buf = fs.readFileSync(relPath);
+              const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
+              assert.equal(buf.length, manifest.packages[key].size, `Size mismatch for ${relPath}`);
+              assert.equal(sha256, manifest.packages[key].sha256, `SHA-256 mismatch for ${relPath}`);
+            }
+            console.log("[verify-artifacts] All 8 packed-release proof files exist, are non-empty, and match manifest.");
+          '
+
       - name: 12. Upload release proof artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: packed-release-proof-${{ steps.pin.outputs.framework_sha }}
+          include-hidden-files: true
+          if-no-files-found: error
           path: |
-            .packed/*.tgz
+            .packed/agboss-0.1.0.tgz
+            .packed/agboss-cli-0.1.0.tgz
             .packed/manifest.json
             .packed/package-verification.json
             .packed/published-verification.json
             .packed/last-run.json
             proof-results.json
             proof-report.md
-          if-no-files-found: error
+            !**/.env*
+            !**/.npmrc
+            !**/.git/**
+            !**/.packed/.npm-cache/**
+            !**/.packed/install-record.json
