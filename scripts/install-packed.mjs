@@ -11,6 +11,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolvePortablePackedTarballPath } from "./run-all.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MANIFEST_PATH = join(ROOT, ".packed", "manifest.json");
@@ -69,6 +70,8 @@ if (!existsSync(MANIFEST_PATH)) {
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
 const { agboss, agbossCli } = manifest.packages;
+const agbossTarballPath = resolvePortablePackedTarballPath(ROOT, agboss.filename, "agboss");
+const cliTarballPath = resolvePortablePackedTarballPath(ROOT, agbossCli.filename, "agboss-cli");
 
 const records = [];
 
@@ -82,8 +85,8 @@ for (const relDir of TARGET_DIRS) {
   const publicPkg = restorePublicPkg(originalPkg, agboss.version, agbossCli.version);
   const packedPkg = structuredClone(publicPkg);
 
-  const relAgboss = `file:${relative(projectDir, agboss.tarballPath)}`;
-  const relCli = `file:${relative(projectDir, agbossCli.tarballPath)}`;
+  const relAgboss = `file:${relative(projectDir, agbossTarballPath)}`;
+  const relCli = `file:${relative(projectDir, cliTarballPath)}`;
 
   if (packedPkg.dependencies?.["agboss"] !== undefined) {
     packedPkg.dependencies["agboss"] = relAgboss;

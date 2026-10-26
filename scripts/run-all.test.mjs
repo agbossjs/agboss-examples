@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   evaluateProofReport,
@@ -11,7 +14,10 @@ import {
   PROJECTS,
   initializeOrLoadRunState,
   parseRunAllArgs,
+  resolvePortablePackedTarballPath,
+  resolveScaffoldTestConfig,
   selectProjects,
+  verifyScaffoldInstalledPackages,
 } from "./run-all.mjs";
 import {
   REQUIRED_SUBPATH_EXPORTS,
@@ -782,5 +788,322 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
     });
     assert.equal(r2.gates.p1Gate, "FAILED");
     assert.equal(r2.gates.overallGate, "FAILED");
+  });
+});
+
+function createFixtureWorkspace() {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "agboss-scaffold-prov-test-")));
+  const repoRoot = join(root, "repo");
+  const projectRoot = join(repoRoot, "01-hello-agboss");
+  const packedDir = join(repoRoot, ".packed");
+  const nodeModulesDir = join(projectRoot, "node_modules");
+  mkdirSync(packedDir, { recursive: true });
+  mkdirSync(join(nodeModulesDir, "agboss"), { recursive: true });
+  mkdirSync(join(nodeModulesDir, "agboss-cli"), { recursive: true });
+  writeFileSync(
+    join(nodeModulesDir, "agboss", "package.json"),
+    JSON.stringify({ name: "agboss", version: "0.1.0" }),
+  );
+  writeFileSync(
+    join(nodeModulesDir, "agboss-cli", "package.json"),
+    JSON.stringify({ name: "agboss-cli", version: "0.1.0" }),
+  );
+  return { root, repoRoot, projectRoot, packedDir, nodeModulesDir };
+}
+
+describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyScaffoldInstalledPackages)", () => {
+  it("resolves RC tarballs portably from repoRoot/.packed/<filename> even when manifest.json has foreign CI runner paths", () => {
+    const ws = createFixtureWorkspace();
+    try {
+      writeFileSync(join(ws.packedDir, "agboss-0.1.0.tgz"), "dummy-core");
+      writeFileSync(join(ws.packedDir, "agboss-cli-0.1.0.tgz"), "dummy-cli");
+      writeFileSync(
+        join(ws.packedDir, "manifest.json"),
+        JSON.stringify({
+          sourceCommit: FIXTURE_COMMIT,
+          packages: {
+            agboss: {
+              name: "agboss",
+              version: "0.1.0",
+              filename: "agboss-0.1.0.tgz",
+              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            agbossCli: {
+              name: "agboss-cli",
+              version: "0.1.0",
+              filename: "agboss-cli-0.1.0.tgz",
+              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "node_modules/agboss": {
+              version: "0.1.0",
+              resolved: "file:../.packed/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            "node_modules/agboss-cli": {
+              version: "0.1.0",
+              resolved: "file:../.packed/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+
+      const cfg = resolveScaffoldTestConfig({
+        projectRoot: ws.projectRoot,
+        repoRoot: ws.repoRoot,
+        env: { AGBOSS_PROVENANCE_MODE: "rc" },
+      });
+
+      assert.equal(cfg.provenance, "rc");
+      assert.equal(cfg.useOverrides, true);
+      assert.equal(cfg.agbossSpec, `file:${join(ws.repoRoot, ".packed", "agboss-0.1.0.tgz")}`);
+      assert.equal(cfg.cliSpec, `file:${join(ws.repoRoot, ".packed", "agboss-cli-0.1.0.tgz")}`);
+      assert.deepEqual(cfg.expectedVersion, { agboss: "0.1.0", agbossCli: "0.1.0" });
+      assert.deepEqual(cfg.expectedIntegrity, {
+        agboss: FIXTURE_AGBOSS_INTEGRITY,
+        agbossCli: FIXTURE_CLI_INTEGRITY,
+      });
+
+      const verified = verifyScaffoldInstalledPackages({
+        appDir: ws.projectRoot,
+        config: cfg,
+      });
+      assert.equal(verified.agboss.version, "0.1.0");
+      assert.equal(verified.agbossCli.version, "0.1.0");
+    } finally {
+      rmSync(ws.root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves published registry packages without reading .packed/manifest.json or local tarballs", () => {
+    const ws = createFixtureWorkspace();
+    try {
+      writeFileSync(
+        join(ws.packedDir, "published-manifest.json"),
+        JSON.stringify(makePublishedManifest()),
+      );
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "node_modules/agboss": {
+              version: "0.1.0",
+              resolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            "node_modules/agboss-cli": {
+              version: "0.1.0",
+              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+
+      const cfg = resolveScaffoldTestConfig({
+        projectRoot: ws.projectRoot,
+        repoRoot: ws.repoRoot,
+        env: { AGBOSS_PROVENANCE_MODE: "published" },
+      });
+
+      assert.equal(cfg.provenance, "published");
+      assert.equal(cfg.useOverrides, false);
+      assert.equal(cfg.agbossSpec, "0.1.0");
+      assert.equal(cfg.cliSpec, "0.1.0");
+      assert.deepEqual(cfg.expectedResolved, {
+        agboss: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        agbossCli: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+      });
+
+      const verified = verifyScaffoldInstalledPackages({
+        appDir: ws.projectRoot,
+        config: cfg,
+      });
+      assert.equal(
+        verified.agboss.resolved,
+        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+      );
+      assert.equal(
+        verified.agbossCli.resolved,
+        "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+      );
+    } finally {
+      rmSync(ws.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects mixed, unknown, or missing lockfile provenance and mismatched AGBOSS_PROVENANCE_MODE", () => {
+    const ws = createFixtureWorkspace();
+    try {
+      // Missing lockfile
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: {},
+          }),
+        /Missing package-lock\.json/,
+      );
+
+      // Missing lockfile entries
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({ packages: { "node_modules/agboss": { version: "0.1.0" } } }),
+      );
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: {},
+          }),
+        /Missing lockfile entries/,
+      );
+
+      // Mixed provenance (file: + https://)
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "node_modules/agboss": {
+              version: "0.1.0",
+              resolved: "file:../.packed/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            "node_modules/agboss-cli": {
+              version: "0.1.0",
+              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: {},
+          }),
+        /Unknown or mixed installed package provenance/,
+      );
+
+      // Unknown registry host
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "node_modules/agboss": {
+              version: "0.1.0",
+              resolved: "https://evil.example.com/agboss/-/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            "node_modules/agboss-cli": {
+              version: "0.1.0",
+              resolved: "https://evil.example.com/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: {},
+          }),
+        /Unknown or mixed installed package provenance/,
+      );
+
+      // Mismatched explicit AGBOSS_PROVENANCE_MODE (installed published vs explicit rc)
+      writeFileSync(
+        join(ws.nodeModulesDir, ".package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "node_modules/agboss": {
+              version: "0.1.0",
+              resolved: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+              integrity: FIXTURE_AGBOSS_INTEGRITY,
+            },
+            "node_modules/agboss-cli": {
+              version: "0.1.0",
+              resolved: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+              integrity: FIXTURE_CLI_INTEGRITY,
+            },
+          },
+        }),
+      );
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: { AGBOSS_PROVENANCE_MODE: "rc" },
+          }),
+        /Provenance mismatch/,
+      );
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: { AGBOSS_PROVENANCE_MODE: "invalid" },
+          }),
+        /Invalid AGBOSS_PROVENANCE_MODE/,
+      );
+    } finally {
+      rmSync(ws.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unsafe tarball filenames and symlink escapes outside node_modules", () => {
+    const ws = createFixtureWorkspace();
+    try {
+      assert.throws(
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "../agboss-0.1.0.tgz", "agboss"),
+        /Invalid or unsafe tarball filename/,
+      );
+      assert.throws(
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "sub/agboss-0.1.0.tgz", "agboss"),
+        /Invalid or unsafe tarball filename/,
+      );
+      assert.throws(
+        () => resolvePortablePackedTarballPath(ws.repoRoot, "agboss-0.1.0.zip", "agboss"),
+        /Invalid or unsafe tarball filename/,
+      );
+
+      // Symlink escape outside node_modules
+      const outsideAgboss = join(ws.root, "outside-agboss");
+      mkdirSync(outsideAgboss, { recursive: true });
+      writeFileSync(
+        join(outsideAgboss, "package.json"),
+        JSON.stringify({ name: "agboss", version: "0.1.0" }),
+      );
+      rmSync(join(ws.nodeModulesDir, "agboss"), { recursive: true, force: true });
+      symlinkSync(outsideAgboss, join(ws.nodeModulesDir, "agboss"));
+
+      assert.throws(
+        () =>
+          resolveScaffoldTestConfig({
+            projectRoot: ws.projectRoot,
+            repoRoot: ws.repoRoot,
+            env: {},
+          }),
+        /resolves outside node_modules/,
+      );
+    } finally {
+      rmSync(ws.root, { recursive: true, force: true });
+    }
   });
 });
