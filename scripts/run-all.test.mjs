@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   evaluateProofReport,
+  renderProofMarkdown,
   validatePackageVerification,
   validatePublishedManifest,
   validatePublishedVerification,
@@ -21,16 +22,22 @@ import {
 } from "./run-all.mjs";
 import {
   REQUIRED_SUBPATH_EXPORTS,
+  computeTarballDigests,
   parseVerifyPublishedArgs,
+  validateOfficialRegistryTarballUrl,
   validateRegistryMetadata,
 } from "./verify-published.mjs";
 
 const FIXTURE_COMMIT = "a9f27de065f0f145f927bd78daaaff02c06089b0";
 const FIXTURE_EXAMPLES_COMMIT = "c187739a00000000000000000000000000000001";
-const FIXTURE_AGBOSS_INTEGRITY = "sha512-agbossIntegrityFixture==";
+const FIXTURE_AGBOSS_INTEGRITY =
+  "sha512-VYryKKwoo/kSAu0Kj+R+EFtxm1iVm8KTy5aDcyRoE89OM7n6dM8qxQUyi71qEI3/pfCyhA8ZfzLRsTFEbQ+7Hg==";
 const FIXTURE_AGBOSS_SHA256 = "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66667777888899990000";
-const FIXTURE_CLI_INTEGRITY = "sha512-agbossCliIntegrityFixture==";
+const FIXTURE_AGBOSS_SHASUM = "28da5ed72ef2870ee8b535abe2c43512f023be97";
+const FIXTURE_CLI_INTEGRITY =
+  "sha512-HJzFsjjIfpYeEibr2Eo7scYIWadq06WCjyTzGqCWV/2Oiw7q27bsjAJ67ft4TDN+5JaSXTUiAEqs6Jtl9iQQIg==";
 const FIXTURE_CLI_SHA256 = "1111aaaa2222bbbb3333cccc4444dddd5555eeee6666ffff7777888899990000";
+const FIXTURE_CLI_SHASUM = "7cbce837a502d26b9cb6c356c162fc3385b9965c";
 
 function makeManifest(overrides = {}) {
   return {
@@ -42,12 +49,14 @@ function makeManifest(overrides = {}) {
         version: "0.1.0",
         integrity: FIXTURE_AGBOSS_INTEGRITY,
         sha256: FIXTURE_AGBOSS_SHA256,
+        shasum: FIXTURE_AGBOSS_SHASUM,
       },
       agbossCli: {
         name: "agboss-cli",
         version: "0.1.0",
         integrity: FIXTURE_CLI_INTEGRITY,
         sha256: FIXTURE_CLI_SHA256,
+        shasum: FIXTURE_CLI_SHASUM,
       },
     },
     ...overrides,
@@ -63,10 +72,12 @@ function makePkgVerify(overrides = {}) {
       agboss: {
         integrity: FIXTURE_AGBOSS_INTEGRITY,
         sha256: FIXTURE_AGBOSS_SHA256,
+        shasum: FIXTURE_AGBOSS_SHASUM,
       },
       agbossCli: {
         integrity: FIXTURE_CLI_INTEGRITY,
         sha256: FIXTURE_CLI_SHA256,
+        shasum: FIXTURE_CLI_SHASUM,
       },
     },
     checks: {
@@ -119,8 +130,10 @@ function makeLastRun({
     packageHashes: {
       agboss: FIXTURE_AGBOSS_INTEGRITY,
       agbossSha256: FIXTURE_AGBOSS_SHA256,
+      agbossShasum: FIXTURE_AGBOSS_SHASUM,
       agbossCli: FIXTURE_CLI_INTEGRITY,
       agbossCliSha256: FIXTURE_CLI_SHA256,
+      agbossCliShasum: FIXTURE_CLI_SHASUM,
     },
     projects,
     ...overrides,
@@ -156,14 +169,18 @@ function makePublishedManifest(overrides = {}) {
         name: "agboss",
         version: "0.1.0",
         integrity: FIXTURE_AGBOSS_INTEGRITY,
-        shasum: FIXTURE_AGBOSS_SHA256,
+        sha256: FIXTURE_AGBOSS_SHA256,
+        sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        shasum: FIXTURE_AGBOSS_SHASUM,
         tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
       },
       agbossCli: {
         name: "agboss-cli",
         version: "0.1.0",
         integrity: FIXTURE_CLI_INTEGRITY,
-        shasum: FIXTURE_CLI_SHA256,
+        sha256: FIXTURE_CLI_SHA256,
+        sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        shasum: FIXTURE_CLI_SHASUM,
         tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
       },
     },
@@ -188,7 +205,9 @@ function makePublishedVerification(overrides = {}) {
         version: "0.1.0",
         deprecated: null,
         integrity: FIXTURE_AGBOSS_INTEGRITY,
-        shasum: FIXTURE_AGBOSS_SHA256,
+        sha256: FIXTURE_AGBOSS_SHA256,
+        sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        shasum: FIXTURE_AGBOSS_SHASUM,
         tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
         distTagVersion: "0.1.0",
       },
@@ -197,7 +216,9 @@ function makePublishedVerification(overrides = {}) {
         version: "0.1.0",
         deprecated: null,
         integrity: FIXTURE_CLI_INTEGRITY,
-        shasum: FIXTURE_CLI_SHA256,
+        sha256: FIXTURE_CLI_SHA256,
+        sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        shasum: FIXTURE_CLI_SHASUM,
         tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
         distTagVersion: "0.1.0",
       },
@@ -345,7 +366,7 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
         version: "0.1.0",
         dist: {
           integrity: FIXTURE_AGBOSS_INTEGRITY,
-          shasum: FIXTURE_AGBOSS_SHA256,
+          shasum: FIXTURE_AGBOSS_SHASUM,
           tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
         },
       },
@@ -354,12 +375,28 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
         version: "0.1.0",
         dist: {
           integrity: FIXTURE_CLI_INTEGRITY,
-          shasum: FIXTURE_CLI_SHA256,
+          shasum: FIXTURE_CLI_SHASUM,
           tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
         },
       },
       agbossDistTags: { latest: "0.1.0" },
       agbossCliDistTags: { latest: "0.1.0" },
+      measuredTarballs: {
+        agboss: {
+          sha256: FIXTURE_AGBOSS_SHA256,
+          shasum: FIXTURE_AGBOSS_SHASUM,
+          integrity: FIXTURE_AGBOSS_INTEGRITY,
+          sizeBytes: 1024,
+          sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        },
+        agbossCli: {
+          sha256: FIXTURE_CLI_SHA256,
+          shasum: FIXTURE_CLI_SHASUM,
+          integrity: FIXTURE_CLI_INTEGRITY,
+          sizeBytes: 512,
+          sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        },
+      },
       expectedVersion: "0.1.0",
       expectedTag: "latest",
     };
@@ -1105,5 +1142,257 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
     } finally {
       rmSync(ws.root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative checksum tests", () => {
+  it("computes genuine SHA-256 (64 hex), SHA-1 shasum (40 hex), and SHA-512 SRI integrity from tarball bytes", () => {
+    const sampleBytes = Buffer.from("agboss-canonical-tarball-bytes-fixture", "utf8");
+    const digests = computeTarballDigests(sampleBytes);
+    assert.match(digests.sha256, /^[0-9a-f]{64}$/);
+    assert.match(digests.shasum, /^[0-9a-f]{40}$/);
+    assert.match(digests.integrity, /^sha512-[A-Za-z0-9+/]+={0,2}$/);
+    assert.equal(digests.size, sampleBytes.byteLength);
+  });
+
+  it("validates official npm registry tarball URLs and rejects unsafe or non-official URLs", () => {
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        "agboss",
+        "0.1.0",
+      ),
+      true,
+    );
+
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "http://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        "agboss",
+        "0.1.0",
+      ),
+      false,
+    );
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "https://evil.example.com/agboss/-/agboss-0.1.0.tgz",
+        "agboss",
+        "0.1.0",
+      ),
+      false,
+    );
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz?redirect=1",
+        "agboss",
+        "0.1.0",
+      ),
+      false,
+    );
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "https://user:pass@registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        "agboss",
+        "0.1.0",
+      ),
+      false,
+    );
+    assert.equal(
+      validateOfficialRegistryTarballUrl(
+        "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        "agboss",
+        "0.1.0",
+      ),
+      false,
+    );
+  });
+
+  it("enforces measured tarball parity with registry metadata and canonical .packed/manifest.json", () => {
+    const baseMeta = {
+      agbossMeta: {
+        name: "agboss",
+        version: "0.1.0",
+        dist: {
+          integrity: FIXTURE_AGBOSS_INTEGRITY,
+          shasum: FIXTURE_AGBOSS_SHASUM,
+          tarball: "https://registry.npmjs.org/agboss/-/agboss-0.1.0.tgz",
+        },
+      },
+      agbossCliMeta: {
+        name: "agboss-cli",
+        version: "0.1.0",
+        dist: {
+          integrity: FIXTURE_CLI_INTEGRITY,
+          shasum: FIXTURE_CLI_SHASUM,
+          tarball: "https://registry.npmjs.org/agboss-cli/-/agboss-cli-0.1.0.tgz",
+        },
+      },
+      agbossDistTags: { latest: "0.1.0" },
+      agbossCliDistTags: { latest: "0.1.0" },
+      measuredTarballs: {
+        agboss: {
+          sha256: FIXTURE_AGBOSS_SHA256,
+          shasum: FIXTURE_AGBOSS_SHASUM,
+          integrity: FIXTURE_AGBOSS_INTEGRITY,
+          size: 1024,
+          sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        },
+        agbossCli: {
+          sha256: FIXTURE_CLI_SHA256,
+          shasum: FIXTURE_CLI_SHASUM,
+          integrity: FIXTURE_CLI_INTEGRITY,
+          size: 512,
+          sha256Source: "MEASURED_FROM_REGISTRY_TARBALL",
+        },
+      },
+      canonicalManifest: makeManifest(),
+      expectedVersion: "0.1.0",
+      expectedTag: "latest",
+      requireMeasuredTarballs: true,
+    };
+
+    const ok = validateRegistryMetadata(baseMeta);
+    assert.equal(ok.valid, true);
+    assert.equal(ok.summary.agboss.sha256, FIXTURE_AGBOSS_SHA256);
+    assert.equal(ok.summary.agboss.shasum, FIXTURE_AGBOSS_SHASUM);
+    assert.equal(ok.summary.agbossCli.sha256, FIXTURE_CLI_SHA256);
+    assert.equal(ok.summary.agbossCli.shasum, FIXTURE_CLI_SHASUM);
+
+    // Missing measuredTarballs when required -> fails closed
+    const missingMeasured = validateRegistryMetadata({
+      ...baseMeta,
+      measuredTarballs: undefined,
+    });
+    assert.equal(missingMeasured.valid, false);
+    assert.match(missingMeasured.reasons.join("; "), /Missing or invalid measured 64-char SHA-256/);
+
+    // Measured SHA-256 differs from canonical .packed/manifest.json -> fails closed
+    const mismatchedCanonical = validateRegistryMetadata({
+      ...baseMeta,
+      measuredTarballs: {
+        ...baseMeta.measuredTarballs,
+        agboss: {
+          ...baseMeta.measuredTarballs.agboss,
+          sha256: "9999999999999999999999999999999999999999999999999999999999999999",
+        },
+      },
+    });
+    assert.equal(mismatchedCanonical.valid, false);
+    assert.match(
+      mismatchedCanonical.reasons.join("; "),
+      /does not match canonical CI manifest/,
+    );
+  });
+
+  it("rejects 40-char SHA-1 in Sha256 fields and 64-char SHA-256 in shasum fields across manifests, verification, and run-state", () => {
+    // 1. 40-char SHA-1 placed into publishedManifest.packages.agboss.sha256 -> FAILED
+    const sha1InManifestSha256 = makePublishedManifest();
+    sha1InManifestSha256.packages.agboss.sha256 = FIXTURE_AGBOSS_SHASUM;
+    const mCheck1 = validatePublishedManifest(sha1InManifestSha256, FIXTURE_EXAMPLES_COMMIT);
+    assert.equal(mCheck1.valid, false);
+    assert.match(mCheck1.reasons.join("; "), /not a 64-character SHA-256 hex digest/);
+
+    // 2. 64-char SHA-256 placed into publishedManifest.packages.agboss.shasum -> FAILED
+    const sha256InManifestShasum = makePublishedManifest();
+    sha256InManifestShasum.packages.agboss.shasum = FIXTURE_AGBOSS_SHA256;
+    const mCheck2 = validatePublishedManifest(sha256InManifestShasum, FIXTURE_EXAMPLES_COMMIT);
+    assert.equal(mCheck2.valid, false);
+    assert.match(mCheck2.reasons.join("; "), /not a 40-character SHA-1 hex digest/);
+
+    // 3. 40-char SHA-1 placed into lastRun.packageHashes.agbossSha256 (the exact legacy bug) -> FAILED
+    const legacyLastRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+      provenanceType: "PUBLIC_NPM_REGISTRY",
+    });
+    legacyLastRun.packageHashes.agbossSha256 = FIXTURE_AGBOSS_SHASUM;
+    const rLegacy = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: legacyLastRun,
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(rLegacy.gates.provenanceGate, "FAILED");
+    assert.equal(rLegacy.gates.overallGate, "FAILED");
+    assert.match(rLegacy.gateReasons.join("; "), /agbossSha256 is missing, not a 64-character/);
+
+    // 4. 64-char SHA-256 placed into lastRun.packageHashes.agbossShasum -> FAILED
+    const badShasumRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+      provenanceType: "PUBLIC_NPM_REGISTRY",
+    });
+    badShasumRun.packageHashes.agbossShasum = FIXTURE_AGBOSS_SHA256;
+    const rBadShasum = evaluateProofReport({
+      provenanceMode: "published",
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: badShasumRun,
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(rBadShasum.gates.provenanceGate, "FAILED");
+    assert.equal(rBadShasum.gates.overallGate, "FAILED");
+    assert.match(rBadShasum.gateReasons.join("; "), /agbossShasum is not a 40-character/);
+
+    // 5. Mismatched SHA-256 between publishedManifest and canonical .packed/manifest.json -> FAILED
+    const canonicalMismatchManifest = makeManifest();
+    canonicalMismatchManifest.packages.agboss.sha256 =
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const rCanonicalMismatch = evaluateProofReport({
+      provenanceMode: "published",
+      manifest: canonicalMismatchManifest,
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+    assert.equal(rCanonicalMismatch.gates.provenanceGate, "FAILED");
+    assert.equal(rCanonicalMismatch.gates.overallGate, "FAILED");
+    assert.match(
+      rCanonicalMismatch.gateReasons.join("; "),
+      /does not match canonical \.packed\/manifest\.json/,
+    );
+  });
+
+  it("renders separate SHA-512 integrity, 64-char SHA-256, and 40-char SHA-1 shasum fields in JSON and Markdown reports", () => {
+    const report = evaluateProofReport({
+      provenanceMode: "published",
+      manifest: makeManifest(),
+      publishedManifest: makePublishedManifest(),
+      pubVerify: makePublishedVerification(),
+      lastRun: makeLastRun({
+        p0Status: "PASSED",
+        p1Status: "PASSED",
+        provenanceType: "PUBLIC_NPM_REGISTRY",
+      }),
+      currentExamplesCommit: FIXTURE_EXAMPLES_COMMIT,
+      requireP1: true,
+    });
+
+    assert.equal(report.gates.overallGate, "PASSED");
+    assert.deepEqual(report.packageHashes, {
+      agboss: FIXTURE_AGBOSS_INTEGRITY,
+      agbossSha256: FIXTURE_AGBOSS_SHA256,
+      agbossShasum: FIXTURE_AGBOSS_SHASUM,
+      agbossCli: FIXTURE_CLI_INTEGRITY,
+      agbossCliSha256: FIXTURE_CLI_SHA256,
+      agbossCliShasum: FIXTURE_CLI_SHASUM,
+    });
+
+    const md = renderProofMarkdown(report);
+    assert.match(md, new RegExp(`\\*\\*agboss integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_AGBOSS_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``));
+    assert.match(md, new RegExp(`\\*\\*agboss SHA-256:\\*\\* \`${FIXTURE_AGBOSS_SHA256}\``));
+    assert.match(md, new RegExp(`\\*\\*agboss npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_AGBOSS_SHASUM}\``));
+    assert.match(md, new RegExp(`\\*\\*agboss-cli integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_CLI_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``));
+    assert.match(md, new RegExp(`\\*\\*agboss-cli SHA-256:\\*\\* \`${FIXTURE_CLI_SHA256}\``));
+    assert.match(md, new RegExp(`\\*\\*agboss-cli npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_CLI_SHASUM}\``));
   });
 });

@@ -18,7 +18,12 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { validateInstalledPackageResolution } from "./verify-published.mjs";
+import {
+  SHA1_HEX_RE,
+  SHA256_HEX_RE,
+  SHA512_SRI_RE,
+  validateInstalledPackageResolution,
+} from "./verify-published.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
@@ -142,6 +147,10 @@ export function isProvenanceMatching(existingState, currentProvenance) {
   if (prevHashes.agbossCli !== currHashes.agbossCli) return false;
   if (currHashes.agbossSha256 && prevHashes.agbossSha256 !== currHashes.agbossSha256) return false;
   if (currHashes.agbossCliSha256 && prevHashes.agbossCliSha256 !== currHashes.agbossCliSha256) {
+    return false;
+  }
+  if (currHashes.agbossShasum && prevHashes.agbossShasum !== currHashes.agbossShasum) return false;
+  if (currHashes.agbossCliShasum && prevHashes.agbossCliShasum !== currHashes.agbossCliShasum) {
     return false;
   }
   return true;
@@ -572,18 +581,52 @@ function readCurrentProvenance(provenanceMode = "rc") {
         `Invalid provenanceType '${pubManifest.provenanceType ?? "none"}' in .packed/published-manifest.json (expected 'PUBLIC_NPM_REGISTRY'). Cannot use RC or local tarball manifests for published provenance.`,
       );
     }
+    const agbossPkg = pubManifest.packages?.agboss;
+    const cliPkg = pubManifest.packages?.agbossCli;
+    if (!agbossPkg?.sha256 || !SHA256_HEX_RE.test(String(agbossPkg.sha256))) {
+      throw new Error(
+        `Invalid or missing 64-character SHA-256 digest for agboss in .packed/published-manifest.json: '${agbossPkg?.sha256 ?? "none"}'`,
+      );
+    }
+    if (!cliPkg?.sha256 || !SHA256_HEX_RE.test(String(cliPkg.sha256))) {
+      throw new Error(
+        `Invalid or missing 64-character SHA-256 digest for agboss-cli in .packed/published-manifest.json: '${cliPkg?.sha256 ?? "none"}'`,
+      );
+    }
+    if (!agbossPkg?.shasum || !SHA1_HEX_RE.test(String(agbossPkg.shasum))) {
+      throw new Error(
+        `Invalid or missing 40-character SHA-1 shasum for agboss in .packed/published-manifest.json: '${agbossPkg?.shasum ?? "none"}'`,
+      );
+    }
+    if (!cliPkg?.shasum || !SHA1_HEX_RE.test(String(cliPkg.shasum))) {
+      throw new Error(
+        `Invalid or missing 40-character SHA-1 shasum for agboss-cli in .packed/published-manifest.json: '${cliPkg?.shasum ?? "none"}'`,
+      );
+    }
+    if (!agbossPkg?.integrity || !SHA512_SRI_RE.test(String(agbossPkg.integrity))) {
+      throw new Error(
+        `Invalid or missing SHA-512 integrity for agboss in .packed/published-manifest.json: '${agbossPkg?.integrity ?? "none"}'`,
+      );
+    }
+    if (!cliPkg?.integrity || !SHA512_SRI_RE.test(String(cliPkg.integrity))) {
+      throw new Error(
+        `Invalid or missing SHA-512 integrity for agboss-cli in .packed/published-manifest.json: '${cliPkg?.integrity ?? "none"}'`,
+      );
+    }
     return {
       provenanceType: "PUBLIC_NPM_REGISTRY",
       nodeVersion: process.versions.node,
       frameworkSourceCommit: "PUBLIC_NPM_REGISTRY",
       examplesSourceCommit,
-      frameworkVersion: pubManifest.packages?.agboss?.version ?? "unknown",
-      cliVersion: pubManifest.packages?.agbossCli?.version ?? "unknown",
+      frameworkVersion: agbossPkg.version ?? "unknown",
+      cliVersion: cliPkg.version ?? "unknown",
       packageHashes: {
-        agboss: pubManifest.packages?.agboss?.integrity ?? null,
-        agbossSha256: pubManifest.packages?.agboss?.shasum ?? null,
-        agbossCli: pubManifest.packages?.agbossCli?.integrity ?? null,
-        agbossCliSha256: pubManifest.packages?.agbossCli?.shasum ?? null,
+        agboss: agbossPkg.integrity,
+        agbossSha256: agbossPkg.sha256,
+        agbossShasum: agbossPkg.shasum,
+        agbossCli: cliPkg.integrity,
+        agbossCliSha256: cliPkg.sha256,
+        agbossCliShasum: cliPkg.shasum,
       },
     };
   }
@@ -602,8 +645,10 @@ function readCurrentProvenance(provenanceMode = "rc") {
     packageHashes: {
       agboss: manifest?.packages?.agboss?.integrity ?? null,
       agbossSha256: manifest?.packages?.agboss?.sha256 ?? null,
+      agbossShasum: manifest?.packages?.agboss?.shasum ?? null,
       agbossCli: manifest?.packages?.agbossCli?.integrity ?? null,
       agbossCliSha256: manifest?.packages?.agbossCli?.sha256 ?? null,
+      agbossCliShasum: manifest?.packages?.agbossCli?.shasum ?? null,
     },
   };
 }
