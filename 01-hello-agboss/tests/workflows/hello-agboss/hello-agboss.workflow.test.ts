@@ -14,6 +14,10 @@ import { fileURLToPath } from "node:url";
 import { studioOf } from "agboss/internal";
 import { callTool, replyWith, routeTo, testWith } from "agboss/testing";
 import { describe, expect, it } from "vitest";
+import {
+  resolveScaffoldTestConfig,
+  verifyScaffoldInstalledPackages,
+} from "../../../../scripts/run-all.mjs";
 import { QuoteAdvisorAgent } from "../../../src/agents/quote-advisor/quote-advisor.agent.js";
 import { SupportSpecialistAgent } from "../../../src/agents/support-specialist/support-specialist.agent.js";
 import { SupportReplyDto } from "../../../src/dto/support-reply.dto.js";
@@ -160,14 +164,11 @@ describe("LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) & Pack
   });
 
   it("scaffolds a clean project via `agboss create` and `agboss generate` following the canonical Block 1 layout", () => {
-    const manifestPath = join(REPO_ROOT, ".packed", "manifest.json");
-    expect(existsSync(manifestPath)).toBe(true);
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
-      packages: {
-        agboss: { tarballPath: string };
-        agbossCli: { tarballPath: string };
-      };
-    };
+    const scaffoldConfig = resolveScaffoldTestConfig({
+      projectRoot: PROJECT_ROOT,
+      repoRoot: REPO_ROOT,
+      env: process.env,
+    });
 
     const isolatedWorkspace = realpathSync(mkdtempSync(join(tmpdir(), "hello-agboss-create-")));
     const cliBin = join(PROJECT_ROOT, "node_modules", ".bin", "agboss");
@@ -241,25 +242,49 @@ describe("LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) & Pack
         existsSync(join(appDir, "tests", "services", "api.service.test.ts")),
       ).toBe(true);
 
-      // Substitute local packed tarballs
       const pkgPath = join(appDir, "package.json");
       const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
         dependencies: Record<string, string>;
         devDependencies: Record<string, string>;
         overrides?: Record<string, string>;
       };
-      const agbossTar = `file:${manifest.packages.agboss.tarballPath}`;
-      const cliTar = `file:${manifest.packages.agbossCli.tarballPath}`;
-      pkg.dependencies["agboss"] = agbossTar;
-      pkg.devDependencies["agboss-cli"] = cliTar;
-      pkg.overrides = { agboss: agbossTar, "agboss-cli": cliTar };
+      expect(pkg.dependencies["agboss"]).toBeDefined();
+      expect(pkg.dependencies["agboss"]?.startsWith("file:")).toBe(false);
+      expect(pkg.devDependencies["agboss-cli"]).toBeDefined();
+      expect(pkg.devDependencies["agboss-cli"]?.startsWith("file:")).toBe(false);
+
+      pkg.dependencies["agboss"] = scaffoldConfig.agbossSpec;
+      pkg.devDependencies["agboss-cli"] = scaffoldConfig.cliSpec;
+      if (scaffoldConfig.useOverrides) {
+        pkg.overrides = {
+          agboss: scaffoldConfig.agbossSpec,
+          "agboss-cli": scaffoldConfig.cliSpec,
+        };
+      }
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
 
-      execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+      const installArgs =
+        scaffoldConfig.provenance === "published"
+          ? ["install", "--registry", "https://registry.npmjs.org/", "--no-audit", "--no-fund"]
+          : ["install", "--no-audit", "--no-fund"];
+      execFileSync("npm", installArgs, {
         cwd: appDir,
         stdio: "pipe",
         env: { ...process.env, npm_config_cache: npmCache },
       });
+
+      const verifiedPackages = verifyScaffoldInstalledPackages({
+        appDir,
+        config: scaffoldConfig,
+      });
+      expect(verifiedPackages.agboss.version).toBe(scaffoldConfig.expectedVersion.agboss);
+      expect(verifiedPackages.agbossCli.version).toBe(scaffoldConfig.expectedVersion.agbossCli);
+      expect(verifiedPackages.agboss.integrity).toBe(scaffoldConfig.expectedIntegrity.agboss);
+      expect(verifiedPackages.agbossCli.integrity).toBe(scaffoldConfig.expectedIntegrity.agbossCli);
+      if (scaffoldConfig.provenance === "published") {
+        expect(verifiedPackages.agboss.resolved).toBe(scaffoldConfig.expectedResolved.agboss);
+        expect(verifiedPackages.agbossCli.resolved).toBe(scaffoldConfig.expectedResolved.agbossCli);
+      }
 
       const refsDir = join(appDir, ".claude", "skills", "agboss", "references");
       expect(

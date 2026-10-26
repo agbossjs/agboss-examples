@@ -15,8 +15,8 @@
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { validateInstalledPackageResolution } from "./verify-published.mjs";
 
@@ -193,6 +193,359 @@ export function initializeOrLoadRunState({
     }
   }
   return base;
+}
+
+function isLocalTarballUrl(url) {
+  return typeof url === "string" && url.startsWith("file:") && url.endsWith(".tgz");
+}
+
+function isOfficialRegistryTarballUrl(url, packageName) {
+  return (
+    typeof url === "string" &&
+    url.startsWith(`https://registry.npmjs.org/${packageName}/-/${packageName}-`) &&
+    url.endsWith(".tgz") &&
+    !url.includes(".packed")
+  );
+}
+
+export function resolvePortablePackedTarballPath(repoRoot, filename, packageLabel = "package") {
+  if (
+    typeof filename !== "string" ||
+    filename.trim() === "" ||
+    !filename.endsWith(".tgz") ||
+    basename(filename) !== filename ||
+    filename.includes("/") ||
+    filename.includes("\\") ||
+    filename.includes("..")
+  ) {
+    throw new Error(
+      `Invalid or unsafe tarball filename '${String(filename)}' for ${packageLabel} in .packed/manifest.json`,
+    );
+  }
+  const fullPath = join(repoRoot, ".packed", filename);
+  if (!existsSync(fullPath)) {
+    throw new Error(`Missing canonical tarball for ${packageLabel} at ${fullPath}`);
+  }
+  return fullPath;
+}
+
+export function resolveScaffoldTestConfig({ projectRoot, repoRoot, env = process.env }) {
+  if (!projectRoot || !existsSync(projectRoot)) {
+    throw new Error(`Missing projectRoot directory: ${String(projectRoot)}`);
+  }
+  if (!repoRoot || !existsSync(repoRoot)) {
+    throw new Error(`Missing repoRoot directory: ${String(repoRoot)}`);
+  }
+
+  const realProjectRoot = realpathSync(projectRoot);
+  const nodeModulesDir = join(realProjectRoot, "node_modules");
+  const agbossDir = join(nodeModulesDir, "agboss");
+  const cliDir = join(nodeModulesDir, "agboss-cli");
+
+  if (!existsSync(join(agbossDir, "package.json")) || !existsSync(join(cliDir, "package.json"))) {
+    throw new Error(
+      `Missing installed agboss or agboss-cli in ${projectRoot}/node_modules`,
+    );
+  }
+
+  const realAgbossDir = realpathSync(agbossDir);
+  const realCliDir = realpathSync(cliDir);
+  if (
+    !realAgbossDir.startsWith(nodeModulesDir + sep) ||
+    !realCliDir.startsWith(nodeModulesDir + sep)
+  ) {
+    throw new Error(
+      `Installed agboss or agboss-cli resolves outside node_modules (symlink/workspace leak): agboss=${realAgbossDir}, agboss-cli=${realCliDir}`,
+    );
+  }
+
+  const lockPath = existsSync(join(realProjectRoot, "package-lock.json"))
+    ? join(realProjectRoot, "package-lock.json")
+    : existsSync(join(nodeModulesDir, ".package-lock.json"))
+      ? join(nodeModulesDir, ".package-lock.json")
+      : null;
+
+  if (!lockPath) {
+    throw new Error(
+      `Missing package-lock.json or node_modules/.package-lock.json in ${projectRoot}; cannot verify installed package provenance`,
+    );
+  }
+
+  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  const agbossLock = lock.packages?.["node_modules/agboss"];
+  const cliLock = lock.packages?.["node_modules/agboss-cli"];
+  if (!agbossLock || !cliLock) {
+    throw new Error(
+      `Missing lockfile entries for node_modules/agboss or node_modules/agboss-cli in ${lockPath}`,
+    );
+  }
+  if (agbossLock.link === true || cliLock.link === true) {
+    throw new Error(`Lockfile in ${projectRoot} contains symlink/workspace link`);
+  }
+
+  const agbossResolved = String(agbossLock.resolved ?? "");
+  const cliResolved = String(cliLock.resolved ?? "");
+
+  let installedProvenance;
+  if (isLocalTarballUrl(agbossResolved) && isLocalTarballUrl(cliResolved)) {
+    installedProvenance = "rc";
+  } else if (
+    isOfficialRegistryTarballUrl(agbossResolved, "agboss") &&
+    isOfficialRegistryTarballUrl(cliResolved, "agboss-cli")
+  ) {
+    installedProvenance = "published";
+  } else {
+    throw new Error(
+      `Unknown or mixed installed package provenance in ${projectRoot}: agboss='${agbossResolved}', agboss-cli='${cliResolved}'`,
+    );
+  }
+
+  const rawExplicitMode = env?.AGBOSS_PROVENANCE_MODE;
+  if (rawExplicitMode !== undefined && rawExplicitMode !== "") {
+    if (rawExplicitMode !== "rc" && rawExplicitMode !== "published") {
+      throw new Error(
+        `Invalid AGBOSS_PROVENANCE_MODE '${rawExplicitMode}'. Expected 'rc' or 'published'.`,
+      );
+    }
+    if (rawExplicitMode !== installedProvenance) {
+      throw new Error(
+        `Provenance mismatch: AGBOSS_PROVENANCE_MODE is '${rawExplicitMode}' but installed packages in ${projectRoot} have '${installedProvenance}' provenance (agboss='${agbossResolved}', agboss-cli='${cliResolved}')`,
+      );
+    }
+  }
+
+  if (installedProvenance === "rc") {
+    const manifestPath = join(repoRoot, ".packed", "manifest.json");
+    if (!existsSync(manifestPath)) {
+      throw new Error(`Missing .packed/manifest.json at ${manifestPath}`);
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const agbossMeta = manifest.packages?.agboss;
+    const cliMeta = manifest.packages?.agbossCli;
+    if (
+      !agbossMeta?.version ||
+      !agbossMeta?.integrity ||
+      !cliMeta?.version ||
+      !cliMeta?.integrity
+    ) {
+      throw new Error("Missing agboss or agbossCli version/integrity in .packed/manifest.json");
+    }
+
+    const agbossTarballPath = resolvePortablePackedTarballPath(
+      repoRoot,
+      agbossMeta.filename,
+      "agboss",
+    );
+    const cliTarballPath = resolvePortablePackedTarballPath(
+      repoRoot,
+      cliMeta.filename,
+      "agboss-cli",
+    );
+
+    if (
+      agbossLock.integrity !== agbossMeta.integrity ||
+      cliLock.integrity !== cliMeta.integrity
+    ) {
+      throw new Error(
+        `Installed RC lockfile integrity in ${projectRoot} does not match .packed/manifest.json`,
+      );
+    }
+
+    return {
+      provenance: "rc",
+      agbossSpec: `file:${agbossTarballPath}`,
+      cliSpec: `file:${cliTarballPath}`,
+      useOverrides: true,
+      expectedVersion: {
+        agboss: String(agbossMeta.version),
+        agbossCli: String(cliMeta.version),
+      },
+      expectedIntegrity: {
+        agboss: String(agbossMeta.integrity),
+        agbossCli: String(cliMeta.integrity),
+      },
+      expectedResolved: {
+        agboss: `file:${agbossTarballPath}`,
+        agbossCli: `file:${cliTarballPath}`,
+      },
+    };
+  }
+
+  const pubManifestPath = join(repoRoot, ".packed", "published-manifest.json");
+  if (!existsSync(pubManifestPath)) {
+    throw new Error(`Missing .packed/published-manifest.json at ${pubManifestPath}`);
+  }
+  const pubManifest = JSON.parse(readFileSync(pubManifestPath, "utf8"));
+  if (
+    pubManifest.provenanceType !== "PUBLIC_NPM_REGISTRY" ||
+    pubManifest.source !== "PUBLIC_NPM_REGISTRY"
+  ) {
+    throw new Error(
+      `Invalid provenanceType/source in .packed/published-manifest.json: '${String(pubManifest.provenanceType)}' / '${String(pubManifest.source)}'`,
+    );
+  }
+
+  const agbossPub = pubManifest.packages?.agboss;
+  const cliPub = pubManifest.packages?.agbossCli;
+  if (
+    !agbossPub?.version ||
+    !agbossPub?.integrity ||
+    !isOfficialRegistryTarballUrl(agbossPub.tarball, "agboss") ||
+    !cliPub?.version ||
+    !cliPub?.integrity ||
+    !isOfficialRegistryTarballUrl(cliPub.tarball, "agboss-cli")
+  ) {
+    throw new Error(
+      "Missing or invalid public registry metadata for agboss or agbossCli in .packed/published-manifest.json",
+    );
+  }
+
+  if (
+    agbossLock.integrity !== agbossPub.integrity ||
+    cliLock.integrity !== cliPub.integrity
+  ) {
+    throw new Error(
+      `Installed published lockfile integrity in ${projectRoot} does not match .packed/published-manifest.json`,
+    );
+  }
+
+  return {
+    provenance: "published",
+    agbossSpec: String(agbossPub.version),
+    cliSpec: String(cliPub.version),
+    useOverrides: false,
+    expectedVersion: {
+      agboss: String(agbossPub.version),
+      agbossCli: String(cliPub.version),
+    },
+    expectedIntegrity: {
+      agboss: String(agbossPub.integrity),
+      agbossCli: String(cliPub.integrity),
+    },
+    expectedResolved: {
+      agboss: String(agbossPub.tarball),
+      agbossCli: String(cliPub.tarball),
+    },
+  };
+}
+
+export function verifyScaffoldInstalledPackages({ appDir, config }) {
+  if (!appDir || !existsSync(appDir)) {
+    throw new Error(`Missing scaffold appDir: ${String(appDir)}`);
+  }
+  const realAppDir = realpathSync(appDir);
+  const nodeModulesDir = join(realAppDir, "node_modules");
+  const agbossDir = join(nodeModulesDir, "agboss");
+  const cliDir = join(nodeModulesDir, "agboss-cli");
+
+  if (!existsSync(join(agbossDir, "package.json")) || !existsSync(join(cliDir, "package.json"))) {
+    throw new Error(`Scaffold at ${appDir} is missing node_modules/agboss or node_modules/agboss-cli`);
+  }
+
+  const realAgbossDir = realpathSync(agbossDir);
+  const realCliDir = realpathSync(cliDir);
+  if (
+    !realAgbossDir.startsWith(nodeModulesDir + sep) ||
+    !realCliDir.startsWith(nodeModulesDir + sep)
+  ) {
+    throw new Error(
+      `Scaffold packages resolved outside node_modules (symlink leak): agboss=${realAgbossDir}, agboss-cli=${realCliDir}`,
+    );
+  }
+
+  const agbossPkg = JSON.parse(readFileSync(join(agbossDir, "package.json"), "utf8"));
+  const cliPkg = JSON.parse(readFileSync(join(cliDir, "package.json"), "utf8"));
+  if (agbossPkg.version !== config.expectedVersion.agboss) {
+    throw new Error(
+      `Scaffold installed agboss@${String(agbossPkg.version)} (expected ${config.expectedVersion.agboss})`,
+    );
+  }
+  if (cliPkg.version !== config.expectedVersion.agbossCli) {
+    throw new Error(
+      `Scaffold installed agboss-cli@${String(cliPkg.version)} (expected ${config.expectedVersion.agbossCli})`,
+    );
+  }
+
+  const lockPath = existsSync(join(realAppDir, "package-lock.json"))
+    ? join(realAppDir, "package-lock.json")
+    : existsSync(join(nodeModulesDir, ".package-lock.json"))
+      ? join(nodeModulesDir, ".package-lock.json")
+      : null;
+  if (!lockPath) {
+    throw new Error(`Scaffold at ${appDir} is missing package-lock.json`);
+  }
+
+  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  const agbossLock = lock.packages?.["node_modules/agboss"];
+  const cliLock = lock.packages?.["node_modules/agboss-cli"];
+  if (!agbossLock || !cliLock) {
+    throw new Error(`Scaffold lockfile at ${lockPath} is missing agboss or agboss-cli entries`);
+  }
+  if (agbossLock.link === true || cliLock.link === true) {
+    throw new Error(`Scaffold lockfile at ${lockPath} contains symlink/workspace link`);
+  }
+  if (agbossLock.version !== config.expectedVersion.agboss) {
+    throw new Error(
+      `Scaffold lockfile agboss version '${String(agbossLock.version)}' does not match '${config.expectedVersion.agboss}'`,
+    );
+  }
+  if (cliLock.version !== config.expectedVersion.agbossCli) {
+    throw new Error(
+      `Scaffold lockfile agboss-cli version '${String(cliLock.version)}' does not match '${config.expectedVersion.agbossCli}'`,
+    );
+  }
+  if (agbossLock.integrity !== config.expectedIntegrity.agboss) {
+    throw new Error(
+      `Scaffold lockfile agboss integrity '${String(agbossLock.integrity)}' does not match '${config.expectedIntegrity.agboss}'`,
+    );
+  }
+  if (cliLock.integrity !== config.expectedIntegrity.agbossCli) {
+    throw new Error(
+      `Scaffold lockfile agboss-cli integrity '${String(cliLock.integrity)}' does not match '${config.expectedIntegrity.agbossCli}'`,
+    );
+  }
+
+  const agbossResolved = String(agbossLock.resolved ?? "");
+  const cliResolved = String(cliLock.resolved ?? "");
+  if (config.provenance === "published") {
+    if (
+      !isOfficialRegistryTarballUrl(agbossResolved, "agboss") ||
+      agbossResolved !== config.expectedResolved.agboss
+    ) {
+      throw new Error(
+        `Scaffold lockfile agboss resolved URL '${agbossResolved}' does not match registry tarball '${config.expectedResolved.agboss}'`,
+      );
+    }
+    if (
+      !isOfficialRegistryTarballUrl(cliResolved, "agboss-cli") ||
+      cliResolved !== config.expectedResolved.agbossCli
+    ) {
+      throw new Error(
+        `Scaffold lockfile agboss-cli resolved URL '${cliResolved}' does not match registry tarball '${config.expectedResolved.agbossCli}'`,
+      );
+    }
+  } else {
+    if (!isLocalTarballUrl(agbossResolved) || !isLocalTarballUrl(cliResolved)) {
+      throw new Error(
+        `Scaffold lockfile in RC mode did not resolve from local tarballs: agboss='${agbossResolved}', agboss-cli='${cliResolved}'`,
+      );
+    }
+  }
+
+  return {
+    agboss: {
+      version: String(agbossPkg.version),
+      resolved: agbossResolved,
+      integrity: String(agbossLock.integrity),
+      realpath: realAgbossDir,
+    },
+    agbossCli: {
+      version: String(cliPkg.version),
+      resolved: cliResolved,
+      integrity: String(cliLock.integrity),
+      realpath: realCliDir,
+    },
+  };
 }
 
 function readCurrentProvenance(provenanceMode = "rc") {
@@ -379,6 +732,7 @@ function runMain() {
           ...process.env,
           NO_COLOR: "1",
           AGBOSS_OFFLINE_VERIFY: process.env.AGBOSS_OFFLINE_VERIFY ?? "1",
+          AGBOSS_PROVENANCE_MODE: provenanceMode,
         },
       });
       const durationMs = Date.now() - start;
