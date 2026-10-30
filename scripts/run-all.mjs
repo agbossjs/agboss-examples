@@ -72,6 +72,13 @@ export const PROJECTS = [
     primaryProof:
       "Deterministic before/after reference migration from raw LangGraph God State to AGBoss narrow DTOs & Flow DSL",
   },
+  {
+    name: "08-job-scout",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "A real multi-step agent: model router, tools, per-job Jev judge, MCP approval, guardrails, budgets",
+  },
 ];
 
 export function parseRunAllArgs(args) {

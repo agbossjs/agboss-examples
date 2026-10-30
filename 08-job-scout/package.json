@@ -1,0 +1,50 @@
+{
+  "name": "job-scout",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "AGBoss P1 proof: a real multi-step agent — resume → search brief → Greenhouse jobs ranked by Jev — with a router, tools, RAG, MCP, guardrails, an approval pause and budgets, offline",
+  "agboss": {
+    "application": "src/job-scout.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx --env-file-if-exists=.env src/demo.ts --live",
+    "chat": "agboss chat",
+    "run": "agboss run",
+    "dev": "agboss dev",
+    "studio": "agboss studio",
+    "check:models": "agboss check --models --env test",
+    "eval": "agboss eval score",
+    "replay": "agboss replay",
+    "golden": "agboss golden",
+    "compare": "agboss compare",
+    "rag:index": "agboss rag index",
+    "probe": "tsx src/scripts/probe-boards.ts"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.0",
+    "@modelcontextprotocol/server-filesystem": "^2026.8.31",
+    "unpdf": "^1.8.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.0",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^3.2.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

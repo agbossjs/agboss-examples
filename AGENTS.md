@@ -7,7 +7,7 @@ This repository contains standalone executable proofs for **AGBoss** (`@agboss/c
 1. **Central Principle (`Promise → Failure Injection → Reproducible Proof`):**
    Every example must test both the positive path and the controlled failure injection path, asserting observable outcomes (diagnostic codes, compensation records, ledger states, masked PII tokens, eval metrics) rather than console log strings.
 2. **Independent Projects (R1 & R2):**
-   - Each example directory (`01-hello-agboss`, `02-path-scope-proof`, `03-support-refund-desk`, `04-travel-booking-saga`, `05-cluster-work-stealing`, `06-enterprise-agent-mesh`, `07-langgraph-migration-smoke`) is a self-contained project.
+   - Each example directory (`01-hello-agboss`, `02-path-scope-proof`, `03-support-refund-desk`, `04-travel-booking-saga`, `05-cluster-work-stealing`, `06-enterprise-agent-mesh`, `07-langgraph-migration-smoke`, `08-job-scout`) is a self-contained project.
    - Never import from `../agboss/src` or private internals. Use only public `@agboss/core` exports.
    - Each generated/authored AGBoss project syncs its own coding-agent skills via `agboss check` (`.claude/skills/agboss/SKILL.md` and modules `01`–`13`).
 3. **Offline-First Verification (R4 & R5):**

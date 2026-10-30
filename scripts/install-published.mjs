@@ -2,8 +2,8 @@
 /**
  * P0-1 (Problem A) & P0-3: Post-Publication Example Installation & Provenance Recorder.
  *
- * Installs exact versions of `agboss` and `agboss-cli` across all 7 standalone example projects
- * (`01-hello-agboss` .. `07-langgraph-migration`), verifies that every installed package resolves
+ * Installs exact versions of `agboss` and `agboss-cli` across all 8 standalone example projects
+ * (`01-hello-agboss` .. `08-job-scout`), verifies that every installed package resolves
  * from the expected source (with zero local tarballs, symlinks, or workspace links in `--live-registry`
  * mode), restores clean `^0.1.0` specs in `package.json`, and writes `.packed/published-manifest.json`.
  *
@@ -33,6 +33,7 @@ export const TARGET_DIRS = [
   "05-cluster-work-stealing",
   "06-enterprise-agent-mesh",
   "07-langgraph-migration",
+  "08-job-scout",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
@@ -76,7 +77,7 @@ function runMain() {
       writeFileSync(pkgPath, JSON.stringify(restorePublicPkg(pkg), null, 2) + "\n", "utf8");
     }
     console.log(
-      "[install-published] Restored clean public dependency specs (^0.1.0) across all 7 example manifests.",
+      "[install-published] Restored clean public dependency specs (^0.1.0) across all 8 example manifests.",
     );
     return;
   }

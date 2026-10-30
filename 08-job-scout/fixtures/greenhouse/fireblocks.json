@@ -1,0 +1,52 @@
+{
+  "jobs": [
+    {
+      "id": 1001,
+      "title": "Senior Backend Engineer, Payments",
+      "absolute_url": "https://example.com/greenhouse/fireblocks/jobs/1001",
+      "updated_at": "2026-10-20T09:00:00-04:00",
+      "location": {
+        "name": "Tel Aviv-Yafo, Tel Aviv District, Israel"
+      },
+      "departments": [
+        {
+          "name": "R&D"
+        }
+      ],
+      "content": "&lt;p&gt;Build the payment routing core in &lt;b&gt;TypeScript&lt;/b&gt; and &lt;b&gt;Node.js&lt;/b&gt;; Kafka, PostgreSQL, Kubernetes on GCP.&lt;/p&gt;"
+    },
+    {
+      "id": 1002,
+      "title": "Engineering Team Lead, Wallets",
+      "absolute_url": "https://example.com/greenhouse/fireblocks/jobs/1002",
+      "updated_at": "2026-10-18T09:00:00-04:00",
+      "location": {
+        "name": "Tel Aviv, Israel"
+      },
+      "departments": [
+        {
+          "name": "R&D"
+        }
+      ],
+      "content": "&lt;p&gt;Lead a team of 6 engineers. Go, Kafka.&lt;/p&gt;"
+    },
+    {
+      "id": 1003,
+      "title": "Backend Engineer",
+      "absolute_url": "https://example.com/greenhouse/fireblocks/jobs/1003",
+      "updated_at": "2026-10-19T09:00:00-04:00",
+      "location": {
+        "name": "New York, NY"
+      },
+      "departments": [
+        {
+          "name": "R&D"
+        }
+      ],
+      "content": "&lt;p&gt;Java, Kafka.&lt;/p&gt;"
+    }
+  ],
+  "meta": {
+    "total": 3
+  }
+}

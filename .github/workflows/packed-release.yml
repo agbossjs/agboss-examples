@@ -83,16 +83,16 @@ jobs:
           npm run verify:package
           npm run verify:published -- --from-packed --version 0.1.0
 
-      - name: 6. Install packed tarballs into example projects (01..07)
+      - name: 6. Install packed tarballs into example projects (01..08)
         run: npm run install:packed
 
-      - name: 7. Run static graph & TypeScript checks across P0 + P1 (01..07)
+      - name: 7. Run static graph & TypeScript checks across P0 + P1 (01..08)
         run: node scripts/run-all.mjs --provenance rc --include-p1 --reset --mode check
 
-      - name: 8. Run offline deterministic unit & fault-injection tests across P0 + P1 (01..07)
+      - name: 8. Run offline deterministic unit & fault-injection tests across P0 + P1 (01..08)
         run: node scripts/run-all.mjs --provenance rc --include-p1 --mode test
 
-      - name: 9. Run offline deterministic demos across P0 + P1 (01..07)
+      - name: 9. Run offline deterministic demos across P0 + P1 (01..08)
         env:
           AGBOSS_OFFLINE_VERIFY: "1"
         run: node scripts/run-all.mjs --provenance rc --include-p1 --mode demo
