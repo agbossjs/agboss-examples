@@ -1,0 +1,37 @@
+{
+  "jobs": [
+    {
+      "id": 2001,
+      "title": "Senior Backend Engineer, Data Platform",
+      "absolute_url": "https://example.com/greenhouse/similarweb/jobs/2001",
+      "updated_at": "2026-10-21T09:00:00-04:00",
+      "location": {
+        "name": "Tel Aviv, Israel"
+      },
+      "departments": [
+        {
+          "name": "Engineering"
+        }
+      ],
+      "content": "&lt;p&gt;Event-driven data pipelines: Java / Spring Boot, Kafka, Redis, AWS.&lt;/p&gt;"
+    },
+    {
+      "id": 2002,
+      "title": "Product Designer",
+      "absolute_url": "https://example.com/greenhouse/similarweb/jobs/2002",
+      "updated_at": "2026-10-17T09:00:00-04:00",
+      "location": {
+        "name": "Tel Aviv, Israel"
+      },
+      "departments": [
+        {
+          "name": "Design"
+        }
+      ],
+      "content": "&lt;p&gt;Figma, user research.&lt;/p&gt;"
+    }
+  ],
+  "meta": {
+    "total": 2
+  }
+}

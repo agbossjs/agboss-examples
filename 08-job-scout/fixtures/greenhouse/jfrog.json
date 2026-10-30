@@ -1,0 +1,37 @@
+{
+  "jobs": [
+    {
+      "id": 3001,
+      "title": "Senior Software Engineer, AI Agents",
+      "absolute_url": "https://example.com/greenhouse/jfrog/jobs/3001",
+      "updated_at": "2026-10-22T09:00:00-04:00",
+      "location": {
+        "name": "Herzliya, Israel"
+      },
+      "departments": [
+        {
+          "name": "R&D"
+        }
+      ],
+      "content": "&lt;p&gt;LLM agents in production: TypeScript, Node.js, LangGraph, evaluation pipelines.&lt;/p&gt;"
+    },
+    {
+      "id": 3002,
+      "title": "Sales Engineer",
+      "absolute_url": "https://example.com/greenhouse/jfrog/jobs/3002",
+      "updated_at": "2026-10-16T09:00:00-04:00",
+      "location": {
+        "name": "Herzliya, Israel"
+      },
+      "departments": [
+        {
+          "name": "Sales"
+        }
+      ],
+      "content": "&lt;p&gt;Pre-sales demos for enterprise customers.&lt;/p&gt;"
+    }
+  ],
+  "meta": {
+    "total": 2
+  }
+}
