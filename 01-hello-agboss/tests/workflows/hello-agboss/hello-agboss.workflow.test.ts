@@ -18,6 +18,7 @@ import {
   resolveScaffoldTestConfig,
   verifyScaffoldInstalledPackages,
 } from "../../../../scripts/run-all.mjs";
+import { rangeInstallArguments } from "../../../../scripts/npm-before.mjs";
 import { QuoteAdvisorAgent } from "../../../src/agents/quote-advisor/quote-advisor.agent.js";
 import { SupportSpecialistAgent } from "../../../src/agents/support-specialist/support-specialist.agent.js";
 import { SupportReplyDto } from "../../../src/dto/support-reply.dto.js";
@@ -263,10 +264,11 @@ describe("LangGraph Studio (`studioOf` + `getGraphAsync({ xray: true })`) & Pack
       }
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
 
+      // agbossjs/agboss#523: the tarballs by path; every range resolved no younger than three days
       const installArgs =
         scaffoldConfig.provenance === "published"
-          ? ["install", "--registry", "https://registry.npmjs.org/", "--no-audit", "--no-fund"]
-          : ["install", "--no-audit", "--no-fund"];
+          ? rangeInstallArguments(["--registry", "https://registry.npmjs.org/", "--no-audit", "--no-fund"])
+          : rangeInstallArguments(["--no-audit", "--no-fund"]);
       execFileSync("npm", installArgs, {
         cwd: appDir,
         stdio: "pipe",
