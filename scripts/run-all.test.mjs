@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import {
   evaluateProofReport,
@@ -10,6 +20,7 @@ import {
   validatePublishedManifest,
   validatePublishedVerification,
 } from "./collect-results.mjs";
+import { TARGET_DIRS as PUBLISHED_TARGET_DIRS } from "./install-published.mjs";
 import { parsePinShaArgs } from "./pin-framework-sha.mjs";
 import {
   PROJECTS,
@@ -270,7 +281,7 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
 
   it("selects both P0 and P1 projects when --include-p1 is passed", () => {
     const selected = selectProjects(["--include-p1", "--mode", "test"]);
-    assert.equal(selected.length, 7);
+    assert.equal(selected.length, 8);
     assert.deepEqual(
       selected.map((p) => p.name),
       PROJECTS.map((p) => p.name),
@@ -319,6 +330,105 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
       },
     );
     assert.throws(() => parseRunAllArgs(["--provenance", "invalid"]), /Invalid --provenance/);
+  });
+});
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const JOB_SCOUT = "08-job-scout";
+
+describe("08-job-scout registration (agbossjs/agboss#489)", () => {
+  it("08-job-scout is a P1 project, shaped like 05 and 06", () => {
+    const meta = PROJECTS.find((p) => p.name === JOB_SCOUT);
+    assert.ok(meta, "08-job-scout is in PROJECTS");
+    assert.equal(meta.priority, "P1");
+    assert.equal(typeof meta.mode, "string");
+    assert.ok(meta.primaryProof.length > 0);
+    const shapeOf = (m) => Object.keys(m).sort();
+    for (const peer of ["05-cluster-work-stealing", "06-enterprise-agent-mesh"]) {
+      const other = PROJECTS.find((p) => p.name === peer);
+      assert.deepEqual(shapeOf(meta), shapeOf(other));
+      assert.equal(other.priority, meta.priority);
+    }
+    assert.equal(PROJECTS.at(-1).name, JOB_SCOUT, "the catalog stays in folder order");
+  });
+
+  it("a P0-only run skips 08-job-scout in every mode; --include-p1 and --project select it", () => {
+    for (const mode of ["check", "test", "demo", "all"]) {
+      const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
+      assert.equal(p0.includes(JOB_SCOUT), false, `P0-only --mode ${mode} skips it`);
+      const all = selectProjects(["--include-p1", "--mode", mode]).map((p) => p.name);
+      assert.equal(all.includes(JOB_SCOUT), true, `--include-p1 --mode ${mode} runs it`);
+    }
+    assert.deepEqual(
+      selectProjects(["--project", JOB_SCOUT]).map((p) => p.name),
+      [JOB_SCOUT],
+    );
+  });
+
+  it("a fresh run state carries 08-job-scout as a NOT_RUN P1 entry", () => {
+    const state = initializeOrLoadRunState({
+      existingState: undefined,
+      resetState: true,
+      provenance: {
+        nodeVersion: "24.0.0",
+        frameworkSourceCommit: "a".repeat(40),
+        examplesSourceCommit: "b".repeat(40),
+        packageHashes: {},
+      },
+    });
+    assert.deepEqual(
+      {
+        priority: state.projects[JOB_SCOUT].priority,
+        check: state.projects[JOB_SCOUT].checkStatus,
+        test: state.projects[JOB_SCOUT].testStatus,
+        demo: state.projects[JOB_SCOUT].demoStatus,
+      },
+      { priority: "P1", check: "NOT_RUN", test: "NOT_RUN", demo: "NOT_RUN" },
+    );
+  });
+
+  it("install:packed and install:published install every registered project, 08 included", () => {
+    const packedSource = readFileSync(join(REPO_ROOT, "scripts", "install-packed.mjs"), "utf8");
+    const packedDirs = [...packedSource.matchAll(/^ {2}"(\d{2}-[a-z0-9-]+)",$/gm)].map((m) => m[1]);
+    assert.deepEqual(packedDirs, PROJECTS.map((p) => p.name));
+    assert.deepEqual([...PUBLISHED_TARGET_DIRS], PROJECTS.map((p) => p.name));
+  });
+
+  it("08-job-scout follows the folder contract: scripts, published ranges, required files", () => {
+    const dir = join(REPO_ROOT, JOB_SCOUT);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
+    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+    ]) {
+      assert.equal(existsSync(join(dir, file)), true, `${JOB_SCOUT}/${file}`);
+    }
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+    ]) {
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    }
+    const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
+    assert.match(rootReadme, /\| \[\*\*`08-job-scout`\*\*\]\(\.\/08-job-scout\/\) \| \*\*P1\*\* \|/);
   });
 });
 

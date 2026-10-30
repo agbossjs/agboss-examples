@@ -25,6 +25,7 @@ const TARGET_DIRS = [
   "05-cluster-work-stealing",
   "06-enterprise-agent-mesh",
   "07-langgraph-migration",
+  "08-job-scout",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
