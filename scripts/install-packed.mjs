@@ -11,6 +11,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rangeInstallArguments } from "./npm-before.mjs";
 import { resolvePortablePackedTarballPath } from "./run-all.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -112,7 +113,7 @@ for (const relDir of TARGET_DIRS) {
     rmSync(join(projectDir, "node_modules", "agboss-cli"), { recursive: true, force: true });
     rmSync(join(projectDir, "node_modules", "@opentelemetry"), { recursive: true, force: true });
     rmSync(join(projectDir, "node_modules", "@langfuse"), { recursive: true, force: true });
-    execFileSync("npm", ["install", "--no-package-lock", "--no-audit", "--no-fund"], {
+    execFileSync("npm", rangeInstallArguments(["--no-package-lock", "--no-audit", "--no-fund"]), {
       cwd: projectDir,
       stdio: "inherit",
     });

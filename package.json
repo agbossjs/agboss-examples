@@ -33,9 +33,11 @@
     "check": "node scripts/run-all.mjs --mode check",
     "test": "node scripts/run-all.mjs --mode test",
     "demo": "node scripts/run-all.mjs --mode demo",
-    "test:tooling": "node --test scripts/run-all.test.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs",
     "test:harness": "node --test scripts/run-all.test.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json && node --test scripts/run-all.test.mjs"
+    "typecheck": "tsc --noEmit -p tsconfig.json && node --test scripts/*.test.mjs",
+    "check:installs": "node scripts/check-installs.mjs",
+    "check:real-time": "node scripts/check-real-time.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

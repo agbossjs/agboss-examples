@@ -27,6 +27,8 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { localBinOf } from "./local-bin.mjs";
+import { npmBeforeOf, rangeInstallArguments } from "./npm-before.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
@@ -898,7 +900,7 @@ function runMain() {
       "utf8",
     );
 
-    execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+    execFileSync("npm", rangeInstallArguments(["--no-audit", "--no-fund"]), {
       cwd: tempWorkspace,
       stdio: "pipe",
     });
@@ -1046,6 +1048,7 @@ function runMain() {
         [
           "exec",
           "--yes",
+          `--before=${npmBeforeOf()}`,
           `--package=@agboss/cli@${version}`,
           "--",
           "agboss",
@@ -1112,7 +1115,7 @@ function runMain() {
     console.log(
       "[verify-published] 5/5 Installing dependencies in scaffolded app & running check, tsc, test, describe...",
     );
-    execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+    execFileSync("npm", rangeInstallArguments(["--no-audit", "--no-fund"]), {
       cwd: appDir,
       stdio: "pipe",
     });
@@ -1130,20 +1133,20 @@ function runMain() {
       );
     }
 
-    // 1. npx agboss check
-    const checkOut = execFileSync("npx", ["agboss", "check"], {
+    // 1. agboss check
+    const checkOut = execFileSync(localBinOf(appDir, "agboss"), ["check"], {
       cwd: appDir,
       encoding: "utf8",
     });
     if (!checkOut.includes("ok:")) {
       baseReport.checks.scaffoldCheck = "failed";
-      throw new Error(`'npx agboss check' did not report 'ok:': ${checkOut}`);
+      throw new Error(`'agboss check' did not report 'ok:': ${checkOut}`);
     }
 
     const generatedTypesPath = join(appDir, ".agboss", "types.d.ts");
     if (!existsSync(generatedTypesPath) || statSync(generatedTypesPath).size === 0) {
       baseReport.checks.scaffoldCheck = "failed";
-      throw new Error("Missing or empty .agboss/types.d.ts after `npx agboss check`");
+      throw new Error("Missing or empty .agboss/types.d.ts after `agboss check`");
     }
     baseReport.checks.generatedTypesVerified = true;
 
@@ -1165,8 +1168,8 @@ function runMain() {
     baseReport.checks.syncedAiSkillsCount = syncedRefFiles.length;
     baseReport.checks.scaffoldCheck = "passed";
 
-    // 2. npx tsc --noEmit
-    execFileSync("npx", ["tsc", "--noEmit"], {
+    // 2. tsc --noEmit
+    execFileSync(localBinOf(appDir, "tsc"), ["--noEmit"], {
       cwd: appDir,
       stdio: "pipe",
     });
@@ -1183,8 +1186,8 @@ function runMain() {
     }
     baseReport.checks.scaffoldUnitTests = "passed";
 
-    // 4. npx agboss describe --json
-    const describeJson = execFileSync("npx", ["agboss", "describe", "--json"], {
+    // 4. agboss describe --json
+    const describeJson = execFileSync(localBinOf(appDir, "agboss"), ["describe", "--json"], {
       cwd: appDir,
       encoding: "utf8",
     });

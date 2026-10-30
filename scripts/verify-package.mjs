@@ -17,6 +17,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { localBinOf } from "./local-bin.mjs";
+import { npmBeforeOf, rangeInstallArguments } from "./npm-before.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MANIFEST_PATH = join(ROOT, ".packed", "manifest.json");
@@ -102,7 +104,7 @@ try {
   };
   writeFileSync(join(isolatedDir, "package.json"), JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
-  execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+  execFileSync("npm", rangeInstallArguments(["--no-audit", "--no-fund"]), {
     cwd: isolatedDir,
     stdio: "pipe",
   });
@@ -215,6 +217,8 @@ try {
         env: {
           ...process.env,
           AGBOSS_CLI_PACKAGE_SPEC: agbossCli.tarballPath,
+          // the launcher's npx resolves the CLI's dependencies: no release younger than 3 days
+          npm_config_before: npmBeforeOf(),
         },
         stdio: "pipe",
       },
@@ -250,7 +254,7 @@ try {
   };
   writeFileSync(genPkgPath, JSON.stringify(genPkg, null, 2) + "\n", "utf8");
 
-  execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+  execFileSync("npm", rangeInstallArguments(["--no-audit", "--no-fund"]), {
     cwd: scaffoldedDir,
     stdio: "pipe",
   });
@@ -272,7 +276,7 @@ try {
 
   // Run check, tsc, test, and describe on scaffolded project
   execFileSync("npm", ["run", "check"], { cwd: scaffoldedDir, stdio: "pipe" });
-  execFileSync("npx", ["tsc", "--noEmit"], { cwd: scaffoldedDir, stdio: "pipe" });
+  execFileSync(localBinOf(scaffoldedDir, "tsc"), ["--noEmit"], { cwd: scaffoldedDir, stdio: "pipe" });
   execFileSync("npm", ["test"], { cwd: scaffoldedDir, stdio: "pipe" });
   const describeOut = execFileSync("npm", ["run", "describe"], {
     cwd: scaffoldedDir,

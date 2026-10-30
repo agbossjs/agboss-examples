@@ -59,6 +59,9 @@ jobs:
           node-version: "24"
           cache: "npm"
 
+      - name: Reviewed installs only, no real-time thresholds (agbossjs/agboss#523)
+        run: npm run check:installs && npm run check:real-time
+
       - name: Install dependencies & pack framework
         env:
           AGBOSS_REPO_DIR: .agboss-source

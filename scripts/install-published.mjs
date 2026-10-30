@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { rangeInstallArguments } from "./npm-before.mjs";
 import {
   fetchLiveRegistryMetadata,
   parseVerifyPublishedArgs,
@@ -225,7 +226,7 @@ function runMain() {
       rmSync(join(projectDir, "node_modules", "agboss"), { recursive: true, force: true });
       rmSync(join(projectDir, "node_modules", "agboss-cli"), { recursive: true, force: true });
 
-      execFileSync("npm", ["install", "--no-audit", "--no-fund"], {
+      execFileSync("npm", rangeInstallArguments(["--no-audit", "--no-fund"]), {
         cwd: projectDir,
         stdio: "inherit",
       });
