@@ -81,3 +81,51 @@ describe("AC1: the command", () => {
     assert.match(ran.stderr, /scripts\/x\.mjs:1: an npm install's arguments/);
   });
 });
+
+describe("AC1 acceptance: the forms a guard must not miss (agbossjs/agboss#531)", () => {
+  for (const [command, sub] of [
+    ["npm install-test", "install-test"],
+    ["npm it", "it"],
+    ["npm install --beforehand", "install"],
+  ])
+    it(`AC1: ${command} fails`, () => assert.deepEqual(inWorkflow(command), [resolving(sub)]));
+
+  it("AC1: an install continued on the next line with \\ fails, naming its first line", () => {
+    const text = `${step("|")}        npm \\\n          install left-pad\n`;
+
+    assert.deepEqual(workflowProblems(text, "ci.yml"), [
+      "ci.yml:2: npm install resolves ranges: use npm ci (or --before, the minimum release age)",
+    ]);
+  });
+
+  it("AC1: --before given before the subcommand passes; every --package= of an npx is checked", () => {
+    assert.deepEqual(inWorkflow("npm --before=2026-10-28T00:00:00Z install"), []);
+    assert.deepEqual(inWorkflow("npx --package=tsx@4.20.3 --package=evil tsx"), [
+      "ci.yml:1: evil is not pinned to an exact version (name@x.y.z)",
+    ]);
+  });
+
+  for (const [line, why] of [
+    ['execSync("npm install left-pad");', "an npm install's arguments"],
+    ['spawnSync("npm", ["i", "left-pad"]);', "an npm install's arguments"],
+    ['spawnSync("npm", ["add", "zod"]);', "an npm install's arguments"],
+    ["execSync(`npx vitest run`);", "not npx"],
+  ])
+    it(`AC1: a script's ${line} fails`, () => {
+      const [problem] = scriptProblems(`${line}\n`, "s.mjs");
+
+      assert.match(problem, /^s\.mjs:1: /);
+      assert.ok(problem.includes(why), problem);
+    });
+
+  it("AC1: a comment naming npx or npm install runs nothing; npm ci and npm run pass", () => {
+    const text = [
+      "// run `npx agboss check` or `npm install` by hand",
+      " * `npx tsx` in a doc comment",
+      'spawnSync("npm", ["ci", "--no-audit"]);',
+      'spawnSync("npm", ["run", "install:packed"]);',
+    ].join("\n");
+
+    assert.deepEqual(scriptProblems(text, "s.mjs"), []);
+  });
+});
