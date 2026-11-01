@@ -86,6 +86,13 @@ export const PROJECTS = [
     primaryProof:
       "Code routing ($0) vs model routing on the same routes, a bounded review loop with a defined finish",
   },
+  {
+    name: "10-quorum-groups-and-replies",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "Quorum groups with arbiter chains and branch verdicts, a free-text approval read into a typed decision",
+  },
 ];
 
 export function parseRunAllArgs(args) {

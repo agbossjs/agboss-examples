@@ -505,6 +505,77 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
   });
 });
 
+const QUORUM_REPLIES = "10-quorum-groups-and-replies";
+
+describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () => {
+  it("10-quorum-groups-and-replies is a P1 project, shaped like 04 and 05", () => {
+    const meta = PROJECTS.find((p) => p.name === QUORUM_REPLIES);
+    assert.ok(meta, "10-quorum-groups-and-replies is in PROJECTS");
+    assert.equal(meta.priority, "P1");
+    assert.ok(meta.primaryProof.length > 0);
+    const shapeOf = (m) => Object.keys(m).sort();
+    for (const peer of ["04-travel-booking-saga", "05-cluster-work-stealing"]) {
+      const other = PROJECTS.find((p) => p.name === peer);
+      assert.deepEqual(shapeOf(meta), shapeOf(other));
+    }
+    assert.equal(PROJECTS.at(-1).name, QUORUM_REPLIES, "the catalog stays in folder order");
+  });
+
+  it("a P0-only run skips 10-quorum-groups-and-replies; --include-p1 and --project select it", () => {
+    for (const mode of ["check", "test", "demo", "all"]) {
+      const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
+      assert.equal(p0.includes(QUORUM_REPLIES), false, `P0-only --mode ${mode} skips it`);
+      const all = selectProjects(["--include-p1", "--mode", mode]).map((p) => p.name);
+      assert.equal(all.includes(QUORUM_REPLIES), true, `--include-p1 --mode ${mode} runs it`);
+    }
+    assert.deepEqual(
+      selectProjects(["--project", QUORUM_REPLIES]).map((p) => p.name),
+      [QUORUM_REPLIES],
+    );
+  });
+
+  it("10-quorum-groups-and-replies follows the folder contract: scripts, published ranges, required files", () => {
+    const dir = join(REPO_ROOT, QUORUM_REPLIES);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
+    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+    ]) {
+      assert.equal(existsSync(join(dir, file)), true, `${QUORUM_REPLIES}/${file}`);
+    }
+    assert.match(readFileSync(join(dir, "vitest.config.ts"), "utf8"), /agbossTest\(/);
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+    ]) {
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    }
+    const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
+    assert.match(
+      rootReadme,
+      /\| \[\*\*`10-quorum-groups-and-replies`\*\*\]\(\.\/10-quorum-groups-and-replies\/\) \| \*\*P1\*\* \|/,
+    );
+  });
+});
+
 describe("verify-published.mjs explicit mode & registry metadata validation (P0-2)", () => {
   it("requires an explicit mode flag (--from-packed or --live-registry) and rejects missing or conflicting flags", () => {
     assert.throws(
