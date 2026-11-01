@@ -271,6 +271,7 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
         "03-support-refund-desk",
         "04-travel-booking-saga",
         "07-langgraph-migration",
+        "09-review-loop-and-routing",
       ],
     );
     assert.equal(
@@ -281,7 +282,7 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
 
   it("selects both P0 and P1 projects when --include-p1 is passed", () => {
     const selected = selectProjects(["--include-p1", "--mode", "test"]);
-    assert.equal(selected.length, 8);
+    assert.equal(selected.length, PROJECTS.length);
     assert.deepEqual(
       selected.map((p) => p.name),
       PROJECTS.map((p) => p.name),
@@ -349,7 +350,8 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
       assert.deepEqual(shapeOf(meta), shapeOf(other));
       assert.equal(other.priority, meta.priority);
     }
-    assert.equal(PROJECTS.at(-1).name, JOB_SCOUT, "the catalog stays in folder order");
+    const names = PROJECTS.map((p) => p.name);
+    assert.deepEqual(names, [...names].sort(), "the catalog stays in folder order");
   });
 
   it("a P0-only run skips 08-job-scout in every mode; --include-p1 and --project select it", () => {
@@ -429,6 +431,77 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
     }
     const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
     assert.match(rootReadme, /\| \[\*\*`08-job-scout`\*\*\]\(\.\/08-job-scout\/\) \| \*\*P1\*\* \|/);
+  });
+});
+
+const REVIEW_LOOP = "09-review-loop-and-routing";
+
+describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => {
+  it("09-review-loop-and-routing is a P0 project, shaped like 01 and 02", () => {
+    const meta = PROJECTS.find((p) => p.name === REVIEW_LOOP);
+    assert.ok(meta, "09-review-loop-and-routing is in PROJECTS");
+    assert.equal(meta.priority, "P0");
+    assert.ok(meta.primaryProof.length > 0);
+    const shapeOf = (m) => Object.keys(m).sort();
+    for (const peer of ["01-hello-agboss", "02-path-scope-proof"]) {
+      const other = PROJECTS.find((p) => p.name === peer);
+      assert.deepEqual(shapeOf(meta), shapeOf(other));
+      assert.equal(other.priority, meta.priority);
+    }
+  });
+
+  it("a P0-only run selects 09-review-loop-and-routing in every mode", () => {
+    for (const mode of ["check", "test", "demo", "all"]) {
+      const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
+      assert.equal(p0.includes(REVIEW_LOOP), true, `P0-only --mode ${mode} runs it`);
+    }
+    assert.deepEqual(
+      selectProjects(["--project", REVIEW_LOOP]).map((p) => p.name),
+      [REVIEW_LOOP],
+    );
+  });
+
+  it("09-review-loop-and-routing follows the folder contract: scripts, published ranges, required files", () => {
+    const dir = join(REPO_ROOT, REVIEW_LOOP);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
+    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+      "fixtures/missing-route/application.ts",
+    ]) {
+      assert.equal(existsSync(join(dir, file)), true, `${REVIEW_LOOP}/${file}`);
+    }
+    const vitestConfig = readFileSync(join(dir, "vitest.config.ts"), "utf8");
+    assert.match(vitestConfig, /agbossTest\(/);
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+    ]) {
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    }
+    const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
+    assert.match(
+      rootReadme,
+      /\| \[\*\*`09-review-loop-and-routing`\*\*\]\(\.\/09-review-loop-and-routing\/\) \| \*\*P0\*\* \|/,
+    );
   });
 });
 

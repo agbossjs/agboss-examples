@@ -79,6 +79,13 @@ export const PROJECTS = [
     primaryProof:
       "A real multi-step agent: model router, tools, per-job Jev judge, MCP approval, guardrails, budgets",
   },
+  {
+    name: "09-review-loop-and-routing",
+    priority: "P0",
+    mode: "offline-deterministic",
+    primaryProof:
+      "Code routing ($0) vs model routing on the same routes, a bounded review loop with a defined finish",
+  },
 ];
 
 export function parseRunAllArgs(args) {
