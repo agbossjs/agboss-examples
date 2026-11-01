@@ -13,5 +13,8 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "fixtures", "vitest.config.ts", ".agboss/**/*.d.ts"]
+  "include": ["src", "tests", "fixtures", "vitest.config.ts", ".agboss/types.d.ts"],
+  // the negative fixture is checked by agboss check in tests/fixtures/missing-route.test.ts, with its
+  // own generated types; tsc on a fresh checkout has none of them
+  "exclude": ["fixtures/missing-route"]
 }
