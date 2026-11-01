@@ -46,6 +46,7 @@ Every project in this repository answers six engineering questions with executab
 | [**`06-enterprise-agent-mesh`**](./06-enterprise-agent-mesh/) | **P1** | Deterministic Multi-Service | 3-service mesh (`1-order-gateway`, `2-billing-a2a`, `3-catalog-mcp`) over `@A2AAgent` / `@A2AExpose`, `A2AMeshEnvelope`, `MeshLoopDetectedError`, MCP `_meta.callId` deduplication, and `agboss check --federation` Blast Radius |
 | [**`07-langgraph-migration`**](./07-langgraph-migration/) | **P0** | Deterministic Before/After Showcase | Side-by-side comparison of raw `@langchain/langgraph` (`before-langgraph/` with `Annotation.Root` God State, string edges, side effects in tools, dynamic system prompts) vs AGBoss (`after-agboss/` with narrow `@Dto`, Flow DSL, `@Router`, `@Action`, and `agboss check --strict`) |
 | [**`08-job-scout`**](./08-job-scout/) | **P1** | Deterministic / Offline (+ optional Live) | A real multi-step agent moved from the AGBoss monorepo: Jev `@Router` over three agents, Greenhouse `@Tool` with a per-job Jev judge, `@Rag` company notes, filesystem `@McpTool` save behind an approval pause, input/output guardrails, `@Budget` cutoff, VCR replay, and an offline demo with a ledger |
+| [**`09-review-loop-and-routing`**](./09-review-loop-and-routing/) | **P0** | Deterministic / Offline (+ optional Live) | The same credit application routed by a `DecidedBy.Code` router (0 calls, $0) and a `DecidedBy.Model` router (Jev) onto the same routes, `[router.routes-mismatch]` on a missing route, and a critique ↔ editor loop bounded by `maxVisits` and `historyOf(CreditMemoDto, { limit: 2 })`, ending on a defined finish when the critic never accepts |
 
 ---
 
@@ -78,7 +79,7 @@ npm run pack:framework
 npm run verify:package
 npm run verify:published -- --from-packed --version 0.1.0
 
-# 4. Install packed tarballs into 01..08/node_modules (restoring clean ^0.1.0 specs in package.json)
+# 4. Install packed tarballs into every example's node_modules (restoring clean ^0.1.0 specs in package.json)
 npm run install:packed
 
 # 5. Run P0 + P1 static checks, tests, and offline demos, then collect fail-closed RC proof report

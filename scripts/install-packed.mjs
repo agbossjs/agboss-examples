@@ -27,6 +27,7 @@ const TARGET_DIRS = [
   "06-enterprise-agent-mesh",
   "07-langgraph-migration",
   "08-job-scout",
+  "09-review-loop-and-routing",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
