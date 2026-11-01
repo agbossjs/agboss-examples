@@ -4,7 +4,7 @@ import { FLOW_CHAIN_RULE, agbossPlugin } from "@agboss/core/eslint";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["node_modules", "dist", "coverage", ".agboss"] },
+  { ignores: ["node_modules", "dist", "coverage", ".agboss", "fixtures/missing-route"] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
