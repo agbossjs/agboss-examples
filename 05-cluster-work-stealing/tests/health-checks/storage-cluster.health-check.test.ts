@@ -1,7 +1,7 @@
 import { HealthComponentKind, HealthStatus } from "@agboss/core";
 import { replyWith, testWith, waitFor } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { summarizeHealthReport } from "../../scenarios/backpressure-and-readiness.js";
 import { ChunkWorkerAgent } from "../../src/agents/chunk-worker/chunk-worker.agent.js";
 import { ClusterWorkStealingApplication } from "../../src/cluster-work-stealing.application.js";
@@ -69,11 +69,7 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
         payload: "Occupy slot 2",
       });
 
-      // both steps hold their slot once their model call has started: wait for that, not for a
-      // turn of the event loop — the first execution's modules load through vite (agbossTest())
-      await vi.waitFor(() => {
-        expect(mockLlm(ChunkWorkerAgent).requests).toHaveLength(2);
-      });
+      // advance lets both executions reach their model call's wait first (agbossjs/agboss#646)
       await clock.advance(seconds(1));
 
       const saturatedReadiness = await app.checkReadiness();
