@@ -272,6 +272,7 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
         "04-travel-booking-saga",
         "07-langgraph-migration",
         "09-review-loop-and-routing",
+        "11-safe-payments",
       ],
     );
     assert.equal(
@@ -518,7 +519,8 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       const other = PROJECTS.find((p) => p.name === peer);
       assert.deepEqual(shapeOf(meta), shapeOf(other));
     }
-    assert.equal(PROJECTS.at(-1).name, QUORUM_REPLIES, "the catalog stays in folder order");
+    const names = PROJECTS.map((p) => p.name);
+    assert.deepEqual(names, [...names].sort(), "the catalog stays in folder order");
   });
 
   it("a P0-only run skips 10-quorum-groups-and-replies; --include-p1 and --project select it", () => {
@@ -573,6 +575,46 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       rootReadme,
       /\| \[\*\*`10-quorum-groups-and-replies`\*\*\]\(\.\/10-quorum-groups-and-replies\/\) \| \*\*P1\*\* \|/,
     );
+  });
+});
+
+const SAFE_PAYMENTS = "11-safe-payments";
+
+describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
+  it("11-safe-payments is a P0 project, shaped like 04 and 05, last in folder order", () => {
+    const meta = PROJECTS.find((p) => p.name === SAFE_PAYMENTS);
+    assert.ok(meta, "11-safe-payments is in PROJECTS");
+    assert.equal(meta.priority, "P0");
+    assert.ok(meta.primaryProof.length > 0);
+    const shapeOf = (m) => Object.keys(m).sort();
+    for (const peer of ["04-travel-booking-saga", "05-cluster-work-stealing"]) {
+      const other = PROJECTS.find((p) => p.name === peer);
+      assert.deepEqual(shapeOf(meta), shapeOf(other));
+    }
+    for (const mode of ["check", "test", "demo"]) {
+      assert.equal(selectProjects(["--mode", mode]).some((p) => p.name === SAFE_PAYMENTS), true);
+    }
+  });
+
+  it("11-safe-payments follows the folder contract: scripts, published ranges, required files", () => {
+    const dir = join(REPO_ROOT, SAFE_PAYMENTS);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
+    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"]) {
+      assert.equal(existsSync(join(dir, file)), true, `${SAFE_PAYMENTS}/${file}`);
+    }
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary"]) {
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    }
+    const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
+    assert.match(rootReadme, /\| \[\*\*`11-safe-payments`\*\*\]\(\.\/11-safe-payments\/\) \| \*\*P0\*\* \|/);
   });
 });
 
