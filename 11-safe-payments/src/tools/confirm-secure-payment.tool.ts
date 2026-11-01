@@ -27,7 +27,7 @@ export class ConfirmSecurePaymentTool implements ToolHandler<ChargeToolInputDto,
   ) {}
 
   async run({ orderId, amountCents }: ChargeToolInputDto): Promise<PaymentDto> {
-    const chargeId = this.orderBookRepository.order(orderId)?.chargeId;
+    const chargeId = this.orderBookService.order(orderId)?.chargeId;
     if (chargeId === undefined || chargeId === null) throw new Error(`order ${orderId} has no payment`);
     const order = { orderId, amountCents, paymentMethod: "card_3ds", capture: true };
     const charge = await this.paymentOperations.confirm(this.executionContext, order, chargeId);

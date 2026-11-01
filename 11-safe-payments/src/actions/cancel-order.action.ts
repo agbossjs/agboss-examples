@@ -47,7 +47,7 @@ export class CancelOrderAction implements ActionHandler<CancelOrderAction> {
       const voided = await this.paymentOperations.void(this.executionContext, chargeId);
       // cancelled: the shop believes the gateway holds nothing for the order
       await this.orderBookService.once(this.executionContext, "book-void", `void:${chargeId}`, (database) =>
-        this.orderBookRepository.bookState(database, orderId, "cancelled", 0),
+        this.orderBookRepository.bookState(database, this.orderBookService.tenantId, orderId, "cancelled", 0) ?? { cancelled: orderId },
       );
       return { orderId, movementId: voided.id, kind: "void", amountCents: 0 };
     } catch (error) {

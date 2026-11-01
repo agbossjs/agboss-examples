@@ -28,6 +28,9 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
 
   async execute(input: InputOf<ApplyGatewayEventAction>): Promise<OutputOf<ApplyGatewayEventAction>> {
     const event = input.event.value;
+    // verified for this tenant: an event that names another tenant's order — or a charge that is not
+    // the order's — moves nothing and books nothing (ChargeOwnershipError)
+    this.orderBookService.assertOrdersCharge(event.reference, event.chargeId);
     const applied = await this.paymentOperations.applyEvent(this.executionContext, {
       eventId: event.eventId,
       type: event.type as StubEvent["type"],
@@ -35,8 +38,10 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
       reference: event.reference,
       created: event.created,
     });
+    const tenantId = this.orderBookService.tenantId;
+    // an existing order of this tenant only: an event never creates a row
     const row = await this.orderBookService.once(this.executionContext, "apply-event", `event:stub:${event.eventId}`, (database) =>
-      this.orderBookRepository.bookState(database, applied.orderId, applied.status, applied.heldCents),
+      this.orderBookRepository.bookState(database, tenantId, applied.orderId, applied.status, applied.heldCents) ?? { orderId: applied.orderId, status: "unknown", heldCents: 0 },
     );
     return { orderId: row.orderId, status: row.status, heldCents: row.heldCents };
   }

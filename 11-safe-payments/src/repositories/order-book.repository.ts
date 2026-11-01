@@ -7,6 +7,7 @@ const SCHEMA: string = readFileSync(new URL("../sql/orders.sql", import.meta.url
 
 /** What the shop believes about one order. */
 export interface OrderRow {
+  readonly tenantId: string;
   readonly orderId: string;
   /** `paid`, `authorized`, `captured`, `refunded`, `cancelled`… — the last state booked. */
   readonly status: string;
@@ -17,8 +18,6 @@ export interface OrderRow {
 
 /** One change to an order's row. */
 export interface OrderChange {
-  /** The tenant the order belongs to (written when the row is made). */
-  readonly tenantId?: string;
   readonly status: string;
   readonly chargeId?: string;
   /** Added to `held_cents` (a refund is negative). */
@@ -27,59 +26,67 @@ export interface OrderChange {
 
 function rowOf(row: Record<string, unknown> | undefined): OrderRow | undefined {
   if (row === undefined) return undefined;
-  const { orderId, status, chargeId, heldCents } = row;
-  if (typeof orderId !== "string" || typeof status !== "string" || typeof heldCents !== "number")
-    throw new Error("orders: a row without its id, status or held amount");
-  return { orderId, status, chargeId: typeof chargeId === "string" ? chargeId : null, heldCents };
+  const { tenantId, orderId, status, chargeId, heldCents } = row;
+  if (typeof tenantId !== "string" || typeof orderId !== "string" || typeof status !== "string" || typeof heldCents !== "number")
+    throw new Error("orders: a row without its tenant, id, status or held amount");
+  return { tenantId, orderId, status, chargeId: typeof chargeId === "string" ? chargeId : null, heldCents };
 }
+
+const ORDER_COLUMNS =
+  "tenant_id AS tenantId, order_id AS orderId, status, charge_id AS chargeId, held_cents AS heldCents";
 
 /**
  * The shop's books, in the application's SQLite file — the one every instance shares. Every write
  * takes the `DatabaseSync` a fenced effect gives it (`SqliteFencedEffectRepository`, #500): it runs
  * inside the effect's transaction, synchronously, so the row and the effect's stored result commit
- * together, and a holder that lost its lease writes nothing.
+ * together, and a holder that lost its lease writes nothing. Every row is a tenant's: the tenant is
+ * given explicitly, part of the key, never defaulted.
  */
 @Injectable({ deps: [SqliteConnection] })
 export class OrderBookRepository {
   constructor(private readonly sqliteConnection: SqliteConnection) {
-    sqliteConnection.ensureSchema("safe-payments-orders", SCHEMA);
+    sqliteConnection.ensureSchema("safe-payments-orders-v2", SCHEMA);
   }
 
   /**
-   * Applies one change to an order's row (creating it), inside the effect's transaction — once per
-   * `businessKey`: the row's own record of what it booked, kept for as long as the order (a lasting
-   * "paid" record per order beyond every retention window, Wiki → Payments → What stays yours).
+   * Applies one change to a tenant's order (creating its row), inside the effect's transaction —
+   * once per `businessKey`: the row's own record of what it booked, kept for as long as the order (a
+   * lasting "paid" record per order beyond every retention window, Wiki → Payments → What stays yours).
    */
-  book(database: DatabaseSync, businessKey: string, orderId: string, change: OrderChange): OrderRow {
+  book(database: DatabaseSync, tenantId: string, businessKey: string, orderId: string, change: OrderChange): OrderRow {
     const fresh = database
-      .prepare("INSERT OR IGNORE INTO order_bookings (business_key, order_id) VALUES (?, ?)")
-      .run(businessKey, orderId);
-    const current = this.orderIn(database, orderId);
+      .prepare("INSERT OR IGNORE INTO order_bookings (tenant_id, business_key, order_id) VALUES (?, ?, ?)")
+      .run(tenantId, businessKey, orderId);
+    const current = this.orderIn(database, tenantId, orderId);
     if (Number(fresh.changes) !== 1 && current !== undefined) return current;
     database
       .prepare(
-        "INSERT INTO orders (order_id, tenant_id, status, charge_id, held_cents) VALUES (?, ?, ?, ?, ?) " +
-          "ON CONFLICT (order_id) DO UPDATE SET status = excluded.status, " +
+        "INSERT INTO orders (tenant_id, order_id, status, charge_id, held_cents) VALUES (?, ?, ?, ?, ?) " +
+          "ON CONFLICT (tenant_id, order_id) DO UPDATE SET status = excluded.status, " +
           "charge_id = COALESCE(excluded.charge_id, orders.charge_id), " +
           "held_cents = orders.held_cents + excluded.held_cents",
       )
-      .run(orderId, change.tenantId ?? "default", change.status, change.chargeId ?? null, change.heldDeltaCents);
-    const row = this.orderIn(database, orderId);
+      .run(tenantId, orderId, change.status, change.chargeId ?? null, change.heldDeltaCents);
+    const row = this.orderIn(database, tenantId, orderId);
     if (row === undefined) throw new Error(`orders: ${orderId} was not written`);
     return row;
   }
 
-  /** Sets an order's status and held amount as an event or a cancel decided them (PS15, PS16, PS20). */
-  bookState(database: DatabaseSync, orderId: string, status: string, heldCents: number): OrderRow {
+  /**
+   * Sets an existing order's status and held amount as an event or a cancel decided them (PS15,
+   * PS16, PS20) — only an order of this tenant that exists: an event never creates a row, and an
+   * event for another tenant's order changes nothing (`undefined`).
+   */
+  bookState(database: DatabaseSync, tenantId: string, orderId: string, status: string, heldCents: number): OrderRow | undefined {
     database
-      .prepare(
-        "INSERT INTO orders (order_id, status, held_cents) VALUES (?, ?, ?) " +
-          "ON CONFLICT (order_id) DO UPDATE SET status = excluded.status, held_cents = excluded.held_cents",
-      )
-      .run(orderId, status, heldCents);
-    const row = this.orderIn(database, orderId);
-    if (row === undefined) throw new Error(`orders: ${orderId} was not written`);
-    return row;
+      .prepare("UPDATE orders SET status = ?, held_cents = ? WHERE tenant_id = ? AND order_id = ?")
+      .run(status, heldCents, tenantId, orderId);
+    return this.orderIn(database, tenantId, orderId);
+  }
+
+  /** Whether `chargeId` is the charge the shop booked for this tenant's order (a row with that tenant only). */
+  isOrdersCharge(tenantId: string, orderId: string, chargeId: string): boolean {
+    return this.order(tenantId, orderId)?.chargeId === chargeId;
   }
 
   /** Draws on a wallet: the row's own constraint refuses a balance below zero (PS9). */
@@ -98,46 +105,31 @@ export class OrderBookRepository {
       .run(walletId, balanceCents);
   }
 
-  /** Notes the pause a 3DS outcome answers (the channel's send, PS21). */
-  awaitOutcome(pauseId: string, orderId: string, chargeId: string): void {
+  /** Notes the pause a tenant's 3DS outcome answers (the channel's send, PS21). */
+  awaitOutcome(pauseId: string, tenantId: string, orderId: string, chargeId: string): void {
     this.sqliteConnection.database
-      .prepare("INSERT OR IGNORE INTO awaited_outcomes (pause_id, order_id, charge_id) VALUES (?, ?, ?)")
-      .run(pauseId, orderId, chargeId);
+      .prepare("INSERT OR IGNORE INTO awaited_outcomes (pause_id, tenant_id, order_id, charge_id) VALUES (?, ?, ?, ?)")
+      .run(pauseId, tenantId, orderId, chargeId);
   }
 
-  /** The pauses an order's 3DS outcome answers, oldest first. */
-  awaitedOutcomes(orderId: string): readonly string[] {
+  /** The pauses a tenant's order's 3DS outcome answers, oldest first. */
+  awaitedOutcomes(tenantId: string, orderId: string): readonly string[] {
     return this.sqliteConnection.database
-      .prepare("SELECT pause_id AS pauseId FROM awaited_outcomes WHERE order_id = ? ORDER BY rowid")
-      .all(orderId)
+      .prepare("SELECT pause_id AS pauseId FROM awaited_outcomes WHERE tenant_id = ? AND order_id = ? ORDER BY rowid")
+      .all(tenantId, orderId)
       .map((row) => String(row["pauseId"]));
   }
 
-  /** Whether `chargeId` is the charge the shop booked for this tenant's order. */
-  isOrdersCharge(orderId: string, chargeId: string, tenantId: string): boolean {
-    const row = this.sqliteConnection.database
-      .prepare("SELECT charge_id AS chargeId, tenant_id AS tenantId FROM orders WHERE order_id = ?")
-      .get(orderId);
-    return row?.["chargeId"] === chargeId && row["tenantId"] === tenantId;
-  }
-
-  order(orderId: string): OrderRow | undefined {
-    return this.orderIn(this.sqliteConnection.database, orderId);
+  order(tenantId: string, orderId: string): OrderRow | undefined {
+    return this.orderIn(this.sqliteConnection.database, tenantId, orderId);
   }
 
   balance(walletId: string): number {
     return this.balanceIn(this.sqliteConnection.database, walletId);
   }
 
-  private orderIn(database: DatabaseSync, orderId: string): OrderRow | undefined {
-    return rowOf(
-      database
-        .prepare(
-          "SELECT order_id AS orderId, status, charge_id AS chargeId, held_cents AS heldCents " +
-            "FROM orders WHERE order_id = ?",
-        )
-        .get(orderId),
-    );
+  private orderIn(database: DatabaseSync, tenantId: string, orderId: string): OrderRow | undefined {
+    return rowOf(database.prepare(`SELECT ${ORDER_COLUMNS} FROM orders WHERE tenant_id = ? AND order_id = ?`).get(tenantId, orderId));
   }
 
   private balanceIn(database: DatabaseSync, walletId: string): number {

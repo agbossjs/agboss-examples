@@ -21,7 +21,7 @@ const payment = { orderId: "ps21-order", amountCents: 3000 };
 async function outcomeArrived(context: ScenarioContext, chargeId: string, by: string): Promise<string> {
   if (context.variant === Variant.Wrong)
     await settled(new StubGatewayClient(context.stub.baseUrl).confirm(chargeId));
-  const [pauseId] = context.app(1).resolve(OrderBookRepository).awaitedOutcomes(payment.orderId);
+  const [pauseId] = context.app(1).resolve(OrderBookRepository).awaitedOutcomes("default", payment.orderId);
   return settled(context.app(1).resume({ pauseId: pauseId ?? "", decision: { approved: true } }, { answeredBy: by }));
 }
 

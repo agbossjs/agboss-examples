@@ -38,7 +38,7 @@ export class OrderBookService {
    * moves money only when the shop's own books tie it to the order — never on the caller's word.
    */
   assertOrdersCharge(orderId: string, chargeId: string): void {
-    if (!this.orderBookRepository.isOrdersCharge(orderId, chargeId, this.tenantContext.tenantId))
+    if (!this.orderBookRepository.isOrdersCharge(this.tenantContext.tenantId, orderId, chargeId))
       throw new ChargeOwnershipError(orderId);
   }
 
@@ -51,8 +51,18 @@ export class OrderBookService {
     change: OrderChange,
   ): Promise<OrderRow> {
     return this.once(executionContext, name, businessKey, (database) =>
-      this.orderBookRepository.book(database, businessKey, orderId, { tenantId: this.tenantContext.tenantId, ...change }),
+      this.orderBookRepository.book(database, this.tenantContext.tenantId, businessKey, orderId, change),
     );
+  }
+
+  /** The tenant the current execution runs for: every row it writes or reads is that tenant's. */
+  get tenantId(): string {
+    return this.tenantContext.tenantId;
+  }
+
+  /** The current tenant's order row. */
+  order(orderId: string) {
+    return this.orderBookRepository.order(this.tenantContext.tenantId, orderId);
   }
 
   /** Runs `work` once per `businessKey`, in a fenced effect's transaction. */

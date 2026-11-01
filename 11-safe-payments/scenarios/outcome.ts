@@ -35,7 +35,7 @@ export function outcomeOf(
     amountCharged += money.charged;
     amountCaptured += money.captured;
     amountRefunded += money.refunded;
-    const believed = books.order(orderId)?.heldCents ?? 0;
+    const believed = books.order("default", orderId)?.heldCents ?? 0;
     lost += Math.abs(money.captured - money.refunded - believed);
   }
   const first = orderIds[0];
@@ -53,7 +53,7 @@ export function outcomeOf(
     amountCaptured,
     amountRefunded,
     lost,
-    orderStatus: first === undefined ? undefined : books.order(first)?.status,
+    orderStatus: first === undefined ? undefined : books.order("default", first)?.status,
     notes,
   };
 }

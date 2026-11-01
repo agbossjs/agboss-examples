@@ -34,7 +34,7 @@ export function thawed(context: ScenarioContext, frozen: TestApp): void {
 /** Until the shop's books show `orderId` in `status` (the other instance's recovery finished it). */
 export async function bookedAs(context: ScenarioContext, orderId: string, status: string): Promise<void> {
   const books = context.app(1).resolve(OrderBookRepository);
-  await until(() => books.order(orderId)?.status === status, `order ${orderId} booked ${status}`);
+  await until(() => books.order("default", orderId)?.status === status, `order ${orderId} booked ${status}`);
 }
 
 /** Until the stub has received `count` requests of `operation`. */
