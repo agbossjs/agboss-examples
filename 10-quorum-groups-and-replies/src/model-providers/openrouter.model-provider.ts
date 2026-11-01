@@ -11,11 +11,6 @@ import {
 } from "@agboss/core/models";
 import { minutes, seconds } from "@agboss/core/units";
 
-/** OpenRouter's request fields, and OpenAI's `parallel_tool_calls`, passed through as they are. */
-interface PurchasingFields extends OpenRouterFields {
-  readonly parallel_tool_calls?: boolean;
-}
-
 /**
  * Where the agents' chat models come from: OpenRouter (Jev, the decision model, through
  * `DecisionsModelProvider`) — both listed in `@Application({ providers })`, the same in every
@@ -45,8 +40,7 @@ interface PurchasingFields extends OpenRouterFields {
   rateLimitPolicy: RateLimitPolicy.of({ maxConcurrentCalls: 4 }),
   circuitBreakerPolicy: { failureThreshold: 5, window: minutes(1), openFor: seconds(30) },
 })
-export class OpenRouterModelProvider extends OpenRouterProvider<PurchasingFields> {
-  // one tool call per model turn: a reviewer asked to cite "the clause" otherwise answers once per
-  // clause, in parallel, and every answer is refused (agbossjs/agboss#649)
-  override readonly requestFields: PurchasingFields = { parallel_tool_calls: false };
+export class OpenRouterModelProvider extends OpenRouterProvider {
+  // an agent with only its answer tool asks for one call per move by itself (agbossjs/agboss#649)
+  override readonly requestFields: OpenRouterFields = {};
 }

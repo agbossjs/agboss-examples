@@ -341,6 +341,12 @@ tool as is: `TerminalUserChannel` (answered in the terminal by `npx agboss chat`
 - **`withdraw(withdrawal)`** is called once when a sent pause closes without an answer
   (`PauseResolution.Withdrawn` / `Cancelled`), best-effort: a failure is a `channel.withdraw-failed`
   warning, nothing else.
+- **A model interpreter** (`DecidedBy.Model`, a chat model) gets the role's answer tool, its
+  `overrideArguments` described by the approved tool's input with every field optional — "ok but
+  only up to $500" is `{ approved: true, overrideArguments: { amountUsd: 500 } }`, laid over the
+  call's own arguments — and `answer-reply-interpreter-not-understood-dto` for a reply that does not
+  answer ("🤷"), which is never a refusal (#648). Tests:
+  `replyWith(ReplyInterpreterNotUnderstoodDto, { reason })`.
 - **Free text** that cannot be read throws `UninterpretableReplyError` (`pause.uninterpretable-reply`,
   `reason`) and the pause stays `Pending`; a role without `replyInterpreter` →
   `ReplyInterpreterMissingError`. Exactly one of `decision` / a non-empty `reply`, else
@@ -398,11 +404,11 @@ test("a large refund waits for the manager, then runs", async ({ app, mockLlm, m
 | Code / error                              | Cause → fix                                                                                        |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `[channel.wrong-tool]`                    | the role's `approves` is not the tool's `input` → make them the same DTO                           |
+| `[channel.question-role-unavailable]`     | a role with `ask` / `answer` — nothing can ask one yet (#659) → `approves` + `overrideArguments`   |
 | `[di.missing-implementation]`             | a role named on a tool, no `@Channel` that `extends` it listed → list one in the application       |
 | `[di.ambiguous-implementation]`           | two implementations of one role → keep one (one per application)                                   |
 | `[di.infrastructure-in-workflow]`         | the implementation in `@Workflow({ providers })` → `@Application({ providers })`                   |
 | `[channel.shared-interpreter]`            | one `@ReplyInterpreter` on two roles → one each                                                    |
-| `[reply-interpreter.decision-model]`      | a question role's interpreter on a decision model → a chat model                                   |
 | `[reply-interpreter.no-interpret-method]` | a code interpreter without `interpret` → add it                                                    |
 | `[application.in-memory-pauses]`          | pauses possible on the in-memory stores (a warning; an error under `--strict`) → list durable ones |
 | `PauseAnswererError`                      | `ownerId` for a Channel role or `answeredBy` for a ThreadOwner role → the other credential         |
