@@ -1,0 +1,34 @@
+{
+  "name": "safe-payments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P0 Proof: every payment race of the Payments taxonomy (PS1–PS23) done wrong and done right against a fictional stub gateway at three support levels — every charge and refund read from the stub's own records.",
+  "agboss": {
+    "application": "src/safe-payments.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "check:yours": "vitest run tests/your-step/check-yours.test.ts"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.0",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

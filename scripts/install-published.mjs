@@ -37,6 +37,7 @@ export const TARGET_DIRS = [
   "08-job-scout",
   "09-review-loop-and-routing",
   "10-quorum-groups-and-replies",
+  "11-safe-payments",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {

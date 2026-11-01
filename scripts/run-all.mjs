@@ -93,6 +93,13 @@ export const PROJECTS = [
     primaryProof:
       "Quorum groups with arbiter chains and branch verdicts, a free-text approval read into a typed decision",
   },
+  {
+    name: "11-safe-payments",
+    priority: "P0",
+    mode: "fault-injection",
+    primaryProof:
+      "Every payment race (PS1–PS23) done wrong and done right against a stub gateway: one charge, one refund, read from the stub's records",
+  },
 ];
 
 export function parseRunAllArgs(args) {
