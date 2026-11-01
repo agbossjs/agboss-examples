@@ -92,4 +92,6 @@ scenarios/                                      the scenarios of 11-safe-payment
   this order's**, the search text escaped (Stripe: an order id with a quote cannot add an `OR`
   clause — the "hostile-id" row); and **a payment id a caller names refunds or captures only when the
   shop's own books tie it to that order and tenant** (`PaymentOwnershipError`, nothing sent — the
-  "idor" row of every gateway).
+  "idor" row of every gateway). Every row of the books is a tenant's (the tenant in its key, never
+  defaulted), and a webhook is applied only to the payments of the tenant its endpoint is verified
+  for — Adyen's "tenancy" row.

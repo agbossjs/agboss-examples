@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Injectable,
   SqliteFencedEffectRepository,
+  TenantContext,
   fencedEffectKeyOf,
 } from "@agboss/core";
 import { BooksRepository } from "../repositories/books.repository.js";
@@ -15,12 +16,13 @@ import { BooksRepository } from "../repositories/books.repository.js";
  * `fencedEffects.retention` (24 h), and the age would start again at zero. A gateway whose only lookup is a replay of
  * the key (Adyen; Stripe while its search lags) answers `notSent()` only while the key still lives.
  */
-@Injectable({ deps: [SqliteFencedEffectRepository, BooksRepository, Clock] })
+@Injectable({ deps: [SqliteFencedEffectRepository, BooksRepository, Clock, TenantContext] })
 export class AttemptAgeService {
   constructor(
     private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
     private readonly booksRepository: BooksRepository,
     private readonly clock: Clock,
+    private readonly tenantContext: TenantContext,
   ) {}
 
   /** When the first attempt under `businessKey` started (written now if it had not). */
@@ -28,7 +30,7 @@ export class AttemptAgeService {
     const key = fencedEffectKeyOf(executionContext, "attempt-start", { businessKey });
     const now = this.clock.now().getTime();
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
-      this.booksRepository.attemptStart(database, businessKey, now),
+      this.booksRepository.attemptStart(database, this.tenantContext.tenantId, businessKey, now),
     );
     return result.startedAt;
   }

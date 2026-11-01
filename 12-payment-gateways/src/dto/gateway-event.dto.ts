@@ -8,6 +8,9 @@ export class GatewayEventDto {
   @Text({ prompt: "what happened: REFUND, CAPTURE, …" })
   eventCode!: string;
 
+  @Text({ prompt: "the gateway's payment the event is about" })
+  paymentId!: string;
+
   @Text({ prompt: "our reference: the order's id" })
   orderId!: string;
 

@@ -85,10 +85,40 @@ const adyenWebhookTwice: GatewayRow = {
       const body = refundWebhook(refund.output?.movementId ?? "", paymentId, orderId, 2000);
       const post = () => fetch(receiver.url, { method: "POST", headers: { "content-type": "application/json" }, body }).then((response) => response.status);
       const statuses = await Promise.all([post(), post()]);
-      const applied = context.app(1).resolve(BooksRepository).applied(orderId);
+      const applied = context.app(1).resolve(BooksRepository).applied("default", orderId);
       return outcomeOf(context, "ps15", orderId, [`deliveries: ${statuses.join(", ")}`, `events applied: ${String(applied)}`]);
     } finally {
       await receiver.close();
+    }
+  },
+};
+
+/**
+ * Adyen's REFUND webhook for tenant A's payment, delivered to tenant B's endpoint (signed with the
+ * shared test key): applied for nobody — nothing booked for A or B.
+ */
+const adyenWebhookOtherTenant: GatewayRow = {
+  scenario: "tenancy",
+  title: "a webhook for another tenant's payment applies nothing",
+  expected: { charges: 1, refunds: 1, notes: ["delivery to tenant B: 500", "applied for tenant A: 0", "applied for tenant B: 0"] },
+  async run(context) {
+    const orderId = "adyen-tenancy";
+    const tenant = { tenant: { tenantId: "tenant-a" } };
+    const checkout = await context.app(0).execute(CheckoutWorkflowStart, { orderId, amountCents: 5000, capture: true, failShipping: false }, tenant);
+    const paymentId = paymentIdOf(checkout.output);
+    const refund = await context.app(0).execute(RefundWorkflowStart, { orderId, paymentId, amountCents: 2000, refundNumber: 1 }, tenant);
+    const receiverOfB = await startAdyenWebhookReceiver(context.apps, ADYEN_TEST_HMAC_KEY, "tenant-b");
+    try {
+      const body = refundWebhook(refund.output?.movementId ?? "", paymentId, orderId, 2000);
+      const status = (await fetch(receiverOfB.url, { method: "POST", headers: { "content-type": "application/json" }, body })).status;
+      const books = context.app(1).resolve(BooksRepository);
+      return outcomeOf(context, "tenancy", orderId, [
+        `delivery to tenant B: ${String(status)}`,
+        `applied for tenant A: ${String(books.applied("tenant-a", orderId))}`,
+        `applied for tenant B: ${String(books.applied("tenant-b", orderId))}`,
+      ]);
+    } finally {
+      await receiverOfB.close();
     }
   },
 };
@@ -105,6 +135,7 @@ export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: Gatewa
       ps19("refund"),
       ps23({ charges: 1, notes: ["in-progress", "replayed"] }),
       refundOwnership,
+      adyenWebhookOtherTenant,
     ],
   };
 }
