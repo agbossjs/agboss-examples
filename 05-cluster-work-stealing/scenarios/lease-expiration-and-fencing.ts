@@ -6,16 +6,15 @@ import {
   type App,
 } from "@agboss/core";
 import {
-  getClusterLedgerSnapshot,
-  resetClusterLedger,
-  type CommittedChunkEffect,
-} from "../src/services/cluster-ledger.service.js";
+  ChunkLedgerRepository,
+  type ChunkCommitRow,
+} from "../src/repositories/chunk-ledger.repository.js";
 import { ChunkWorkerWorkflowStart } from "../src/workflows/chunk-worker/chunk-worker.workflow-start.js";
 
 export interface LeaseFencingSummary {
   readonly staleHolderErrorCode: string;
   readonly takeoverStatus: ExecutionStatus;
-  readonly ledgerEntries: readonly CommittedChunkEffect[];
+  readonly ledgerEntries: readonly ChunkCommitRow[];
 }
 
 export async function verifyLeaseRepositoryPing(
@@ -40,6 +39,7 @@ export function simulateHolderLeaseWindowExpiredInStore(
 }
 
 export function createLeaseFencingAssertionSummary(
+  app: Pick<App, "resolve">,
   staleError: unknown,
   takeoverStatus: ExecutionStatus,
 ): LeaseFencingSummary {
@@ -50,8 +50,8 @@ export function createLeaseFencingAssertionSummary(
   return {
     staleHolderErrorCode: code,
     takeoverStatus,
-    ledgerEntries: getClusterLedgerSnapshot(),
+    ledgerEntries: app.resolve(ChunkLedgerRepository).commits(),
   };
 }
 
-export { ChunkWorkerWorkflowStart, resetClusterLedger };
+export { ChunkWorkerWorkflowStart };

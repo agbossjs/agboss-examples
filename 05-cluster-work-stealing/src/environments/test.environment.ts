@@ -11,5 +11,4 @@ export const environment = {
     return join(dir, "cluster.sqlite");
   },
   piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
-  openRouterApiKey: secret("OPENROUTER_API_KEY"),
 };

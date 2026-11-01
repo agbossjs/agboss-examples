@@ -14,7 +14,7 @@ import {
   waitFor,
 } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   setAllowIncompatibleResume,
   simulateVersionDriftOnPausedThread,
@@ -30,10 +30,7 @@ import { ClusterWorkStealingApplication } from "../../../src/cluster-work-steali
 import { ChunkDraftDto } from "../../../src/dto/chunk-draft.dto.js";
 import { DecomposeSplitDecisionDto } from "../../../src/dto/decompose-split-decision.dto.js";
 import { DecomposedLeafDto } from "../../../src/dto/decomposed-leaf.dto.js";
-import {
-  getClusterLedgerSnapshot,
-  resetClusterLedger,
-} from "../../../src/services/cluster-ledger.service.js";
+import { ChunkLedgerRepository } from "../../../src/repositories/chunk-ledger.repository.js";
 import { RequestChunkSignOffTool } from "../../../src/tools/request-chunk-sign-off.tool.js";
 import { ChunkWorkerWorkflowFinish } from "../../../src/workflows/chunk-worker/chunk-worker.workflow-finish.js";
 import { ChunkWorkerWorkflowStart } from "../../../src/workflows/chunk-worker/chunk-worker.workflow-start.js";
@@ -43,10 +40,6 @@ import { RecursiveDecomposerWorkflowFinish } from "../../../src/workflows/recurs
 import { RecursiveDecomposerWorkflowStart } from "../../../src/workflows/recursive-decomposer/recursive-decomposer.workflow-start.js";
 
 const clusterTest = testWith(ClusterWorkStealingApplication, { instances: 2 });
-
-beforeEach(() => {
-  resetClusterLedger();
-});
 
 afterEach(() => {
   setAllowIncompatibleResume(false);
@@ -104,9 +97,13 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
           "batch-200-chunk-1:Completed #1 | batch-200-chunk-2:Completed #2 | batch-200-chunk-3:FAILED(Chunk batch-200-chunk-3 failed softly on worker) | batch-200-chunk-4:Completed #4",
       });
 
-      const ledger = getClusterLedgerSnapshot();
-      expect(ledger.length).toBe(3);
-      expect(ledger.every((entry) => entry.attempts === 1)).toBe(true);
+      // one row per committed chunk in the shared file, whichever instance ran it (#500)
+      const ledger = coordinatorApp!.resolve(ChunkLedgerRepository).commits();
+      expect(ledger.map((row) => row.chunkId).sort()).toEqual([
+        "batch-200-chunk-1",
+        "batch-200-chunk-2",
+        "batch-200-chunk-4",
+      ]);
     },
   );
 
@@ -216,6 +213,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
       });
 
       const summary = createLeaseFencingAssertionSummary(
+        instance2!,
         caughtError,
         takeoverRun.status,
       );
@@ -339,15 +337,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
   );
 
   it("renders child workflows as subgraphs (xray: true) and marks ThisWorkflow with recursive maxDepth in LangGraph Studio", async () => {
-    const studio = await studioOf(ClusterWorkStealingApplication, {
-      processEnv: {
-        ...process.env,
-        OPENROUTER_API_KEY:
-          process.env.OPENROUTER_API_KEY ??
-          process.env.OPEN_ROUTER_KEY ??
-          "offline-test-openrouter-api-key",
-      },
-    });
+    const studio = await studioOf(ClusterWorkStealingApplication);
     try {
       expect(studio.names).toEqual(
         expect.arrayContaining([
@@ -378,4 +368,33 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
       await studio.close();
     }
   });
+});
+
+describe("one commit per chunk across the cluster (#500, #508)", () => {
+  clusterTest(
+    "the same chunk worked on both instances is committed once: the second worker gets the first commit",
+    async ({ apps, mockLlm }) => {
+      const [instance1, instance2] = apps;
+      mockLlm(ChunkWorkerAgent).thenReturn(
+        replyWith(ChunkDraftDto, { chunkId: "chunk-dup-01", summary: "worked on instance 1" }),
+        replyWith(ChunkDraftDto, { chunkId: "chunk-dup-01", summary: "worked again on instance 2" }),
+      );
+      const task = { chunkId: "chunk-dup-01", payload: "A chunk handed out twice" };
+
+      const first = await instance1!.execute(ChunkWorkerWorkflowStart, task);
+      const second = await instance2!.execute(ChunkWorkerWorkflowStart, task);
+
+      expect(first).toFinishWith(ChunkWorkerWorkflowFinish, {
+        chunkId: "chunk-dup-01",
+        summary: "worked on instance 1",
+        idempotencyKey: expect.any(String) as string,
+      });
+      // another execution, another step — the same chunk: the stored commit, nothing written
+      expect(second.output).toEqual(first.output);
+      const ledger = instance2!.resolve(ChunkLedgerRepository).commits();
+      expect(ledger.map((row) => [row.chunkId, row.summary])).toEqual([
+        ["chunk-dup-01", "worked on instance 1"],
+      ]);
+    },
+  );
 });
