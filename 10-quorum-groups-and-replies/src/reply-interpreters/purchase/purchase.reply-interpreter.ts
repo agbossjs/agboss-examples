@@ -6,7 +6,9 @@ import { CAREFUL_CHAT_MODEL } from "../../model-providers/models.js";
  * (`ToolCallApprovalDecisionDto`): approved or not, the reason, and the corrected tool call when the
  * approver capped the amount (`overrideArguments`). It gets the pause's question with the reply
  * (`{ ask, reply }`); what it answers is validated like any decision. A reply it cannot read is
- * `UninterpretableReplyError` and the pause stays pending — nothing resumes on a guess.
+ * `UninterpretableReplyError` and the pause stays pending — nothing resumes on a guess. Its prompt
+ * spells out the corrected call's fields and that "🤷" is no refusal: cheap models need both
+ * (agbossjs/agboss#648).
  */
 @ReplyInterpreter({
   name: "purchase-reply-interpreter",

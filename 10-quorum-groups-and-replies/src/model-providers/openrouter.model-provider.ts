@@ -47,6 +47,6 @@ interface PurchasingFields extends OpenRouterFields {
 })
 export class OpenRouterModelProvider extends OpenRouterProvider<PurchasingFields> {
   // one tool call per model turn: a reviewer asked to cite "the clause" otherwise answers once per
-  // clause, in parallel, and every answer is refused
+  // clause, in parallel, and every answer is refused (agbossjs/agboss#649)
   override readonly requestFields: PurchasingFields = { parallel_tool_calls: false };
 }
