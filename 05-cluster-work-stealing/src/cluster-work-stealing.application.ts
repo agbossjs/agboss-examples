@@ -7,6 +7,8 @@ import {
   SqliteExecutionLeaseRepository,
   SqliteExecutionRecordRepository,
   SqliteExecutionTreeRepository,
+  SqliteFencedEffectRepository,
+  SqliteConnection,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
 } from "@agboss/core";
@@ -18,7 +20,7 @@ import { ClusterQueueChunkSignOffChannel } from "./channels/cluster-queue-chunk-
 import { AppEnvironment } from "./environments/app.environment.js";
 import { StorageClusterHealthCheck } from "./health-checks/storage-cluster.health-check.js";
 import { ClusterOfflineModelProvider } from "./model-providers/cluster-offline.model-provider.js";
-import { ClusterLedgerService } from "./services/cluster-ledger.service.js";
+import { ChunkLedgerRepository } from "./repositories/chunk-ledger.repository.js";
 import { StorageBackendProbeService } from "./services/storage-backend-probe.service.js";
 import { ChunkFailedWorkflowFinish } from "./workflows/chunk-worker/chunk-failed.workflow-finish.js";
 import { ChunkWorkerWorkflowFinish } from "./workflows/chunk-worker/chunk-worker.workflow-finish.js";
@@ -52,7 +54,7 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
   providers: [
     ClusterOfflineModelProvider,
     ClusterQueueChunkSignOffChannel,
-    ClusterLedgerService,
+    ChunkLedgerRepository, // the cluster's books of committed chunks, in the shared file
     StorageBackendProbeService,
     SqliteCheckpointSaver,
     SqlitePausedExecutionRepository,
@@ -63,6 +65,8 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
     SqliteRateLimitRepository,
     SqliteExecutionHistoryRepository,
     SqliteChildExecutionQueueRepository,
+    SqliteFencedEffectRepository, // a chunk's commit, once per chunk (#500, #508)
+    SqliteConnection, // the file's one connection, for the ledger too
   ],
   executionRecordRetention: hours(24 * 30),
   pauseRecordRetention: hours(24),

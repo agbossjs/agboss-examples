@@ -2,10 +2,7 @@ import { createApp, ExecutionStatus } from "@agboss/core";
 import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 import type { BatchJobSummaryDto } from "../src/dto/batch-job-summary.dto.js";
 import type { DecomposedLeafDto } from "../src/dto/decomposed-leaf.dto.js";
-import {
-  getClusterLedgerSnapshot,
-  resetClusterLedger,
-} from "../src/services/cluster-ledger.service.js";
+import { ChunkLedgerRepository } from "../src/repositories/chunk-ledger.repository.js";
 import { CoordinatorWorkflowStart } from "../src/workflows/coordinator/coordinator.workflow-start.js";
 import { RecursiveDecomposerWorkflowStart } from "../src/workflows/recursive-decomposer/recursive-decomposer.workflow-start.js";
 
@@ -18,7 +15,6 @@ export interface WorkStealingScenarioResult {
 }
 
 export async function runWorkStealingAndRecursionScenario(): Promise<WorkStealingScenarioResult> {
-  resetClusterLedger();
   const app = await createApp(ClusterWorkStealingApplication);
 
   const batchExecution = await app.execute(CoordinatorWorkflowStart, {
@@ -34,7 +30,7 @@ export async function runWorkStealingAndRecursionScenario(): Promise<WorkStealin
     },
   );
 
-  const ledger = getClusterLedgerSnapshot();
+  const ledger = app.resolve(ChunkLedgerRepository).commits();
   await app.close();
 
   return {

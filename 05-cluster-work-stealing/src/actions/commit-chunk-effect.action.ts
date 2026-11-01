@@ -1,44 +1,48 @@
 import {
   Action,
   ExecutionContext,
+  fencedEffectKeyOf,
+  SqliteFencedEffectRepository,
   type ActionHandler,
   type InputOf,
   type OutputOf,
 } from "@agboss/core";
 import { ChunkDraftDto } from "../dto/chunk-draft.dto.js";
 import { ChunkResultDto } from "../dto/chunk-result.dto.js";
-import { ClusterLedgerService } from "../services/cluster-ledger.service.js";
+import { ChunkLedgerRepository } from "../repositories/chunk-ledger.repository.js";
 
+/**
+ * Commits a finished chunk to the cluster's books — a side effect, and the step runs at least
+ * once. It is a fenced effect (#500): the ledger's row and the effect's stored result in one
+ * transaction of the shared SQLite file, checked against the step's lease. It is keyed by the
+ * chunk (#508, `chunk:<chunkId>`), not the step: the step run again after a crash, or a second
+ * worker for the same chunk on another instance, gets the first commit back and writes nothing; a
+ * worker whose lease was taken over is refused (`ExecutionFencedError`, a hand-over) and writes
+ * nothing either.
+ */
 @Action({
   name: "commit-chunk-effect-action",
-  description:
-    "Records the chunk completion in ClusterLedgerService keyed by executionContext.step.idempotencyKey",
+  description: "Commits the chunk to the cluster's ledger, once per chunk",
   input: { draft: ChunkDraftDto },
   output: ChunkResultDto,
-  deps: [ClusterLedgerService, ExecutionContext],
+  deps: [ExecutionContext, SqliteFencedEffectRepository, ChunkLedgerRepository],
 })
-export class CommitChunkEffectAction
-  implements ActionHandler<CommitChunkEffectAction>
-{
+export class CommitChunkEffectAction implements ActionHandler<CommitChunkEffectAction> {
   constructor(
-    private readonly clusterLedgerService: ClusterLedgerService,
     private readonly executionContext: ExecutionContext,
+    private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
+    private readonly chunkLedgerRepository: ChunkLedgerRepository,
   ) {}
 
-  async execute(
-    input: InputOf<CommitChunkEffectAction>,
-  ): Promise<OutputOf<CommitChunkEffectAction>> {
+  async execute(input: InputOf<CommitChunkEffectAction>): Promise<OutputOf<CommitChunkEffectAction>> {
     const { chunkId, summary } = input.draft.value;
-    const idempotencyKey = this.executionContext.step.idempotencyKey;
-    const record = await this.clusterLedgerService.recordChunkCommit(
-      chunkId,
-      idempotencyKey,
-      summary,
+    const stepKey = this.executionContext.step.idempotencyKey;
+    const key = fencedEffectKeyOf(this.executionContext, "commit-chunk", {
+      businessKey: `chunk:${chunkId}`,
+    });
+    const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
+      this.chunkLedgerRepository.recordCommit(database, { chunkId, summary, stepKey }),
     );
-    return {
-      chunkId: record.chunkId,
-      summary: record.summary,
-      idempotencyKey: record.idempotencyKey,
-    };
+    return { chunkId: result.chunkId, summary: result.summary, idempotencyKey: result.stepKey };
   }
 }

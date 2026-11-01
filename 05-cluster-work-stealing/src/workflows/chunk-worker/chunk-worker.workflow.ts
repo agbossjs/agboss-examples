@@ -16,7 +16,6 @@ import { ChunkDraftDto } from "../../dto/chunk-draft.dto.js";
 import { ChunkFailedDto } from "../../dto/chunk-failed.dto.js";
 import { ChunkResultDto } from "../../dto/chunk-result.dto.js";
 import { ChunkTaskDto } from "../../dto/chunk-task.dto.js";
-import { ClusterLedgerService } from "../../services/cluster-ledger.service.js";
 import { ChunkFailedWorkflowFinish } from "./chunk-failed.workflow-finish.js";
 import { ChunkWorkerWorkflowFinish } from "./chunk-worker.workflow-finish.js";
 import { ChunkWorkerWorkflowStart } from "./chunk-worker.workflow-start.js";
@@ -55,7 +54,6 @@ const resumeVersionPolicy = (resume: IncompatibleResume): ResumeDecision => {
       .toFinish(ChunkFailedWorkflowFinish),
   ],
   maxSteps: 3,
-  providers: [ClusterLedgerService],
 })
 export class ChunkWorkerWorkflow implements WorkflowDefinition {
   settings(): WorkflowSettings {

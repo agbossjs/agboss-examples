@@ -31,7 +31,7 @@ own implementation of each contract (below) over Postgres, Redis or the like.
 
 ## The worked example: a durable application
 
-```ts file=src/claims/environments/app.environment.ts
+```ts file=src/environments/app.environment.ts
 import type { Secret } from "@agboss/core";
 
 export class AppEnvironment {
@@ -40,7 +40,7 @@ export class AppEnvironment {
 }
 ```
 
-```ts file=src/claims/environments/prod.environment.ts
+```ts file=src/environments/prod.environment.ts
 import { env, secret } from "@agboss/core";
 import type { AppEnvironment } from "./app.environment.js";
 
@@ -50,33 +50,33 @@ export const environment: AppEnvironment = {
 };
 ```
 
-```ts file=src/claims/environments/test.environment.ts
+```ts file=src/environments/test.environment.ts
 import type { AppEnvironment } from "./app.environment.js";
 
 export const environment: AppEnvironment = { sqlitePath: ":memory:" };
 ```
 
-```ts file=src/claims/claims.workflow.ts
-import {
-  Agent,
-  Workflow,
-  WorkflowFinish,
-  WorkflowSettings,
-  WorkflowStart,
-  start,
-  type IncompatibleResume,
-  type ResumeDecision,
-  type WorkflowDefinition,
-} from "@agboss/core";
-import { Text, WorkflowStartTextDto } from "@agboss/core/dto";
+```ts file=src/claims/dto/claim-assessment.dto.ts
+import { Text } from "@agboss/core/dto";
 
 export class ClaimAssessmentDto {
   @Text({ prompt: "the assessment of the claim" })
   assessment!: string;
 }
+```
+
+```ts file=src/claims/workflows/claim/claim.workflow-start.ts
+import { WorkflowStart } from "@agboss/core";
+import { WorkflowStartTextDto } from "@agboss/core/dto";
 
 @WorkflowStart({ name: "claim-workflow-start", description: "An insurance claim", input: WorkflowStartTextDto })
 export class ClaimWorkflowStart {}
+```
+
+```ts file=src/claims/agents/claim-assessor/claim-assessor.agent.ts
+import { Agent } from "@agboss/core";
+import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { ClaimAssessmentDto } from "../../dto/claim-assessment.dto.js";
 
 @Agent({
   name: "claim-assessor-agent",
@@ -87,9 +87,30 @@ export class ClaimWorkflowStart {}
   output: ClaimAssessmentDto,
 })
 export class ClaimAssessorAgent {}
+```
+
+```ts file=src/claims/workflows/claim/claim.workflow-finish.ts
+import { WorkflowFinish } from "@agboss/core";
+import { ClaimAssessmentDto } from "../../dto/claim-assessment.dto.js";
 
 @WorkflowFinish({ name: "claim-workflow-finish", description: "The assessment", output: ClaimAssessmentDto })
 export class ClaimWorkflowFinish {}
+```
+
+```ts file=src/claims/workflows/claim/claim.workflow.ts
+import {
+  Workflow,
+  WorkflowSettings,
+  start,
+  type IncompatibleResume,
+  type ResumeDecision,
+  type WorkflowDefinition,
+} from "@agboss/core";
+import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { ClaimAssessorAgent } from "../../agents/claim-assessor/claim-assessor.agent.js";
+import { ClaimAssessmentDto } from "../../dto/claim-assessment.dto.js";
+import { ClaimWorkflowFinish } from "./claim.workflow-finish.js";
+import { ClaimWorkflowStart } from "./claim.workflow-start.js";
 
 /** A paused or running execution of another config hash is continued only when the version is the same. */
 const sameVersionOnly = (resume: IncompatibleResume): ResumeDecision =>
@@ -116,9 +137,8 @@ export class ClaimWorkflow implements WorkflowDefinition {
 }
 ```
 
-```ts file=src/claims/health/claims-api.health-check.ts
-import { HealthCheck, HealthCheckResult, Injectable, type HealthCheckHandler } from "@agboss/core";
-import { seconds } from "@agboss/core/units";
+```ts file=src/claims/services/claims-api.service.ts
+import { Injectable } from "@agboss/core";
 
 @Injectable()
 export class ClaimsApiService {
@@ -126,6 +146,12 @@ export class ClaimsApiService {
     return Promise.resolve(true);
   }
 }
+```
+
+```ts file=src/claims/health-checks/claims-api.health-check.ts
+import { HealthCheck, HealthCheckResult, type HealthCheckHandler } from "@agboss/core";
+import { seconds } from "@agboss/core/units";
+import { ClaimsApiService } from "../services/claims-api.service.js";
 
 @HealthCheck({ name: "claims-api-health-check", timeout: seconds(2), deps: [ClaimsApiService] })
 export class ClaimsApiHealthCheck implements HealthCheckHandler {
@@ -139,12 +165,45 @@ export class ClaimsApiHealthCheck implements HealthCheckHandler {
 }
 ```
 
-```ts file=src/claims/claims.application.ts
+```ts file=src/claims/budgets/application-daily.budget.ts
+import { Budget, BudgetPeriod, BudgetScope, type BudgetHandler } from "@agboss/core";
+import { usd, type Usd } from "@agboss/core/units";
+
+@Budget({ name: "application-daily-budget", scope: BudgetScope.Application, period: BudgetPeriod.Day })
+export class ApplicationDailyBudget implements BudgetHandler {
+  maxSpend(): Usd {
+    return usd(100);
+  }
+}
+```
+
+```ts file=src/claims/budgets/tenant-daily.budget.ts
+import { Budget, BudgetPeriod, BudgetScope, type BudgetHandler } from "@agboss/core";
+import { usd, type Usd } from "@agboss/core/units";
+
+@Budget({ name: "tenant-daily-budget", scope: BudgetScope.Tenant, period: BudgetPeriod.Day })
+export class TenantDailyBudget implements BudgetHandler {
+  maxSpend(): Usd {
+    return usd(10);
+  }
+}
+```
+
+```ts file=src/claims/budgets/execution.budget.ts
+import { Budget, BudgetScope, type BudgetHandler } from "@agboss/core";
+import { usd, type Usd } from "@agboss/core/units";
+
+@Budget({ name: "execution-budget", scope: BudgetScope.Execution })
+export class ExecutionBudget implements BudgetHandler {
+  maxSpend(): Usd {
+    return usd(0.1);
+  }
+}
+```
+
+```ts file=src/claims.application.ts
 import {
   Application,
-  Budget,
-  BudgetPeriod,
-  BudgetScope,
   SqliteCheckpointSaver,
   SqliteCostLedgerRepository,
   SqliteExecutionHistoryRepository,
@@ -153,33 +212,15 @@ import {
   SqliteExecutionTreeRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
-  type BudgetHandler,
 } from "@agboss/core";
-import { hours, seconds, usd, type Usd } from "@agboss/core/units";
-import { ClaimWorkflow } from "./claims.workflow.js";
+import { hours, seconds } from "@agboss/core/units";
+import { ApplicationDailyBudget } from "./claims/budgets/application-daily.budget.js";
+import { ExecutionBudget } from "./claims/budgets/execution.budget.js";
+import { TenantDailyBudget } from "./claims/budgets/tenant-daily.budget.js";
+import { ClaimsApiHealthCheck } from "./claims/health-checks/claims-api.health-check.js";
+import { ClaimsApiService } from "./claims/services/claims-api.service.js";
+import { ClaimWorkflow } from "./claims/workflows/claim/claim.workflow.js";
 import { AppEnvironment } from "./environments/app.environment.js";
-import { ClaimsApiHealthCheck, ClaimsApiService } from "./health/claims-api.health-check.js";
-
-@Budget({ name: "application-daily-budget", scope: BudgetScope.Application, period: BudgetPeriod.Day })
-export class ApplicationDailyBudget implements BudgetHandler {
-  maxSpend(): Usd {
-    return usd(100);
-  }
-}
-
-@Budget({ name: "tenant-daily-budget", scope: BudgetScope.Tenant, period: BudgetPeriod.Day })
-export class TenantDailyBudget implements BudgetHandler {
-  maxSpend(): Usd {
-    return usd(10);
-  }
-}
-
-@Budget({ name: "execution-budget", scope: BudgetScope.Execution })
-export class ExecutionBudget implements BudgetHandler {
-  maxSpend(): Usd {
-    return usd(0.1);
-  }
-}
 
 @Application({
   name: "claims-application",
@@ -212,11 +253,11 @@ export class ClaimsApplication {}
 The process: `createApp` closes the app on SIGTERM / SIGINT by itself; the project's server maps the
 probes to its endpoints (`Unhealthy` → 503, anything else 200 — a `Degraded` instance still serves):
 
-```ts file=src/claims/main.ts
+```ts file=src/http/server.ts
 import { createServer } from "node:http";
 import { HealthStatus, createApp, type HealthReport } from "@agboss/core";
-import { ClaimsApplication } from "./claims.application.js";
-import { ClaimWorkflowStart } from "./claims.workflow.js";
+import { ClaimsApplication } from "../claims.application.js";
+import { ClaimWorkflowStart } from "../claims/workflows/claim/claim.workflow-start.js";
 
 const app = await createApp(ClaimsApplication, { env: "prod" }); // listens for SIGTERM / SIGINT
 
@@ -269,6 +310,19 @@ compile); `[health.not-a-health-check]`, `[health.duplicate-name]`.
   pass `executionContext.step.idempotencyKey` —
   `${executionId}:${nodeId}:${visitNumber}[:${itemIndex}][:${callId}]`, the same on a rerun — to
   every external side effect, and make each undo safe to run twice.
+- **Fencing (#471).** `executionContext.fence` is the lease the step runs under: `scopeKey`
+  (`${encodeURIComponent(tenantId)}:${encodeURIComponent(leaseExecutionId)}` — the root's lease for
+  the root and its `ChildPlacement.ParentInstance` children, an `AnyInstance` child's own), `token`
+  (its `leaseEpoch`: 1, 2, … per lease, rising with every take), `confirmedUntil`, `assertHeld()`,
+  `confirmNow()`, `fenced(observedToken)`. Exactly-once only when the external system checks the
+  token and the idempotency key atomically. A reply interpreter, a budget's `maxSpend()`, an eval
+  judge and an ancestor's `parent.fence` have none (`ExecutionContextUnavailableError`).
+- **The fenced effect (#500).** For rows in the store's own database, one call does the fencing and
+  the deduplication: `saveResultIfAbsent(fencedEffectKeyOf(executionContext, "charge"), (database) =>
+…)` on `SqliteFencedEffectRepository` (listed with `SqliteExecutionLeaseRepository`; the work is
+  synchronous) or the built-in in-memory store — the lease, the scope's mark and the step's key
+  checked in the write's transaction; a replay gets the stored result, a zombie `ExecutionFencedError`.
+  No fencing or idempotency table of your own.
 - **Any instance answers.** A pause made on one instance is resumed on another; `app.cancel` reaches
   the tree on whichever instance moves it.
 - **The cap on steps.** `@Application({ maxConcurrentSteps })` (a whole number from 1,
@@ -436,13 +490,82 @@ npx agboss hub show hub/ --html .artifacts/mesh.html
   `--html` it prints the summary; `--json` gives the applications, the inputs, the observed and declared edges, the trees, the
   radar and the federation's problems.
 
-## Your own store
+## Your own store and application repositories
 
-A project's implementation `extends` the contract (or a SQLite one, with `override`) and is listed in
-`@Application({ providers })` **instead of** it. A SQLite subclass takes the base's `deps` first —
-`SqliteConnection`, `Clock`, `ApplicationContext` (and `IdGenerator` for the records):
+Every class with a direct database connection or store contract lives in `repositories/<name>.repository.ts`
+(never in `services/`). Keep SQL DDL in `sql/<name>.sql` files, define table schemas in
+`schemas/<name>.schema.ts` using a typed ORM / query builder (such as Drizzle ORM), and never build
+queries with string interpolation (`SELECT … ${clause}`).
 
-```ts file=src/claims/infrastructure/audited-lease.repository.ts
+A repository of the project's own tables injects `SqliteConnection` and uses its `database` (a
+`node:sqlite` `DatabaseSync`) — never an internal helper of `@agboss/core`. Both are listed in
+`@Application({ providers })` — `SqliteConnection` too, beside the SQLite stores — never in a
+workflow's `providers`: there `SqliteConnection` is not registered. Its DDL is a `.sql` file
+read once, applied by `ensureSchema`; its statements take `?` parameters; a write transaction is
+`sqliteConnection.transaction(() => …)` — synchronous, no `await` inside, so two instances on one
+event loop (`testWith(App, { instances: 2 })`) never wait on each other's open lock:
+
+```sql file=src/claims/sql/claim-notes.sql
+CREATE TABLE IF NOT EXISTS claim_notes (
+  idempotency_key TEXT PRIMARY KEY,
+  claim_id TEXT NOT NULL,
+  note TEXT NOT NULL
+);
+```
+
+```ts file=src/claims/schemas/claim-note.schema.ts
+// schemas/<name>.schema.ts — a table's row type (with Drizzle ORM: its sqliteTable and inferred types)
+export interface ClaimNoteRow {
+  readonly claimId: string;
+  readonly note: string;
+}
+```
+
+```ts file=src/claims/repositories/claim-notes.repository.ts
+import { readFileSync } from "node:fs";
+import { Injectable, SqliteConnection } from "@agboss/core";
+import type { ClaimNoteRow } from "../schemas/claim-note.schema.js";
+
+@Injectable({ deps: [SqliteConnection] })
+export class ClaimNotesRepository {
+  private readonly schema: string = readFileSync(new URL("../sql/claim-notes.sql", import.meta.url), "utf8");
+
+  constructor(private readonly sqliteConnection: SqliteConnection) {}
+
+  /** Saves the note once per step: a retried or recovered step's second write changes nothing. */
+  saveOnce(idempotencyKey: string, row: ClaimNoteRow): boolean {
+    this.sqliteConnection.ensureSchema("claim-notes", this.schema);
+    return this.sqliteConnection.transaction(() => {
+      const written = this.sqliteConnection.database
+        .prepare("INSERT OR IGNORE INTO claim_notes (idempotency_key, claim_id, note) VALUES (?, ?, ?)")
+        .run(idempotencyKey, row.claimId, row.note);
+      return Number(written.changes) === 1;
+    });
+  }
+}
+```
+
+The action or tool that calls it passes `executionContext.step.idempotencyKey`. With a typed ORM
+such as Drizzle ORM the same rules hold — its table in `schemas/`, its queries in the repository —
+and a write transaction stays synchronous: an async driver over `DatabaseSync`
+(`drizzle-orm/sqlite-proxy`) must not hold a transaction open across an `await`.
+
+A project's store implementation `extends` the contract (or a SQLite one, with `override`) and is
+listed in `@Application({ providers })` **instead of** it. A SQLite subclass takes the base's `deps`
+first — `SqliteConnection`, `Clock`, `ApplicationContext` (and `IdGenerator` for the records):
+
+```ts file=src/claims/services/lease-audit.service.ts
+import { Injectable, type ExecutionLease } from "@agboss/core";
+
+@Injectable()
+export class LeaseAuditService {
+  taken(lease: ExecutionLease): void {
+    void lease;
+  }
+}
+```
+
+```ts file=src/claims/repositories/audited-lease.repository.ts
 import {
   ApplicationContext,
   Clock,
@@ -452,13 +575,7 @@ import {
   type ExecutionLease,
 } from "@agboss/core";
 import type { Milliseconds } from "@agboss/core/units";
-
-@Injectable()
-export class LeaseAuditService {
-  taken(lease: ExecutionLease): void {
-    void lease;
-  }
-}
+import { LeaseAuditService } from "../services/lease-audit.service.js";
 
 /** The SQLite leases, each one taken written to the audit log as well. */
 @Injectable({ deps: [SqliteConnection, Clock, ApplicationContext, LeaseAuditService] })
@@ -486,16 +603,51 @@ export class AuditedSqliteExecutionLeaseRepository extends SqliteExecutionLeaseR
 
 An implementation over another store keeps every operation atomic, takes every time value from the
 framework (durations as parameters, now from `Clock`), never from the store's clock, and implements
-`ping()` — one fast round trip that readiness calls.
+`ping()` — one fast round trip that readiness calls. It gives back every text and JSON value it is
+handed unchanged — a model's or a tool's answer may hold a NUL character (U+0000), which
+PostgreSQL's `jsonb` and `text` reject: keep JSON as text there (`\u0000` is an escape in it), as
+the core's SQLite record store keeps free text (#521; each contract suite has a NUL case). A ledger
+sums a call's records with the core's `totalCost(records)` (root entry).
+
+It proves that with the core's own contract suites (#481), published as
+`@agboss/core/testing/contracts` — one function per contract (`executionLeaseContract`,
+`childExecutionQueueContract`, …, `checkpointSaverContract`), the very cases the in-memory and SQLite
+stores pass. A `ContractTarget` says how to build one instance's store from its `StoreSeam` (the
+suite's `VirtualClock`, `instanceId`, `application`), `reset()` empties the backing store before each
+case and `close(store)` runs after it; every case builds two instances on one backing store:
+
+<!-- snippet-context
+import { ExecutionLeaseRepository, type ApplicationContext, type Clock } from "@agboss/core";
+declare class Pool { query(sql: string): Promise<void>; }
+declare const pool: Pool;
+declare const PostgresExecutionLeaseRepository: new (
+  pool: Pool,
+  clock: Clock,
+  applicationContext: ApplicationContext,
+) => ExecutionLeaseRepository;
+-->
+
+```ts
+// tests/postgres-lease.contract.test.ts — "lease contract (PostgreSQL)", a case per rule
+import { executionLeaseContract } from "@agboss/core/testing/contracts";
+
+executionLeaseContract({
+  name: "PostgreSQL",
+  instance: (seam) => new PostgresExecutionLeaseRepository(pool, seam.clock, seam.application),
+  reset: () => pool.query("TRUNCATE execution_leases"),
+});
+```
 
 ## Testing it
 
-```ts file=tests/claims/health.test.ts
+```ts file=tests/claims.application.test.ts
 import { expect } from "vitest";
 import { HealthStatus } from "@agboss/core";
 import { replyWith, testWith } from "@agboss/core/testing";
-import { ClaimsApplication } from "../../src/claims/claims.application.js";
-import { ClaimAssessmentDto, ClaimAssessorAgent, ClaimWorkflowStart } from "../../src/claims/claims.workflow.js";
+import { ClaimsApplication } from "../src/claims.application.js";
+import { ClaimAssessorAgent } from "../src/claims/agents/claim-assessor/claim-assessor.agent.js";
+import { ClaimAssessmentDto } from "../src/claims/dto/claim-assessment.dto.js";
+import { ClaimWorkflowStart } from "../src/claims/workflows/claim/claim.workflow-start.js";
 
 const test = testWith(ClaimsApplication); // the test environment: sqlitePath ":memory:"
 const twoInstances = testWith(ClaimsApplication, { instances: 2 });
@@ -534,6 +686,35 @@ file (`sqlitePath: join(mkdtempSync(join(tmpdir(), "app-")), "stores.sqlite")`) 
 - In-memory stores in production: pauses vanish on restart (`[application.in-memory-pauses]`),
   budgets count per instance (`[application.in-memory-cost-ledger]`).
 - SQLite across machines: one file is one machine; several nodes need shared implementations.
+- Holding a `node:sqlite` (`DatabaseSync`) `BEGIN IMMEDIATE` write lock across an `await` (for
+  example through an async ORM proxy): when `testWith(App, { instances: 2 })` runs two instances on
+  one Node.js event loop over one SQLite file, the sibling connection blocks synchronously inside
+  `sqlite3_busy_timeout` and self-deadlocks with `SQLITE_BUSY`. Execute `BEGIN IMMEDIATE … COMMIT`
+  synchronously in one JS turn without yielding microtasks inside the open write transaction.
+- Trusting the lease to fence an external write: the framework fences only its own checkpoint
+  writes. A step whose instance lost the lease sees `executionContext.signal` abort with
+  `ExecutionLeaseLostError`, but a write it already sent to a database or a file still lands, and
+  the instance that takes the tree over runs the step again. Make every external write idempotent by
+  `executionContext.step.idempotencyKey` (a unique key: the second write is a no-op) and fence it
+  with `executionContext.fence`: `fence.token` is the monotonic fencing token of the step's lease
+  scope — the external system keeps the highest token per `fence.scopeKey` in the same transaction
+  as the key, refuses a lower one with `fence.fenced(highest)` (or `new ExecutionFencedError({
+scopeKey, token, observedToken })` in a repository), and the framework treats that error as a
+  hand-over (no `.onError`, no undo, no failed record). Call `fence.assertHeld()` right before the
+  write and `await fence.confirmNow()` before a call that cannot check tokens (a webhook). Never key
+  the mark by a shared business row: parallel `ChildPlacement.AnyInstance` children each fence with
+  a lease (and a token) of their own.
+- `ChildPlacement.AnyInstance` across processes: a child queued in one process wakes that process's
+  workers at once, never another's — other processes find it at their workers' sweep, every 30 s.
+  A worker claims queued children while it has free step slots, so the first one to look may take a
+  whole launch of siblings: bound it with `@Application({ maxConcurrentSteps })`. A `Running` child
+  whose instance died is taken over by a live worker once its 30 s lease expires — automatically,
+  only when the child queue and the leases are shared stores (`SqliteChildExecutionQueueRepository`
+  and `SqliteExecutionLeaseRepository` on one file, or your own over a shared database).
+- Missing non-TypeScript assets in `dist/`: `tsc` does not copy `*.prompt.md` (`promptUrls`) or
+  `sql/*.sql` files, so a compiled `node dist/…` in a container fails at start with
+  `[prompt.missing-file]` — make the project's build copy every non-`.ts` file of `src/` next to its
+  compiled module, and run that build in the image.
 - A side effect without `step.idempotencyKey`: a recovered step runs again.
 - `terminationGracePeriodSeconds` below `shutdownTimeout`: the platform kills the pod mid-drain.
 - Expecting a new version to pick up an old paused execution: it is refused unless

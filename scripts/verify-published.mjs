@@ -182,6 +182,7 @@ export const REQUIRED_SUBPATH_EXPORTS = [
   "@agboss/core/models",
   "@agboss/core/testing",
   "@agboss/core/testing/setup",
+  "@agboss/core/testing/vitest",
   "@agboss/core/eval",
   "@agboss/core/mcp",
   "@agboss/core/rag",

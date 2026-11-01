@@ -41,7 +41,10 @@ describe("05-cluster-work-stealing — Isolated Action & Tool Unit Tests", () =>
       payload: "Segment #1 of batch-1",
     });
 
-    const runCommit = testAction(CommitChunkEffectAction);
+    // the commit is a fenced effect on the SQLite file (#500): the runner needs the file
+    const runCommit = testAction(CommitChunkEffectAction, {
+      environment: { sqlitePath: ":memory:" },
+    });
     const committed = await runCommit({
       draft: {
         producer: ChunkWorkerAgent,
