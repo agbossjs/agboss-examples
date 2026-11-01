@@ -1,0 +1,34 @@
+{
+  "name": "quorum-groups-and-replies",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P1 Proof: parallel reviews in two quorum groups, each answer accepted by a chain of code and model arbiters with recorded branch verdicts, and a free-text approval read into a typed decision before the run resumes.",
+  "agboss": {
+    "application": "src/supplier-purchase.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx --env-file-if-exists=.env src/demo.ts --live"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.0",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}
