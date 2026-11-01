@@ -21,6 +21,8 @@ export class SettleAuthorizationAction implements ActionHandler<SettleAuthorizat
 
   async execute(input: InputOf<SettleAuthorizationAction>): Promise<OutputOf<SettleAuthorizationAction>> {
     const { orderId, chargeId, amountCents } = input.disposition.value;
+    // the charge id is the caller's word: it moves only the order's own charge, by the shop's books
+    this.orderBookService.assertOrdersCharge(orderId, chargeId);
     const captured = await this.paymentOperations.settle(this.executionContext, chargeId, amountCents);
     await this.orderBookService.book(this.executionContext, "book-settle", `settle:${chargeId}`, orderId, {
       status: "captured",

@@ -41,6 +41,8 @@ export class CancelOrderAction implements ActionHandler<CancelOrderAction> {
 
   async execute(input: InputOf<CancelOrderAction>): Promise<OutputOf<CancelOrderAction>> {
     const { orderId, chargeId, amountCents } = input.disposition.value;
+    // the charge id is the caller's word: it moves only the order's own charge, by the shop's books
+    this.orderBookService.assertOrdersCharge(orderId, chargeId);
     try {
       const voided = await this.paymentOperations.void(this.executionContext, chargeId);
       // cancelled: the shop believes the gateway holds nothing for the order

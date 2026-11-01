@@ -3,6 +3,7 @@
 -- stored result commit together. "lost" in the report is the gap between this and the stub's books.
 CREATE TABLE IF NOT EXISTS orders (
   order_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL DEFAULT 'default',
   status TEXT NOT NULL,
   charge_id TEXT,
   held_cents INTEGER NOT NULL DEFAULT 0

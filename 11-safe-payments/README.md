@@ -211,6 +211,11 @@ All offline and $0: no key, no network beyond `127.0.0.1`, no real gateway. `npm
   webhook's signature and reading the current status (PS15, PS16); stable keys across versions
   (PS12); a lasting "paid" record per order (the `order_bookings` table, PS17); numbering payment
   attempts after a known decline (PS22).
+- **Two rules every adapter here keeps** ([`tests/ownership.test.ts`](./tests/ownership.test.ts)):
+  a charge id that comes from a caller — an operator's form, a customer's request — refunds,
+  captures, settles or cancels only when the shop's own books tie it to that order and tenant
+  (`ChargeOwnershipError` otherwise, nothing sent); and a lookup's hit is this order's payment only
+  when its reference and amount are this order's, never the first hit a search returns.
 - **Real processes:** PS2 and PS5 also run on two `node` processes on one SQLite file, the first
   `SIGKILL`ed, the second's own recovery sweep finishing the order on real time. PostgreSQL and
   several machines are proven by the core's fault suite and agbossjs/postgres, not here.

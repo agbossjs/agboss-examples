@@ -17,6 +17,8 @@ export interface OrderRow {
 
 /** One change to an order's row. */
 export interface OrderChange {
+  /** The tenant the order belongs to (written when the row is made). */
+  readonly tenantId?: string;
   readonly status: string;
   readonly chargeId?: string;
   /** Added to `held_cents` (a refund is negative). */
@@ -56,12 +58,12 @@ export class OrderBookRepository {
     if (Number(fresh.changes) !== 1 && current !== undefined) return current;
     database
       .prepare(
-        "INSERT INTO orders (order_id, status, charge_id, held_cents) VALUES (?, ?, ?, ?) " +
+        "INSERT INTO orders (order_id, tenant_id, status, charge_id, held_cents) VALUES (?, ?, ?, ?, ?) " +
           "ON CONFLICT (order_id) DO UPDATE SET status = excluded.status, " +
           "charge_id = COALESCE(excluded.charge_id, orders.charge_id), " +
           "held_cents = orders.held_cents + excluded.held_cents",
       )
-      .run(orderId, change.status, change.chargeId ?? null, change.heldDeltaCents);
+      .run(orderId, change.tenantId ?? "default", change.status, change.chargeId ?? null, change.heldDeltaCents);
     const row = this.orderIn(database, orderId);
     if (row === undefined) throw new Error(`orders: ${orderId} was not written`);
     return row;
@@ -109,6 +111,14 @@ export class OrderBookRepository {
       .prepare("SELECT pause_id AS pauseId FROM awaited_outcomes WHERE order_id = ? ORDER BY rowid")
       .all(orderId)
       .map((row) => String(row["pauseId"]));
+  }
+
+  /** Whether `chargeId` is the charge the shop booked for this tenant's order. */
+  isOrdersCharge(orderId: string, chargeId: string, tenantId: string): boolean {
+    const row = this.sqliteConnection.database
+      .prepare("SELECT charge_id AS chargeId, tenant_id AS tenantId FROM orders WHERE order_id = ?")
+      .get(orderId);
+    return row?.["chargeId"] === chargeId && row["tenantId"] === tenantId;
   }
 
   order(orderId: string): OrderRow | undefined {

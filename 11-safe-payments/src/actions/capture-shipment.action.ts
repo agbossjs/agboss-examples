@@ -21,6 +21,8 @@ export class CaptureShipmentAction implements ActionHandler<CaptureShipmentActio
 
   async execute(input: InputOf<CaptureShipmentAction>): Promise<OutputOf<CaptureShipmentAction>> {
     const { orderId, chargeId, shipment, amountCents } = input.capture.value;
+    // the charge id is the caller's word: it moves only the order's own charge, by the shop's books
+    this.orderBookService.assertOrdersCharge(orderId, chargeId);
     const captured = await this.paymentOperations.capture(this.executionContext, { chargeId, shipment, amountCents });
     await this.orderBookService.book(
       this.executionContext,

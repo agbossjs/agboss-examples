@@ -23,6 +23,8 @@ export class RefundOrderAction implements ActionHandler<RefundOrderAction> {
 
   async execute(input: InputOf<RefundOrderAction>): Promise<void> {
     const { orderId, chargeId, refundableCents: amountCents } = input.payment.value;
+    // the charge id is the caller's word: it moves only the order's own charge, by the shop's books
+    this.orderBookService.assertOrdersCharge(orderId, chargeId);
     await this.paymentOperations.refund(this.executionContext, { chargeId, amountCents, refundNumber: 1 });
     await this.orderBookService.book(this.executionContext, "book-refund", `refund:${chargeId}:1`, orderId, {
       status: "refunded",

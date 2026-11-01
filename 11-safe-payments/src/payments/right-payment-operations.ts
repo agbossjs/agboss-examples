@@ -253,8 +253,8 @@ async function chargeOf(
       return OutboundCallReconciliation.unknown({ reason: "the gateway has no lookup by reference" });
     throw error;
   }
-  // a reference is ours, but match the amount too: never take another order's payment for this one
-  const charge = found.find((candidate) => candidate.amountCents === order.amountCents);
+  // every hit checked against this order — its reference and its amount: never another order's payment
+  const charge = found.find((hit) => hit.reference === order.orderId && hit.amountCents === order.amountCents);
   return charge === undefined
     ? OutboundCallReconciliation.notSent()
     : OutboundCallReconciliation.completed(charge);
