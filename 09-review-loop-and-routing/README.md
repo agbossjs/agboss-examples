@@ -86,7 +86,7 @@ scripted even then (the failure injection), the rest of that run is real.
   misread a borderline application. When a rule can be written down, write it in code; the demo's
   live run shows the two agreeing on clear cases, not on every case.
 - **`maxSteps` is ours to keep right.** `agboss check` bounds an explicit `maxSteps` by the shortest
-  path only; the loop's worst case (9 agent and router steps here) is held by the AC3 test — a lower
+  path only (agbossjs/agboss#643); the loop's worst case (9 agent and router steps here) is held by the AC3 test — a lower
   value would end the stubborn run with `MaxStepsExceededError` before the editor's limit takes it
   to the committee.
 - **What the memo says is the model's.** The framework bounds the loop, validates every answer

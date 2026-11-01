@@ -78,7 +78,8 @@ import { ModelRoutedCreditWorkflowStart } from "./model-routed-credit.workflow-s
   // the loop's worst case, in agent and router steps: the router, the analyst, the officer 4 times
   // (its maxVisits), the editor 3 times (its) — 9. A lower maxSteps would stop the stubborn run
   // with MaxStepsExceededError before the editor's limit takes it to the committee; agboss check
-  // bounds maxSteps by the shortest path only, so the AC3 test is what keeps this number right.
+  // bounds maxSteps by the shortest path only (agbossjs/agboss#643), so the AC3 test is what keeps
+  // this number right.
   maxSteps: 9,
   defaults: { models: { temperature: 0 } },
 })
