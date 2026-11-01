@@ -218,3 +218,27 @@ export const ps23 = (expected: GatewayRow["expected"]): GatewayRow => ({
 });
 
 export type { GatewayOutcome };
+
+/**
+ * A refund of a payment that is not the order's (an IDOR: the caller names order A and order B's
+ * payment). The refund is tied to the order by the shop's own records: refused, nothing refunded.
+ */
+export const refundOwnership: GatewayRow = {
+  scenario: "idor",
+  title: "a refund of another order's payment is refused",
+  expected: { charges: 2, refunds: 0, notes: ["payments.not-the-orders-payment"] },
+  async run(context) {
+    const mine = order(context, "idor-mine");
+    const theirs = order(context, "idor-theirs");
+    await context.app(0).execute(CheckoutWorkflowStart, mine);
+    const other = await context.app(0).execute(CheckoutWorkflowStart, theirs);
+    const refund = { orderId: mine.orderId, paymentId: paymentIdOf(other.output), amountCents: 1000, refundNumber: 1 };
+    const refused = await settled(context.app(1).execute(RefundWorkflowStart, refund));
+    const money = [mine.orderId, theirs.orderId].map((id) => context.gateway.stub.moneyFor(id));
+    return {
+      ...outcomeOf(context, "idor", mine.orderId, [`refund of the other order's payment: ${refused}`]),
+      charges: money.reduce((sum, m) => sum + m.charges, 0),
+      refunds: money.reduce((sum, m) => sum + m.refunds, 0),
+    };
+  },
+};

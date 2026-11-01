@@ -18,6 +18,7 @@ import { StripeGatewayPayments } from "./gateways/stripe/stripe.gateway-payments
 import { BooksRepository } from "./repositories/books.repository.js";
 import { AttemptAgeService } from "./services/attempt-age.service.js";
 import { GatewayStubService } from "./services/gateway-stub.service.js";
+import { PaymentBooksService } from "./services/payment-books.service.js";
 import { CaptureWorkflow } from "./workflows/capture/capture.workflow.js";
 import { CheckoutWorkflow } from "./workflows/checkout/checkout.workflow.js";
 import { GatewayEventWorkflow } from "./workflows/gateway-event/gateway-event.workflow.js";
@@ -39,6 +40,7 @@ import { RefundWorkflow } from "./workflows/refund/refund.workflow.js";
     StripeGatewayPayments,
     GatewayStubService,
     AttemptAgeService,
+    PaymentBooksService,
     BooksRepository,
     SqliteCheckpointSaver,
     SqliteExecutionRecordRepository,

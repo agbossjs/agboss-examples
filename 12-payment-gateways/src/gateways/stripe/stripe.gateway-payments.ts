@@ -11,6 +11,9 @@ import { GatewayStubService } from "../../services/gateway-stub.service.js";
 
 const KEY_RETENTION = 24 * 60 * 60 * 1000; // "Stripe retains keys for at least 24 hours"
 
+/** A value inside a search query's quotes: "escape quotes inside of quotes with a backslash" (docs.stripe.com/search). */
+const searchText = (value: string): string => value.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+
 /** Stripe's official SDK (`stripe`), its `host`/`port`/`protocol` options pointed at the stub. */
 @Injectable({ deps: [OutboundCalls, GatewayStubService, AttemptAgeService] })
 export class StripeGatewayPayments extends GatewayPayments {
@@ -38,8 +41,9 @@ export class StripeGatewayPayments extends GatewayPayments {
       request: { amount: order.amountCents, currency: "usd", confirm: true, payment_method: "pm_card_visa", capture_method: order.capture ? "automatic" : "manual", metadata: { order_id: order.orderId } },
       send: async (call) => paymentOf(await stripe.paymentIntents.create(call.request, { idempotencyKey: call.idempotencyKey })),
       reconcile: async () => {
-        const found = await stripe.paymentIntents.search({ query: `metadata['order_id']:'${order.orderId}'` });
-        const intent = found.data.find((candidate) => candidate.amount === order.amountCents);
+        // escaped (a quote or a backslash in an id cannot add a clause), every hit checked against this order
+        const found = await stripe.paymentIntents.search({ query: `metadata['order_id']:'${searchText(order.orderId)}'` });
+        const intent = found.data.find((hit) => hit.metadata["order_id"] === order.orderId && hit.amount === order.amountCents && hit.currency === "usd");
         if (intent !== undefined) return OutboundCallReconciliation.completed(paymentOf(intent));
         // the search lags: empty is not "not sent" — a replay under the key is safe while Stripe keeps it
         return this.attemptAgeService.isWithin(startedAt, KEY_RETENTION)

@@ -12,14 +12,51 @@ import { ADYEN_TEST_HMAC_KEY, refundWebhook, startAdyenStub } from "../src/gatew
 import { BooksRepository } from "../src/repositories/books.repository.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
 import { RefundWorkflowStart } from "../src/workflows/refund/refund.workflow-start.js";
-import { outcomeOf, type GatewayRow, type GatewayUnderTest } from "./harness.js";
-import { paymentIdOf, ps1, ps17Completed, ps17Failed, ps17Pending, ps18Shipments, ps19, ps2, ps23, ps5, ps8 } from "./runs.js";
+import { seconds } from "@agboss/core/units";
+import { StubFault } from "../src/stub-kit/stub-kit.js";
+import { frozenPastLease, outcomeOf, passLive, until, type GatewayRow, type GatewayUnderTest } from "./harness.js";
+import { paymentIdOf, refundOwnership, ps1, ps17Completed, ps17Failed, ps17Pending, ps18Shipments, ps19, ps2, ps23, ps5, ps8 } from "./runs.js";
+
+/**
+ * A hostile order id on Stripe: it is written to break out of the search query and name another
+ * order (`x' OR metadata['order_id']:'<victim>`). The victim is paid; the hostile order's answer is
+ * lost and its recovery reconciles by search. The query is escaped and every hit is checked against
+ * the order (its `metadata.order_id`, amount, currency): the hostile order is never "paid" by the
+ * victim's payment — it gets its own charge.
+ */
+const stripeHostileOrderId: GatewayRow = {
+  scenario: "hostile-id",
+  title: "an order id that tries to break out of the search query",
+  expected: { charges: 1, notes: ["own payment"] },
+  async run(context) {
+    const victim = { orderId: "stripe-victim", amountCents: 2500, capture: true, failShipping: false };
+    const hostile = { ...victim, orderId: "x' OR metadata['order_id']:'stripe-victim" };
+    const paid = await context.app(0).execute(CheckoutWorkflowStart, victim);
+    await context.clock.advance(seconds(STRIPE_SEARCH_LAG / 1000)); // the victim is in the search now
+    const a = context.app(0);
+    context.gateway.stub.inject(StubFault.HoldAnswer, { operation: "charge" });
+    const first = a.execute(CheckoutWorkflowStart, hostile).catch(() => undefined);
+    await until(() => context.gateway.stub.heldCount === 1, "the hostile order's charge is held");
+    await frozenPastLease(context, a);
+    await passLive(context, 60);
+    context.gateway.stub.release();
+    context.leases.resume(a);
+    await first;
+    const theirs = context.gateway.stub.moneyFor(hostile.orderId).charges;
+    const victimPayment = paymentIdOf(paid.output);
+    const trees = await Promise.all(["execution-1", "execution-2", "execution-3"].map((rootExecutionId) => context.app(1).outboundCallsOf({ tenantId: "default", rootExecutionId })));
+    // the hostile order's own charge intent (execution 2): its stored receipt names which payment it took
+    const taken = trees[1]?.map((call) => (JSON.parse(call.result ?? "{}") as { paymentId?: string }).paymentId) ?? [];
+    const own = !taken.includes(victimPayment) && theirs === 1 ? "own payment" : `took the victim's ${victimPayment}`;
+    return outcomeOf(context, "hostile-id", hostile.orderId, [own, `the hostile order's charges: ${String(theirs)}`]);
+  },
+};
 
 /** Stripe: its stub, its wiring, and the scenarios of its row in the README's table. */
 export async function stripe(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
   return {
     gateway: { slug: "stripe", name: "Stripe", stub: await startStripeStub(), operations: StripeGatewayPayments, chargeOperation: "charge" },
-    rows: [ps1, ps2, ps5, ps8, ps17Completed(25), ps17Pending("ps17b", 25, { charges: 1 }), ps19("refund")],
+    rows: [ps1, ps2, ps5, ps8, ps17Completed(25), ps17Pending("ps17b", 25, { charges: 1 }), ps19("refund"), refundOwnership, stripeHostileOrderId],
   };
 }
 
@@ -29,7 +66,7 @@ export { STRIPE_SEARCH_LAG };
 export async function checkoutCom(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
   return {
     gateway: { slug: "checkout-com", name: "Checkout.com", stub: await startCheckoutComStub(), operations: CheckoutComGatewayPayments, chargeOperation: "charge" },
-    rows: [ps1, ps5, ps8, ps17Failed(73, { charges: 2, boundary: "#657" }), ps18Shipments, ps19("refund")],
+    rows: [ps1, ps5, ps8, ps17Failed(73, { charges: 2, boundary: "#657" }), ps18Shipments, ps19("refund"), refundOwnership],
   };
 }
 
@@ -67,6 +104,7 @@ export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: Gatewa
       ps17Pending("ps17d", 7 * 24 + 1, { charges: 1, notes: ["intents left pending: 1"], boundary: "#658 (worked around: the wiring records the attempt's start; past 7 days, unknown)" }),
       ps19("refund"),
       ps23({ charges: 1, notes: ["in-progress", "replayed"] }),
+      refundOwnership,
     ],
   };
 }
@@ -83,6 +121,7 @@ export async function cardcom(): Promise<{ gateway: GatewayUnderTest; rows: Gate
       ps19("refund", { charges: 1, refunds: 2, boundary: "#657 (CardCom refunds take no key)" }),
       // CardCom does not protect a concurrent duplicate (KB 509: "wait … up to 7 seconds")
       ps23({ charges: 2, boundary: "CardCom's own in-flight gap (KB 509)" }),
+      refundOwnership,
     ],
   };
 }
@@ -99,7 +138,7 @@ export async function paypal(): Promise<{ gateway: GatewayUnderTest; rows: Gatew
       chargeOperation: "capture", // money moves at the capture
       allowNetwork: [PAYPAL_SANDBOX_HOST], // the name the SDK requests; its agent connects to 127.0.0.1 only
     },
-    rows: [ps1, ps5, ps8, ps17Pending("ps17b", 7, { charges: 1 }), ps19("refund")],
+    rows: [ps1, ps5, ps8, ps17Pending("ps17b", 7, { charges: 1 }), ps19("refund"), refundOwnership],
     certificate,
   };
 }

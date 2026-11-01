@@ -86,4 +86,10 @@ scenarios/                                      the scenarios of 11-safe-payment
 - **What stays the gateway's:** keeping keys (Adyen 7 days, Checkout.com 72 h, Stripe 24 h,
   PayPal's orders 6 h), protecting a concurrent duplicate (CardCom does not: ps23), signing webhooks.
 - **What stays the application's:** one business key per order and per refund, the attempt's start
-  where the gateway's only lookup is a replay, checking webhook signatures.
+  where the gateway's only lookup is a replay, checking webhook signatures — and two rules every
+  wiring here keeps: **a lookup's hit is this order's payment only when its order id (Stripe's
+  `metadata.order_id`, Checkout.com's `reference`, PayPal's `reference_id`), amount and currency are
+  this order's**, the search text escaped (Stripe: an order id with a quote cannot add an `OR`
+  clause — the "hostile-id" row); and **a payment id a caller names refunds or captures only when the
+  shop's own books tie it to that order and tenant** (`PaymentOwnershipError`, nothing sent — the
+  "idor" row of every gateway).

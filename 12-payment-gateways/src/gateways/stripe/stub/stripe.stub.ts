@@ -57,6 +57,19 @@ const intentBody = (intent: Intent) => ({
   created: Math.floor(intent.created / 1000),
 });
 
+/**
+ * The order ids a search query names: `metadata['order_id']:'<value>'` clauses joined by `OR`, a
+ * value's quote and backslash escaped by a backslash — https://docs.stripe.com/search (2026-11-01):
+ * "You can escape quotes inside of quotes with a backslash". An unescaped quote ends the value, so
+ * an id that is not escaped can add a clause of its own.
+ */
+export function orderIdsOf(query: string): string[] {
+  const ids: string[] = [];
+  const clause = /metadata\['order_id'\]:'((?:[^'\\]|\\.)*)'/gu;
+  for (const [, raw] of query.matchAll(clause)) if (raw !== undefined) ids.push(raw.replaceAll(/\\(.)/gu, "$1"));
+  return ids;
+}
+
 const error = (status: number, type: string, message: string): StubAnswer => ({ status, body: { error: { type, message } } });
 
 /** Starts the Stripe stub: its routes over the shared stub kit. */
@@ -93,8 +106,8 @@ export async function startStripeStub(): Promise<StubKit> {
       return {
         operation: "search",
         handle: ({ query }) => {
-          const orderId = /metadata\['order_id'\]:'([^']*)'/u.exec(query.get("query") ?? "")?.[1];
-          const data = [...intents.values()].filter((intent) => intent.orderId === orderId && intent.created + STRIPE_SEARCH_LAG <= kit().now());
+          const orderIds = orderIdsOf(query.get("query") ?? "");
+          const data = [...intents.values()].filter((intent) => orderIds.includes(intent.orderId) && intent.created + STRIPE_SEARCH_LAG <= kit().now());
           return { status: 200, body: { object: "search_result", url: path, has_more: false, data: data.map(intentBody) } };
         },
       };

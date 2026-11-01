@@ -13,3 +13,10 @@ CREATE TABLE IF NOT EXISTS attempt_starts (
   business_key TEXT PRIMARY KEY,
   started_at INTEGER NOT NULL
 );
+-- Which order (and tenant) each gateway payment belongs to, written when the charge completes:
+-- every refund or capture is checked against it, so a caller can never move another order's money.
+CREATE TABLE IF NOT EXISTS order_payments (
+  payment_id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL
+);

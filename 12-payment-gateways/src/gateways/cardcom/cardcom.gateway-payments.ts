@@ -43,8 +43,9 @@ export class CardcomGatewayPayments extends GatewayPayments {
       },
       reconcile: async (lookup) => {
         const found = await this.post("Transactions/GetTransactionByExternalUniqTran", { ExternalUniqTranId: externalIdOf(lookup.idempotencyKey) });
-        const info = found["TranzactionInfo"] as { TranzactionId?: unknown } | undefined;
-        return found["ResponseCode"] === 0 && info !== undefined
+        const info = found["TranzactionInfo"] as { TranzactionId?: unknown; Amount?: unknown } | undefined;
+        // found by our own id's digest; its amount checked against this order all the same
+        return found["ResponseCode"] === 0 && info !== undefined && info.Amount === order.amountCents / 100
           ? OutboundCallReconciliation.completed({ paymentId: String(info.TranzactionId), amountCents: order.amountCents, status: "approved" })
           : OutboundCallReconciliation.notSent();
       },

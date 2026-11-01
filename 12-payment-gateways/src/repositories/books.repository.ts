@@ -26,6 +26,22 @@ export class BooksRepository {
     return { startedAt: Number(row?.["startedAt"]) };
   }
 
+  /** Books which order (and tenant) a gateway payment belongs to (inside a fenced effect's transaction). */
+  bookPayment(database: DatabaseSync, payment: { paymentId: string; orderId: string; tenantId: string }): { orderId: string } {
+    database
+      .prepare("INSERT OR IGNORE INTO order_payments (payment_id, order_id, tenant_id) VALUES (?, ?, ?)")
+      .run(payment.paymentId, payment.orderId, payment.tenantId);
+    return { orderId: payment.orderId };
+  }
+
+  /** Whether a gateway payment is this tenant's order's, by the shop's own books. */
+  isOrdersPayment(paymentId: string, orderId: string, tenantId: string): boolean {
+    const row = this.sqliteConnection.database
+      .prepare("SELECT order_id AS orderId, tenant_id AS tenantId FROM order_payments WHERE payment_id = ?")
+      .get(paymentId);
+    return row?.["orderId"] === orderId && row["tenantId"] === tenantId;
+  }
+
   /** How many events of an order were applied. */
   applied(orderId: string): number {
     return this.appliedIn(this.sqliteConnection.database, orderId);

@@ -8,7 +8,7 @@ import { Checkout } from "checkout-sdk-node";
 import { GatewayPayments, type GatewayCapture, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
 
-interface CkoPayment { readonly id: string; readonly amount: number; readonly status: string }
+interface CkoPayment { readonly id: string; readonly amount: number; readonly currency: string; readonly reference: string; readonly status: string }
 
 /** The SDK's payments API as this wiring uses it (`checkout-sdk-node` ships loose types). */
 interface CkoPayments {
@@ -45,8 +45,8 @@ export class CheckoutComGatewayPayments extends GatewayPayments {
       send: async (call) => paymentOf((await cko.payments.request(call.request, call.idempotencyKey)) as CkoPayment),
       reconcile: async () => {
         const { data } = (await cko.payments.getPaymentList({ reference: order.orderId })) as { data: CkoPayment[] };
-        // a reference is not unique: match the amount too
-        const found = data.find((payment) => payment.amount === order.amountCents);
+        // a reference is not unique: every hit checked against this order — reference, amount, currency
+        const found = data.find((hit) => hit.reference === order.orderId && hit.amount === order.amountCents && hit.currency === "USD");
         return found === undefined ? OutboundCallReconciliation.notSent() : OutboundCallReconciliation.completed(paymentOf(found));
       },
     });

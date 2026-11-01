@@ -44,7 +44,7 @@ export class PayPalGatewayPayments extends GatewayPayments {
       },
       reconcile: async () => {
         const { result: current } = await orders.getOrder({ id: paypalOrderId });
-        return capturesOf(current).length > 0
+        return capturesOf(current).length > 0 && current.purchaseUnits?.[0]?.referenceId === order.orderId
           ? OutboundCallReconciliation.completed({ paymentId: paypalOrderId, amountCents: order.amountCents, status: String(current.status) })
           : OutboundCallReconciliation.notSent();
       },
@@ -55,7 +55,10 @@ export class PayPalGatewayPayments extends GatewayPayments {
   override async refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
     const client = this.client();
     const orders = new OrdersController(client);
-    const captureId = capturesOf((await orders.getOrder({ id: refund.paymentId })).result)[0]?.id ?? "";
+    const paypalOrder = (await orders.getOrder({ id: refund.paymentId })).result;
+    // the PayPal order must be this order's (its reference_id), beside the shop's own books
+    if (paypalOrder.purchaseUnits?.[0]?.referenceId !== refund.orderId) throw new Error(`PayPal order ${refund.paymentId} is not order ${refund.orderId}'s`);
+    const captureId = capturesOf(paypalOrder)[0]?.id ?? "";
     const businessKey = `refund:${refund.paymentId}:${String(refund.refundNumber)}`;
     const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "refund", { businessKey }), {
       target: "paypal",
