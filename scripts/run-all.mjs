@@ -100,6 +100,13 @@ export const PROJECTS = [
     primaryProof:
       "Every payment race (PS1–PS23) done wrong and done right against a stub gateway: one charge, one refund, read from the stub's records",
   },
+  {
+    name: "12-payment-gateways",
+    priority: "P0",
+    mode: "fault-injection",
+    primaryProof:
+      "The Payments contract on ten gateways: the right wiring on five supported gateways' official SDKs, each against a stub of its documented behaviour",
+  },
 ];
 
 export function parseRunAllArgs(args) {

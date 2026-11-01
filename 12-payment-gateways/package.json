@@ -1,0 +1,38 @@
+{
+  "name": "payment-gateways",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P0 Proof: the right wiring of AGBoss's Payments contract on five supported gateways' official SDKs (Stripe, Adyen, PayPal, Checkout.com) or documented HTTP API (CardCom), each pointed at a local stub that follows that gateway's public docs — one charge and one refund through the relevant failures, read from the stub's records.",
+  "agboss": {
+    "application": "src/payment-gateways.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@adyen/api-library": "32.2.0",
+    "@agboss/core": "^0.1.0",
+    "@paypal/paypal-server-sdk": "2.5.0",
+    "checkout-sdk-node": "5.8.0",
+    "stripe": "23.1.0"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.0",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "selfsigned": "5.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

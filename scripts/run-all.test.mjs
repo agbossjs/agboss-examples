@@ -273,6 +273,7 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
         "07-langgraph-migration",
         "09-review-loop-and-routing",
         "11-safe-payments",
+        "12-payment-gateways",
       ],
     );
     assert.equal(
@@ -581,7 +582,7 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
 const SAFE_PAYMENTS = "11-safe-payments";
 
 describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
-  it("11-safe-payments is a P0 project, shaped like 04 and 05, last in folder order", () => {
+  it("11-safe-payments is a P0 project, shaped like 04 and 05", () => {
     const meta = PROJECTS.find((p) => p.name === SAFE_PAYMENTS);
     assert.ok(meta, "11-safe-payments is in PROJECTS");
     assert.equal(meta.priority, "P0");
@@ -615,6 +616,31 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
     }
     const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
     assert.match(rootReadme, /\| \[\*\*`11-safe-payments`\*\*\]\(\.\/11-safe-payments\/\) \| \*\*P0\*\* \|/);
+  });
+});
+
+describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
+  const GATEWAYS = "12-payment-gateways";
+  it("12-payment-gateways is a P0 project, shaped like 04 and 05, its SDKs pinned exactly", () => {
+    const meta = PROJECTS.find((p) => p.name === GATEWAYS);
+    assert.ok(meta, "12-payment-gateways is in PROJECTS");
+    assert.equal(meta.priority, "P0");
+    const shapeOf = (m) => Object.keys(m).sort();
+    assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
+    const dir = join(REPO_ROOT, GATEWAYS);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    for (const [name, version] of Object.entries({ stripe: "23.1.0", "@adyen/api-library": "32.2.0", "@paypal/paypal-server-sdk": "2.5.0", "checkout-sdk-node": "5.8.0" }))
+      assert.equal(pkg.dependencies[name], version, name);
+    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
+      assert.equal(existsSync(join(dir, file)), true, `${GATEWAYS}/${file}`);
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary"])
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    assert.match(readFileSync(join(REPO_ROOT, "README.md"), "utf8"), /\| \[\*\*`12-payment-gateways`\*\*\]\(\.\/12-payment-gateways\/\) \| \*\*P0\*\* \|/);
   });
 });
 
