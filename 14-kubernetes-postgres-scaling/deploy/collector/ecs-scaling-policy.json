@@ -1,0 +1,18 @@
+{
+  "PolicyName": "agboss-slot-demand",
+  "PolicyType": "TargetTrackingScaling",
+  "TargetTrackingScalingPolicyConfiguration": {
+    "TargetValue": 4,
+    "ScaleInCooldown": 300,
+    "ScaleOutCooldown": 30,
+    "CustomizedMetricSpecification": {
+      "Metrics": [
+        { "Id": "queued", "ReturnData": false, "MetricStat": { "Metric": { "Namespace": "AGBoss", "MetricName": "agboss_cluster_children_queued" }, "Stat": "Maximum" } },
+        { "Id": "waiting", "ReturnData": false, "MetricStat": { "Metric": { "Namespace": "AGBoss", "MetricName": "agboss_instance_steps_waiting" }, "Stat": "Sum" } },
+        { "Id": "busy", "ReturnData": false, "MetricStat": { "Metric": { "Namespace": "AGBoss", "MetricName": "agboss_instance_step_slots_busy" }, "Stat": "Sum" } },
+        { "Id": "tasks", "ReturnData": false, "MetricStat": { "Metric": { "Namespace": "ECS/ContainerInsights", "MetricName": "RunningTaskCount", "Dimensions": [{ "Name": "ClusterName", "Value": "agboss" }, { "Name": "ServiceName", "Value": "agboss-worker" }] }, "Stat": "Average" } },
+        { "Id": "demand_per_task", "Label": "slot demand per task", "ReturnData": true, "Expression": "(queued + waiting + busy) / MAX([tasks, 1])" }
+      ]
+    }
+  }
+}

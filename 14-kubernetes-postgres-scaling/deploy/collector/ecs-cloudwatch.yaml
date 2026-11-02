@@ -1,0 +1,39 @@
+# Amazon ECS — the AWS Distro for OpenTelemetry Collector as a sidecar of the worker task
+# (agbossjs/agboss#486). It scrapes the worker's Prometheus endpoint once a minute and writes the
+# metrics to CloudWatch in Embedded Metric Format, namespace AGBoss, no per-task dimension — so a
+# 60 s period's Maximum is the cluster value and its Sum the tasks' total.
+# Docs: https://aws-otel.github.io/docs/getting-started/cloudwatch-metrics (awsemf exporter)
+#       https://aws-otel.github.io/docs/setup/ecs (the sidecar)
+#       https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-autoscaling-targettracking.html
+#       https://aws.amazon.com/blogs/containers/autoscaling-amazon-ecs-services-based-on-custom-metrics-with-application-auto-scaling/
+# The scale rule: ecs-scaling-policy.json (target tracking on metric math, target 4 per task).
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: agboss-worker
+          scrape_interval: 60s
+          static_configs:
+            - targets: ["localhost:9464"]
+processors:
+  batch: {}
+exporters:
+  awsemf:
+    namespace: AGBoss
+    log_group_name: /agboss/metrics
+    dimension_rollup_option: NoDimensionRollup
+    resource_to_telemetry_conversion:
+      enabled: false
+    metric_declarations:
+      - dimensions: [[]]
+        metric_name_selectors:
+          - ^agboss_cluster_children_queued$
+          - ^agboss_instance_step_slots_busy$
+          - ^agboss_instance_steps_waiting$
+          - ^agboss_instance_leases_held$
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [batch]
+      exporters: [awsemf]

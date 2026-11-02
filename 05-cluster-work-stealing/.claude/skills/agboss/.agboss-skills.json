@@ -10,7 +10,7 @@
     "references/06-finops-providers-and-queues.md": "sha256-b84912926c6ecee97a9f422a79e14323b7b47cd52dee296515673104eaf5e722",
     "references/07-guardrails-pii-and-security.md": "sha256-b31b51d7010e010a935e44d05046e380a6e1a569c6144876d958d9a9878ec9ee",
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
-    "references/09-persistence-k8s-and-deploy.md": "sha256-60ab4436e0467aa77fcf79be8a4bfb5a1f4f276a075fa3659ac538dc9976315a",
+    "references/09-persistence-k8s-and-deploy.md": "sha256-3a1b643e34065d1f4a2bf673f13489625e46ba373fa6e4ada313e6f627fea20a",
     "references/10-testing-vcr-and-evals.md": "sha256-2fcd043f2a8e51f3e75844dcce09aca3e5dd3b403def9d3b92b504099a9fb215",
     "references/11-cli-studio-and-error-catalog.md": "sha256-ff39dc22c8a2c4aafb6ab97d8fc3e9871dee147c3828a10eebc93a6d35d4b265",
     "references/12-end-to-end-recipes.md": "sha256-8592ca04083b2d8b2471d74632136f11517b67b3251bdb4d2c116546093f26bb",

@@ -1,0 +1,39 @@
+{
+  "name": "kubernetes-postgres-scaling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P1 Proof: AGBoss workers that Kubernetes scales on real queued work — the core's OpenTelemetry metrics through the official Prometheus exporter, KEDA and HPA configs, graceful termination, and OTel Collector recipes for ECS, Cloud Run and Container Apps.",
+  "agboss": {
+    "application": "src/kubernetes-scaling.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check && tsc --noEmit && eslint .",
+    "check:k8s": "sh scripts/check-k8s.sh",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.0",
+    "@opentelemetry/exporter-prometheus": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.0",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0",
+    "yaml": "2.9.1"
+  }
+}

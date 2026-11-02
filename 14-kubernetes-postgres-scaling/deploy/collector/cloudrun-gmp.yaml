@@ -1,0 +1,51 @@
+# Google Cloud Run — the OpenTelemetry Collector as a sidecar of the worker, scraping its Prometheus
+# endpoint and writing to Google Cloud Managed Service for Prometheus (agbossjs/agboss#486).
+# Docs: https://cloud.google.com/run/docs/tutorials/custom-metrics-opentelemetry-sidecar
+#       https://cloud.google.com/stackdriver/docs/managed-prometheus/setup-otel
+#
+# Scaling: a Cloud Run *service* scales on requests and CPU only — not on a custom metric. Run the
+# workers as a Cloud Run *worker pool* and scale it with CREMA (Cloud Run External Metrics
+# Autoscaling, KEDA's scalers in a Cloud Run service): cremaconfig below, a prometheus trigger on
+# the slot demand against Managed Prometheus' query API. Google lists Kafka, Cron and Pub/Sub as
+# its verified CREMA scalers — verify the prometheus one in your project before relying on it.
+# Docs: https://cloud.google.com/run/docs/configuring/workerpools/crema-autoscaling
+#       https://github.com/GoogleCloudPlatform/cloud-run-external-metrics-autoscaling
+#       https://cloud.google.com/stackdriver/docs/managed-prometheus/query-api-ui
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: agboss-worker
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["localhost:9464"]
+processors:
+  batch: {}
+  resourcedetection:
+    detectors: [env, gcp]
+exporters:
+  googlemanagedprometheus: {}
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [resourcedetection, batch]
+      exporters: [googlemanagedprometheus]
+---
+# cremaconfig — CREMA's ScaledObject for the worker pool `agboss-worker`
+apiVersion: crema/v1
+kind: CremaConfig
+spec:
+  scaledObjects:
+    - spec:
+        scaleTargetRef:
+          name: projects/PROJECT_ID/locations/REGION/workerpools/agboss-worker
+        minReplicaCount: 1
+        maxReplicaCount: 10
+        triggers:
+          - type: prometheus
+            metadata:
+              serverAddress: https://monitoring.googleapis.com/v1/projects/PROJECT_ID/location/global/prometheus
+              query: >-
+                max(agboss_cluster_children_queued) + sum(agboss_instance_steps_waiting) + sum(agboss_instance_step_slots_busy)
+              threshold: "4"

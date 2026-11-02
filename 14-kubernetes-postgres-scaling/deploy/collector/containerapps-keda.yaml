@@ -1,0 +1,47 @@
+# Azure Container Apps — the OpenTelemetry Collector as a sidecar container writing to Azure
+# Monitor managed service for Prometheus (remote write, a managed identity), and a custom KEDA
+# scale rule of type prometheus on the same slot demand (agbossjs/agboss#486). Container Apps runs
+# KEDA itself: no ScaledObject to install.
+# Docs: https://learn.microsoft.com/azure/container-apps/scale-app#custom
+#       https://keda.sh/docs/latest/scalers/prometheus/
+#       https://learn.microsoft.com/azure/azure-monitor/containers/prometheus-remote-write-managed-identity
+#       https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-api-promql
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: agboss-worker
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["localhost:9464"]
+extensions:
+  azureauth:
+    managed_identity:
+      client_id: ${env:AZURE_CLIENT_ID}
+exporters:
+  prometheusremotewrite:
+    endpoint: ${env:AZURE_MONITOR_WORKSPACE_INGESTION_ENDPOINT}
+    auth:
+      authenticator: azureauth
+service:
+  extensions: [azureauth]
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [prometheusremotewrite]
+---
+# The container app's scale section (`az containerapp update --yaml`, properties.template.scale)
+scale:
+  minReplicas: 1
+  maxReplicas: 10
+  rules:
+    - name: agboss-slot-demand
+      custom:
+        type: prometheus
+        identity: system # the app's managed identity, Monitoring Data Reader on the workspace
+        metadata:
+          serverAddress: https://WORKSPACE.REGION.prometheus.monitor.azure.com
+          query: >-
+            max(agboss_cluster_children_queued) + sum(agboss_instance_steps_waiting) + sum(agboss_instance_step_slots_busy)
+          threshold: "4"
+          authModes: azureWorkloadIdentity
