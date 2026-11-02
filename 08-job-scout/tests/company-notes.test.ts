@@ -9,6 +9,8 @@ import { NOTES_DIR } from "../src/config/paths.js";
 import { CompanyNotes } from "../src/rag/company-notes.rag.js";
 
 const signal = new AbortController().signal;
+// agbossjs/agboss#700: every retrieval and index names its tenant — the notes are the default tenant's
+const tenantId = "default";
 
 describe("company notes (knowledge base)", () => {
   it("AC3: finds the note about a company, with its file as the source", async () => {
@@ -20,6 +22,7 @@ describe("company notes (knowledge base)", () => {
     const retrieval = await notes.retrieve("Why is Fireblocks a fit for a backend engineer?", {
       topK: 3,
       signal,
+      tenantId,
     });
 
     expect(retrieval.results[0]?.source).toBe("fireblocks.md");
@@ -31,7 +34,7 @@ describe("company notes (knowledge base)", () => {
     const index = await new CompanyNotes({
       folder: NOTES_DIR,
       dbFile: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
-    }).index();
+    }).index({ tenantId, signal });
 
     expect(workflow.config.agents["scout-agent"]?.rag).toEqual([
       { name: "company-notes-rag", mode: RagMode.Tool, topK: 3 },
