@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
-  "description": "P1 Proof: AGBoss workers that Kubernetes scales on real queued work — the core's OpenTelemetry metrics through the official Prometheus exporter, KEDA and HPA configs, graceful termination, and OTel Collector recipes for ECS, Cloud Run and Container Apps.",
+  "description": "P1 Proof: AGBoss on Kubernetes and PostgreSQL — a backlog scales the workers out, a killed and a frozen worker are recovered and fenced, every job and every external side effect happens exactly once, verified from state; then the workers scale in. KEDA on the core's OpenTelemetry metrics through the official Prometheus exporter.",
   "agboss": {
     "application": "src/kubernetes-scaling.application.ts"
   },
@@ -16,10 +16,15 @@
     "check:k8s": "sh scripts/check-k8s.sh",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "cluster:up": "node scripts/cluster/up.mjs",
+    "cluster:scenario": "node scripts/cluster/scenario.mjs",
+    "cluster:down": "node scripts/cluster/down.mjs"
   },
   "dependencies": {
     "@agboss/core": "^0.1.0",
+    "@agboss/postgres": "^0.1.1",
     "@opentelemetry/exporter-prometheus": "0.222.0",
     "@opentelemetry/resources": "2.11.0",
     "@opentelemetry/sdk-metrics": "2.11.0"

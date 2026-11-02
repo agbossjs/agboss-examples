@@ -1,13 +1,19 @@
 import type { Secret } from "@agboss/core";
 
-/** What a worker reads: its shared store, its ports, its maximum stop. */
+/** What a pod reads: its database, the other system, its name and its ports. */
 export class AppEnvironment {
-  /** The stores' SQLite file — one per machine here; #487 moves the stores to PostgreSQL. */
-  sqlitePath!: string;
-  /** The worker's own HTTP port: `/health/live`, `/health/ready`, `POST /api/batches`. */
+  /** The shared PostgreSQL database of every store (`@agboss/postgres`). */
+  postgresUrl!: Secret;
+  /** Connections of this pod's pool: pods × this ≤ the database's `max_connections`. */
+  postgresPoolSize?: number;
+  /** The PII key every pod shares (`pseudonymKey`): fingerprints and key handles agree across pods. */
+  piiPseudonymKey!: Secret;
+  /** The other system the jobs call: their remote work and the ledger. */
+  ledgerUrl!: string;
+  /** The pod's name (the downward API), on every receipt and work call. */
+  podName!: string;
+  /** The pod's own HTTP port: `/health/live`, `/health/ready`, the batch and verification API. */
   httpPort!: number;
   /** The Prometheus exporter's port: `GET /metrics`. */
   metricsPort!: number;
-  /** The built-in model provider's key: no component here calls a model, so it stays a placeholder. */
-  openRouterApiKey!: Secret;
 }

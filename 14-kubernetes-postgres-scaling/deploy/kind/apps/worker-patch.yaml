@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agboss-worker
+spec:
+  template:
+    metadata:
+      labels: { app.kubernetes.io/part-of: agboss-scaling }
+    spec:
+      containers:
+        - name: worker
+          image: agboss-scaling:local
+          imagePullPolicy: Never
+          env:
+            - { name: AGBOSS_ENV, value: prod }
+            - { name: LEDGER_URL, value: "http://ledger-stub:8081" }
+            - { name: POSTGRES_POOL_SIZE, value: "5" }
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POSTGRES_URL
+              valueFrom: { secretKeyRef: { name: agboss-secrets, key: POSTGRES_URL } }
+            - name: PII_PSEUDONYM_KEY
+              valueFrom: { secretKeyRef: { name: agboss-secrets, key: PII_PSEUDONYM_KEY } }
+          resources:
+            requests: { cpu: 200m, memory: 192Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          # a frozen pod (a GC pause, SIGSTOP) is not restarted before another pod took its leases
+          # over (≤ 30 s lease + ≤ 30 s sweep): the lease keeps correctness meanwhile, and the
+          # zombie's late write is refused (Wiki → Deploying-on-Kubernetes)
+          livenessProbe:
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 9

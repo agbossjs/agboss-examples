@@ -1,0 +1,115 @@
+# A minimal Prometheus for the blueprint (agbossjs/agboss#487): it scrapes every pod annotated
+# `prometheus.io/scrape: "true"` (the AGBoss pods, deploy/worker-deployment.yaml) every 5 s, keeps an
+# hour, and serves at `prometheus-server.monitoring.svc:80` — the address the shipped KEDA
+# ScaledObject queries. In production: your Prometheus (or the Operator's PodMonitor).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agboss-prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agboss-prometheus
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: agboss-prometheus }
+subjects:
+  - { kind: ServiceAccount, name: prometheus, namespace: monitoring }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+    scrape_configs:
+      - job_name: pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: { names: [agboss] }
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_phase]
+            action: keep
+            regex: Running
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-server
+  namespace: monitoring
+  labels: { app.kubernetes.io/name: prometheus }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app.kubernetes.io/name: prometheus }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: prometheus }
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.retention.time=1h
+            - --storage.tsdb.path=/prometheus
+          ports:
+            - { name: http, containerPort: 9090 }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 300m, memory: 256Mi }
+          readinessProbe:
+            httpGet: { path: /-/ready, port: http }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: config, mountPath: /etc/prometheus }
+            - { name: data, mountPath: /prometheus }
+      volumes:
+        - name: config
+          configMap: { name: prometheus-config }
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-server
+  namespace: monitoring
+spec:
+  type: NodePort
+  selector: { app.kubernetes.io/name: prometheus }
+  ports:
+    - { name: http, port: 80, targetPort: http, nodePort: 30090 }

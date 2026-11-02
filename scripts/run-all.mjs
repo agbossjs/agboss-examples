@@ -119,7 +119,7 @@ export const PROJECTS = [
     priority: "P1",
     mode: "offline-deterministic",
     primaryProof:
-      "Workers an autoscaler scales on real queued work: the core's OpenTelemetry metrics through the official Prometheus exporter, KEDA and HPA configs validated, graceful termination matched to the app's stop",
+      "Kubernetes + PostgreSQL: a backlog scales the workers out and back in, a killed and a frozen worker are recovered and fenced, every job and every ledger entry exactly once — verified from state (offline: the verification and its sabotage cases, a batch on two instances; the kind run: npm run cluster:scenario)",
   },
 ];
 

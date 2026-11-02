@@ -443,7 +443,31 @@ question, `[reply-interpreter.decision-model]`). `result.pending[i].kind` is `Pa
 `agent` the step, `ask` the masked question. Exactly one answer wins (`NotPausedError` for the
 second), another instance continues it, a cancel withdraws it — as any pause. The step is no model
 call and no step of `maxSteps`; the execution's budgets are checked before it asks. A tool that
-names a question role is `[channel.wrong-tool]`; an agent cannot ask one as a tool yet (#712).
+names a question role is `[channel.wrong-tool]`.
+
+### An agent asks a question role as a tool (#712)
+
+When the model should decide **whether** and **when** to ask, list the role in the agent's tools —
+`@Agent({ …, tools: [SpendingLimitQuestion, PlaceOrderTool] })`. Its model sees a tool named the
+role's name (`spending-limit-question`), described by the role's description, whose input is the
+role's `ask` — validated strictly before anything is asked: arguments that are no valid ask (a
+field the ask does not declare too) pause nothing and send nothing, the model reads a tool error
+and may try again, and the call counts against the role's `maxVisits`; a valid call pauses on the role's channel at the loop's approval step, before the move's
+other tools run (several question calls of one move are asked one after the other), and the role's
+`answer` — a `decision`, a reply its interpreter read, or the channel's `decided(…)`, validated as
+the `answer` DTO — is the call's result the model reads next (through the tool-result path: PII
+masking of the answer's `sensitive` fields, `maxResultSize`, `onToolStart` / `onToolEnd`,
+`result.toolCalls` with `step.component.kind` `question`; tool interceptors do not apply — the call
+runs no tool). `result.pending[i]` is `kind: PauseKind.Question`, `agent` the asking agent,
+`channel` the role; every guarantee of a question step holds (one answer wins, another instance
+resumes it without asking again, a cancel withdraws it, tenant and owner checks). The role's
+`maxVisits` bounds how many times one visit of the agent asks it (the next call fails the step with
+`VisitsLimitExceededError` before it is asked); the budgets and the holder's fence are checked
+before every ask. A `send` that throws, or an invalid `decided(…)`, fails the agent's step
+(`AgentFailedError`, the cause kept). An approval role in `tools` is
+`[channel.approval-role-as-tool]`. Tests script the call as `callTool(SpendingLimitQuestion, { item,
+priceUsd })` (typed by the role's ask); `agboss describe` prints `asked at <agent>'s tool loop
+(<workflow>)`.
 
 ## The pause's life and its records
 
@@ -469,7 +493,21 @@ names a question role is `[channel.wrong-tool]`; an agent cannot ask one as a to
   only up to $500" is `{ approved: true, overrideArguments: { amountUsd: 500 } }`, laid over the
   call's own arguments — and `answer-reply-interpreter-not-understood-dto` for a reply that does not
   answer ("🤷"), which is never a refusal (#648). Tests:
-  `replyWith(ReplyInterpreterNotUnderstoodDto, { reason })`.
+  `replyWith(ReplyInterpreterNotUnderstoodDto, { reason })`. For an approval role (#688) its decision
+  is named — `approve` / `approve-with-changes` / `refuse`; an unknown one, `approve-with-changes`
+  without a correction, `approved` beside a decision or a correction that changes the call's shape
+  (a new key at any depth, another kind of value, a list of another length) is not understood, and
+  the corrected call passes the tool's own input strictly (an unknown key is refused). The kept
+  record's `PauseAnswerRecord.asked` is the call as asked, beside its `decision`.
+- **A reply interpreter may change approved arguments within the call's DTO; put money limits in a
+  guardrail or the action.** A reply interpreter reads intent; it is not a guardrail (#688). It does not decide whether a
+  correction is allowed — "never above the call's amount", "only in the call's currency", "never
+  below 0". Put such a limit where it holds whoever approved the call: a tool interceptor's
+  `beforeToolCall` on the call as it runs (after the approval, with any correction —
+  `ToolCallDecision.block({ reason })` fails the step with `ToolBlockedError`), or a check in the
+  tool's or action's own code (`min` / `max` on the input DTO's field for a plain bound). The
+  payment guarantees — fenced effects, outbound calls, one charge per business key — hold whatever
+  the interpreter reads.
 - **Free text** that cannot be read throws `UninterpretableReplyError` (`pause.uninterpretable-reply`,
   `reason`) and the pause stays `Pending`; a role without `replyInterpreter` →
   `ReplyInterpreterMissingError`. Exactly one of `decision` / a non-empty `reply`, else

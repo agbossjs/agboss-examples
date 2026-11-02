@@ -1,0 +1,21 @@
+# Production (deploy/keda-scaledobject.yaml) holds 300 s before a scale-in; here 30 s, one pod per
+# 15 s, so the scale-in of AC2 is seen within minutes. At most 4 workers on the 3 CPU node.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: agboss-worker
+spec:
+  maxReplicaCount: 4
+  pollingInterval: 5
+  cooldownPeriod: 30
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - { type: Percent, value: 100, periodSeconds: 15 }
+        scaleDown:
+          stabilizationWindowSeconds: 30
+          policies:
+            - { type: Pods, value: 1, periodSeconds: 15 }

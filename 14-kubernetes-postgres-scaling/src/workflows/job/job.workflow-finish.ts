@@ -1,9 +1,9 @@
 import { WorkflowFinish } from "@agboss/core";
-import { JobDoneDto } from "../../dto/job-done.dto.js";
+import { JobReceiptDto } from "../../dto/job-receipt.dto.js";
 
 @WorkflowFinish({
   name: "job-done-workflow-finish",
   description: "The job, done",
-  output: JobDoneDto,
+  output: JobReceiptDto,
 })
 export class JobDoneWorkflowFinish {}

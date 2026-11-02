@@ -4,7 +4,7 @@ import { FLOW_CHAIN_RULE, agbossPlugin } from "@agboss/core/eslint";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["node_modules", "dist", "coverage", ".agboss"] },
+  { ignores: ["node_modules", "dist", "coverage", ".agboss", ".artifacts", "scripts/cluster/**/*.mjs"] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
@@ -17,7 +17,9 @@ export default tseslint.config(
   },
   {
     files: ["src/**/*.ts"],
-    ignores: ["src/**/*.test.ts", "src/demo.ts"],
+    // the stub is the other system (not an AGBoss component, on real time); the demo and the load
+    // generator are scripts around the app
+    ignores: ["src/**/*.test.ts", "src/demo.ts", "src/load.ts", "src/stub/**"],
     plugins: { agboss: agbossPlugin },
     rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
   },

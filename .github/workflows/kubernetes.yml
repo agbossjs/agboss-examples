@@ -1,0 +1,114 @@
+name: Kubernetes blueprint (kind)
+
+# agbossjs/agboss#487: 14-kubernetes-postgres-scaling on a real kind cluster — backlog, scale-out,
+# a killed worker, the dead and risen worker, scale-in — verified from state. About 15 minutes, so
+# not on every PR: nightly, by hand, and on PRs that touch the example or the packing.
+on:
+  schedule:
+    - cron: "40 4 * * *"
+  workflow_dispatch:
+    inputs:
+      framework_sha:
+        description: "Exact agbossjs/agboss commit SHA (defaults to .agboss-version.json)"
+        required: false
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - "14-kubernetes-postgres-scaling/**"
+      - ".agboss-version.json"
+      - "scripts/pack-framework.mjs"
+      - "scripts/install-packed.mjs"
+      - ".github/workflows/kubernetes.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kubernetes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kind:
+    name: kind — backlog, scale-out, failure, recovery, scale-in
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KIND_VERSION: v0.33.0
+      KIND_SHA256: aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the pins
+        id: pin
+        run: |
+          TARGET="${{ inputs.framework_sha }}"
+          [ -n "$TARGET" ] || TARGET="$(node -p "require('./.agboss-version.json').frameworkSha")"
+          echo "framework_sha=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "postgres_sha=$(node -p "require('./.agboss-version.json').postgres.sha")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: agbossjs/agboss
+          ref: ${{ steps.pin.outputs.framework_sha }}
+          path: .agboss-source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: agbossjs/postgres
+          ref: ${{ steps.pin.outputs.postgres_sha }}
+          path: .agboss-postgres-source
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Pack the core and @agboss/postgres, install them into the example
+        env:
+          AGBOSS_REPO_DIR: .agboss-source
+          AGBOSS_POSTGRES_DIR: .agboss-postgres-source
+        run: |
+          npm ci
+          npm --prefix .agboss-source ci
+          npm run pack:framework
+          npm run install:packed -- 14-kubernetes-postgres-scaling
+
+      - name: The example's offline checks first
+        working-directory: 14-kubernetes-postgres-scaling
+        run: npm run check && npm test
+
+      - name: Install kind ${{ env.KIND_VERSION }} (pinned by SHA-256)
+        run: |
+          curl -fsSLo kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          echo "${KIND_SHA256}  kind" | sha256sum --check
+          chmod +x kind && sudo mv kind /usr/local/bin/kind
+          kind version && kubectl version --client
+
+      - name: npm run cluster:up
+        working-directory: 14-kubernetes-postgres-scaling
+        run: npm run cluster:up
+
+      - name: npm run cluster:scenario
+        working-directory: 14-kubernetes-postgres-scaling
+        run: npm run cluster:scenario
+
+      - name: The cluster's state on failure
+        if: failure()
+        run: |
+          kubectl --context kind-agboss-scaling get pods -A -o wide || true
+          kubectl --context kind-agboss-scaling -n agboss get events --sort-by=.lastTimestamp | tail -60 || true
+          kubectl --context kind-agboss-scaling -n agboss logs deploy/coordinator --tail=100 || true
+
+      - name: The run's record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubernetes-run
+          path: 14-kubernetes-postgres-scaling/.artifacts/kubernetes-run.json
+          if-no-files-found: ignore
+
+      - name: npm run cluster:down
+        if: always()
+        working-directory: 14-kubernetes-postgres-scaling
+        run: npm run cluster:down || true

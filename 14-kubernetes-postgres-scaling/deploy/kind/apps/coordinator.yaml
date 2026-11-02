@@ -1,0 +1,67 @@
+# The coordinator (agbossjs/agboss#487): one AGBoss instance KEDA does not scale — always there to
+# take batches. It is a member like any worker (it claims queued jobs too; the core has no opt-out),
+# so the slot demand counts its busy slots: at full load one worker more than strictly needed.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coordinator
+  labels: { app.kubernetes.io/name: coordinator }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app.kubernetes.io/name: coordinator }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: coordinator, app.kubernetes.io/part-of: agboss-scaling }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9464"
+        prometheus.io/path: /metrics
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: worker
+          image: agboss-scaling:local
+          imagePullPolicy: Never
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: metrics, containerPort: 9464 }
+          env:
+            - { name: HTTP_PORT, value: "8080" }
+            - { name: METRICS_PORT, value: "9464" }
+            - { name: AGBOSS_ENV, value: prod }
+            - { name: LEDGER_URL, value: "http://ledger-stub:8081" }
+            - { name: POSTGRES_POOL_SIZE, value: "5" }
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POSTGRES_URL
+              valueFrom: { secretKeyRef: { name: agboss-secrets, key: POSTGRES_URL } }
+            - name: PII_PSEUDONYM_KEY
+              valueFrom: { secretKeyRef: { name: agboss-secrets, key: PII_PSEUDONYM_KEY } }
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: 500m, memory: 320Mi }
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 9
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 5
+            failureThreshold: 2
+          lifecycle:
+            preStop:
+              exec: { command: ["sleep", "5"] }
+---
+# Every ready AGBoss pod serves the API: a batch lands on any of them, a frozen or stopping pod
+# leaves the endpoints by its readiness
+apiVersion: v1
+kind: Service
+metadata:
+  name: agboss-api
+spec:
+  type: NodePort
+  selector: { app.kubernetes.io/part-of: agboss-scaling }
+  ports:
+    - { name: http, port: 8080, targetPort: http, nodePort: 30080 }

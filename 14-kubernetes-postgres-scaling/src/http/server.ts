@@ -1,25 +1,39 @@
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { HealthStatus, type App, type HealthReport } from "@agboss/core";
-import type { JobDto } from "../dto/job.dto.js";
+import { batchEvidenceOf, stubStateOf, TENANT } from "../verification/evidence.js";
+import { verifyRun, type Expectation } from "../verification/verify.js";
 import { BatchWorkflowStart } from "../workflows/batch/batch.workflow-start.js";
 
 /**
- * The worker's own endpoints: the probes Kubernetes reads (`/health/live`, `/health/ready` — a
- * stopping instance is `Unhealthy`, so it leaves the Service before it drains) and the batch API
- * the workload generator posts to. The metrics are the exporter's own port.
+ * A pod's own endpoints (agbossjs/agboss#487):
+ *
+ * - `GET /health/live`, `GET /health/ready` — the probes Kubernetes reads; a stopping instance is
+ *   `Unhealthy`, so it leaves the Service before it drains;
+ * - `POST /api/batches {batchId, jobs}` — starts a batch on thread `batchId` and answers 202 at
+ *   once: the tree runs on, held by its lease, and any pod continues it if this one dies;
+ * - `GET /api/batches/:batchId` — its kept execution record;
+ * - `GET /api/trees/:rootExecutionId` — a running tree's lease log and outbound calls;
+ * - `POST /api/verification {batches: [{batchId, jobIds}], expectations}` — the report (`verifyRun`).
+ *
+ * Every pod serves them; the `coordinator` Service sends to the coordinator pod only.
  */
+
+interface BatchRequest {
+  readonly batchId: string;
+  readonly jobs: readonly { readonly jobId: string; readonly durationMs: number }[];
+}
+
+interface VerificationRequest {
+  readonly batches: readonly { readonly batchId: string; readonly jobIds?: readonly string[] }[];
+  readonly expectations?: readonly Expectation[];
+}
 
 async function bodyOf(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(chunk as Buffer);
   const text = Buffer.concat(chunks).toString("utf8");
-  return text.trim() === "" ? [] : (JSON.parse(text) as unknown);
+  return text.trim() === "" ? {} : (JSON.parse(text) as unknown);
 }
 
 function send(response: ServerResponse, status: number, body: unknown): void {
@@ -27,41 +41,47 @@ function send(response: ServerResponse, status: number, body: unknown): void {
   response.end(JSON.stringify(body));
 }
 
-const probeStatus = (report: HealthReport): number =>
-  report.status === HealthStatus.Unhealthy ? 503 : 200;
+const probeStatus = (report: HealthReport): number => (report.status === HealthStatus.Unhealthy ? 503 : 200);
 
-async function handle(
-  app: App,
-  request: IncomingMessage,
-  response: ServerResponse,
-): Promise<void> {
-  const path = new URL(request.url ?? "/", "http://worker").pathname;
-  if (request.method === "GET" && path === "/health/live") {
+/** What the routes need: the app, the stub's URL, and where a failed background batch is told. */
+export interface ServeOptions {
+  readonly ledgerUrl: string;
+  readonly onBatchError?: (batchId: string, error: unknown) => void;
+}
+
+async function handle(app: App, options: ServeOptions, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  const path = new URL(request.url ?? "/", "http://pod").pathname;
+  const route = `${request.method ?? "GET"} ${path}`;
+  if (route === "GET /health/live") {
     const report = await app.checkLiveness();
     send(response, probeStatus(report), report);
-  } else if (request.method === "GET" && path === "/health/ready") {
+  } else if (route === "GET /health/ready") {
     const report = await app.checkReadiness();
     send(response, probeStatus(report), report);
-  } else if (request.method === "POST" && path === "/api/batches") {
-    const jobs = (await bodyOf(request)) as JobDto[];
-    const result = await app.execute(BatchWorkflowStart, jobs);
-    send(response, 200, {
-      executionId: result.executionId,
-      output: result.output,
+  } else if (route === "POST /api/batches") {
+    const { batchId, jobs } = (await bodyOf(request)) as BatchRequest;
+    app.execute(BatchWorkflowStart, [...jobs], { threadId: batchId, tenant: { tenantId: TENANT } }).catch((error: unknown) => {
+      options.onBatchError?.(batchId, error);
     });
+    send(response, 202, { batchId, jobs: jobs.length });
+  } else if (request.method === "GET" && path.startsWith("/api/batches/")) {
+    const evidence = await batchEvidenceOf(app, decodeURIComponent(path.slice("/api/batches/".length)));
+    send(response, evidence.record === undefined ? 404 : 200, evidence.record ?? { error: "not-kept-yet" });
+  } else if (request.method === "GET" && path.startsWith("/api/trees/")) {
+    const tree = { tenantId: TENANT, rootExecutionId: decodeURIComponent(path.slice("/api/trees/".length)) };
+    send(response, 200, { leaseEvents: await app.leaseEventsOf(tree), outboundCalls: await app.outboundCallsOf(tree) });
+  } else if (route === "POST /api/verification") {
+    const { batches, expectations = [] } = (await bodyOf(request)) as VerificationRequest;
+    const evidence = await Promise.all(batches.map((batch) => batchEvidenceOf(app, batch.batchId, batch.jobIds)));
+    send(response, 200, verifyRun({ batches: evidence, stub: await stubStateOf(options.ledgerUrl), expectations }));
   } else send(response, 404, { error: "not-found" });
 }
 
 /** Serves `app` on `port` (0: any free port); resolves with its base URL once listening. */
-export async function serve(
-  app: App,
-  port: number,
-): Promise<{ server: Server; url: string }> {
+export async function serve(app: App, port: number, options: ServeOptions): Promise<{ server: Server; url: string }> {
   const server = createServer((request, response) => {
-    handle(app, request, response).catch((error: unknown) => {
-      send(response, 400, {
-        error: error instanceof Error ? error.message : String(error),
-      });
+    handle(app, options, request, response).catch((error: unknown) => {
+      send(response, 400, { error: error instanceof Error ? error.message : String(error) });
     });
   });
   await new Promise<void>((resolve) => {

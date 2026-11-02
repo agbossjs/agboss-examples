@@ -43,8 +43,8 @@ export const ps21: PaymentScenario = {
       right: { charges: 1, confirms: 1, lost: 0, orderStatus: "paid", notes: ["run.not-paused"] },
       async run(context) {
         context.mockLlm(SecureCheckoutAgent).thenReturn(
-          // the form submitted twice: two calls in one turn (`callTools` is not typed for agents yet, agbossjs/agboss#679)
-          callTools(callTool(CreateSecurePaymentTool, payment), callTool(CreateSecurePaymentTool, payment)) as unknown as ReturnType<typeof callTool>,
+          // the form submitted twice: two calls in one turn
+          callTools(callTool(CreateSecurePaymentTool, payment), callTool(CreateSecurePaymentTool, payment)),
           callTool(ConfirmSecurePaymentTool, payment),
           replyWith("Paid with 3DS."),
         );

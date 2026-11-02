@@ -1,5 +1,5 @@
 import { ChildPlacement, listOf, start, Workflow } from "@agboss/core";
-import { JobDoneDto } from "../../dto/job-done.dto.js";
+import { JobReceiptDto } from "../../dto/job-receipt.dto.js";
 import { JobDto } from "../../dto/job.dto.js";
 import { JobWorkflow } from "../job/job.workflow.js";
 import { BatchDoneWorkflowFinish } from "./batch.workflow-finish.js";
@@ -23,7 +23,7 @@ import { BatchWorkflowStart } from "./batch.workflow-start.js";
         placement: ChildPlacement.AnyInstance,
       })
       .join()
-      .returns(listOf(JobDoneDto))
+      .returns(listOf(JobReceiptDto))
       .toFinish(BatchDoneWorkflowFinish),
   ],
 })
