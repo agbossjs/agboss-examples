@@ -644,6 +644,30 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
   });
 });
 
+describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
+  const RERANKING = "13-rag-reranking";
+  it("13-rag-reranking is a P1 project, shaped like the others, its SDK pinned exactly", () => {
+    const meta = PROJECTS.find((p) => p.name === RERANKING);
+    assert.ok(meta, "13-rag-reranking is in PROJECTS");
+    assert.equal(meta.priority, "P1");
+    const shapeOf = (m) => Object.keys(m).sort();
+    assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
+    const dir = join(REPO_ROOT, RERANKING);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.test, "vitest run");
+    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.dependencies["cohere-ai"], "8.1.0");
+    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
+      assert.equal(existsSync(join(dir, file)), true, `${RERANKING}/${file}`);
+    const readme = readFileSync(join(dir, "README.md"), "utf8");
+    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary", "Independent example, not affiliated"])
+      assert.equal(readme.includes(section), true, `README names "${section}"`);
+    assert.match(readFileSync(join(REPO_ROOT, "README.md"), "utf8"), /\| \[\*\*`13-rag-reranking`\*\*\]\(\.\/13-rag-reranking\/\) \| \*\*P1\*\* \|/);
+  });
+});
+
 describe("verify-published.mjs explicit mode & registry metadata validation (P0-2)", () => {
   it("requires an explicit mode flag (--from-packed or --live-registry) and rejects missing or conflicting flags", () => {
     assert.throws(

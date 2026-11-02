@@ -107,6 +107,13 @@ export const PROJECTS = [
     primaryProof:
       "The Payments contract on ten gateways: the right wiring on five supported gateways' official SDKs, each against a stub of its documented behaviour",
   },
+  {
+    name: "13-rag-reranking",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "A knowledge base reranked: Cohere Rerank on its official SDK against a stub of its documented API puts the 27th candidate first; a 503 falls back; the LLM reranker swaps in by one line",
+  },
 ];
 
 export function parseRunAllArgs(args) {
