@@ -32,6 +32,7 @@ const TARGET_DIRS = [
   "11-safe-payments",
   "12-payment-gateways",
   "13-rag-reranking",
+  "14-kubernetes-postgres-scaling",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {

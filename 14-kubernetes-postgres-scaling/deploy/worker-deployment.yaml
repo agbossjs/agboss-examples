@@ -1,0 +1,70 @@
+# The AGBoss worker (agbossjs/agboss#486): probes, resources, graceful termination and the
+# Prometheus scrape. The stop budget, outermost first:
+#   terminationGracePeriodSeconds (45) > preStop sleep (5) + app shutdownTimeout (30) + margin (10)
+# On SIGTERM the app's readiness turns Unhealthy (it leaves the Service), running steps get up to
+# shutdownTimeout to finish; what is still running after it is handed over and recovered by
+# another pod (Wiki → Several-instances → Recovery). Never let Kubernetes SIGKILL before that.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agboss-worker
+  labels: { app.kubernetes.io/name: agboss-worker }
+spec:
+  replicas: 1 # KEDA / the HPA owns the count from here on
+  selector:
+    matchLabels: { app.kubernetes.io/name: agboss-worker }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: agboss-worker }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9464"
+        prometheus.io/path: /metrics
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: worker
+          image: agboss-worker:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: metrics, containerPort: 9464 }
+          env:
+            - { name: HTTP_PORT, value: "8080" }
+            - { name: METRICS_PORT, value: "9464" }
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 5
+            failureThreshold: 2
+          lifecycle:
+            preStop:
+              # let endpoints and load balancers drop the pod before the app stops taking work
+              exec: { command: ["sleep", "5"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agboss-worker
+spec:
+  selector: { app.kubernetes.io/name: agboss-worker }
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+    - { name: metrics, port: 9464, targetPort: metrics }
+---
+# With the Prometheus Operator, a PodMonitor in place of the annotations
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: agboss-worker
+spec:
+  selector:
+    matchLabels: { app.kubernetes.io/name: agboss-worker }
+  podMetricsEndpoints:
+    - { port: metrics, path: /metrics, interval: 15s }

@@ -1,0 +1,17 @@
+# prometheus-adapter (Helm values) — the same slot demand as an external metric for a plain HPA
+# (agbossjs/agboss#486): `helm install prometheus-adapter prometheus-community/prometheus-adapter
+# -n monitoring -f prometheus-adapter-values.yaml`.
+prometheus:
+  url: http://prometheus-server.monitoring.svc
+  port: 80
+rules:
+  external:
+    - seriesQuery: 'agboss_cluster_children_queued'
+      resources:
+        overrides:
+          namespace: { resource: namespace }
+      name:
+        as: agboss_slot_demand
+      # the cluster gauge with max (every pod reports it), the pods' own with sum
+      metricsQuery: >-
+        max(agboss_cluster_children_queued) + sum(agboss_instance_steps_waiting) + sum(agboss_instance_step_slots_busy)

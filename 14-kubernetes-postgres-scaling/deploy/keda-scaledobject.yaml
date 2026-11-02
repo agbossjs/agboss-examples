@@ -1,0 +1,38 @@
+# Autoscaling with KEDA (recommended; agbossjs/agboss#486). One trigger, the slot demand:
+#   max(queued children)  — a cluster gauge: every pod reports the same value, so max, never sum
+# + sum(steps waiting)    — per pod
+# + sum(busy step slots)  — per pod
+# AverageValue with threshold 4 (= maxConcurrentSteps of the app) → replicas = ⌈demand / 4⌉.
+# Scale-in follows the demand down after a 300 s stabilization, one pod a minute; the removed
+# pod drains within its terminationGracePeriodSeconds (worker-deployment.yaml).
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: agboss-worker
+spec:
+  scaleTargetRef:
+    name: agboss-worker
+  minReplicaCount: 1 # 0 is possible: KEDA wakes it on activationThreshold (queued work > 0)
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 300
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - { type: Percent, value: 100, periodSeconds: 15 }
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - { type: Pods, value: 1, periodSeconds: 60 }
+  triggers:
+    - type: prometheus
+      metricType: AverageValue
+      metadata:
+        serverAddress: http://prometheus-server.monitoring.svc:80
+        query: >-
+          max(agboss_cluster_children_queued) + sum(agboss_instance_steps_waiting) + sum(agboss_instance_step_slots_busy)
+        threshold: "4"
+        activationThreshold: "0"

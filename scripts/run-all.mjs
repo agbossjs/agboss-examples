@@ -114,6 +114,13 @@ export const PROJECTS = [
     primaryProof:
       "A knowledge base reranked: Cohere Rerank on its official SDK against a stub of its documented API puts the 27th candidate first; a 503 falls back; the LLM reranker swaps in by one line",
   },
+  {
+    name: "14-kubernetes-postgres-scaling",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "Workers an autoscaler scales on real queued work: the core's OpenTelemetry metrics through the official Prometheus exporter, KEDA and HPA configs validated, graceful termination matched to the app's stop",
+  },
 ];
 
 export function parseRunAllArgs(args) {
