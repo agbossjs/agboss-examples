@@ -97,13 +97,13 @@ npm run install:packed -- --restore
 
 ### Workflow B — Public Consumer & Post-Publication Registry Verification (Post-Publication on npm)
 
-Once `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 8 example projects:
+Once `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 14 example projects:
 
 ```bash
 # 1. Verify live npm registry metadata, isolated consumer subpath exports, and `agboss create` scaffold:
 npm run verify:published -- --live-registry --version 0.1.0
 
-# 2. Install live registry packages across all 8 examples and collect published-package proof report:
+# 2. Install live registry packages across all 14 examples and collect published-package proof report:
 npm run install:published -- --live-registry --version 0.1.0
 node scripts/run-all.mjs --provenance published --include-p1 --reset --mode check
 node scripts/run-all.mjs --provenance published --include-p1 --mode test
