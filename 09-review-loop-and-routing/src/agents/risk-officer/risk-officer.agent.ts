@@ -8,7 +8,7 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 /**
  * The critic of the loop: reviews the newest memo and requests changes or approves it. Reached
  * from the analyst and from the editor, so its `switch` is a path of its own. Its visits are
- * bounded (`maxVisits: 4`: the first memo and three rewrites) — the editor's limit ends the loop
+ * bounded (`maxVisits: 5`: the first memo and four rewrites) — the editor's limit ends the loop
  * first, on a defined finish.
  */
 @Agent({
@@ -21,6 +21,6 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
     memo: CreditMemoDto,
   },
   output: oneOf(MemoChangesRequestedDto, MemoApprovedDto),
-  maxVisits: 4,
+  maxVisits: 5,
 })
 export class RiskOfficerAgent {}
