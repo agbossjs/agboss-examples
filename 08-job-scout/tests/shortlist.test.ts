@@ -23,6 +23,7 @@ const environment: AppEnvironment = {
   greenhouseApiUrl: testEnvironment.greenhouseApiUrl,
   sqlitePath: testEnvironment.sqlitePath,
   openRouterApiKey: secret("OPENROUTER_API_KEY"),
+  piiPseudonymKey: testEnvironment.piiPseudonymKey,
 };
 
 describe("the shortlist: MCP tools with the server injected (#109)", () => {

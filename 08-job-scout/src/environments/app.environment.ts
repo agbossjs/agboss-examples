@@ -13,6 +13,11 @@ export class AppEnvironment {
   openRouterApiKey?: Secret;
   /** OpenRouter's base URL (`baseUrlField: "openRouterBaseUrl"`); unset → the provider's default. */
   openRouterBaseUrl?: string;
+  /**
+   * The application's PII pseudonym key (`@Application({ pseudonymKey: "piiPseudonymKey" })`): one
+   * token per value on every instance and in every process, not a key of each execution.
+   */
+  piiPseudonymKey!: Secret;
   /** The Greenhouse job-board API. */
   greenhouseApiUrl!: string;
   /** The file of the SQLite implementations the application lists (`:memory:` in tests). */

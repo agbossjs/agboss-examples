@@ -12,7 +12,7 @@
     "start": "node dist/after-agboss/src/support.application.js",
     "dev": "tsx watch after-agboss/src/support.application.ts",
     "demo": "tsx after-agboss/src/demo.ts",
-    "check": "agboss check && tsc --noEmit && eslint .",
+    "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "lint": "eslint .",
     "test": "vitest run"
   },

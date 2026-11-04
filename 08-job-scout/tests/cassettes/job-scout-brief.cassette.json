@@ -1,12 +1,13 @@
 {
   "interactions": [
     {
+      "component": "prompt-injection-guardrail",
       "key": "guardrail:prompt-injection-guardrail",
       "kind": "decide",
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.01,
+            "noul": 0.13,
             "type": "noul"
           }
         },
@@ -15,34 +16,49 @@
           "cacheWriteTokens": 0,
           "caller": "guardrail:prompt-injection-guardrail",
           "costSource": "api",
-          "costUsd": 0.000004,
-          "inputTokens": 0,
-          "model": "typesafe/jev-1.13",
-          "outputTokens": 0
+          "costUsd": 0.00001407,
+          "inputTokens": 335,
+          "model": "typesafe/jev-1.13-20260917",
+          "outputTokens": 20
         }
       },
+      "promptHash": "7262ae580d668ffcf59d33df796d28332ebfcbb37ae3b386339a3eb0dcaf8877",
       "request": "0ebdf6d363e1b23d2553a9eae2b237d20c27dd8e281a8692dd202d1b51ece3f9"
     },
     {
+      "component": "main-router",
       "key": "router:main-router",
       "kind": "decision",
       "outcome": {
         "decision": {
           "confidence": 1,
           "next": "profiler-agent",
-          "reason": "scripted"
+          "reason": "jev confidence 1.00"
         },
-        "kind": "decided"
+        "kind": "decided",
+        "usage": {
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0,
+          "caller": "router:main-router",
+          "costSource": "api",
+          "costUsd": 0.000015708,
+          "inputTokens": 0,
+          "model": "typesafe/jev-1.13-20260917",
+          "outputTokens": 0
+        }
       },
-      "request": "b9221c8eda340351472d765aedf0d3a68186431146a3161c02133c58b79bf369"
+      "promptHash": "0d64e83957fd8073c7b8376b4aea7406f1bf81260ac0649cc39f178366749404",
+      "request": "b9221c8eda340351472d765aedf0d3a68186431146a3161c02133c58b79bf369",
+      "schemaHash": "17ce8ed8341aa8423665a89136c688490aa9ed1423645edc4c6bad425bd22ee0"
     },
     {
+      "component": "prompt-injection-guardrail",
       "key": "guardrail:prompt-injection-guardrail",
       "kind": "decide",
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.01,
+            "noul": 0.14,
             "type": "noul"
           }
         },
@@ -51,40 +67,82 @@
           "cacheWriteTokens": 0,
           "caller": "guardrail:prompt-injection-guardrail",
           "costSource": "api",
-          "costUsd": 0.000004,
-          "inputTokens": 0,
-          "model": "typesafe/jev-1.13",
-          "outputTokens": 0
+          "costUsd": 0.00001407,
+          "inputTokens": 335,
+          "model": "typesafe/jev-1.13-20260917",
+          "outputTokens": 20
         }
       },
+      "promptHash": "7262ae580d668ffcf59d33df796d28332ebfcbb37ae3b386339a3eb0dcaf8877",
       "request": "1bad44b81732d91a175107a41cb59eb11f808fa233a66b95670019e219065f77"
     },
     {
+      "component": "profiler-agent",
       "key": "agent:profiler-agent",
       "kind": "chat",
+      "promptHash": "04c585347d059ec7f59e2d03ca74356b9f1099a9b32ac6f94d069a7a68c045c4",
       "reply": {
-        "content": "Brief: senior backend, Israel, 20 jobs, all boards",
+        "content": "Please provide the path to your resume (.pdf, .md, or .txt) so I can prepare your search brief.",
         "response_metadata": {
+          "finish_reason": "stop",
+          "model_name": "moonshotai/kimi-k2.6",
+          "model_provider": "openai",
+          "tokenUsage": {
+            "completionTokens": 91,
+            "promptTokens": 650,
+            "totalTokens": 741
+          },
           "usage": {
-            "cost": 0
+            "agboss_served_by": "Baidu",
+            "completion_tokens": 91,
+            "completion_tokens_details": {
+              "audio_tokens": 0,
+              "image_tokens": 0,
+              "reasoning_tokens": 63
+            },
+            "cost": 0.0002657292,
+            "cost_details": {
+              "upstream_inference_completions_cost": 0.00014924,
+              "upstream_inference_cost": 0.0002657292,
+              "upstream_inference_prompt_cost": 0.0001164892
+            },
+            "is_byok": false,
+            "prompt_tokens": 650,
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cache_write_tokens": 0,
+              "cached_tokens": 422,
+              "video_tokens": 0
+            },
+            "total_tokens": 741
           }
         },
         "tool_calls": [],
         "usage_metadata": {
-          "input_tokens": 0,
-          "output_tokens": 0,
-          "total_tokens": 0
+          "input_token_details": {
+            "audio": 0,
+            "cache_creation": 0,
+            "cache_read": 422
+          },
+          "input_tokens": 650,
+          "output_token_details": {
+            "audio": 0,
+            "reasoning": 63
+          },
+          "output_tokens": 91,
+          "total_tokens": 741
         }
       },
       "request": "0f997a3ce1f666c73e5c1d13c76b57ad1de60cbf059419be17220c821f90ab82"
     },
     {
+      "component": "personal-data-guardrail",
       "key": "guardrail:personal-data-guardrail",
       "kind": "decide",
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.01,
+            "noul": 0.02,
             "type": "noul"
           }
         },
@@ -93,14 +151,15 @@
           "cacheWriteTokens": 0,
           "caller": "guardrail:personal-data-guardrail",
           "costSource": "api",
-          "costUsd": 0.000004,
-          "inputTokens": 0,
-          "model": "typesafe/jev-1.13",
-          "outputTokens": 0
+          "costUsd": 0.000014322,
+          "inputTokens": 341,
+          "model": "typesafe/jev-1.13-20260917",
+          "outputTokens": 20
         }
       },
-      "request": "d135b14de7e07083334045a2c3c7afec79041f54bdab072d4ed18ba94d21ee15"
+      "promptHash": "089e43cfadf71c5dce59eed8d1cba2e771a98c2f1759e70a351053e0ffbada0a",
+      "request": "a7a5d13ceb9f0c9511680632997cc2c25c4fd06db7addb0f09efeeb6d89b264b"
     }
   ],
-  "version": 1
+  "version": 2
 }

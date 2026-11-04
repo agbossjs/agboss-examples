@@ -12,7 +12,7 @@
     "start": "node dist/apps/1-order-gateway/src/order-gateway.application.js",
     "dev": "tsx watch apps/1-order-gateway/src/order-gateway.application.ts",
     "demo": "tsx apps/1-order-gateway/src/demo.ts",
-    "check": "agboss check --application apps/2-billing-a2a/src/billing.application.ts && agboss check --application apps/3-catalog-mcp/src/catalog.application.ts && agboss check && tsc --noEmit && eslint .",
+    "check": "agboss check --application apps/2-billing-a2a/src/billing.application.ts --strict --cassettes && agboss check --application apps/3-catalog-mcp/src/catalog.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "lint": "eslint .",
     "test": "vitest run"
   },

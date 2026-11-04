@@ -1,4 +1,5 @@
-import { ChildPlacement, listOf, start, Workflow } from "@agboss/core";
+import { ChildPlacement, listOf, oneOf, start, Workflow } from "@agboss/core";
+import { JobFailedDto } from "../../dto/job-failed.dto.js";
 import { JobReceiptDto } from "../../dto/job-receipt.dto.js";
 import { JobDto } from "../../dto/job.dto.js";
 import { JobWorkflow } from "../job/job.workflow.js";
@@ -8,7 +9,8 @@ import { BatchWorkflowStart } from "./batch.workflow-start.js";
 /**
  * The backlog: one `job-workflow` per job, queued in the shared child queue
  * (`ChildPlacement.AnyInstance`) — the work `agboss.cluster.children.queued` counts and any worker
- * with a free step slot claims.
+ * with a free step slot claims. A failed job ends at its own failure finish (`JobFailedDto`), so the
+ * batch always joins every job and reports how many succeeded and failed (agbossjs/agboss#763).
  */
 @Workflow({
   name: "batch-workflow",
@@ -23,7 +25,7 @@ import { BatchWorkflowStart } from "./batch.workflow-start.js";
         placement: ChildPlacement.AnyInstance,
       })
       .join()
-      .returns(listOf(JobReceiptDto))
+      .returns(listOf(oneOf(JobReceiptDto, JobFailedDto)))
       .toFinish(BatchDoneWorkflowFinish),
   ],
 })

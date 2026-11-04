@@ -3,7 +3,9 @@
  * evidence alone, and it bites: hand-built evidence of a clean run passes; a second delivery, a
  * second ledger entry, a child that ended twice, a refusal with no takeover, a replay of a token
  * nobody wrote, a failed ledger call, a missing record and a missing expected refusal each fail it,
- * naming the job.
+ * naming the job; so does a write applied or replayed at a token below the lease's latest epoch, on
+ * its own (a zombie a store let through). agbossjs/agboss#763: a job planned to fail passes only at its failure finish with
+ * nothing delivered or entered, and the batch's output counts it.
  */
 import {
   ChildExecutionStatus,
@@ -59,34 +61,55 @@ const takeover = (jobId: string, by: string, token: number, from: string, previo
 const call = (jobId: string, status = OutboundCallStatus.Completed): OutboundCallRecord =>
   ({ executionId: exec(jobId), name: "ledger", status }) as OutboundCallRecord;
 
-const child = (jobId: string, status = ChildExecutionStatus.Finished) => ({
+const child = (jobId: string, status = ChildExecutionStatus.Finished, finish = "job-done-workflow-finish") => ({
   executionId: exec(jobId),
   status,
   input: { jobId, durationMs: 0 },
+  ...(status === ChildExecutionStatus.Finished ? { finish: { name: finish } } : {}),
 });
 
 function batchOf(
   jobIds: readonly string[],
   events: readonly ExecutionLeaseEventRecord[],
-  overrides: { children?: unknown[]; calls?: OutboundCallRecord[]; record?: "missing" } = {},
+  overrides: {
+    children?: unknown[];
+    calls?: OutboundCallRecord[];
+    record?: "missing";
+    failedJobIds?: string[];
+    output?: Record<string, number>;
+  } = {},
 ): BatchEvidence {
+  const failed = overrides.failedJobIds ?? [];
   const record = {
     status: ExecutionHistoryStatus.Finished,
     rootExecutionId: "root-1",
-    output: { jobs: jobIds.length, workers: 2 },
+    output: overrides.output ?? { jobs: jobIds.length, succeeded: jobIds.length - failed.length, failed: failed.length, workers: 2 },
     children: overrides.children ?? jobIds.map((jobId) => child(jobId)),
   } as unknown as ExecutionHistoryRecord;
   return {
     batchId: "b",
     jobIds,
+    failedJobIds: failed,
     record: overrides.record === "missing" ? undefined : record,
     leaseEvents: events,
     outboundCalls: overrides.calls ?? jobIds.map((jobId) => call(jobId)),
   };
 }
 
-const stubOf = (jobIds: readonly string[], extra: readonly string[] = []): StubState => ({
-  work: [],
+const stubOf = (jobIds: readonly string[], extra: readonly string[] = [], rejected: readonly string[] = []): StubState => ({
+  work: rejected.map((jobId, index) => ({
+    callId: index + 1,
+    jobId,
+    executionId: exec(jobId),
+    rootExecutionId: "root-1",
+    instanceId: "a",
+    pod: "pod-a",
+    token: 1,
+    receivedAt: BASE.occurredAt,
+    answeredAt: BASE.occurredAt,
+    held: false,
+    rejected: true,
+  })),
   ledgerRequests: [],
   entries: [...jobIds, ...extra].map((jobId, index) => ({
     entryId: `e-${String(index)}`,
@@ -194,5 +217,105 @@ describe("AC3 + AC5: the verification bites", () => {
     const events = [...DEAD_AND_RISEN, deliver("k", "killed", 1, FencedEffectEventOutcome.Refused, { observedToken: 2 })];
     const report = fails(batchOf(JOBS, events), stubOf(JOBS), EXPECTED);
     expect(report.expectations.find((one) => one.jobId === "k")?.found).toBe(false);
+  });
+});
+
+describe("agbossjs/agboss#763: a failed job ends at its own failure finish, the batch goes on", () => {
+  // f was rejected by the other system: it ended at its failure finish, nothing delivered or entered
+  const WITH_FAILED = [...JOBS, "f"];
+  const children = () => [...JOBS.map((jobId) => child(jobId)), child("f", ChildExecutionStatus.Finished, "job-failed-workflow-finish")];
+  const calls = () => JOBS.map((jobId) => call(jobId));
+  const failedBatch = (overrides: Parameters<typeof batchOf>[2] = {}) =>
+    batchOf(WITH_FAILED, DEAD_AND_RISEN, { children: children(), calls: calls(), failedJobIds: ["f"], ...overrides });
+
+  it("the batch with one failed job passes: five done once, one failed, counted in its output", () => {
+    const report = verifyRun({ batches: [failedBatch()], stub: stubOf(JOBS, [], ["f"]), expectations: EXPECTED });
+
+    expect(report.jobs.flatMap((job) => job.problems)).toEqual([]);
+    expect(report.passed).toBe(true);
+    expect(report.totals).toMatchObject({ jobs: 6, failed: 1, accepted: 5, duplicates: 0 });
+  });
+
+  it("a failed job whose child finished at the done finish fails", () => {
+    const report = verifyRun({
+      batches: [failedBatch({ children: [...JOBS.map((jobId) => child(jobId)), child("f")] })],
+      stub: stubOf(JOBS, [], ["f"]),
+      expectations: [],
+    });
+    expect(report.passed).toBe(false);
+    expect(report.jobs.find((job) => job.jobId === "f")?.problems.join("; ")).toContain("expected job-failed-workflow-finish");
+  });
+
+  it("a failed job with a ledger entry, or never rejected by the other system, fails", () => {
+    const entered = verifyRun({ batches: [failedBatch()], stub: stubOf(JOBS, ["f"], ["f"]), expectations: [] });
+    expect(entered.jobs.find((job) => job.jobId === "f")?.problems.join("; ")).toContain("1 ledger entries applied (expected exactly 0)");
+    const neverRejected = verifyRun({ batches: [failedBatch()], stub: stubOf(JOBS), expectations: [] });
+    expect(neverRejected.jobs.find((job) => job.jobId === "f")?.problems.join("; ")).toContain("never rejected");
+  });
+
+  it("a job done where one was planned to fail fails: it ended at the failure finish of no plan", () => {
+    const report = verifyRun({
+      batches: [batchOf(JOBS, DEAD_AND_RISEN, { children: [...JOBS.slice(1).map((jobId) => child(jobId)), child("j1", ChildExecutionStatus.Finished, "job-failed-workflow-finish")] })],
+      stub: stubOf(JOBS),
+      expectations: [],
+    });
+    expect(report.jobs.find((job) => job.jobId === "j1")?.problems.join("; ")).toContain("expected job-done-workflow-finish");
+  });
+
+  it("a batch whose output does not count its failed job fails", () => {
+    const report = verifyRun({
+      batches: [failedBatch({ output: { jobs: 6, succeeded: 6, failed: 0, workers: 2 } })],
+      stub: stubOf(JOBS, [], ["f"]),
+      expectations: [],
+    });
+    expect(report.batches[0]?.problems.join("; ")).toContain("expected 5 and 1");
+  });
+
+  it("a failed job that cancelled its batch fails", () => {
+    const record = { ...failedBatch().record, status: ExecutionHistoryStatus.Cancelled } as ExecutionHistoryRecord;
+    const report = verifyRun({ batches: [{ ...failedBatch(), record }], stub: stubOf(JOBS, [], ["f"]), expectations: [] });
+    expect(report.batches[0]?.problems.join("; ")).toContain("the batch ended cancelled");
+  });
+});
+
+describe("the verification stands alone: no effect applied or replayed at a stale token", () => {
+  const STALE = ["s"];
+  const verifyStale = (events: ExecutionLeaseEventRecord[]) =>
+    verifyRun({ batches: [batchOf(STALE, events)], stub: stubOf(STALE), expectations: [] });
+
+  it("a zombie's replay at its stale token, after the lease was taken over at a newer one, fails", () => {
+    const report = verifyStale([
+      takeover("s", "a", 2, "zombie", 1),
+      deliver("s", "a", 2, FencedEffectEventOutcome.Ran),
+      // the zombie, back at token 1, got the stored receipt: a store that read the key at a stale token
+      deliver("s", "zombie", 1, FencedEffectEventOutcome.Replayed, { writtenToken: 2 }),
+    ]);
+
+    expect(report.passed).toBe(false);
+    const job = report.jobs.find((one) => one.jobId === "s");
+    expect(job?.attempts.find((one) => one.instanceId === "zombie")?.verdict).toBe(WriteVerdict.Inconsistent);
+    expect(job?.problems.join("; ")).toContain("stale token 1");
+  });
+
+  it("a zombie's write at its stale token, replayed by the new holder, fails: one Ran is not enough", () => {
+    const report = verifyStale([
+      takeover("s", "a", 2, "zombie", 1),
+      deliver("s", "zombie", 1, FencedEffectEventOutcome.Ran),
+      deliver("s", "a", 2, FencedEffectEventOutcome.Replayed, { writtenToken: 1 }),
+    ]);
+
+    expect(report.passed).toBe(false);
+    expect(report.jobs.find((one) => one.jobId === "s")?.problems.join("; ")).toContain("stale token 1");
+  });
+
+  it("a write at token 1 before the takeover at 2, replayed after it, is no stale write (the crash after the effect)", () => {
+    const report = verifyStale([
+      deliver("s", "crashed", 1, FencedEffectEventOutcome.Ran),
+      takeover("s", "b", 2, "crashed", 1),
+      deliver("s", "b", 2, FencedEffectEventOutcome.Replayed, { writtenToken: 1 }),
+    ]);
+
+    expect(report.jobs.flatMap((one) => one.problems)).toEqual([]);
+    expect(report.passed).toBe(true);
   });
 });

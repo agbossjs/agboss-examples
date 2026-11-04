@@ -116,7 +116,7 @@ Or run any individual example directory standalone directly from the registry:
 ```bash
 cd 01-hello-agboss
 npm install
-npm run check     # Static graph analysis (agboss check) + TypeScript + ESLint
+npm run check     # Static graph analysis (agboss check --strict --cassettes) + TypeScript + ESLint
 npm test          # Deterministic offline unit & workflow tests ($0, no API key)
 npm run demo      # Local offline demonstration
 ```
@@ -129,7 +129,7 @@ Every example project exposes a consistent command contract:
 
 | Command | Description | Requires API Key? |
 | :--- | :--- | :--- |
-| `npm run check` | Static graph verification (`agboss check`) and TypeScript typechecking | No (`$0`) |
+| `npm run check` | Static graph verification (`agboss check --strict --cassettes`: warnings are errors, cassettes checked) and TypeScript typechecking | No (`$0`) |
 | `npm test` | Deterministic offline unit, integration, and failure-injection tests | No (`$0`) |
 | `npm run demo` | Reproducible local demonstration of the project's proofs | No (`$0`) |
 | `npm run demo:live` | Optional live execution via OpenRouter (`OPENROUTER_API_KEY` in `.env`) | Yes |

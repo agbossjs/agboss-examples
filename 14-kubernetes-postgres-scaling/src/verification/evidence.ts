@@ -26,14 +26,16 @@ export async function batchEvidenceOf(
   app: EvidenceSource,
   batchId: string,
   jobIds?: readonly string[],
+  failedJobIds: readonly string[] = [],
 ): Promise<BatchEvidence> {
   const records = await app.resolve(ExecutionHistoryRepository).findAllByTenantIdAndThreadId(TENANT, batchId);
   const record = records.at(-1);
-  if (record === undefined) return { batchId, jobIds: jobIds ?? [], record, leaseEvents: [], outboundCalls: [] };
+  if (record === undefined) return { batchId, jobIds: jobIds ?? [], failedJobIds, record, leaseEvents: [], outboundCalls: [] };
   const tree = { tenantId: TENANT, rootExecutionId: record.rootExecutionId };
   return {
     batchId,
     jobIds: jobIds ?? jobIdsOfInput(record.input),
+    failedJobIds,
     record,
     leaseEvents: await app.leaseEventsOf(tree),
     outboundCalls: await app.outboundCallsOf(tree),

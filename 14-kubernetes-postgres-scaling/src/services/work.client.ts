@@ -11,6 +11,11 @@ export interface WorkRequest {
   readonly token: number;
 }
 
+/** The other system refused the job's work (HTTP 422): the job fails; its batch goes on. */
+export class JobRejectedError extends Error {
+  override name = "JobRejectedError";
+}
+
 /**
  * The job's remote work (`POST <ledgerUrl>/work`): the other system works on the job and answers
  * when it is done. Like many SDK clients, it takes no `AbortSignal` — so a step whose lease was
@@ -27,6 +32,8 @@ export class WorkClient {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),
     });
+    // a rejection is the other system's answer, not a fault: the job fails, and ends at its failure finish
+    if (response.status === 422) throw new JobRejectedError(`the other system rejected job ${request.jobId}`);
     if (!response.ok) throw new Error(`the remote work failed: HTTP ${String(response.status)}`);
   }
 }

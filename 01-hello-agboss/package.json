@@ -12,7 +12,7 @@
     "types": "agboss check",
     "describe": "agboss describe",
     "lint": "eslint .",
-    "check": "agboss check && tsc --noEmit && eslint .",
+    "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",
     "demo:live": "tsx src/demo.ts --live"

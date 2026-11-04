@@ -58,3 +58,6 @@ export class PodFencedEffectRepository extends SqliteFencedEffectRepository {
   ],
 })
 export class PodApplication {}
+
+// its workflow, for `agboss check --application` on this file (the types it writes are the same)
+export { CheckoutWorkflow };

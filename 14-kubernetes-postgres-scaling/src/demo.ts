@@ -1,5 +1,6 @@
 // `npm run demo` — offline, no model, no cluster: two instances of the same workflows on one SQLite
-// file (LocalScalingApplication), the ledger stub in-process, a batch of twelve jobs. Prometheus is
+// file (LocalScalingApplication), the ledger stub in-process, a batch of twelve jobs — one of them
+// rejected by the other system: it ends at its own failure finish and the others go on. Prometheus is
 // scraped while the backlog waits and after it; then the run is verified from state — the kept
 // records, the lease log, the outbound calls and the stub's ledger — as the cluster's scenario does.
 import { createServer } from "node:http";
@@ -43,21 +44,28 @@ async function scrape(when: string): Promise<void> {
 }
 
 const jobs = Array.from({ length: 12 }, (_, index) => ({ jobId: `demo-${String(index)}`, durationMs: 400 }));
+// the other system refuses one job: it fails alone, the batch finishes with the other eleven
+const rejected = "demo-7";
+await fetch(`${stub.url}/control/rejects`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ jobId: rejected }),
+});
 const batch = a.execute(BatchWorkflowStart, jobs, { threadId: "demo" });
 await new Promise((resolve) => setTimeout(resolve, 150));
 await scrape("12 jobs, 4 slots per pod: the backlog");
 const result = await batch;
 await scrape("after the batch: idle");
-console.log("batch done:", JSON.stringify(result.output));
+console.log(`batch done (${rejected} rejected by the other system):`, JSON.stringify(result.output));
 
 const report = verifyRun({
-  batches: [await batchEvidenceOf(a, "demo", jobs.map((job) => job.jobId))],
+  batches: [await batchEvidenceOf(a, "demo", jobs.map((job) => job.jobId), [rejected])],
   stub: stub.state(),
   expectations: [],
 });
 const pods = new Set(report.jobs.flatMap((job) => job.attempts.map((attempt) => attempt.instanceId)));
 console.log(
-  `verified from state: ${String(report.totals.jobs)} jobs, ${String(report.totals.accepted)} deliveries, ` +
+  `verified from state: ${String(report.totals.jobs)} jobs (${String(report.totals.failed)} failed), ${String(report.totals.accepted)} deliveries, ` +
     `${String(stub.state().entries.length)} ledger entries, ${String(report.totals.duplicates)} duplicates, ` +
     `on ${String(pods.size)} instances — ${report.passed ? "PASSED" : "FAILED"}`,
 );

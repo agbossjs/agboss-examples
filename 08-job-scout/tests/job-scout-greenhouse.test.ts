@@ -1,3 +1,4 @@
+import { secret } from "@agboss/core";
 import { testExecutionContext, toolOf } from "@agboss/core/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
@@ -8,7 +9,11 @@ import { JobFitJudge } from "../src/services/job-fit.service.js";
 /** The application context of the dev environment: the public board API. */
 const { application } = testExecutionContext({
   application: {
-    environment: { greenhouseApiUrl: "https://boards-api.greenhouse.io", sqlitePath: ":memory:" },
+    environment: {
+      greenhouseApiUrl: "https://boards-api.greenhouse.io",
+      sqlitePath: ":memory:",
+      piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
+    },
   },
 }).tenant;
 
