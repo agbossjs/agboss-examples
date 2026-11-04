@@ -8,7 +8,8 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
  * Rewrites the memo by the risk officer's notes. What it reads of the loop is bounded:
  * `historyOf(CreditMemoDto, { limit: 2 })` is `{ current, previous }` — the newest memo and at most
  * two earlier ones (the latest, oldest first) — however long the loop runs, so its prompt never grows without
- * bound. Its visits are bounded too (`maxVisits: 3`): a fourth is refused before its model call
+ * bound: on its fourth visit the analyst's memo is no longer in it. Its visits are bounded too
+ * (`maxVisits: 4`): a fifth is refused before its model call
  * with `VisitsLimitExceededError`, which the flow takes to the committee.
  */
 @Agent({
@@ -22,6 +23,6 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
     changes: MemoChangesRequestedDto,
   },
   output: CreditMemoDto,
-  maxVisits: 3,
+  maxVisits: 4,
 })
 export class MemoEditorAgent {}

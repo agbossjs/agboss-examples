@@ -156,7 +156,7 @@ async function main(): Promise<void> {
     console.log(`   path:    ${stubborn.path.join(" → ")}`);
     console.log(`   finish:  ${stubborn.finish?.name ?? stubborn.status}`);
     console.log(
-      `   editor:  ${String(editorCalls)} model calls (a 4th visit refused: ${handled.join(", ")})`,
+      `   editor:  ${String(editorCalls)} model calls (a 5th visit refused: ${handled.join(", ")})`,
     );
     console.log(
       `   spend:   ${usd(stubborn.spend.totalUsd)} in ${String(stubborn.spend.calls)} calls\n`,
@@ -165,7 +165,7 @@ async function main(): Promise<void> {
       stubborn.finish?.name === "credit-escalated-workflow-finish",
       "the stubborn run did not escalate",
     );
-    check(editorCalls === 3 && editorVisits === 4, `the editor ran ${String(editorCalls)} times`);
+    check(editorCalls === 4 && editorVisits === 5, `the editor ran ${String(editorCalls)} times`);
 
     if (!isLive) {
       check(offline.calls.length > 0, "the offline OpenRouter was never called");
