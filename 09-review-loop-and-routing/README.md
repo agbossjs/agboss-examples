@@ -85,10 +85,10 @@ scripted even then (the failure injection), the rest of that run is real.
   exact; the model router is asked the same thresholds and usually agrees, but a decision model can
   misread a borderline application. When a rule can be written down, write it in code; the demo's
   live run shows the two agreeing on clear cases, not on every case.
-- **`maxSteps` is ours to keep right.** `agboss check` bounds an explicit `maxSteps` by the shortest
-  path only (agbossjs/agboss#643); the loop's worst case (11 agent and router steps here) is held by the AC3 test — a lower
-  value would end the stubborn run with `MaxStepsExceededError` before the editor's limit takes it
-  to the committee.
+- **`maxSteps` is ours to set.** The loop's worst case is 11 agent and router steps; a lower
+  `maxSteps` would end the stubborn run with `StepsLimitExceededError` before the editor's limit
+  takes it to the committee. `agboss check` warns then (`[limits.max-steps-below-worst-case]`, an
+  error under `--strict`, agbossjs/agboss#643), and the AC3 test runs that stubborn review.
 - **What the memo says is the model's.** The framework bounds the loop, validates every answer
   against its DTO and routes on the officer's typed verdict; whether a memo is any good is the
   officer's (a model's) judgement.
