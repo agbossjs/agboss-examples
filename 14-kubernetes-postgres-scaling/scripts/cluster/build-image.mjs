@@ -10,10 +10,20 @@ const IMAGE = "agboss-scaling:local";
 const STAGE = join(PROJECT, ".artifacts", "image");
 const MINIMUM_RELEASE_AGE_DAYS = 3; // agbossjs/agboss#523, as the examples' installs
 
-export function buildImage({ load = true } = {}) {
+/**
+ * `dist/` from `src/`: the flow's generated types first (`agboss check` writes `.agboss/types.d.ts`,
+ * which a fresh clone does not have — agbossjs/agboss#768), then `tsc -p tsconfig.build.json`.
+ */
+export function compileDist() {
+  log("generating the flow's types (agboss check → .agboss/types.d.ts)");
+  run("npx", ["agboss", "check"]);
   log("compiling dist/ (tsc -p tsconfig.build.json)");
   rmSync(join(PROJECT, "dist"), { recursive: true, force: true });
   run("npx", ["tsc", "-p", "tsconfig.build.json"]);
+}
+
+export function buildImage({ load = true } = {}) {
+  compileDist();
   rmSync(STAGE, { recursive: true, force: true });
   mkdirSync(join(STAGE, "vendor"), { recursive: true });
   cpSync(join(PROJECT, "dist"), join(STAGE, "dist"), { recursive: true });
@@ -45,4 +55,7 @@ export function buildImage({ load = true } = {}) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) buildImage({ load: !process.argv.includes("--no-load") });
+if (import.meta.url === `file://${process.argv[1]}`) {
+  if (process.argv.includes("--compile-only")) compileDist();
+  else buildImage({ load: !process.argv.includes("--no-load") });
+}
