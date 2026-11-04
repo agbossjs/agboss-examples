@@ -3,16 +3,16 @@
   "files": {
     "SKILL.md": "sha256-7b55993de8ba34d4fe38ecad8ae223a93aafb2a82a2995e3579219e594bf1db6",
     "references/01-composition-and-architecture.md": "sha256-04b0da456d32456381963ce16ec77611bb292609871b7e45a8cf183f23b0d775",
-    "references/02-flow-dsl-all-combinations.md": "sha256-4fd8d30aad721737d82684990e2785b42521ff080584ca16d9d777fc3a4c5bf0",
+    "references/02-flow-dsl-all-combinations.md": "sha256-42d4a612bcf7445a26747e03adbaaa3f042d82201bb569201c9a5943b5a186f6",
     "references/03-components-di-and-lifecycle.md": "sha256-f19fb9d670f88c5eb97716f023ddbef79d205a94998a439857946ee44d3e583f",
     "references/04-mcp-and-a2a.md": "sha256-0b5db65e79b97075fdaa18cd9c4bb25f55c2fccf76fe286369fb2247d5ade452",
-    "references/05-channels-and-human-in-the-loop.md": "sha256-98fbcac0c1925d816c08a660f0c243047ed993ac0592bbb5d2b848bf2f412f25",
+    "references/05-channels-and-human-in-the-loop.md": "sha256-36178e8a7d8eb66f0da23a3fc999be30d1ab9d15f067642f3a18ce97c2856742",
     "references/06-finops-providers-and-queues.md": "sha256-b84912926c6ecee97a9f422a79e14323b7b47cd52dee296515673104eaf5e722",
     "references/07-guardrails-pii-and-security.md": "sha256-b31b51d7010e010a935e44d05046e380a6e1a569c6144876d958d9a9878ec9ee",
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
     "references/09-persistence-k8s-and-deploy.md": "sha256-3a1b643e34065d1f4a2bf673f13489625e46ba373fa6e4ada313e6f627fea20a",
     "references/10-testing-vcr-and-evals.md": "sha256-2fcd043f2a8e51f3e75844dcce09aca3e5dd3b403def9d3b92b504099a9fb215",
-    "references/11-cli-studio-and-error-catalog.md": "sha256-ff39dc22c8a2c4aafb6ab97d8fc3e9871dee147c3828a10eebc93a6d35d4b265",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-fc17fd0c042ca759caef48ee0f67c5518f75489b82b42d36a1b03ff6de9cea1e",
     "references/12-end-to-end-recipes.md": "sha256-8592ca04083b2d8b2471d74632136f11517b67b3251bdb4d2c116546093f26bb",
     "references/13-migrating-from-langgraph.md": "sha256-8e562a9c8de0d835dffd569127aaa41ae12c62d3c5b18c5a22326dd5f78464c3"
   }

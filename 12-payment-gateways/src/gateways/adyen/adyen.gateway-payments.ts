@@ -6,24 +6,23 @@
 import { createHash } from "node:crypto";
 import { CheckoutAPI, Client, EnvironmentEnum, type Types } from "@adyen/api-library";
 import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { hours } from "@agboss/core/units";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
-import { AttemptAgeService } from "../../services/attempt-age.service.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
 import { StubHttpClient } from "./adyen-stub-transport.js";
 
-const KEY_RETENTION = 7 * 24 * 60 * 60 * 1000; // "valid for a period of 7 to 14 days": the minimum
+const KEY_RETENTION = hours(7 * 24); // "valid for a period of 7 to 14 days": the minimum
 const MERCHANT = "OfflineMerchantAccount";
 
 /** Adyen takes 64 characters: a fixed-length digest of AGBoss's key (SHA-256, base64url: 43), never a cut. */
 const adyenKeyOf = (idempotencyKey: string): string => createHash("sha256").update(idempotencyKey).digest("base64url");
 
 /** Adyen's official SDK (`@adyen/api-library`), `environment: "TEST"` and a custom `httpClient`. */
-@Injectable({ deps: [OutboundCalls, GatewayStubService, AttemptAgeService] })
+@Injectable({ deps: [OutboundCalls, GatewayStubService] })
 export class AdyenGatewayPayments extends GatewayPayments {
   constructor(
     private readonly outboundCalls: OutboundCalls,
     private readonly gatewayStubService: GatewayStubService,
-    private readonly attemptAgeService: AttemptAgeService,
   ) {
     super();
   }
@@ -33,17 +32,9 @@ export class AdyenGatewayPayments extends GatewayPayments {
     return new CheckoutAPI(client);
   }
 
-  /** No read API for payments: a replay of the key is the only lookup — `notSent()` while it lives (#658). */
-  private replayWhileKept(startedAt: number) {
-    return this.attemptAgeService.isWithin(startedAt, KEY_RETENTION)
-      ? OutboundCallReconciliation.notSent()
-      : OutboundCallReconciliation.unknown({ reason: "Adyen has no lookup and the key may be gone: check the Customer Area" });
-  }
-
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
     const checkout = this.checkout();
     const businessKey = `order:${order.orderId}`;
-    const startedAt = await this.attemptAgeService.startOf(executionContext, businessKey);
     const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "charge", { businessKey }), {
       target: "adyen",
       operation: "payments",
@@ -52,7 +43,10 @@ export class AdyenGatewayPayments extends GatewayPayments {
         const answer = await checkout.PaymentsApi.payments(call.request as unknown as Types.checkout.PaymentRequest, { idempotencyKey: adyenKeyOf(call.idempotencyKey) });
         return { paymentId: answer.pspReference ?? "", amountCents: order.amountCents, status: String(answer.resultCode) };
       },
-      reconcile: () => this.replayWhileKept(startedAt),
+      // no read API for payments: a replay of the key is the only lookup — sent only while Adyen
+      // keeps the key (#658); past it, nothing is sent and a person checks the Customer Area
+      keyRetention: KEY_RETENTION,
+      reconcile: () => OutboundCallReconciliation.notSent(),
     });
     return result;
   }
@@ -60,7 +54,6 @@ export class AdyenGatewayPayments extends GatewayPayments {
   override async refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
     const checkout = this.checkout();
     const businessKey = `refund:${refund.paymentId}:${String(refund.refundNumber)}`;
-    const startedAt = await this.attemptAgeService.startOf(executionContext, businessKey);
     const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "refund", { businessKey }), {
       target: "adyen",
       operation: "refunds",
@@ -69,7 +62,10 @@ export class AdyenGatewayPayments extends GatewayPayments {
         const answer = await checkout.ModificationsApi.refundCapturedPayment(refund.paymentId, call.request, { idempotencyKey: adyenKeyOf(call.idempotencyKey) });
         return { movementId: answer.pspReference, status: answer.status }; // "received": the REFUND webhook tells the outcome
       },
-      reconcile: () => this.replayWhileKept(startedAt),
+      // no read API for payments: a replay of the key is the only lookup — sent only while Adyen
+      // keeps the key (#658); past it, nothing is sent and a person checks the Customer Area
+      keyRetention: KEY_RETENTION,
+      reconcile: () => OutboundCallReconciliation.notSent(),
     });
     return result;
   }

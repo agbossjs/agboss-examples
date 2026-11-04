@@ -29,7 +29,7 @@ describe("README", () => {
     expect(prose).toContain("check the official documentation before relying on anything here");
   });
 
-  it("names today's boundaries with their tickets", () => {
+  it("names the unknown-outcome and key-retention guarantees with their tickets", () => {
     for (const ticket of ["#657", "#658"]) expect(readme).toContain(`https://github.com/agbossjs/agboss/issues/${ticket.slice(1)}`);
   });
 });

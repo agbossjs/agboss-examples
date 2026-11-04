@@ -4,23 +4,22 @@
 // (https://docs.stripe.com/api/idempotent_requests). Gateways change their APIs and SDKs: check the
 // official documentation before relying on it.
 import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { hours } from "@agboss/core/units";
 import Stripe from "stripe";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
-import { AttemptAgeService } from "../../services/attempt-age.service.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
 
-const KEY_RETENTION = 24 * 60 * 60 * 1000; // "Stripe retains keys for at least 24 hours"
+const KEY_RETENTION = hours(24); // "Stripe retains keys for at least 24 hours"
 
 /** A value inside a search query's quotes: "escape quotes inside of quotes with a backslash" (docs.stripe.com/search). */
 const searchText = (value: string): string => value.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
 
 /** Stripe's official SDK (`stripe`), its `host`/`port`/`protocol` options pointed at the stub. */
-@Injectable({ deps: [OutboundCalls, GatewayStubService, AttemptAgeService] })
+@Injectable({ deps: [OutboundCalls, GatewayStubService] })
 export class StripeGatewayPayments extends GatewayPayments {
   constructor(
     private readonly outboundCalls: OutboundCalls,
     private readonly gatewayStubService: GatewayStubService,
-    private readonly attemptAgeService: AttemptAgeService,
   ) {
     super();
   }
@@ -34,21 +33,20 @@ export class StripeGatewayPayments extends GatewayPayments {
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
     const stripe = this.stripe();
     const businessKey = `order:${order.orderId}`;
-    const startedAt = await this.attemptAgeService.startOf(executionContext, businessKey); // #658
     const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "charge", { businessKey }), {
       target: "stripe",
       operation: "payment_intents.create",
       request: { amount: order.amountCents, currency: "usd", confirm: true, payment_method: "pm_card_visa", capture_method: order.capture ? "automatic" : "manual", metadata: { order_id: order.orderId } },
+      // a replay under the key is sent only while Stripe keeps it (#658): past it, nothing is sent
+      keyRetention: KEY_RETENTION,
       send: async (call) => paymentOf(await stripe.paymentIntents.create(call.request, { idempotencyKey: call.idempotencyKey })),
       reconcile: async () => {
         // escaped (a quote or a backslash in an id cannot add a clause), every hit checked against this order
         const found = await stripe.paymentIntents.search({ query: `metadata['order_id']:'${searchText(order.orderId)}'` });
         const intent = found.data.find((hit) => hit.metadata["order_id"] === order.orderId && hit.amount === order.amountCents && hit.currency === "usd");
         if (intent !== undefined) return OutboundCallReconciliation.completed(paymentOf(intent));
-        // the search lags: empty is not "not sent" — a replay under the key is safe while Stripe keeps it
-        return this.attemptAgeService.isWithin(startedAt, KEY_RETENTION)
-          ? OutboundCallReconciliation.notSent()
-          : OutboundCallReconciliation.unknown({ reason: "not in Stripe's search, and its key may be gone" });
+        // the search lags: empty is not "not sent" — a replay under the key, refused past keyRetention
+        return OutboundCallReconciliation.notSent();
       },
     });
     return result;

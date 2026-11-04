@@ -66,7 +66,7 @@ export { STRIPE_SEARCH_LAG };
 export async function checkoutCom(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
   return {
     gateway: { slug: "checkout-com", name: "Checkout.com", stub: await startCheckoutComStub(), operations: CheckoutComGatewayPayments, chargeOperation: "charge" },
-    rows: [ps1, ps5, ps8, ps17Failed(73, { charges: 2, boundary: "#657" }), ps18Shipments, ps19("refund"), refundOwnership],
+    rows: [ps1, ps5, ps8, ps17Failed(73, { charges: 1 }), ps18Shipments, ps19("refund"), refundOwnership],
   };
 }
 
@@ -131,7 +131,8 @@ export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: Gatewa
       ps1,
       ps5,
       adyenWebhookTwice,
-      ps17Pending("ps17d", 7 * 24 + 1, { charges: 1, notes: ["intents left pending: 1"], boundary: "#658 (worked around: the wiring records the attempt's start; past 7 days, unknown)" }),
+      // past Adyen's 7 days the replay is refused (keyRetention, #658): unknown, a person decides
+      ps17Pending("ps17d", 7 * 24 + 1, { charges: 1, notes: ["intents left pending: 1", "reconciled: unknown"] }),
       ps19("refund"),
       ps23({ charges: 1, notes: ["in-progress", "replayed"] }),
       refundOwnership,
@@ -148,8 +149,8 @@ export async function cardcom(): Promise<{ gateway: GatewayUnderTest; rows: Gate
       ps1,
       ps5,
       ps8,
-      // refunds take no key at CardCom: today the lost answer's Failed intent is resent blindly (#657)
-      ps19("refund", { charges: 1, refunds: 2, boundary: "#657 (CardCom refunds take no key)" }),
+      // refunds take no key at CardCom: a lost answer stays unknown — a person decides, one refund
+      ps19("refund", { charges: 1, refunds: 1, notes: ["outbound-call.unreconciled"], boundary: "CardCom refunds take no key: unknown, for a person" }),
       // CardCom does not protect a concurrent duplicate (KB 509: "wait … up to 7 seconds")
       ps23({ charges: 2, boundary: "CardCom's own in-flight gap (KB 509)" }),
       refundOwnership,

@@ -16,7 +16,6 @@ import { GatewaysTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
 import { AppEnvironment } from "./environments/app.environment.js";
 import { StripeGatewayPayments } from "./gateways/stripe/stripe.gateway-payments.js";
 import { BooksRepository } from "./repositories/books.repository.js";
-import { AttemptAgeService } from "./services/attempt-age.service.js";
 import { GatewayStubService } from "./services/gateway-stub.service.js";
 import { PaymentBooksService } from "./services/payment-books.service.js";
 import { CaptureWorkflow } from "./workflows/capture/capture.workflow.js";
@@ -39,7 +38,6 @@ import { RefundWorkflow } from "./workflows/refund/refund.workflow.js";
   providers: [
     StripeGatewayPayments,
     GatewayStubService,
-    AttemptAgeService,
     PaymentBooksService,
     BooksRepository,
     SqliteCheckpointSaver,

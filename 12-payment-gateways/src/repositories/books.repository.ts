@@ -19,13 +19,6 @@ export class BooksRepository {
     return { applied: this.appliedIn(database, tenantId, event.orderId) };
   }
 
-  /** When the first attempt under `businessKey` started: written once, kept as long as the order. */
-  attemptStart(database: DatabaseSync, tenantId: string, businessKey: string, now: number): { startedAt: number } {
-    database.prepare("INSERT OR IGNORE INTO attempt_starts (tenant_id, business_key, started_at) VALUES (?, ?, ?)").run(tenantId, businessKey, now);
-    const row = database.prepare("SELECT started_at AS startedAt FROM attempt_starts WHERE tenant_id = ? AND business_key = ?").get(tenantId, businessKey);
-    return { startedAt: Number(row?.["startedAt"]) };
-  }
-
   /** Books which order (and tenant) a gateway payment belongs to (inside a fenced effect's transaction). */
   bookPayment(database: DatabaseSync, payment: { paymentId: string; orderId: string; tenantId: string }): { orderId: string } {
     database
