@@ -433,33 +433,56 @@ try {
     `taken over at token ${String(newHolder.takeover.token)} after ${String(events.frozen.takenOverAfter)} s; resuming ${frozen.pod} (SIGCONT)`,
   );
   signal(frozen.pod, "CONT");
+  // Back, the zombie cannot write: either it reaches its delivery at its stale token and the store
+  // refuses it (the fenced effect), or its own fence — its lease's end on its own clock — stops it
+  // first and it writes nothing. Which one comes first after a freeze is a race on its event loop; a
+  // write accepted at its token is the only failure.
+  await finished(id("zombie"));
+  const zombieEvents = async () =>
+    (await treeOf(frozen.rootExecutionId)).leaseEvents.filter(
+      (event) =>
+        event.kind === "fenced-effect" &&
+        event.executionId === frozen.executionId &&
+        event.holderInstanceId === frozen.instanceId,
+    );
   const refusal = await until(
     "the zombie's write refused",
-    async () => {
-      const tree = await treeOf(frozen.rootExecutionId);
-      return tree.leaseEvents.find(
-        (event) =>
-          event.kind === "fenced-effect" &&
-          event.executionId === frozen.executionId &&
-          event.outcome === "refused" &&
-          event.holderInstanceId === frozen.instanceId,
-      );
+    async () =>
+      (await zombieEvents()).find((event) => event.outcome === "refused"),
+    {
+      timeoutMs: 20_000,
     },
-    { timeoutMs: 60_000 },
+  ).catch(() => undefined);
+  const zombieWrites = (await zombieEvents()).filter(
+    (event) => event.outcome !== "refused",
   );
-  check(
-    "AC5 zombie refused",
-    refusal.observedToken > refusal.token,
-    `${frozen.pod}'s write at token ${String(refusal.token)} refused: the store saw ${String(refusal.observedToken)}`,
-  );
+  if (refusal !== undefined) {
+    check(
+      "AC5 zombie cannot write",
+      refusal.observedToken > refusal.token && zombieWrites.length === 0,
+      `${frozen.pod}'s write at token ${String(refusal.token)} refused: the store saw ${String(refusal.observedToken)}`,
+    );
+  } else {
+    check(
+      "AC5 zombie cannot write",
+      zombieWrites.length === 0,
+      zombieWrites.length === 0
+        ? `${frozen.pod} stopped at its own lease's end before its write (no write at token ${String(frozen.token)}); the store's refusal is the backstop for the window its fence does not see`
+        : `${frozen.pod} wrote at its stale token: ${JSON.stringify(zombieWrites)}`,
+    );
+  }
+  events.frozen.outcome =
+    refusal === undefined ? "stopped-by-own-fence" : "refused";
   expectations.push({
     batchId: id("zombie"),
     jobId: zombieJob.jobId,
-    kind: "refused",
+    kind: refusal === undefined ? "never-attempted" : "refused",
     instanceId: frozen.instanceId,
-    why: "frozen mid-step, resumed after a takeover",
+    why:
+      refusal === undefined
+        ? "frozen mid-step, stopped by its own fence after a takeover"
+        : "frozen mid-step, resumed after a takeover",
   });
-  await finished(id("zombie"));
   await until(
     `${frozen.pod} ready again`,
     () => {
@@ -497,8 +520,9 @@ try {
       ? `${frozen.pod}: no restart during the freeze (the liveness window outlasted it)`
       : `${frozen.pod}: ${String(restarted)} restart(s); the kubelet: ${JSON.stringify(events.frozen.kubelet)}`,
   );
-  // as a member again: a follow-up batch large enough to reach every pod
-  const after = jobsOf(id("after"), 48, 4_000);
+  // as a member again: a follow-up batch that reaches every pod — it outlasts a sweep (30 s), the
+  // moment a pod that hosts no root of the batch first looks at the queue: 48 × 12 s on 12 slots
+  const after = jobsOf(id("after"), 48, 12_000);
   batches.push({ batchId: id("after"), jobIds: after.map((job) => job.jobId) });
   await submit(id("after"), after);
   await finished(id("after"));
