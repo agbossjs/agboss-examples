@@ -4,16 +4,21 @@ import type { PaymentScenario, ScenarioRow } from "./scenario.types.js";
 
 /**
  * PS6 — the support levels: the right wiring, unchanged, on the three stub gateways. `Full` charges
- * once everywhere it can; `NoLookup` leaves a lost answer `unknown` (a person decides); `NoKeys`
- * charges twice on a retry: not supported. The late replay (PS17 c on each level) is today's
- * boundary #657 — an error of unknown outcome is resent without a lookup.
+ * once everywhere it can; `NoLookup` leaves a lost answer `unknown` (a person decides); an error
+ * of unknown outcome (#657) leaves its intent pending, so a retry reconciles: on `NoLookup` and
+ * `NoKeys` it is `unknown` — a person decides, nothing is charged again — and `NoKeys` still
+ * charges twice when two requests meet at the gateway (PS23): not supported. A late retry (PS17 c
+ * on each level) is reconciled the same way.
  */
 const levels = [StubLevel.Full, StubLevel.NoLookup, StubLevel.NoKeys] as const;
 
 const retryRows: ScenarioRow[] = levels.map((level) => ({
   row: `ps6 ${level} ps1`,
   level,
-  right: level === StubLevel.NoKeys ? { charges: 2, lost: 2500 } : { charges: 1, lost: 0, orderStatus: "paid" },
+  right:
+    level === StubLevel.Full
+      ? { charges: 1, lost: 0, orderStatus: "paid" }
+      : { charges: 1, notes: ["outbound-call.unreconciled"] }, // unknown: a person decides
   run: (context) => retryAfterDrop(context, "ps6", `ps6 ${level} ps1`),
 }));
 
@@ -30,7 +35,10 @@ const crashRows: ScenarioRow[] = levels.map((level) => ({
 const lateRows: ScenarioRow[] = levels.map((level) => ({
   row: `ps6 ${level} late`,
   level,
-  right: { charges: 2, lost: 2500, boundary: "#657" },
+  right:
+    level === StubLevel.Full
+      ? { charges: 1, lost: 0, orderStatus: "paid" }
+      : { charges: 1, notes: ["outbound-call.unreconciled"] },
   run: (context) => lateRetryAfterServerError(context, "ps6", `ps6 ${level} late`),
 }));
 

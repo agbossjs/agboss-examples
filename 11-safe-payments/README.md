@@ -41,7 +41,7 @@ src/your-step/your-payment-operations.ts  a copy of the right wiring for you to 
 | **One order, one charge, whoever asks** | The model calls the charge tool four times (PS7); two executions at once (PS8); a deploy that renames the call (PS12); a skewed clock (PS13) | A business key `order:<id>` — `Joined`, `Replayed`, `OutboundCallInFlightError`, `IdempotencyKeyConflictError` | [`tests/scenarios/application-duplicates.test.ts`](./tests/scenarios/application-duplicates.test.ts) |
 | **One refund, one capture, one disposition** | A refund whose answer is lost and asked again by another path (PS19); an undo interrupted (PS10); shipment 2 captured twice (PS18); a void racing a capture (PS20) | `refund:<charge>:<n>`, `capture:<charge>:<n>`, `disposition:<charge>`; the undo marked done once (#607) | [`tests/scenarios/gateway-side.test.ts`](./tests/scenarios/gateway-side.test.ts) |
 | **A webhook is applied once, by the gateway's current state** | A duplicate delivery on two pods (PS15); events out of order (PS16); a 3DS outcome from three requests (PS21) | A fenced effect under `event:stub:<eventId>`; the pause answered once (`NotPausedError`); the charge's current status read | › "ps15", › "ps16", › "ps21" |
-| **What stays the gateway's, and today's boundaries, are named** | A gateway with no lookup or no keys (PS6, PS23); a key past its retention (PS17) | `unknown` → `OutboundCallUnreconciledError` (a person decides); PS17 (c) and (d) asserted as the known boundaries #657 and #658 | › "ps6 …", › "ps17 c: right — today's known boundary #657", › "ps17 d … #658" |
+| **What stays the gateway's is named; an unknown outcome is never resent** | A gateway with no lookup or no keys (PS6, PS23); an error of unknown outcome, a key past its retention (PS17) | `unknown` → `OutboundCallUnreconciledError` (a person decides); an ambiguous error leaves the intent pending (#657); a `notSent()` past the declared `keyRetention` is never sent (#658) | › "ps6 …", › "ps17 c: right — exactly once", › "ps17 d: right — exactly once" |
 | **The tests bite** | The right version swapped for the wrong one | each right-version assertion run on its wrong version must fail | [`tests/bites.test.ts`](./tests/bites.test.ts) |
 | **Your own gateway call can be checked the same way** | A step that forgets the idempotency key on a refund | every right-version assertion with your `PaymentOperations` | [`tests/your-step.test.ts`](./tests/your-step.test.ts) › "a step that forgets the refund key turns ps19 red" |
 
@@ -77,9 +77,11 @@ as most clients do, so a frozen holder's request still goes out when it wakes.
   answer.
 - **PS6 — support levels** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps6-support-levels-full-no-lookup-no-keys)).
   The right wiring, unchanged, on `Full`, `NoLookup` and `NoKeys`, through PS1, PS5 and a retry 25
-  hours after a `502`. `Full` charges once; `NoLookup` leaves a lost answer `unknown` (the intent
-  waits for a person); `NoKeys` charges twice on a retry: not supported. The late retry charges
-  twice on every level today — the boundary #657.
+  hours after a `502`. `Full` charges once; on `NoLookup` and `NoKeys` a lost answer is `unknown`
+  (the intent waits for a person) — the dropped connection and the `502` are errors of unknown
+  outcome, so a retry reconciles before anything is resent
+  ([#657](https://github.com/agbossjs/agboss/issues/657)); `NoKeys` still charges twice when two
+  requests meet at the gateway (PS23): not supported.
 - **PS7 — the model calls the charge tool twice** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps7-the-model-calls-the-charge-tool-twice)).
   A scripted model calls the charge tool twice in one turn, once in the next, and once with
   another amount. Wrong: keyed by the step — four charges. Right: keyed by the order — one charge,
@@ -127,12 +129,12 @@ as most clients do, so a frozen holder's request still goes out when it wakes.
   The stub keeps keys 24 h; the repeat comes 25 h later. (a) After a completed charge — wrong:
   a step key, a new charge; right: AGBoss replays its own stored receipt. (b) After a crash before
   the answer — wrong: "replay the key" (`notSent()`), a new charge; right: reconcile by the order's
-  reference, which does not expire. (c) After a `502` the stub had processed: today the `Failed`
-  intent is resent with no lookup — two charges, **the known boundary
-  [#657](https://github.com/agbossjs/agboss/issues/657)**. (d) On a gateway whose only lookup is the
-  replay: `notSent()` past the retention — two charges, **the known boundary
-  [#658](https://github.com/agbossjs/agboss/issues/658)**. Both are asserted as boundaries, never as
-  passing.
+  reference, which does not expire. (c) After a `502` the stub had processed: an error of unknown
+  outcome leaves the intent pending ([#657](https://github.com/agbossjs/agboss/issues/657)), and the
+  retry reconciles by the order's reference — one charge, the order paid. (d) On a gateway whose
+  only lookup is the replay: the call declares the key's retention (`keyRetention: hours(24)`,
+  [#658](https://github.com/agbossjs/agboss/issues/658)), and the recovery's `notSent()` past it is
+  never sent — `unknown`, the intent left pending for a person, one charge.
 - **PS18 — a partial capture** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps18-a-partial-capture)).
   An authorization of 90.00 in three shipments; shipment 2 is captured by two executions. Wrong:
   step keys — shipment 2 captured twice. Right: `capture:<charge>:2` — the second gets the first.
@@ -199,10 +201,13 @@ All offline and $0: no key, no network beyond `127.0.0.1`, no real gateway. `npm
 - **What AGBoss guarantees rests on its assumptions** (Wiki → Guarantees, A1–A12): one store
   backend with the leases (here one SQLite file), one `pseudonymKey` on every instance, every
   write inside a step, repeats inside the gateway's retention.
-- **Today's boundaries, named:** an error of unknown outcome (a `502` after the gateway charged)
-  is resent without a lookup ([#657](https://github.com/agbossjs/agboss/issues/657), PS6 late, PS17
-  c), and `reconcile` is not told the attempt's age ([#658](https://github.com/agbossjs/agboss/issues/658),
-  PS17 d). Both are asserted as boundaries and flip to guarantees when the core fixes land.
+- **Unknown outcomes and expired keys, guaranteed:** an error of unknown outcome (a `502` after
+  the gateway charged) leaves the intent pending and is reconciled, never resent blindly
+  ([#657](https://github.com/agbossjs/agboss/issues/657), PS6, PS17 c); `reconcile` is told the
+  attempt's age (`lookup.keyAge`), and a `notSent()` past the call's `keyRetention` is never sent
+  ([#658](https://github.com/agbossjs/agboss/issues/658), PS17 d). Both are asserted exactly once.
+  Only an error the call marks definite (`isDefiniteFailure`: a decline, a validation error) is
+  `Failed` and sent again.
 - **What stays the gateway's:** keys on every operation (G1), a lookup (G2), keeping keys long
   enough (G3), its state machine (a void after a capture), signing its webhooks. A gateway without
   keys (`NoKeys`) or a lookup (`NoLookup`) is not supported (PS6, PS23).

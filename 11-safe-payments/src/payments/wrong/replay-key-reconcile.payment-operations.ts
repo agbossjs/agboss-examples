@@ -8,8 +8,9 @@ import { chargeRequestOf } from "./new-key-per-attempt.payment-operations.js";
  * A reconcile by the key alone: "send it again, the gateway will replay it" (`notSent()`). WRONG on
  * a gateway with a lookup (PS17 b): once the gateway forgot the key, the replay is a new charge —
  * the lookup by our reference, which does not expire, would have found it. On a gateway whose only
- * lookup IS the replay (PS17 d, `NoLookup`) it is the only answer — safe only while the key lives
- * (#658: AGBoss does not yet tell `reconcile` how old the attempt is).
+ * lookup IS the replay (PS17 d, `NoLookup`) it is the only answer — safe only while the key lives,
+ * so the right wiring there declares the key's retention (`ReplayWithinRetentionPaymentOperations`,
+ * #658).
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class ReplayKeyReconcilePaymentOperations extends RightPaymentOperations {

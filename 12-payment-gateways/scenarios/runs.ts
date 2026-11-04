@@ -1,3 +1,4 @@
+import { ExecutionLeaseEventKind, OutboundCallEventOutcome } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 import { StubFault } from "../src/stub-kit/stub-kit.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
@@ -24,6 +25,25 @@ async function settledIntents(context: RunContext): Promise<number> {
     left = await pending();
   }
   return left;
+}
+
+/**
+ * Until the recovering instance's `reconcile` of an intent left pending could not settle it — the
+ * lease log's `unknown` (#505; a `notSent()` past `keyRetention`, #658): `"reconciled: unknown"`,
+ * else nothing within the bound (the intent was never reconciled).
+ */
+async function unknownNotes(context: RunContext): Promise<string[]> {
+  const b = context.app(1);
+  const [pending] = await b.pendingOutboundCalls({ tenantId: "default" });
+  if (pending === undefined) return [];
+  const tree = { tenantId: "default", rootExecutionId: pending.rootExecutionId };
+  for (let turn = 0; turn < 200; turn += 1) {
+    const events = await b.leaseEventsOf(tree);
+    if (events.some((event) => event.kind === ExecutionLeaseEventKind.OutboundCall && event.outcome === OutboundCallEventOutcome.Unknown))
+      return ["reconciled: unknown"];
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return [];
 }
 
 /** PS1: the charge's answer dropped after the gateway processed it; the customer pays again. */
@@ -129,9 +149,10 @@ export const ps17Pending = (scenario: string, after: number, expected: GatewayRo
     context.leases.resume(b);
     await passLive(context, 41);
     const left = await settledIntents(context);
+    const unknown = await unknownNotes(context);
     context.gateway.stub.release();
     context.leases.resume(a);
-    return outcomeOf(context, scenario, paid.orderId, [`instance 1: ${await first}`, `intents left pending: ${String(left)}`]);
+    return outcomeOf(context, scenario, paid.orderId, [`instance 1: ${await first}`, `intents left pending: ${String(left)}`, ...unknown]);
   },
 });
 
