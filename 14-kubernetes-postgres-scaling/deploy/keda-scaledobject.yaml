@@ -12,7 +12,9 @@ metadata:
 spec:
   scaleTargetRef:
     name: agboss-worker
-  minReplicaCount: 1 # 0 is possible: KEDA wakes it on activationThreshold (queued work > 0)
+  # at least 1 (agbossjs/agboss#751): only a live pod's recovery sweep continues a root handed over
+  # or left by a crash, and idle does not see one; the pods report the demand, so 0 never wakes
+  minReplicaCount: 1
   maxReplicaCount: 10
   pollingInterval: 15
   cooldownPeriod: 300
