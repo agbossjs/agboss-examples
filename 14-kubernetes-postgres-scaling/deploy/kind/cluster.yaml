@@ -1,0 +1,14 @@
+# The kind cluster of the blueprint (agbossjs/agboss#487): one node, the version KEDA 2.20 is tested
+# on (Kubernetes 1.33–1.35). `npm run cluster:up` caps the node container right after it is created
+# (`docker update --cpus 3 --memory 4g`): everything in the cluster shares those 3 CPU and 4 GB.
+# The NodePorts below reach the host on 127.0.0.1 only: the batch API, the stub, Prometheus.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: agboss-scaling
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+    extraPortMappings:
+      - { containerPort: 30080, hostPort: 18080, listenAddress: "127.0.0.1" } # agboss-api
+      - { containerPort: 30081, hostPort: 18081, listenAddress: "127.0.0.1" } # ledger-stub
+      - { containerPort: 30090, hostPort: 19090, listenAddress: "127.0.0.1" } # prometheus

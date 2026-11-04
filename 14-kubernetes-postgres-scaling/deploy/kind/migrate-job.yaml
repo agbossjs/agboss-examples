@@ -1,0 +1,24 @@
+# The schema, migrated explicitly before any pod starts (agbossjs/agboss#487): `agboss-postgres
+# migrate`, the package's own command (Running-on-PostgreSQL → Migrations). Retried until the
+# database answers; a second run applies nothing.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agboss-migrate
+  namespace: agboss
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: agboss-scaling:local
+          imagePullPolicy: Never
+          args: ["node_modules/.bin/agboss-postgres", "migrate"]
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: agboss-secrets, key: POSTGRES_URL } }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }

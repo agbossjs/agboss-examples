@@ -17,6 +17,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rangeInstallArguments } from "./npm-before.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKED_DIR = join(ROOT, ".packed");
@@ -66,7 +67,7 @@ for (const entry of readdirSync(PACKED_DIR)) {
 }
 
 function packPackage(pkgSubdir) {
-  const pkgDir = join(AGBOSS_REPO, pkgSubdir);
+  const pkgDir = resolve(AGBOSS_REPO, pkgSubdir);
   const pkgJson = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
   const rawOut = execFileSync("npm", ["pack", "--json", "--pack-destination", PACKED_DIR], {
     cwd: pkgDir,
@@ -107,6 +108,47 @@ function packPackage(pkgSubdir) {
 const agboss = packPackage("packages/agboss");
 const agbossCli = packPackage("packages/agboss-cli");
 
+/**
+ * `@agboss/postgres` (agbossjs/agboss#487), packed like the core until it is on npm: from
+ * `AGBOSS_POSTGRES_DIR` (default `../postgres`), whose HEAD must be the pinned `postgres.sha`, built
+ * against the core packed above — so the stores are compiled and tested on the same core the
+ * examples install.
+ */
+function packPostgres(pin) {
+  const dir = resolve(process.env["AGBOSS_POSTGRES_DIR"] ?? join(ROOT, "..", "postgres"));
+  if (!existsSync(join(dir, "package.json"))) {
+    throw new Error(
+      `[pack-framework] agbossjs/postgres not found at ${dir}: clone it there or set AGBOSS_POSTGRES_DIR.`,
+    );
+  }
+  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, encoding: "utf8" }).trim();
+  if (head !== pin.sha) {
+    throw new Error(
+      `[pack-framework] agbossjs/postgres at ${dir} is at ${head}; .agboss-version.json pins ${pin.sha}.`,
+    );
+  }
+  console.log(`[pack-framework] Building @agboss/postgres at ${head} on the packed core...`);
+  const env = { ...process.env, npm_config_cache: join(PACKED_DIR, ".npm-cache") };
+  const npm = (args) => execFileSync("npm", args, { cwd: dir, stdio: "inherit", env });
+  // as agbossjs/postgres's own install:packed does: the core tarball as its devDependency for the
+  // install only, no lockfile written, package.json restored after
+  const packagePath = join(dir, "package.json");
+  const original = readFileSync(packagePath, "utf8");
+  const withTarball = JSON.parse(original);
+  withTarball.devDependencies = { ...withTarball.devDependencies, "@agboss/core": `file:${agboss.tarballPath}` };
+  try {
+    writeFileSync(packagePath, `${JSON.stringify(withTarball, null, 2)}\n`);
+    npm(rangeInstallArguments(["--no-package-lock", "--no-audit", "--no-fund"]));
+  } finally {
+    writeFileSync(packagePath, original);
+  }
+  npm(["run", "build"]);
+  return packPackage(dir);
+}
+
+const pin = existsSync(VERSION_PIN_PATH) ? JSON.parse(readFileSync(VERSION_PIN_PATH, "utf8")) : {};
+const postgres = pin.postgres === undefined ? undefined : { ...packPostgres(pin.postgres), sourceCommit: pin.postgres.sha };
+
 const manifest = {
   createdAt: new Date().toISOString(),
   packedAt: new Date().toISOString(),
@@ -116,6 +158,7 @@ const manifest = {
   packages: {
     agboss,
     agbossCli,
+    ...(postgres === undefined ? {} : { postgres }),
   },
 };
 
@@ -128,4 +171,9 @@ console.log(
 console.log(
   `[pack-framework] Packed ${agbossCli.name}@${agbossCli.version} -> ${agbossCli.filename} (${agbossCli.integrity}, sha256:${agbossCli.sha256})`,
 );
+if (postgres !== undefined) {
+  console.log(
+    `[pack-framework] Packed ${postgres.name}@${postgres.version} -> ${postgres.filename} (${postgres.integrity}, sha256:${postgres.sha256})`,
+  );
+}
 console.log(`[pack-framework] Wrote manifest to ${manifestPath}`);

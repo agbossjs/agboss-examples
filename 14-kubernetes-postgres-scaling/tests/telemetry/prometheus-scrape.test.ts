@@ -1,20 +1,23 @@
 /**
  * agbossjs/agboss#486 AC1 — the recipe works: the core's metrics, through the official Prometheus
  * exporter, scraped over HTTP in the Prometheus text format with the documented names, kinds and
- * labels (Wiki → Metrics) — and no tenant, execution or thread id anywhere in a label.
+ * labels (Wiki → Metrics) — and no tenant, execution or thread id anywhere in a label. The same
+ * workflows as the cluster's, on the local application's SQLite stores (offline, R4).
  */
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, expect } from "vitest";
 import { testWith } from "@agboss/core/testing";
-import { KubernetesScalingApplication } from "../../src/kubernetes-scaling.application.js";
+import { LocalScalingApplication } from "../../src/local/local-scaling.application.js";
+import { ledgerStubForFile } from "../support/stub.js";
 import { metricsHandlerOf, prometheusTelemetry } from "../../src/telemetry.js";
 import { BatchWorkflowStart } from "../../src/workflows/batch/batch.workflow-start.js";
 
 const { meterProvider, exporter } = prometheusTelemetry(0);
-const test = testWith(KubernetesScalingApplication, {
+ledgerStubForFile();
+const test = testWith(LocalScalingApplication, {
   meterProviders: [meterProvider],
-  allowNetwork: ["127.0.0.1"], // the scrape, our own server
+  allowNetwork: ["127.0.0.1"], // the scrape and the ledger stub, our own servers
 });
 let server: Server;
 let url = "";

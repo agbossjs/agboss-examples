@@ -1,0 +1,21 @@
+# The AGBoss pods on kind (agbossjs/agboss#487): the shipped worker Deployment and KEDA ScaledObject
+# (deploy/, agbossjs/agboss#486) with the blueprint's patches — the local image and its env, small
+# resources for a 3 CPU / 4 GB node, a liveness window wider than a frozen pod's takeover, at most 4
+# workers and a scale-in fast enough to watch — plus the coordinator and the API Service.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agboss
+resources:
+  - ../../worker-deployment.yaml
+  - ../../keda-scaledobject.yaml
+  - coordinator.yaml
+patches:
+  - path: worker-patch.yaml
+  - path: scaledobject-patch.yaml
+  # no Prometheus Operator here: the annotations are scraped instead of the PodMonitor
+  - patch: |-
+      $patch: delete
+      apiVersion: monitoring.coreos.com/v1
+      kind: PodMonitor
+      metadata:
+        name: agboss-worker

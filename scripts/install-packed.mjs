@@ -48,6 +48,7 @@ function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0")
     delete copy.overrides["@agboss/cli"];
     delete copy.overrides["agboss"];
     delete copy.overrides["agboss-cli"];
+    delete copy.overrides["@agboss/postgres"];
     if (Object.keys(copy.overrides).length === 0) {
       delete copy.overrides;
     }
@@ -79,7 +80,7 @@ if (!existsSync(MANIFEST_PATH)) {
 }
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
-const { agboss, agbossCli } = manifest.packages;
+const { agboss, agbossCli, postgres } = manifest.packages;
 const agbossTarballPath = resolvePortablePackedTarballPath(ROOT, agboss.filename, "@agboss/core");
 const cliTarballPath = resolvePortablePackedTarballPath(ROOT, agbossCli.filename, "@agboss/cli");
 
@@ -109,6 +110,18 @@ for (const relDir of TARGET_DIRS) {
     "@agboss/core": relAgboss,
     "@agboss/cli": relCli,
   };
+  // @agboss/postgres (agbossjs/agboss#487), packed until it is on npm: the project's own range stays
+  // in git (the published one), the tarball is installed in its place
+  if (packedPkg.dependencies?.["@agboss/postgres"] !== undefined) {
+    if (postgres === undefined) {
+      throw new Error(
+        `[install-packed] ${relDir} needs @agboss/postgres: pin it in .agboss-version.json (postgres.sha) and run npm run pack:framework`,
+      );
+    }
+    const relPostgres = `file:${relative(projectDir, resolvePortablePackedTarballPath(ROOT, postgres.filename, "@agboss/postgres"))}`;
+    packedPkg.dependencies["@agboss/postgres"] = relPostgres;
+    packedPkg.overrides["@agboss/postgres"] = relPostgres;
+  }
 
   try {
     writeFileSync(pkgPath, JSON.stringify(packedPkg, null, 2) + "\n", "utf8");

@@ -1,24 +1,34 @@
-// `npm run demo` — offline, no model: one worker with four step slots gets a batch of twelve jobs
-// and Prometheus is scraped while it works and after — the scale-out signal rises, then drains.
+// `npm run demo` — offline, no model, no cluster: two instances of the same workflows on one SQLite
+// file (LocalScalingApplication), the ledger stub in-process, a batch of twelve jobs. Prometheus is
+// scraped while the backlog waits and after it; then the run is verified from state — the kept
+// records, the lease log, the outbound calls and the stub's ledger — as the cluster's scenario does.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "@agboss/core";
-import { KubernetesScalingApplication } from "./kubernetes-scaling.application.js";
+import { LocalScalingApplication } from "./local/local-scaling.application.js";
+import { startLedgerStub } from "./stub/ledger-stub.js";
 import { metricsHandlerOf, prometheusTelemetry } from "./telemetry.js";
+import { batchEvidenceOf } from "./verification/evidence.js";
+import { verifyRun } from "./verification/verify.js";
 import { BatchWorkflowStart } from "./workflows/batch/batch.workflow-start.js";
 
-process.env.SQLITE_PATH ??= join(
-  mkdtempSync(join(tmpdir(), "agboss-scaling-")),
-  "demo.sqlite",
-);
+// offline, synthetic (R6): the two local instances share this PII key
+process.env.PII_PSEUDONYM_KEY ??= "local-demo-synthetic-pseudonym-key";
+const stub = await startLedgerStub(0, "127.0.0.1");
+process.env.LEDGER_URL = stub.url;
+process.env.SQLITE_PATH ??= join(mkdtempSync(join(tmpdir(), "agboss-scaling-")), "demo.sqlite");
+
 const { meterProvider, exporter } = prometheusTelemetry(0);
 const metrics = createServer(metricsHandlerOf(exporter));
 await new Promise<void>((resolve) => metrics.listen(0, "127.0.0.1", resolve));
 const url = `http://127.0.0.1:${String((metrics.address() as AddressInfo).port)}/metrics`;
-const app = await createApp(KubernetesScalingApplication, { meterProvider });
+process.env.POD_NAME = "pod-a";
+const a = await createApp(LocalScalingApplication, { meterProvider });
+process.env.POD_NAME = "pod-b";
+const b = await createApp(LocalScalingApplication);
 
 const DEMAND = [
   "agboss_cluster_children_queued",
@@ -28,22 +38,31 @@ const DEMAND = [
 ];
 async function scrape(when: string): Promise<void> {
   const text = await (await fetch(url)).text();
-  const lines = text
-    .split("\n")
-    .filter((line) => DEMAND.some((name) => line.startsWith(name)));
-  console.log(`--- GET /metrics (${when})\n${lines.join("\n")}`);
+  const lines = text.split("\n").filter((line) => DEMAND.some((name) => line.startsWith(name)));
+  console.log(`--- GET /metrics of pod-a (${when})\n${lines.join("\n")}`);
 }
 
-const jobs = Array.from({ length: 12 }, (_, index) => ({
-  jobId: `job-${String(index)}`,
-  durationMs: 400,
-}));
-const batch = app.execute(BatchWorkflowStart, jobs);
+const jobs = Array.from({ length: 12 }, (_, index) => ({ jobId: `demo-${String(index)}`, durationMs: 400 }));
+const batch = a.execute(BatchWorkflowStart, jobs, { threadId: "demo" });
 await new Promise((resolve) => setTimeout(resolve, 150));
-await scrape("12 jobs, 4 slots: the backlog");
+await scrape("12 jobs, 4 slots per pod: the backlog");
 const result = await batch;
 await scrape("after the batch: idle");
 console.log("batch done:", JSON.stringify(result.output));
-await app.close();
+
+const report = verifyRun({
+  batches: [await batchEvidenceOf(a, "demo", jobs.map((job) => job.jobId))],
+  stub: stub.state(),
+  expectations: [],
+});
+const pods = new Set(report.jobs.flatMap((job) => job.attempts.map((attempt) => attempt.instanceId)));
+console.log(
+  `verified from state: ${String(report.totals.jobs)} jobs, ${String(report.totals.accepted)} deliveries, ` +
+    `${String(stub.state().entries.length)} ledger entries, ${String(report.totals.duplicates)} duplicates, ` +
+    `on ${String(pods.size)} instances — ${report.passed ? "PASSED" : "FAILED"}`,
+);
+await Promise.all([a.close(), b.close()]);
 await meterProvider.shutdown();
 metrics.close();
+await stub.close();
+if (!report.passed) process.exitCode = 1;

@@ -26,8 +26,8 @@ export const ps7: PaymentScenario = {
       async run(context) {
         const charge = { orderId: "ps7-order", amountCents: 2500 };
         context.mockLlm(PaymentAgent).thenReturn(
-          // two calls in one turn; `callTools` is not in an agent's typed turns yet (agbossjs/agboss#679)
-          callTools(callTool(ChargeOrderTool, charge), callTool(ChargeOrderTool, charge)) as unknown as ReturnType<typeof callTool>,
+          // two calls in one turn
+          callTools(callTool(ChargeOrderTool, charge), callTool(ChargeOrderTool, charge)),
           callTool(ChargeOrderTool, charge),
           callTool(ChargeOrderTool, { ...charge, amountCents: 9900 }),
           replyWith("The order is paid."),

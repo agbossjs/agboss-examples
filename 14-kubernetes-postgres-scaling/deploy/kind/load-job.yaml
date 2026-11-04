@@ -1,0 +1,24 @@
+# The workload generator (agbossjs/agboss#487): posts the backlog to any ready pod (`agboss-api`)
+# and exits. `scenario.mjs` sets LOAD_BATCHES; what happened is read from state, never from here.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agboss-load
+  namespace: agboss
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: load
+          image: agboss-scaling:local
+          imagePullPolicy: Never
+          args: ["node", "dist/load.js"]
+          env:
+            - { name: COORDINATOR_URL, value: "http://agboss-api:8080" }
+            - { name: LOAD_BATCHES, value: "backlog:80:4000" }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
