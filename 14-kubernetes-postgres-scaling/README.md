@@ -30,7 +30,7 @@ deploy/collector/                    ECS (CloudWatch), Cloud Run (Managed Promet
 | --- | --- | --- |
 | **Scale out** | `max(agboss_cluster_children_queued) + sum(agboss_instance_steps_waiting) + sum(agboss_instance_step_slots_busy)`, target `4` per pod | every step that wants a slot now; a pod has four |
 | **Scale in** | the same demand falling, held 300 s, one pod a minute | a short lull does not kill pods that are about to get work |
-| **Idle** | `max(queued) + max(running) + sum(leases_held) + sum(busy) + sum(waiting) == 0` | nothing queued, running or held anywhere — the floor (`minReplicaCount`) |
+| **Idle** | `max(queued) + max(running) + sum(leases_held) + sum(busy) + sum(waiting) == 0` | nothing queued, running or held anywhere — the floor (`minReplicaCount`, at least 1: idle does not see a root handed over or left by a crash until a live pod's sweep takes it, agbossjs/agboss#751) |
 
 `agboss_cluster_*` is read from the shared store and reported **by every pod** with the same value:
 aggregate it with `max`, never `sum` (three pods, twelve queued: `max` is 12, `sum` 36).
