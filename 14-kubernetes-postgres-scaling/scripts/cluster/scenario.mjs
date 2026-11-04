@@ -162,13 +162,18 @@ async function stuckEvidenceOf(batchId) {
       .map(podViewOf),
   };
 }
+/** The batch's record once it ended: finished, else (failed or cancelled) an error at once — never a timeout for an ended batch. */
 const finished = async (batchId, timeoutMs = 360_000) => {
+  let ended;
   try {
-    return await until(
+    ended = await until(
       `batch ${batchId} finished`,
       async () => {
         const record = await batchRecord(batchId);
-        return record?.status === "finished" ? record : undefined;
+        // ended: finished, failed or cancelled (a paused or running batch is waited for)
+        return ["finished", "failed", "cancelled"].includes(record?.status)
+          ? record
+          : undefined;
       },
       { timeoutMs, everyMs: 3_000 },
     );
@@ -176,6 +181,13 @@ const finished = async (batchId, timeoutMs = 360_000) => {
     events.stuck = await stuckEvidenceOf(batchId);
     throw error;
   }
+  if (ended.status !== "finished") {
+    events.stuck = await stuckEvidenceOf(batchId);
+    throw new Error(
+      `batch ${batchId} failed: ${JSON.stringify(ended.error ?? {}).slice(0, 400)}`,
+    );
+  }
+  return ended;
 };
 /** The work call of a job, once it reached the stub. */
 const workCallOf = (jobId, timeoutMs = 90_000) =>

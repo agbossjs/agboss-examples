@@ -70,7 +70,9 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
       {
         target: LEDGER,
         operation: "record",
-        request: { jobId, deliveredBy: receipt.instanceId, pod },
+        // what the delivery stored, never this pod's own: a holder that takes the step over replays
+        // the receipt and must send the same request, or the business key refuses it (#508)
+        request: { jobId, deliveredBy: receipt.instanceId, pod: receipt.pod },
         send: (call) =>
           this.ledgerClient.record(call.request, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
         reconcile: async (lookup) => {
