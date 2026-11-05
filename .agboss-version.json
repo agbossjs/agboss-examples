@@ -5,6 +5,6 @@
   "version": "0.1.0",
   "postgres": {
     "repository": "agbossjs/postgres",
-    "sha": "f930989340ebaaade9c8e19a7b31998d2d59a33c"
+    "sha": "bc8cd56dabc8aa1ff5e48b6e11973433e6186cad"
   }
 }
