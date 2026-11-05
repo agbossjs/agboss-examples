@@ -22,6 +22,7 @@ import {
   output,
   until,
 } from "./kube.mjs";
+import { slotFillOf } from "./fill.mjs";
 import { workersSettledAt } from "./pods.mjs";
 
 /** agbossjs/agboss#777: the longest a pod may have no slot at work while children it could take wait, in seconds. */
@@ -231,7 +232,9 @@ const sampler = (async () => {
       const slots = await promValue("sum(agboss_instance_step_slots_limit)");
       const podBusy = await promByPod("agboss_instance_step_slots_busy");
       const podSlots = await promByPod("agboss_instance_step_slots_limit");
-      timeline.push({ t: at(), replicas, ready, desired, demand, queued, busy, slots, podBusy, podSlots });
+      // the children each pod holds (agbossjs/agboss#785: claimed, at work or between two steps)
+      const podHeld = await promByPod("agboss_instance_leases_held");
+      timeline.push({ t: at(), replicas, ready, desired, demand, queued, busy, slots, podBusy, podSlots, podHeld });
     } catch {
       // a sample missed is a sample missed: the next one comes in 2 s
     }
@@ -380,54 +383,25 @@ try {
   await finished(id("backlog"));
   events.backlogDone = at();
   // agbossjs/agboss#767: while more children wait than the pods have slots, a pod that claims keeps
-  // all its slots at work — it claims up to its free slots, a child at work counted once (before:
-  // twice, so a pod of 4 slots refilled only after two of its jobs ended). Per pod, from Prometheus
-  // (every 5 s): the pods holding a child; the cluster's fill (#777, below) counts every pod.
-  const loaded = timeline.filter(
-    (sample) =>
-      sample.t >= events.backlogSubmitted &&
-      sample.t <= events.backlogDone &&
-      sample.slots > 0 &&
-      sample.queued >= sample.slots,
-  );
-  const claiming = loaded.flatMap((sample) =>
-    Object.entries(sample.podBusy ?? {})
-      .filter(([pod, busy]) => busy > 0 && (sample.podSlots?.[pod] ?? 0) > 0)
-      .map(([pod, busy]) => busy / sample.podSlots[pod]),
-  );
-  const podFill = claiming.reduce((sum, one) => sum + Math.min(1, one), 0) / Math.max(1, claiming.length);
-  const clusterFill =
-    loaded.reduce((sum, sample) => sum + Math.min(1, sample.busy / sample.slots), 0) /
-    Math.max(1, loaded.length);
-  events.slotFill = { samples: loaded.length, podSamples: claiming.length, podFill, clusterFill };
+  // all its slots claimed — up to its free slots, a child at work counted once (before: twice, so a
+  // pod of 4 slots refilled only after two of its jobs ended). agbossjs/agboss#777: no pod idles —
+  // the queue's NOTIFY wakes it the moment another process queues a child, not its sweep (30 s).
+  // Live pods only, a pod's claims counted by its leases too (#785, scripts/cluster/fill.mjs).
+  const fill = slotFillOf(timeline, {
+    from: events.backlogSubmitted,
+    to: events.backlogDone,
+    gone: events.killed === undefined ? [] : [{ pod: events.killed.pod, from: events.killed.at }],
+  });
+  events.slotFill = fill;
   check(
     "#767 slots full under the backlog",
-    claiming.length > 0 && podFill >= 0.9,
-    `${String(claiming.length)} pod samples with ≥ the pods' slots queued: a claiming pod's slots ${(podFill * 100).toFixed(0)} % at work on average`,
+    fill.podSamples > 0 && fill.podFill >= 0.9,
+    `${String(fill.podSamples)} pod samples with ≥ the pods' slots queued: a claiming pod's slots ${(fill.podFill * 100).toFixed(0)} % claimed on average`,
   );
-  // agbossjs/agboss#777: every pod is woken by the queue's NOTIFY the moment another process queues a
-  // child — a freshly scaled-out pod, or one whose last look found the queue empty, no longer idles
-  // until its sweep (30 s). Per pod: the longest run of samples with none of its slots at work while
-  // at least its slots were queued (Prometheus scrapes every 5 s, the samples every 2 s: a few
-  // seconds of it are the metrics' lag). The cluster's fill, every pod counted, is reported; on a
-  // slow runner a claiming pod's steps start late, so it is no threshold.
-  const idleRuns = new Map();
-  const longestIdle = new Map();
-  for (const sample of timeline.filter((one) => one.t >= events.backlogSubmitted && one.t <= events.backlogDone))
-    for (const [pod, slots] of Object.entries(sample.podSlots ?? {})) {
-      const isIdle = slots > 0 && (sample.podBusy?.[pod] ?? 0) === 0 && sample.queued >= slots;
-      if (!isIdle) idleRuns.delete(pod);
-      else {
-        if (!idleRuns.has(pod)) idleRuns.set(pod, sample.t);
-        longestIdle.set(pod, Math.max(longestIdle.get(pod) ?? 0, sample.t - idleRuns.get(pod)));
-      }
-    }
-  const [idlest, idleFor] = [...longestIdle].sort((left, right) => right[1] - left[1])[0] ?? ["none", 0];
-  events.slotFill = { ...events.slotFill, longestIdle: Object.fromEntries(longestIdle) };
   check(
     "#777 no pod idles while children wait",
-    loaded.length > 0 && idleFor <= MAX_IDLE,
-    `the longest a pod had no slot at work while at least its slots were queued: ${String(idleFor)} s (${idlest}; at most ${String(MAX_IDLE)} s, the sweep is 30 s); the cluster's slots ${(clusterFill * 100).toFixed(0)} % at work on average`,
+    fill.samples > 0 && fill.idleFor <= MAX_IDLE,
+    `the longest a pod had nothing claimed while at least its slots were queued: ${String(fill.idleFor)} s (${fill.idlest}; at most ${String(MAX_IDLE)} s, the sweep is 30 s); the cluster's slots ${(fill.clusterFill * 100).toFixed(0)} % at work on average`,
   );
   const replaced = appPods().filter(
     (pod) => pod.name.startsWith("agboss-worker-") && !pod.deleting,
