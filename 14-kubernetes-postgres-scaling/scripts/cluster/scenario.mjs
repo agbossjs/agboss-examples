@@ -382,8 +382,7 @@ try {
   // agbossjs/agboss#767: while more children wait than the pods have slots, a pod that claims keeps
   // all its slots at work — it claims up to its free slots, a child at work counted once (before:
   // twice, so a pod of 4 slots refilled only after two of its jobs ended). Per pod, from Prometheus
-  // (every 5 s); a pod that has not looked at the queue yet (it looks at once when a child is queued
-  // in its own process, else at its sweep, every 30 s) is counted in the cluster's fill only.
+  // (every 5 s): the pods holding a child; the cluster's fill (#777, below) counts every pod.
   const loaded = timeline.filter(
     (sample) =>
       sample.t >= events.backlogSubmitted &&
