@@ -27,6 +27,8 @@ from console output. The guarantees it shows, and what they assume:
 | **A frozen worker that comes back cannot write**                 | `SIGSTOP` of a pod mid-step, `SIGCONT` after its lease was taken over                                 | its own fence (the lease's end on its own clock) and, for the window that fence does not see, the fenced effect (`saveResultIfAbsent`, #500): the lease and the scope's token checked in the store's transaction | "AC5 zombie cannot write" — refused by the store (`ExecutionFencedError`, `observedToken > token`) or stopped by its own fence first; no write at its token, from the lease log |
 | **A worker killed before its write never wrote**                 | `kill -9` (exit 137) while its job waits for its remote work                                          | the same, and the lease log's takeover naming the holder                                                                                                                                                         | "AC5 killed with exit 137" — classified _never attempted_, not a refusal                                                                                                        |
 | **A crash after the effect is replayed, not repeated**           | `kill -9` after the delivery committed and the ledger applied the entry, before the step's checkpoint | the fenced effect's stored result (`Replayed`); the outbound call's intent reconciled with the ledger (`OutboundCalls`, #505)                                                                                    | "AC5 the replayed effect applied once" — one ledger entry, one delivery                                                                                                         |
+| **A failed job fails alone**                                     | the other system rejects one job's work (HTTP 422)                                                    | the job's `.onError(StepFailedError, toFinish(JobFailedWorkflowFinish))`: it ends at its own failure finish, so the batch's join gets every job and is never cancelled                                            | `cluster:scenario` › "#763 a failed job fails alone"; the verification: the failed job at its failure finish, nothing delivered or entered, the batch's `succeeded` / `failed` counts |
+| **Every slot at work while the backlog waits**                   | more jobs queued than the pods have slots                                                             | a pod claims children up to its free step slots, a child at work counted once (agbossjs/agboss#767)                                                                                                             | `cluster:scenario` › "#767 slots full under the backlog" (`sum(step_slots_busy) / sum(step_slots_limit)` while ≥ the slots are queued)                                          |
 | **No fencing or idempotency tables in the application**          | —                                                                                                     | the stores keep tokens, marks, results and intents                                                                                                                                                               | [`tests/source/no-own-fencing.test.ts`](./tests/source/no-own-fencing.test.ts) (AC6)                                                                                            |
 
 The verification ([`src/verification/verify.ts`](./src/verification/verify.ts)) classifies every
@@ -34,7 +36,11 @@ attempt at a job's protected write — _accepted_, _replayed_, _refused_, _never
 _inconsistent_ — and a clean final result alone never passes: the scenario's own classifications must
 be found. It bites: [`tests/verification/verify.test.ts`](./tests/verification/verify.test.ts) feeds it
 a second delivery, a second ledger entry, a child that ended twice, a refusal with no takeover, a
-replay of a token nobody wrote, a pending ledger call and a missing refusal, and each fails it.
+replay of a token nobody wrote, a pending ledger call and a missing refusal, and each fails it. It
+stands on its own: a write applied or replayed at a token below the lease's latest epoch (a zombie a
+store let through) fails it whatever the scenario's own checks say. A job
+planned to fail passes only when it ended at its failure finish (`job-failed-workflow-finish`) with no
+delivery and no ledger entry, and its batch finished counting it.
 
 ## 2. The cycle
 
@@ -46,7 +52,11 @@ replay of a token nobody wrote, a pending ledger call and a missing refusal, and
 3. **Distributed execution.** A job ([`ProcessJobAction`](./src/actions/process-job.action.ts)) does
    its remote work (the stub), then its **delivery** — a fenced effect keyed `job:<id>` — and its
    **ledger entry** — a call that leaves the system, its intent recorded before it is sent, with the
-   Idempotency-Key the ledger deduplicates on.
+   Idempotency-Key the ledger deduplicates on. A job whose step fails — the other system rejects its
+   work, or its ledger call cannot be settled — ends at its own failure finish
+   (`job-failed-workflow-finish`); the batch goes on with the other jobs, never cancelled, and reports
+   how many `succeeded` and `failed` (`BatchDoneDto`). A lease lost or a write fenced is no failure:
+   another pod continues the job.
 4. **A worker killed mid-run.** The scenario finds a worker with a job in flight (the stub saw the
    call), kills it (`kill -9`) and deletes its pod. Its Deployment starts a new pod; its leases expire
    and the other pods take its jobs over from their last checkpoint.
@@ -59,7 +69,9 @@ replay of a token nobody wrote, a pending ledger call and a missing refusal, and
    - a pod is **killed with exit 137** before its write: _never attempted_;
    - a pod is **killed after its delivery committed and the ledger applied the entry**, before the
      step's checkpoint: the new holder's delivery is **replayed** (the stored receipt), its ledger call
-     **reconciled** (the ledger is asked; nothing is sent again).
+     **reconciled** (the ledger is asked; nothing is sent again);
+   - the other system **rejects** one job of a batch of six: that job ends at its failure finish, the
+     other five are done, and the batch finishes with `succeeded: 5, failed: 1`.
 6. **Scale-in.** The demand falls to 0; KEDA brings the workers back to 1, one pod per 15 s after a
    30 s stabilization (production: 300 s, [`deploy/keda-scaledobject.yaml`](./deploy/keda-scaledobject.yaml)).
    A removed pod gets SIGTERM: its readiness turns `Unhealthy`, its running steps get
@@ -73,10 +85,10 @@ replay of a token nobody wrote, a pending ledger call and a missing refusal, and
 Offline, no key, no cluster (R4):
 
 ```bash
-npm run check       # agboss check, tsc, eslint
+npm run check       # agboss check --strict --cassettes on both applications, tsc, eslint
 npm test            # the verification and its sabotage cases, the job step, a batch on two instances,
                     # the stub, the source rules (AC6), the manifests' budget, the scrape and scale rules
-npm run demo        # two instances on one SQLite file: a batch, /metrics during and after, verified
+npm run demo        # two instances on one SQLite file: a batch (one job rejected), /metrics, verified
 npm run check:k8s   # kubeconform over deploy/ (Docker + network; no cluster)
 ```
 
@@ -134,25 +146,27 @@ Run and Container Apps.
 ## 6. A recorded run
 
 One run of `npm run cluster:scenario`, as its artifact `.artifacts/kubernetes-run.json` recorded it
-(2026-11-04, kind on Docker Desktop, the node capped at 3 CPU / 4 GB; `@agboss/core` at `06c4bc1d`,
-`@agboss/postgres` at `3109b8c8`). 15 of 15 checks passed in 290 s; times are seconds from the
+(2026-11-05, kind on Docker Desktop, the node capped at 3 CPU / 4 GB; `@agboss/core` at `3affb2f8`,
+`@agboss/postgres` at `4d89363b`). 17 of 17 checks passed in 308 s; times are seconds from the
 start.
 
 | Step                                   | What happened (from state)                                                                                                                                                                                                                                                                                                                     |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Baseline                               | 1 worker ready, slot demand 0                                                                                                                                                                                                                                                                                                                  |
 | Backlog (AC1)                          | 80 jobs × 4 s posted at 2 s; demand peaked at 80, 76 children queued                                                                                                                                                                                                                                                                           |
-| Scale-out (AC2)                        | 1 → 2 workers at 8 s, → 4 at 23 s: 4 workers 25 s after the backlog was submitted                                                                                                                                                                                                                                                              |
-| A worker killed mid-run (AC3)          | `kill -9` at 11 s, the pod deleted; Kubernetes replaced it, and the other pods took its **4 leases** over (the lease log's `takeover` rows, token 2)                                                                                                                                                                                           |
-| A frozen worker (AC5)                  | `SIGSTOP` at 53 s while its job waited for its remote work; another pod took the job over at token 2 after 34 s, then `SIGCONT`: its delivery at token 1 was **refused** (the store saw 2); no restart — the liveness window outlasted the freeze. (Another run may see it stop at its own lease's end before it writes: no write either way.) |
-| The batch after it                     | 48 jobs × 12 s — longer than a sweep, so every pod claims — the resumed pod among the workers that took them: every child claimed and finished once (agbossjs/agboss#720 fixed the claim that could leave some held for ever)                                                                                                                  |
-| A worker killed before its write (AC5) | `kill -9` at 156 s (the coordinator, this time) with its job's work held: exit code 137, restarted once; its job **never attempted** the delivery and ran once elsewhere                                                                                                                                                                       |
+| Scale-out (AC2)                        | 1 → 2 workers at 8 s, → 4 at 23 s: 4 workers 28 s after the backlog was submitted                                                                                                                                                                                                                                                              |
+| Slots at work (agbossjs/agboss#767)    | while more jobs waited than the pods had slots, a pod that claimed kept **100 %** of its slots at work (29 pod samples); the cluster as a whole 60 %: a pod sees a job queued in another process at its sweep (every 30 s), so a pod just scaled out waits for its first look                                                                |
+| A worker killed mid-run (AC3)          | `kill -9` at 16 s, the pod deleted; Kubernetes replaced it, and the other pods took its **5 leases** over (the lease log's `takeover` rows, token 2)                                                                                                                                                                                           |
+| A frozen worker (AC5)                  | `SIGSTOP` of the coordinator at 60 s while its job waited for its remote work; another pod took the job over at token 2 after 42 s, then `SIGCONT`: its delivery at token 1 was **refused** (the store saw 2); no restart — the liveness window outlasted the freeze. (Another run may see it stop at its own lease's end before it writes: no write either way.) |
+| The batch after it                     | 48 jobs × 12 s — longer than a sweep, so every pod claims — the resumed pod among the workers that took them: every child claimed and finished once                                                                                                                                                                                          |
+| A failed job (agbossjs/agboss#763)     | the other system rejected one job of six: it ended at its own failure finish, the other five were done, and the batch finished with `succeeded: 5, failed: 1` — nothing delivered or entered for the failed one                                                                                                                              |
+| A worker killed before its write (AC5) | `kill -9` at 173 s with its job's work held: exit code 137, restarted once; its job **never attempted** the delivery and ran once elsewhere                                                                                                                                                                                                   |
 | A crash after the write (AC5)          | killed after its delivery and ledger entry, before the step's checkpoint: the next holder **replayed** the stored delivery — 1 ledger entry, 1 request                                                                                                                                                                                         |
-| Scale-in (AC2)                         | autoscaling resumed at 225 s; 3 → 2 → 1 worker, 61 s after demand fell to 0 (stabilization 30 s, one pod per 15 s)                                                                                                                                                                                                                             |
-| Verification (AC3, AC5)                | 131 jobs: 131 accepted, 1 replayed, 1 refused, 5 never attempted, **0 inconsistent, 0 duplicates**; the 4 expected outcomes all found                                                                                                                                                                                                          |
+| Scale-in (AC2)                         | autoscaling resumed at 244 s; 3 → 2 → 1 worker, 61 s after demand fell to 0 (stabilization 30 s, one pod per 15 s)                                                                                                                                                                                                                             |
+| Verification (AC3, AC5)                | 137 jobs: 136 accepted, 1 replayed, 1 refused, 5 never attempted, **0 inconsistent, 0 duplicates**; the 4 expected outcomes all found; the failed job at its failure finish                                                                                                                                                                  |
 
-The node used 8 % CPU and 1.05 GiB idle, 15 % and 1.44 GiB with 4 workers on the backlog, and 6 %
-and 1.26 GiB after the scale-in.
+The node used 14 % CPU and 1.21 GiB idle, 9 % and 1.41 GiB with 4 workers on the backlog, and 12 %
+and 1.19 GiB after the scale-in.
 
 ## 7. Layout
 

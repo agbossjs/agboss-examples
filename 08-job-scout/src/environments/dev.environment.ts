@@ -5,6 +5,7 @@ import type { AppEnvironment } from "./app.environment.js";
 export const environment: AppEnvironment = {
   openRouterApiKey: secret("OPENROUTER_API_KEY"),
   openRouterBaseUrl: env.optional("OPENROUTER_BASE_URL"), // unset → the provider's baseUrl
+  piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
   greenhouseApiUrl: "https://boards-api.greenhouse.io",
   sqlitePath: env("AGBOSS_SQLITE_PATH", { default: ".agboss/job-scout.sqlite" }),
 };

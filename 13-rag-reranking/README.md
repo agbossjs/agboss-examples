@@ -77,5 +77,5 @@ src/offline/offline-openrouter.ts        the demo's scripted OpenRouter wire
 - **What stays the application's**: the key (`COHERE_API_KEY`), the rerank model, the price. The
   candidate texts are sent to Cohere as they are retrieved: the application's PII policies do not
   mask a code reranker's own API call.
-- **A live run** (optional, your keys): `COHERE_API_KEY=… OPENROUTER_API_KEY=… npx agboss run --start
+- **A live run** (optional, your keys): `COHERE_API_KEY=… OPENROUTER_API_KEY=… PII_PSEUDONYM_KEY=… npx agboss run --start
   briefing-workflow-start "When does a new engineer join on-call?"` on the `dev` environment.

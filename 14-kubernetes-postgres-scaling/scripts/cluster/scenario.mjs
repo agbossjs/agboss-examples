@@ -47,6 +47,19 @@ async function promValue(query) {
   return value === undefined ? undefined : Number(value);
 }
 
+/** A query's series by pod: `{ <pod>: value }`. */
+async function promByPod(query) {
+  const { body } = await http(
+    `${PROMETHEUS}/api/v1/query?query=${encodeURIComponent(query)}`,
+  );
+  return Object.fromEntries(
+    (body?.data?.result ?? []).map((series) => [
+      series.metric.pod,
+      Number(series.value[1]),
+    ]),
+  );
+}
+
 const workers = () => {
   const deployment = kubectlJson(["get", "deploy", "agboss-worker"]);
   return {
@@ -209,7 +222,12 @@ const sampler = (async () => {
       const { replicas, ready, desired } = workers();
       const demand = await promValue(SLOT_DEMAND);
       const queued = await promValue("max(agboss_cluster_children_queued)");
-      timeline.push({ t: at(), replicas, ready, desired, demand, queued });
+      // the pods' slots at work and their limits (agbossjs/agboss#767: full while work is queued)
+      const busy = await promValue("sum(agboss_instance_step_slots_busy)");
+      const slots = await promValue("sum(agboss_instance_step_slots_limit)");
+      const podBusy = await promByPod("agboss_instance_step_slots_busy");
+      const podSlots = await promByPod("agboss_instance_step_slots_limit");
+      timeline.push({ t: at(), replicas, ready, desired, demand, queued, busy, slots, podBusy, podSlots });
     } catch {
       // a sample missed is a sample missed: the next one comes in 2 s
     }
@@ -357,6 +375,33 @@ try {
 
   await finished(id("backlog"));
   events.backlogDone = at();
+  // agbossjs/agboss#767: while more children wait than the pods have slots, a pod that claims keeps
+  // all its slots at work — it claims up to its free slots, a child at work counted once (before:
+  // twice, so a pod of 4 slots refilled only after two of its jobs ended). Per pod, from Prometheus
+  // (every 5 s); a pod that has not looked at the queue yet (it looks at once when a child is queued
+  // in its own process, else at its sweep, every 30 s) is counted in the cluster's fill only.
+  const loaded = timeline.filter(
+    (sample) =>
+      sample.t >= events.backlogSubmitted &&
+      sample.t <= events.backlogDone &&
+      sample.slots > 0 &&
+      sample.queued >= sample.slots,
+  );
+  const claiming = loaded.flatMap((sample) =>
+    Object.entries(sample.podBusy ?? {})
+      .filter(([pod, busy]) => busy > 0 && (sample.podSlots?.[pod] ?? 0) > 0)
+      .map(([pod, busy]) => busy / sample.podSlots[pod]),
+  );
+  const podFill = claiming.reduce((sum, one) => sum + Math.min(1, one), 0) / Math.max(1, claiming.length);
+  const clusterFill =
+    loaded.reduce((sum, sample) => sum + Math.min(1, sample.busy / sample.slots), 0) /
+    Math.max(1, loaded.length);
+  events.slotFill = { samples: loaded.length, podSamples: claiming.length, podFill, clusterFill };
+  check(
+    "#767 slots full under the backlog",
+    claiming.length > 0 && podFill >= 0.9,
+    `${String(claiming.length)} pod samples with ≥ the pods' slots queued: a claiming pod's slots ${(podFill * 100).toFixed(0)} % at work on average (the cluster's ${(clusterFill * 100).toFixed(0)} %, pods yet to sweep included)`,
+  );
   const replaced = appPods().filter(
     (pod) => pod.name.startsWith("agboss-worker-") && !pod.deleting,
   );
@@ -544,6 +589,24 @@ try {
     instanceId: frozen.instanceId,
     why: "the resumed pod takes new work as a normal member",
   });
+
+  // 3.1b a job the other system rejects (agbossjs/agboss#763): it ends at its own failure finish,
+  // the other jobs go on, and the batch finishes with its counts — it is never cancelled
+  const mixed = jobsOf(id("mixed"), 6, 1_000);
+  const rejectedJob = mixed[2].jobId;
+  await stubControl("rejects", { jobId: rejectedJob });
+  batches.push({
+    batchId: id("mixed"),
+    jobIds: mixed.map((job) => job.jobId),
+    failedJobIds: [rejectedJob],
+  });
+  await submit(id("mixed"), mixed);
+  const mixedRecord = await finished(id("mixed"));
+  check(
+    "#763 a failed job fails alone",
+    mixedRecord.output?.succeeded === 5 && mixedRecord.output?.failed === 1,
+    `${rejectedJob} rejected by the other system: the batch finished, ${String(mixedRecord.output?.succeeded)} succeeded, ${String(mixedRecord.output?.failed)} failed`,
+  );
 
   // 3.2 killed (exit 137) before it reaches its write: never attempted
   const killedJob = { jobId: id("killed-k"), durationMs: 1_000 };

@@ -50,7 +50,7 @@ npm run check      # agboss check + TypeScript + ESLint ($0)
 npm test           # offline tests: flow, tools, MCP, VCR replay, guardrails, budget, the demo ($0)
 npm run demo       # the offline pass below: scripted models, fixture boards, no network ($0)
 npm run demo:live  # the same conversation on OpenRouter and the public boards (OPENROUTER_API_KEY in .env)
-npm run chat       # talk to it yourself (agboss chat; dev environment, needs OPENROUTER_API_KEY)
+npm run chat       # talk to it yourself (agboss chat; dev environment, needs OPENROUTER_API_KEY and PII_PSEUDONYM_KEY)
 ```
 
 `npm run demo` runs one conversation on one thread: (1) the resume path → the profiler reads

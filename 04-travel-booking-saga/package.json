@@ -11,7 +11,7 @@
     "types": "agboss check",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "check": "npm run types && npm run typecheck && npm run lint",
+    "check": "agboss check --strict --cassettes && npm run typecheck && npm run lint",
     "test": "vitest run",
     "demo": "tsx src/demo.ts"
   },

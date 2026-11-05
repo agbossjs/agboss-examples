@@ -14,7 +14,8 @@ import { BatchWorkflowStart } from "../workflows/batch/batch.workflow-start.js";
  *   once: the tree runs on, held by its lease, and any pod continues it if this one dies;
  * - `GET /api/batches/:batchId` — its kept execution record;
  * - `GET /api/trees/:rootExecutionId` — a running tree's lease log and outbound calls;
- * - `POST /api/verification {batches: [{batchId, jobIds}], expectations}` — the report (`verifyRun`).
+ * - `POST /api/verification {batches: [{batchId, jobIds, failedJobIds}], expectations}` — the report
+ *   (`verifyRun`); `failedJobIds` are the jobs the other system was told to reject.
  *
  * Every pod serves them; the `coordinator` Service sends to the coordinator pod only.
  */
@@ -25,7 +26,12 @@ interface BatchRequest {
 }
 
 interface VerificationRequest {
-  readonly batches: readonly { readonly batchId: string; readonly jobIds?: readonly string[] }[];
+  readonly batches: readonly {
+    readonly batchId: string;
+    readonly jobIds?: readonly string[];
+    /** The jobs the other system was told to reject: each must end at its failure finish. */
+    readonly failedJobIds?: readonly string[];
+  }[];
   readonly expectations?: readonly Expectation[];
 }
 
@@ -72,7 +78,7 @@ async function handle(app: App, options: ServeOptions, request: IncomingMessage,
     send(response, 200, { leaseEvents: await app.leaseEventsOf(tree), outboundCalls: await app.outboundCallsOf(tree) });
   } else if (route === "POST /api/verification") {
     const { batches, expectations = [] } = (await bodyOf(request)) as VerificationRequest;
-    const evidence = await Promise.all(batches.map((batch) => batchEvidenceOf(app, batch.batchId, batch.jobIds)));
+    const evidence = await Promise.all(batches.map((batch) => batchEvidenceOf(app, batch.batchId, batch.jobIds, batch.failedJobIds)));
     send(response, 200, verifyRun({ batches: evidence, stub: await stubStateOf(options.ledgerUrl), expectations }));
   } else send(response, 404, { error: "not-found" });
 }

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { env } from "@agboss/core";
+import { env, secret } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import type { AppEnvironment } from "../src/environments/app.environment.js";
@@ -91,6 +91,7 @@ describe("#261 AC8: an environment of the wrong shape does not compile", () => {
     const fromVariable: AppEnvironment = {
       greenhouseApiUrl: env("GREENHOUSE_API_URL"),
       sqlitePath: env("AGBOSS_SQLITE_PATH"),
+      piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
     };
     expect([missing, mistyped, fromVariable]).toHaveLength(3);
   });

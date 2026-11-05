@@ -7,6 +7,7 @@
 //   GET  /ledger?jobId  the entry of a job, or 404 — what `reconcile` asks
 //   POST /control/holds {jobId, stage, times}   hold the next `times` calls of a job at a stage
 //   POST /control/release {jobId, stage}        answer the held calls
+//   POST /control/rejects {jobId}               answer the job's work 422: the job fails
 //   GET  /control/state                          every work call, ledger request and entry
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -26,6 +27,8 @@ export interface WorkCall {
   readonly receivedAt: string;
   answeredAt?: string;
   held: boolean;
+  /** Answered 422: the job's work was refused (`POST /control/rejects`). */
+  rejected: boolean;
 }
 
 /** One `POST /ledger` as it arrived: a repeat of a key is a request, never a second entry. */
@@ -105,6 +108,7 @@ export async function startLedgerStub(port: number, host = "0.0.0.0"): Promise<L
   const entries: LedgerEntry[] = [];
   const holds: Hold[] = [];
   const waiting: Waiting[] = [];
+  const rejects = new Set<string>();
   const now = (): string => new Date().toISOString();
 
   /** Whether the call is to be held: a matching hold with times left takes one. */
@@ -138,7 +142,14 @@ export async function startLedgerStub(port: number, host = "0.0.0.0"): Promise<L
         token: numberOf(body["token"], "token"),
         receivedAt: now(),
         held: false,
+        rejected: rejects.has(textOf(body["jobId"], "jobId")),
       };
+      if (call.rejected) {
+        work.push(call);
+        call.answeredAt = now();
+        send(response, 422, { error: "rejected", jobId: call.jobId });
+        return;
+      }
       call.held = takeHold(call.jobId, "work");
       work.push(call);
       answerLater(call.jobId, "work", call.held, numberOf(body["durationMs"], "durationMs"), () => {
@@ -175,6 +186,10 @@ export async function startLedgerStub(port: number, host = "0.0.0.0"): Promise<L
       if (stage !== "work" && stage !== "ledger") throw new Error("stage: work or ledger");
       holds.push({ jobId: textOf(body["jobId"], "jobId"), stage, times: numberOf(body["times"] ?? 1, "times") });
       send(response, 200, { holds });
+    } else if (route === "POST /control/rejects") {
+      const body = await bodyOf(request);
+      rejects.add(textOf(body["jobId"], "jobId"));
+      send(response, 200, { rejects: [...rejects] });
     } else if (route === "POST /control/release") {
       const body = await bodyOf(request);
       const jobId = textOf(body["jobId"], "jobId");

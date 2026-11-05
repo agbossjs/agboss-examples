@@ -12,7 +12,7 @@
     "types": "agboss check",
     "describe": "agboss describe",
     "lint": "eslint .",
-    "check": "agboss check && tsc --noEmit && eslint .",
+    "check": "agboss check --application src/local/local-scaling.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "check:k8s": "sh scripts/check-k8s.sh",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",

@@ -11,7 +11,7 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "check": "agboss check && tsc --noEmit && eslint .",
+    "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "describe": "agboss describe",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",

@@ -2,7 +2,8 @@
  * The other system the verification trusts (agbossjs/agboss#487): one entry per Idempotency-Key —
  * a repeat gets the first entry and is counted as a request, never as a second entry —, a lookup
  * by job for `reconcile`, and holds that keep a work answer back, or apply a ledger entry and keep
- * its answer back (the crash after the external effect).
+ * its answer back (the crash after the external effect), and a rejected job's work answered 422
+ * (agbossjs/agboss#763: the job fails, its batch goes on).
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { startLedgerStub, type LedgerStub } from "../../src/stub/ledger-stub.js";
@@ -37,6 +38,16 @@ describe("the ledger stub", () => {
     await post(url, "/ledger", { jobId: "j", deliveredBy: "a", pod: "p" }, { "idempotency-key": "k2" });
 
     expect(state().entries.filter((entry) => entry.jobId === "j")).toHaveLength(2);
+  });
+
+  it("a rejected job's work is answered 422 and marked rejected; another job's work is answered 200", async () => {
+    const running = await started();
+    const { url } = running;
+    expect((await post(url, "/control/rejects", { jobId: "bad" })).status).toBe(200);
+
+    expect((await post(url, "/work", work("bad"))).status).toBe(422);
+    expect((await post(url, "/work", work("good"))).status).toBe(200);
+    expect(running.state().work.map((call) => [call.jobId, call.rejected])).toEqual([["bad", true], ["good", false]]);
   });
 
   it("looks an entry up by job, 404 when there is none", async () => {

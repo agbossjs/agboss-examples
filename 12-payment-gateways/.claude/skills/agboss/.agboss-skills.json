@@ -1,18 +1,18 @@
 {
   "version": "0.1.0",
   "files": {
-    "SKILL.md": "sha256-7b55993de8ba34d4fe38ecad8ae223a93aafb2a82a2995e3579219e594bf1db6",
+    "SKILL.md": "sha256-4be4f9385d579c432228c20766fda8bcf8dc66e005d7f67abb161f19b2344b91",
     "references/01-composition-and-architecture.md": "sha256-04b0da456d32456381963ce16ec77611bb292609871b7e45a8cf183f23b0d775",
     "references/02-flow-dsl-all-combinations.md": "sha256-42d4a612bcf7445a26747e03adbaaa3f042d82201bb569201c9a5943b5a186f6",
     "references/03-components-di-and-lifecycle.md": "sha256-f19fb9d670f88c5eb97716f023ddbef79d205a94998a439857946ee44d3e583f",
     "references/04-mcp-and-a2a.md": "sha256-0b5db65e79b97075fdaa18cd9c4bb25f55c2fccf76fe286369fb2247d5ade452",
     "references/05-channels-and-human-in-the-loop.md": "sha256-9f80bbd515b812a42b53fce4d5bd865c5744623a41aa57828a30e9c9fb81bdb3",
-    "references/06-finops-providers-and-queues.md": "sha256-b84912926c6ecee97a9f422a79e14323b7b47cd52dee296515673104eaf5e722",
+    "references/06-finops-providers-and-queues.md": "sha256-246f8c94a40bec9dc8fc2891adbbd566c8df0fdeca588e6e55714c99bd82bf0e",
     "references/07-guardrails-pii-and-security.md": "sha256-b31b51d7010e010a935e44d05046e380a6e1a569c6144876d958d9a9878ec9ee",
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
     "references/09-persistence-k8s-and-deploy.md": "sha256-3a1b643e34065d1f4a2bf673f13489625e46ba373fa6e4ada313e6f627fea20a",
     "references/10-testing-vcr-and-evals.md": "sha256-2fcd043f2a8e51f3e75844dcce09aca3e5dd3b403def9d3b92b504099a9fb215",
-    "references/11-cli-studio-and-error-catalog.md": "sha256-db6fbec881947c6cae6e151dac9fe1f3b0395df8cebd8a8b55f8153569657bd3",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-5797c11c1c537374b1f2e953aecc77fe8a5ce34b42efb43dada17e93001d12b0",
     "references/12-end-to-end-recipes.md": "sha256-8592ca04083b2d8b2471d74632136f11517b67b3251bdb4d2c116546093f26bb",
     "references/13-migrating-from-langgraph.md": "sha256-8e562a9c8de0d835dffd569127aaa41ae12c62d3c5b18c5a22326dd5f78464c3"
   }

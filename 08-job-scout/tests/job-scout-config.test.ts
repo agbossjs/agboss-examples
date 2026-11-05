@@ -1,3 +1,4 @@
+import { secret } from "@agboss/core";
 import { describe, expect, it } from "vitest";
 import { testExecutionContext } from "@agboss/core/testing";
 import { GreenhouseBoards, type FetchJson } from "../src/services/greenhouse-boards.service.js";
@@ -5,7 +6,11 @@ import { GreenhouseBoards, type FetchJson } from "../src/services/greenhouse-boa
 /** The application context of the dev environment: the public board API. */
 const { application } = testExecutionContext({
   application: {
-    environment: { greenhouseApiUrl: "https://boards-api.greenhouse.io", sqlitePath: ":memory:" },
+    environment: {
+      greenhouseApiUrl: "https://boards-api.greenhouse.io",
+      sqlitePath: ":memory:",
+      piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
+    },
   },
 }).tenant;
 

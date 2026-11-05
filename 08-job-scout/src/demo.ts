@@ -88,7 +88,13 @@ async function main(): Promise<void> {
   // dev: the public board API and the OpenRouter key; records in memory, not in .agboss/
   const app = await createApp(JobScoutApplication, {
     env: "dev",
-    processEnv: { ...process.env, OPENROUTER_API_KEY: apiKey, AGBOSS_SQLITE_PATH: ":memory:" },
+    // a synthetic PII key unless one is set (R6)
+    processEnv: {
+      PII_PSEUDONYM_KEY: "job-scout-demo-synthetic-pseudonym-key",
+      ...process.env,
+      OPENROUTER_API_KEY: apiKey,
+      AGBOSS_SQLITE_PATH: ":memory:",
+    },
     ...(isLive ? {} : { providerFetch: openRouter.fetch }),
   });
 

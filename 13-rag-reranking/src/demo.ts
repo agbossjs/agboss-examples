@@ -22,7 +22,8 @@ const openRouter = createOfflineOpenRouter();
 process.env.COHERE_BASE_URL = await stub.start();
 const app = await createApp(HandbookApplication, {
   env: "offline",
-  processEnv: { ...process.env, OPENROUTER_API_KEY: "offline" },
+  // a synthetic PII key unless one is set (R6)
+  processEnv: { PII_PSEUDONYM_KEY: "handbook-demo-synthetic-pseudonym-key", ...process.env, OPENROUTER_API_KEY: "offline" },
   providerFetch: openRouter.fetch,
 });
 

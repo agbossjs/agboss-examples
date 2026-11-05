@@ -401,7 +401,7 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
   it("08-job-scout follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, JOB_SCOUT);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
@@ -466,7 +466,7 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
   it("09-review-loop-and-routing follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, REVIEW_LOOP);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
@@ -540,7 +540,7 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
   it("10-quorum-groups-and-replies follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, QUORUM_REPLIES);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
@@ -600,7 +600,7 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
   it("11-safe-payments follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, SAFE_PAYMENTS);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
@@ -629,7 +629,7 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
     assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
     const dir = join(REPO_ROOT, GATEWAYS);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
@@ -654,7 +654,7 @@ describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
     assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
     const dir = join(REPO_ROOT, RERANKING);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check && tsc --noEmit && eslint .");
+    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");

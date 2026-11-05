@@ -10,7 +10,7 @@
   "scripts": {
     "types": "agboss check",
     "typecheck": "tsc --noEmit",
-    "check": "npm run types && npm run typecheck",
+    "check": "agboss check --strict --cassettes && npm run typecheck",
     "test": "vitest run",
     "demo": "tsx src/demo.ts"
   },
