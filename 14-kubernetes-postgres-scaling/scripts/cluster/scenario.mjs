@@ -22,6 +22,7 @@ import {
   output,
   until,
 } from "./kube.mjs";
+import { workersSettledAt } from "./pods.mjs";
 
 const started = Date.now();
 /** This run's prefix: batch and job ids are unique per run, so the scenario runs again on the same cluster. */
@@ -436,9 +437,11 @@ try {
     "autoscaling.keda.sh/paused-replicas=3",
     "--overwrite",
   ]);
+  // agbossjs/agboss#781: and no worker pod still terminating — the one removed for 4 → 3 claims
+  // work during its preStop, and a frozen pod the ReplicaSet deletes never comes back ready
   await until(
-    "3 workers ready (autoscaling paused)",
-    () => workers().ready === 3 && workers().replicas === 3,
+    "3 workers ready (autoscaling paused), none terminating",
+    () => workers().ready === 3 && workers().replicas === 3 && workersSettledAt(appPods(), 3),
     { timeoutMs: 180_000 },
   );
 
