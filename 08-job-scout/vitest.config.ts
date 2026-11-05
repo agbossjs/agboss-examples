@@ -13,8 +13,7 @@ export default defineConfig({
     // tests/demo.test.ts runs `npm run demo` as a child process
     testTimeout: 120_000,
     // the shortlist MCP server writes to a temp folder in tests, never to ~/job-scout
-    // and the application's PII key: fixed and synthetic (R6), the same tokens on every run
-    env: { JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests"), PII_PSEUDONYM_KEY: "job-scout-test-synthetic-pseudonym-key" },
+    env: { JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests") },
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

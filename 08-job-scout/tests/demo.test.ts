@@ -54,7 +54,9 @@ async function runDemo(
 const offlineApp = (providerFetch: typeof fetch) =>
   createApp(JobScoutApplication, {
     env: "dev",
+    // createApp, not testWith: no test key — a synthetic PII key as the demo's (R6)
     processEnv: {
+      PII_PSEUDONYM_KEY: "job-scout-demo-synthetic-pseudonym-key",
       ...process.env,
       OPENROUTER_API_KEY: "offline-test-key",
       AGBOSS_SQLITE_PATH: ":memory:",
