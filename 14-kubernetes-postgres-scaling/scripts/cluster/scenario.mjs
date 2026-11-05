@@ -24,6 +24,9 @@ import {
 } from "./kube.mjs";
 import { workersSettledAt } from "./pods.mjs";
 
+/** agbossjs/agboss#777: the least average share of the cluster's slots at work while the backlog exceeds them. */
+const CLUSTER_FILL = 0.85;
+
 const started = Date.now();
 /** This run's prefix: batch and job ids are unique per run, so the scenario runs again on the same cluster. */
 const RUN = `r${started.toString(36)}`;
@@ -401,7 +404,15 @@ try {
   check(
     "#767 slots full under the backlog",
     claiming.length > 0 && podFill >= 0.9,
-    `${String(claiming.length)} pod samples with ≥ the pods' slots queued: a claiming pod's slots ${(podFill * 100).toFixed(0)} % at work on average (the cluster's ${(clusterFill * 100).toFixed(0)} %, pods yet to sweep included)`,
+    `${String(claiming.length)} pod samples with ≥ the pods' slots queued: a claiming pod's slots ${(podFill * 100).toFixed(0)} % at work on average`,
+  );
+  // agbossjs/agboss#777: every pod is woken by the queue's NOTIFY the moment another process queues a
+  // child — a freshly scaled-out pod, or one whose last look found the queue empty, no longer idles
+  // until its sweep (30 s): the cluster's slots, every pod counted, stay full while the backlog lasts
+  check(
+    "#777 the cluster's slots full under the backlog",
+    loaded.length > 0 && clusterFill >= CLUSTER_FILL,
+    `${String(loaded.length)} samples with ≥ the pods' slots queued: the cluster's slots ${(clusterFill * 100).toFixed(0)} % at work on average (at least ${String(CLUSTER_FILL * 100)} %)`,
   );
   const replaced = appPods().filter(
     (pod) => pod.name.startsWith("agboss-worker-") && !pod.deleting,
