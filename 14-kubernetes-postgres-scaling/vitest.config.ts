@@ -8,7 +8,5 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     // a test that asserts nothing proves nothing
     expect: { requireAssertions: true },
-    // the local instances' shared PII key (R6: synthetic); nothing here calls a model, so no model key
-    env: { PII_PSEUDONYM_KEY: "local-test-synthetic-pseudonym-key" },
   }),
 });
