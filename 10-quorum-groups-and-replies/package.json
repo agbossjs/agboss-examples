@@ -18,10 +18,10 @@
     "demo:live": "tsx --env-file-if-exists=.env src/demo.ts --live"
   },
   "dependencies": {
-    "@agboss/core": "^0.1.0"
+    "@agboss/core": "^0.1.1"
   },
   "devDependencies": {
-    "@agboss/cli": "^0.1.0",
+    "@agboss/cli": "^0.1.1",
     "@eslint/js": "^9.39.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.0.0",

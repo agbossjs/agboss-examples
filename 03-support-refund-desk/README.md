@@ -15,6 +15,7 @@
 3. **In-Memory `@Rag` (`InMemoryKnowledgeIndexService` + `RefundPolicyRetriever`) & Memory Compaction vs. Policy Drift (`@Compaction`):**
    - `InMemoryKnowledgeIndexService` splits `fixtures/refund-policy-current.md` into 6 markdown sections (`[policy-window]`, `[policy-cap]`, `[policy-digital-licenses]`, `[policy-vip-restocking]`, `[policy-tenant]`, `[policy-citation]`) and ranks chunks using deterministic BM25/TF-IDF token overlap + citation boost.
    - `RefundPolicyRetriever` queries the top-K relevant sections and injects `RetrievedChunk[]` into `RefundPolicyRag` (`RagMode.Context`).
+   - The knowledge base is per tenant (agbossjs/agboss#700, #796): `@Rag({ tenancy: RagTenancy.PerTenant })`, every retrieval reads `options.tenantId` and searches that tenant's corpus only (the fixtures are `acme`'s; another tenant gets none of them). `tests/rag/refund-policy.rag-contract.test.ts` runs `ragConnectorContract` on it.
    - Across a 5-turn conversation (`uncompactedTurns: 2`, `turnsBetweenCompactions: 2`), `PolicyAwareCompaction` summarizes older turns while explicitly marking early v1.0 policy claims (`90 days / $2,000`) as superseded by active v2.0 policy (`30 days / $500`).
 4. **5-Layer Evaluation, Compact Git Baseline & Judge Calibration (`@EvalSuite`, `agboss eval`):**
    - `RefundDeskEvalSuite` (`src/eval-suites/refund-desk.eval-suite.ts`) defines the quality gate executed by `npx agboss eval run` in CI/CD before deployment (`trajectory → code judge → model judge` with `EvalCascade.StopAtFirstFailure`).

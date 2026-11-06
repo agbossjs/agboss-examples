@@ -3,7 +3,7 @@
  * Section 4.1 & 4.3 (EX-02): Release-Candidate vs Public Consumer Workflow.
  * Temporarily substitutes packed `agboss` and `agboss-cli` tarballs during `npm install`
  * so `node_modules` resolves the release candidate, then restores each `package.json`
- * to clean public registry specifications (`^0.1.0`) so local tarball paths are never
+ * to clean public registry specifications (`^<pinned version>`) so local tarball paths are never
  * committed to git. Also supports `--restore` to clean manifests without installing.
  * Records the tarball substitution in `.packed/install-record.json`.
  */
@@ -15,6 +15,8 @@ import { rangeInstallArguments } from "./npm-before.mjs";
 import { resolvePortablePackedTarballPath } from "./run-all.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/** The pinned core's version (`.agboss-version.json`): the public range each manifest is restored to. */
+const PINNED_VERSION = JSON.parse(readFileSync(join(ROOT, ".agboss-version.json"), "utf8")).version;
 const MANIFEST_PATH = join(ROOT, ".packed", "manifest.json");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
 
@@ -35,7 +37,7 @@ const TARGET_DIRS = [
   "14-kubernetes-postgres-scaling",
 ];
 
-function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {
+function restorePublicPkg(pkg, frameworkVersion = PINNED_VERSION, cliVersion = PINNED_VERSION) {
   const copy = structuredClone(pkg);
   if (copy.dependencies?.["@agboss/core"] !== undefined) {
     copy.dependencies["@agboss/core"] = `^${frameworkVersion}`;
@@ -70,7 +72,7 @@ if (restoreOnly) {
     const restored = restorePublicPkg(pkg);
     writeFileSync(pkgPath, JSON.stringify(restored, null, 2) + "\n", "utf8");
   }
-  console.log("[install-packed] Restored clean public dependency specs (^0.1.0) across example manifests.");
+  console.log(`[install-packed] Restored clean public dependency specs (^${PINNED_VERSION}) across example manifests.`);
   process.exit(0);
 }
 

@@ -23,14 +23,14 @@
     "cluster:down": "node scripts/cluster/down.mjs"
   },
   "dependencies": {
-    "@agboss/core": "^0.1.0",
+    "@agboss/core": "^0.1.1",
     "@agboss/postgres": "^0.1.1",
     "@opentelemetry/exporter-prometheus": "0.222.0",
     "@opentelemetry/resources": "2.11.0",
     "@opentelemetry/sdk-metrics": "2.11.0"
   },
   "devDependencies": {
-    "@agboss/cli": "^0.1.0",
+    "@agboss/cli": "^0.1.1",
     "@eslint/js": "^9.39.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.0.0",

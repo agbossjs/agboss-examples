@@ -337,6 +337,8 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
 });
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+/** The public range every example names: `^` the pinned core's version (`.agboss-version.json`). */
+const PUBLIC_RANGE = `^${JSON.parse(readFileSync(join(REPO_ROOT, ".agboss-version.json"), "utf8")).version}`;
 const JOB_SCOUT = "08-job-scout";
 
 describe("08-job-scout registration (agbossjs/agboss#489)", () => {
@@ -405,8 +407,8 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
-    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
+    assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
     assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
     for (const file of [
@@ -470,8 +472,8 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
-    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
+    assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
     assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
     for (const file of [
@@ -544,8 +546,8 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
-    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
+    assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
     assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
     for (const file of [
@@ -603,8 +605,8 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
     assert.equal(pkg.scripts.check, "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
-    assert.equal(pkg.devDependencies["@agboss/cli"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
+    assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
     assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
     for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"]) {
@@ -632,7 +634,7 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
     assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     for (const [name, version] of Object.entries({ stripe: "23.1.0", "@adyen/api-library": "32.2.0", "@paypal/paypal-server-sdk": "2.5.0", "checkout-sdk-node": "5.8.0" }))
       assert.equal(pkg.dependencies[name], version, name);
     for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
@@ -657,7 +659,7 @@ describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
     assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.equal(pkg.dependencies["@agboss/core"], "^0.1.0");
+    assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.dependencies["cohere-ai"], "8.1.0");
     for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
       assert.equal(existsSync(join(dir, file)), true, `${RERANKING}/${file}`);
