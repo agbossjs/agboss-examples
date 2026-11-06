@@ -151,15 +151,9 @@ export class CandidateArchiveTool implements ToolHandler<ArchiveQueryDto, Archiv
 ```
 
 ```ts file=src/screening/rag/hiring-policy.rag.ts
-import { Rag, RagTenancy, type RagConnector, type RagRetrieval } from "@agboss/core/rag";
+import { Rag, type RagConnector, type RagRetrieval } from "@agboss/core/rag";
 
-// one policy every tenant reads: declared Shared (#796), so the connector may ignore the tenant
-@Rag({
-  name: "hiring-policy-rag",
-  description: "The hiring policy",
-  tenancy: RagTenancy.Shared,
-  topK: 2,
-})
+@Rag({ name: "hiring-policy-rag", description: "The hiring policy", topK: 2 })
 export class HiringPolicyRag implements RagConnector {
   retrieve(query: string, options: { readonly topK: number }): Promise<RagRetrieval> {
     const results = [{ text: `Hire at 7 or more (${query.slice(0, 20)}).`, source: "policy.md#bar" }];
@@ -1434,10 +1428,10 @@ import { ScreeningWorkflowStart } from "./src/screening/workflows/screening/scre
 ```ts
 // tests/screening/workflows/screening/screening.integration.test.ts — real models once, then replayed with no key or network
 import { expect } from "vitest";
-import { VcrMode, testWith } from "@agboss/core/testing";
+import { VCRMode, testWith } from "@agboss/core/testing";
 
 const test = testWith(ScreeningApplication, {
-  vcr: { cassetteName: "screening-hire", mode: process.env.CI ? VcrMode.REPLAY : VcrMode.AUTO },
+  vcr: { cassetteName: "screening-hire", mode: process.env.CI ? VCRMode.REPLAY : VCRMode.AUTO },
 });
 
 test("a strong candidate is hired", async ({ app }) => {
@@ -1449,7 +1443,7 @@ test("a strong candidate is hired", async ({ app }) => {
 `AUTO` records a missing cassette (`__snapshots__/screening-hire.cassette.json`, committed) and
 replays an existing one; `REPLAY` (the default under `CI`) fails a call the cassette does not hold
 with `CassetteMissingError` (`test.cassette-missing`); `RECORD` always calls the models.
-`AGBOSS_VCR_MODE` (a `VcrMode` member's value) overrides every test's own mode for one run.
+`AGBOSS_VCR_MODE` (a `VCRMode` member's value) overrides every test's own mode for one run.
 Recording goes through the application's model providers as `createApp` builds them — a transport
 provider (`complete`, #385) too, created by the test app's container with its hooks (#439) — so an
 offline transport records a cassette with no key: `AGBOSS_VCR_MODE=RECORD npx vitest run
@@ -1462,7 +1456,7 @@ component that calls a model (a model judge by the `reply` it judges, a guardrai
 compaction, a reply interpreter, a PII policy that detects with a model) — or that the application
 no longer has, fails with `StaleCassetteError` (`vcr.stale-cassette`: `file`, `component`, `changes`
 — `CassetteChange.Prompt`, `Schema`, `Removed`), naming the command that fixes it.
-`VcrMode.RECORD_STALE` replays the rest and records only the stale components' calls anew (a model
+`VCRMode.RECORD_STALE` replays the rest and records only the stale components' calls anew (a model
 key needed for those only): `AGBOSS_VCR_MODE=RECORD_STALE npm test`. `npx agboss check --cassettes`
 finds the same without running a test (`[vcr.stale-cassette]`, exit 3). A version 1 cassette (no
 hashes) still replays, without stale detection, and prints a hint to re-record it once with
