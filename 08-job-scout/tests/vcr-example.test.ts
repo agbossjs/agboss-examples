@@ -1,4 +1,4 @@
-import { CassetteMissingError, testWith, VCRMode } from "@agboss/core/testing";
+import { CassetteMissingError, testWith, VcrMode } from "@agboss/core/testing";
 import { expect } from "vitest";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import { MainRouter } from "../src/routers/main.router.js";
@@ -11,10 +11,10 @@ import { ChatWorkflowFinish } from "../src/workflow-finishes/chat.workflow-finis
  * the Jev main router, the profiler) answers from the cassette — no script, no key, no network.
  * Recorded from real models (version 2: each interaction keyed by its prompt and schema hashes, so
  * `agboss check --cassettes` names a stale one). Re-record after a prompt, tool or flow change:
- * `mode: VCRMode.RECORD` on `env: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
+ * `mode: VcrMode.RECORD` on `env: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
  */
 const test = testWith(JobScoutApplication, {
-  vcr: { cassetteName: "job-scout-brief", dir: "tests/cassettes", mode: VCRMode.REPLAY },
+  vcr: { cassetteName: "job-scout-brief", dir: "tests/cassettes", mode: VcrMode.REPLAY },
 });
 
 test("the recorded brief run replays through the real graph without a model", async ({ app }) => {
