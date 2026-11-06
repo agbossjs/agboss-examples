@@ -1,4 +1,4 @@
-import { BranchStatus, BranchVerdict, QuorumNotReachedError } from "@agboss/core";
+import { BranchStatus, BranchVerdict, PauseKind, QuorumNotReachedError } from "@agboss/core";
 import {
   callTool,
   decideWith,
@@ -93,7 +93,11 @@ describe("AC2: the first complete group by priority goes on", () => {
       // the order waits for its approver: the run is paused at the tool call, nothing ordered yet
       expect(result.path.at(-1)).toBe("purchase-order-agent");
       expect(result.pending).toHaveLength(1);
-      expect(result.pending[0]?.ask.arguments).toEqual(LAPTOP_ORDER);
+      const [approval] = result.pending;
+      // narrow on the kind first: a question's ask is opaque, an approval's is the typed tool call
+      if (approval?.kind !== PauseKind.Approval) throw new Error("not paused on the approval");
+      expect(approval.step).toBe("purchase-order-agent");
+      expect(approval.ask.arguments).toEqual(LAPTOP_ORDER);
     },
   );
 

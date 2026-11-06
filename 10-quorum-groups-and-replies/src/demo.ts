@@ -8,6 +8,7 @@ import {
   createApp,
   ExecutionStatus,
   PausedExecutionRepository,
+  PauseKind,
   PauseStatus,
   ToolCallStatus,
   UninterpretableReplyError,
@@ -22,7 +23,9 @@ import {
 import { createOfflineOpenRouter, withUncitedCompliance } from "../fixtures/offline-openrouter.js";
 import type { PurchaseRequestDto } from "./dto/purchase-request.dto.js";
 import { ApproverInbox } from "./services/approver-inbox.service.js";
+import { BudgetOwnerInbox } from "./services/budget-owner-inbox.service.js";
 import { SupplierPurchaseApplication } from "./supplier-purchase.application.js";
+import { BudgetRaiseRequestWorkflowStart } from "./workflows/budget-raise/budget-raise-request.workflow-start.js";
 import { PurchaseRequestWorkflowStart } from "./workflows/supplier-purchase/purchase-request.workflow-start.js";
 
 const LAPTOPS: PurchaseRequestDto = {
@@ -137,6 +140,27 @@ async function main(): Promise<void> {
     const second = await app.resume({ pauseId, reply: "yes, up to $900" }, APPROVER);
     console.log(`   "yes, up to $900" → ${second.finish?.name ?? second.status} ${JSON.stringify(second.output)}\n`);
     check(second.status === ExecutionStatus.Finished, "the readable reply did not resume the run");
+
+    console.log("4. A question role: the budget owner is asked a typed question, in free text");
+    const raise = { budgetLine: "OPEX-IT-2026", amountUsd: 1_800, requester: "Ana Silva" };
+    const askedBefore = app.resolve(BudgetOwnerInbox).posted().count;
+    const asked = await app.execute(BudgetRaiseRequestWorkflowStart, raise);
+    const [question] = asked.pending;
+    check(question?.kind === PauseKind.Question, "the budget raise did not pause on its question");
+    console.log(`   paused at ${question?.step ?? "?"} (${question?.kind ?? "?"})`);
+    const owner = { answeredBy: "budget-owner-lee" };
+    const ownerPauseId = (): string => {
+      const { latestPauseId } = app.resolve(BudgetOwnerInbox).posted();
+      if (latestPauseId === undefined) throw new Error("demo check failed: the budget owner was never asked");
+      return latestPauseId;
+    };
+    const lower = await app.resume({ pauseId: ownerPauseId(), reply: "up to $500" }, owner);
+    console.log(`   "up to $500" is below $1,800 → asked again: ${lower.status}`);
+    check(lower.status === ExecutionStatus.Paused, "a limit below the request did not ask again");
+    const raised = await app.resume({ pauseId: ownerPauseId(), reply: "fine, up to $2,000" }, owner);
+    console.log(`   "fine, up to $2,000" → ${raised.finish?.name ?? raised.status} ${JSON.stringify(raised.output)}\n`);
+    check(raised.finish?.name === "budget-raised-workflow-finish", "the owner's limit did not raise the line");
+    check(app.resolve(BudgetOwnerInbox).posted().count === askedBefore + 2, "the owner was not asked exactly twice");
 
     console.log("OK — every check above holds.");
   } finally {
