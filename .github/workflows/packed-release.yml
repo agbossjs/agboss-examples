@@ -96,7 +96,8 @@ jobs:
       - name: 5. Verify tarball inventory, isolated consumer & clean scaffold outside both repos
         run: |
           npm run verify:package
-          npm run verify:published -- --from-packed --version 0.1.0
+          # the pinned core's version (.agboss-version.json): what the packed tarballs are
+          npm run verify:published -- --from-packed --version "$(node -p "require('./.agboss-version.json').version")"
 
       - name: 6. Install packed tarballs into example projects (every example)
         run: npm run install:packed
@@ -134,9 +135,10 @@ jobs:
             import crypto from "node:crypto";
             import fs from "node:fs";
 
+            const { version } = JSON.parse(fs.readFileSync(".agboss-version.json", "utf8"));
             const requiredFiles = [
-              ".packed/agboss-core-0.1.0.tgz",
-              ".packed/agboss-cli-0.1.0.tgz",
+              `.packed/agboss-core-${version}.tgz`,
+              `.packed/agboss-cli-${version}.tgz`,
               ".packed/manifest.json",
               ".packed/package-verification.json",
               ".packed/published-verification.json",
@@ -154,8 +156,8 @@ jobs:
 
             const manifest = JSON.parse(fs.readFileSync(".packed/manifest.json", "utf8"));
             for (const [key, relPath] of [
-              ["agboss", ".packed/agboss-core-0.1.0.tgz"],
-              ["agbossCli", ".packed/agboss-cli-0.1.0.tgz"],
+              ["agboss", `.packed/agboss-core-${version}.tgz`],
+              ["agbossCli", `.packed/agboss-cli-${version}.tgz`],
             ]) {
               const buf = fs.readFileSync(relPath);
               const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -173,8 +175,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           path: |
-            .packed/agboss-core-0.1.0.tgz
-            .packed/agboss-cli-0.1.0.tgz
+            .packed/agboss-core-*.tgz
+            .packed/agboss-cli-*.tgz
             .packed/manifest.json
             .packed/package-verification.json
             .packed/published-verification.json
