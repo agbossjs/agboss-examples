@@ -17,7 +17,7 @@ describe("company notes (knowledge base)", () => {
   it("AC3: finds the note about a company, with its file as the source", async () => {
     const notes = new CompanyNotes({
       folder: NOTES_DIR,
-      dbFile: join(await mkdtemp(join(tmpdir(), "notes-")), "notes.sqlite"),
+      sqlitePath: join(await mkdtemp(join(tmpdir(), "notes-")), "notes.sqlite"),
     });
 
     const retrieval = await notes.retrieve("Why is Fireblocks a fit for a backend engineer?", {
@@ -34,7 +34,7 @@ describe("company notes (knowledge base)", () => {
     const workflow = await workflowOf(JobScout);
     const index = await new CompanyNotes({
       folder: NOTES_DIR,
-      dbFile: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
+      sqlitePath: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
     }).index({ tenantId, signal });
 
     expect(workflow.config.agents["scout-agent"]?.rag).toEqual([

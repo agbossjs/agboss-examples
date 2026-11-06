@@ -50,7 +50,7 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
     GreenhouseBoards,
     provide(JOB_SEARCH, jobSearchConfig),
     provide(SHORTLIST, SHORTLIST_FILE),
-    provide(NOTES_INDEX, { folder: NOTES_DIR, dbFile: NOTES_DB }),
+    provide(NOTES_INDEX, { folder: NOTES_DIR, sqlitePath: NOTES_DB }),
   ],
   promptVariables: jobScoutPromptVariables(jobSearchConfig),
 })

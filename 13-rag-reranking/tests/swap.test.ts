@@ -1,6 +1,6 @@
 /**
  * Swapping the reranker (agbossjs/agboss#703 AC4): AGBoss's LLM reranker in place of Cohere is the
- * `by` of the `@Rag` — the same retriever, candidates and keep; nothing else changes. The swapped
+ * `by` of the `@Rag` — the same retriever, candidates and topK; nothing else changes. The swapped
  * declaration below is `handbook.rag.ts` with that one line changed, run with `testRag`.
  */
 import { expect } from "vitest";
@@ -21,7 +21,7 @@ const test = testWith(HandbookApplication, { allowNetwork: ["127.0.0.1"] });
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
   tenancy: RagTenancy.PerTenant,
-  rerank: { by: HandbookLlmReranker, candidates: 30, keep: 3 },
+  rerank: { by: HandbookLlmReranker, candidates: 30, topK: 3 },
 })
 class HandbookRagOnTheLlmReranker extends HandbookSearch {}
 

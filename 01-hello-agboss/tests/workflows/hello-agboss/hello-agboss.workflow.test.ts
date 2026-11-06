@@ -11,8 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { studioOf } from "@agboss/core/internal";
-import { callTool, replyWith, routeTo, testWith } from "@agboss/core/testing";
+import { callTool, replyWith, routeTo, studioOf, testWith } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import {
   resolveScaffoldTestConfig,
