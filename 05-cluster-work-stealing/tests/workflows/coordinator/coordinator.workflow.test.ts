@@ -4,12 +4,12 @@ import {
   ExecutionStatus,
   IncompatibleResumeError,
 } from "@agboss/core";
-import { studioOf } from "@agboss/core/internal";
 import {
   callTool,
   failWith,
   ModelFailure,
   replyWith,
+  studioOf,
   testWith,
   waitFor,
 } from "@agboss/core/testing";

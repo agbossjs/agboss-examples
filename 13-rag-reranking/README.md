@@ -23,7 +23,7 @@ Wiki: [Knowledge bases → Reranking](https://github.com/agbossjs/agboss/wiki/Kn
 @Rag({
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
-  rerank: { by: CohereReranker, candidates: 30, keep: 3 }, // or: by: HandbookLlmReranker
+  rerank: { by: CohereReranker, candidates: 30, topK: 3 }, // or: by: HandbookLlmReranker
 })
 export class HandbookRag extends HandbookSearch {}
 ```
@@ -36,7 +36,7 @@ export class HandbookRag extends HandbookSearch {}
 | **A dedicated rerank API on its official SDK** | A thin wrapper drifting from the vendor's SDK | `CohereReranker implements RerankerHandler` calls `CohereClientV2.rerank` itself; ~25 lines | [`src/rerankers/cohere.reranker.ts`](./src/rerankers/cohere.reranker.ts) |
 | **The reranker's cost is a retrieval cost the budgets count** | A reranker billed outside the turn's financials | its `costUsd` (search units × your price) under `rag:handbook-rag`, category `retrieval` | › "tool mode …" (`result.spend`) |
 | **A failing rerank API does not fail the answer** | Cohere answers 503 (twice: the SDK's own retry too) | `RerankFailurePolicy.Fallback` (default): the retriever's own first 3, a `rerank:<name>:fallback` span | [`tests/failure.test.ts`](./tests/failure.test.ts) |
-| **Swapping the reranker is one line** | Coupling to a vendor | `by: HandbookLlmReranker` — the same retriever, candidates and keep | [`tests/swap.test.ts`](./tests/swap.test.ts) |
+| **Swapping the reranker is one line** | Coupling to a vendor | `by: HandbookLlmReranker` — the same retriever, candidates and topK | [`tests/swap.test.ts`](./tests/swap.test.ts) |
 | **The reranker sees only the tenant's own candidates** | A reranker that could reorder (or inject) another tenant's passages | the core passes the tenant (#700) and keeps only a subset of the tenant's candidates | [`tests/tenants.test.ts`](./tests/tenants.test.ts): `ragConnectorContract` through Cohere |
 
 ## 2. Commands
@@ -54,7 +54,7 @@ Offline and $0: no key, no network beyond `127.0.0.1`. The SDK is pinned exactly
 ## 3. Layout
 
 ```
-src/rag/handbook.rag.ts                  the knowledge base: retriever + rerank: { by, candidates, keep }
+src/rag/handbook.rag.ts                  the knowledge base: retriever + rerank: { by, candidates, topK }
 src/rag/handbook-search.ts               the retriever (the tenant's passages, near-misses first)
 src/rerankers/cohere.reranker.ts         Cohere Rerank on cohere-ai: the wiring to copy
 src/rerankers/handbook-llm.reranker.ts   AGBoss's LLM reranker on a cheap model: the swap

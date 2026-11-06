@@ -1,13 +1,14 @@
 // Independent example, not affiliated with Cohere; "Cohere" names only its public API. Read on
 // 2026-11-02: https://docs.cohere.com/reference/rerank, https://docs.cohere.com/docs/rerank-overview,
 // pricing https://cohere.com/pricing — check them before relying on this code.
-import { DecidedBy } from "@agboss/core";
-import type { RagSearchResultDto } from "@agboss/core/dto";
+// one entry for a reranker's author (agbossjs/agboss#818): DecidedBy and RagSearchResultDto too
 import {
+  DecidedBy,
   Reranker,
-  type RagReranking,
+  type RagSearchResultDto,
   type RerankerHandler,
   type RerankOptions,
+  type RerankResult,
 } from "@agboss/core/rag";
 import { CohereClientService } from "../services/cohere-client.service.js";
 
@@ -34,13 +35,13 @@ export class CohereReranker implements RerankerHandler {
     query: string,
     candidates: readonly RagSearchResultDto[],
     options: RerankOptions,
-  ): Promise<RagReranking> {
+  ): Promise<RerankResult> {
     const response = await this.cohereClientService.client.rerank(
       {
         model: COHERE_RERANK_MODEL,
         query,
         documents: candidates.map((candidate) => candidate.text),
-        topN: options.keep,
+        topN: options.topK,
       },
       { abortSignal: options.signal },
     );

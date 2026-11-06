@@ -18,4 +18,11 @@ export default tseslint.config(
     plugins: { "@stylistic": stylistic },
     rules: FLOW_CHAIN_RULE,
   },
+  {
+    // @agboss/core/internal is the agboss CLI's, with no semver promise: every file imports the
+    // public entries only (agbossjs/agboss#818)
+    files: ["**/*.{ts,mts,cts,js,mjs,cjs}"],
+    plugins: { agboss: agbossPlugin },
+    rules: { "agboss/no-internal-import": "error" },
+  },
 );

@@ -24,7 +24,7 @@
   - [`tests/actions/partition-batch.action.test.ts`](./tests/actions/partition-batch.action.test.ts)
   - [`tests/actions/commit-chunk-effect.action.test.ts`](./tests/actions/commit-chunk-effect.action.test.ts)
   - [`tests/health-checks/storage-cluster.health-check.test.ts`](./tests/health-checks/storage-cluster.health-check.test.ts)
-  - [`tests/workflows/coordinator/coordinator.workflow.test.ts`](./tests/workflows/coordinator/coordinator.workflow.test.ts) (including `studioOf` + `getGraphAsync({ xray: true })` subgraph & recursive `ThisWorkflow` verification)
+  - [`tests/workflows/coordinator/coordinator.workflow.test.ts`](./tests/workflows/coordinator/coordinator.workflow.test.ts) (including `studioOf` from `@agboss/core/testing` + `getGraphAsync({ xray: true })` subgraph & recursive `ThisWorkflow` verification)
 
 ## 3. Commands
 

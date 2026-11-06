@@ -11,6 +11,6 @@ import { HandbookSearch } from "./handbook-search.js";
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
   tenancy: RagTenancy.PerTenant,
-  rerank: { by: CohereReranker, candidates: 30, keep: 3 },
+  rerank: { by: CohereReranker, candidates: 30, topK: 3 },
 })
 export class HandbookRag extends HandbookSearch {}

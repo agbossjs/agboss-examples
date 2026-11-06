@@ -37,5 +37,12 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-assignment": "off",
     },
   },
+  {
+    // @agboss/core/internal is the agboss CLI's, with no semver promise: every file imports the
+    // public entries only (agbossjs/agboss#818)
+    files: ["**/*.{ts,mts,cts,js,mjs,cjs}"],
+    plugins: { agboss: agbossPlugin },
+    rules: { "agboss/no-internal-import": "error" },
+  },
   { files: ["**/*.js"], ...tseslint.configs.disableTypeChecked },
 );

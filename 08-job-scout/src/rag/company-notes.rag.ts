@@ -1,8 +1,8 @@
-import { Rag, RagTenancy, SqliteFtsConnector, type FtsOptions } from "@agboss/core/rag";
+import { Rag, RagTenancy, SqliteFtsConnector, type SqliteFtsOptions } from "@agboss/core/rag";
 import { InjectionToken } from "@agboss/core";
 
 /** Where the notes are and where their index lives. */
-export const NOTES_INDEX = new InjectionToken<FtsOptions>("NOTES_INDEX");
+export const NOTES_INDEX = new InjectionToken<SqliteFtsOptions>("NOTES_INDEX");
 
 /**
  * The user's notes about companies — the reference full-text connector (SQLite FTS5, BM25). Per
