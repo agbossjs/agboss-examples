@@ -107,7 +107,8 @@ jobs:
       - name: 5. Verify tarball inventory, isolated consumer & clean scaffold outside both repos
         run: |
           npm run verify:package
-          npm run verify:published -- --from-packed --version 0.1.0
+          # the pinned core's version (.agboss-version.json): what the packed tarballs are
+          npm run verify:published -- --from-packed --version "$(node -p "require('./.agboss-version.json').version")"
 
       - name: 6. Install packed tarballs into example projects (every example)
         run: npm run install:packed

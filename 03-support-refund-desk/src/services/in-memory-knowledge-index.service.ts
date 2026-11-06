@@ -78,29 +78,69 @@ function parseMarkdownSections(
   });
 }
 
+/** One tenant's policies: the active and the superseded version. */
+type TenantPolicies = Readonly<Record<PolicyVersion, readonly IndexedPolicyChunk[]>>;
+
+/** The tenant whose refund policy the fixtures are (the demo's, the scenarios' and the evals'). */
+export const POLICY_TENANT = "acme";
+
+/** A document of a tenant's knowledge base: what a result cites, and its text. */
+export interface PolicyDocument {
+  readonly source: string;
+  readonly text: string;
+}
+
+function chunkOf(document: PolicyDocument, version: PolicyVersion): IndexedPolicyChunk {
+  const tokens = tokenize(document.text);
+  const tf = new Map<string, number>();
+  for (const token of tokens) tf.set(token, (tf.get(token) ?? 0) + 1);
+  return {
+    policyId: document.source,
+    title: document.source,
+    text: document.text,
+    source: document.source,
+    version,
+    termFrequencies: tf,
+    length: Math.max(tokens.length, 1),
+  };
+}
+
 /**
- * In-memory knowledge index implementing BM25 / TF-IDF token ranking over the active
- * and superseded refund policy markdown fixtures.
+ * In-memory knowledge index implementing BM25 / TF-IDF token ranking, **per tenant**
+ * (agbossjs/agboss#700, #796): each tenant's corpus is its own, keyed by its id as given, and a
+ * search reads the asking tenant's only — a tenant without one gets nothing. `acme` starts with the
+ * active and superseded refund policy markdown fixtures.
  */
 @Injectable()
 export class InMemoryKnowledgeIndexService {
-  private readonly currentChunks = parseMarkdownSections(
-    CURRENT_POLICY_MD,
-    "refund-policy-current.md",
-    "current",
-  );
-  private readonly oldChunks = parseMarkdownSections(
-    OLD_POLICY_MD,
-    "refund-policy-old.md",
-    "old",
-  );
+  private readonly tenants = new Map<string, TenantPolicies>([
+    [
+      POLICY_TENANT,
+      {
+        current: parseMarkdownSections(CURRENT_POLICY_MD, "refund-policy-current.md", "current"),
+        old: parseMarkdownSections(OLD_POLICY_MD, "refund-policy-old.md", "old"),
+      },
+    ],
+  ]);
+
+  /** Makes `documents` the whole knowledge base of `tenantId` (both versions), replacing its old one. */
+  replaceDocuments(tenantId: string, documents: readonly PolicyDocument[]): void {
+    this.tenants.set(tenantId, {
+      current: documents.map((document) => chunkOf(document, "current")),
+      old: documents.map((document) => chunkOf(document, "old")),
+    });
+  }
 
   search(
     query: string,
-    options: { readonly topK: number; readonly version?: PolicyVersion } = { topK: 3 },
+    options: {
+      readonly topK: number;
+      readonly tenantId: string;
+      readonly version?: PolicyVersion;
+    },
   ): readonly ScoredPolicyChunk[] {
     const version = options.version ?? activePolicyVersion;
-    const corpus = version === "current" ? this.currentChunks : this.oldChunks;
+    const corpus = this.tenants.get(options.tenantId)?.[version] ?? [];
     const queryTokens = [...new Set(tokenize(query))];
 
     if (queryTokens.length === 0) {

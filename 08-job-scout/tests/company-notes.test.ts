@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { RagMode } from "@agboss/core";
+import { RagTenancy } from "@agboss/core/rag";
 import { workflowOf } from "@agboss/core/testing";
 import { JobScout } from "../src/job-scout.workflow.js";
 import { NOTES_DIR } from "../src/config/paths.js";
@@ -37,7 +38,7 @@ describe("company notes (knowledge base)", () => {
     }).index({ tenantId, signal });
 
     expect(workflow.config.agents["scout-agent"]?.rag).toEqual([
-      { name: "company-notes-rag", mode: RagMode.Tool, topK: 3 },
+      { name: "company-notes-rag", mode: RagMode.Tool, topK: 3, tenancy: RagTenancy.PerTenant },
     ]);
     expect(workflow.config.agents["scout-agent"]?.tools).toContain("search-company-notes-rag-tool");
     expect(index.documents).toBe(5);

@@ -4,7 +4,7 @@
  * declaration below is `handbook.rag.ts` with that one line changed, run with `testRag`.
  */
 import { expect } from "vitest";
-import { Rag } from "@agboss/core/rag";
+import { Rag, RagTenancy } from "@agboss/core/rag";
 import { replyWith, testRag, testWith } from "@agboss/core/testing";
 import { HandbookApplication } from "../src/handbook.application.js";
 import { ANSWER } from "../src/rag/handbook.data.js";
@@ -20,6 +20,7 @@ const test = testWith(HandbookApplication, { allowNetwork: ["127.0.0.1"] });
 @Rag({
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
+  tenancy: RagTenancy.PerTenant,
   rerank: { by: HandbookLlmReranker, candidates: 30, keep: 3 },
 })
 class HandbookRagOnTheLlmReranker extends HandbookSearch {}

@@ -2,7 +2,10 @@ import { testRag } from "@agboss/core/testing";
 import { beforeEach, describe, expect, it } from "vitest";
 import { RefundPolicyRag, setActivePolicyVersion } from "../../src/rag/refund-policy.rag.js";
 import { RefundPolicyRetriever } from "../../src/retrievers/refund-policy.retriever.js";
-import { InMemoryKnowledgeIndexService } from "../../src/services/in-memory-knowledge-index.service.js";
+import {
+  InMemoryKnowledgeIndexService,
+  POLICY_TENANT,
+} from "../../src/services/in-memory-knowledge-index.service.js";
 
 describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowledge Base)", () => {
   beforeEach(() => {
@@ -15,6 +18,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
 
     const digitalLicenseResults = retriever.retrieveChunks(
       "downloaded digital software license activation key redeemed",
+      POLICY_TENANT,
       2,
     );
     expect(digitalLicenseResults[0]?.policyId).toBe("policy-digital-licenses");
@@ -24,6 +28,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
 
     const vipRestockingResults = retriever.retrieveChunks(
       "VIP enterprise restocking fee hardware carrier return label",
+      POLICY_TENANT,
       2,
     );
     expect(vipRestockingResults[0]?.policyId).toBe("policy-vip-restocking");
@@ -33,6 +38,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
 
     const windowResults = retriever.retrieveChunks(
       "30 calendar days delivery eligibility window",
+      POLICY_TENANT,
       2,
     );
     expect(windowResults[0]?.policyId).toBe("policy-window");
@@ -40,6 +46,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
 
     const capResults = retriever.retrieveChunks(
       "500 USD automatic approval cap supervisor escalation",
+      POLICY_TENANT,
       2,
     );
     expect(capResults[0]?.policyId).toBe("policy-cap");
@@ -47,7 +54,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
   });
 
   it("wires RefundPolicyRetriever into @Rag (RefundPolicyRag) and validates via testRag()", async () => {
-    const searchRag = testRag(RefundPolicyRag);
+    const searchRag = testRag(RefundPolicyRag, { tenant: { tenantId: POLICY_TENANT } });
 
     const { output: digitalChunks } = await searchRag(
       "digital software license activation key",
@@ -66,5 +73,13 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
     expect(vipChunks).toHaveLength(2);
     expect(vipChunks[0]?.source).toBe("refund-policy-current.md#policy-vip-restocking");
     expect(vipChunks[0]?.text).toContain("[policy-vip-restocking]");
+  });
+
+  it("another tenant reads none of acme's refund policy (agbossjs/agboss#796)", async () => {
+    const searchRag = testRag(RefundPolicyRag, { tenant: { tenantId: "globex" } });
+
+    const { output } = await searchRag("digital software license activation key", { topK: 3 });
+
+    expect(output).toEqual([]);
   });
 });

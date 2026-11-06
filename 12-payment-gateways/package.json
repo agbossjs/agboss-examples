@@ -18,13 +18,13 @@
   },
   "dependencies": {
     "@adyen/api-library": "32.2.0",
-    "@agboss/core": "^0.1.0",
+    "@agboss/core": "^0.1.1",
     "@paypal/paypal-server-sdk": "2.5.0",
     "checkout-sdk-node": "5.8.0",
     "stripe": "23.1.0"
   },
   "devDependencies": {
-    "@agboss/cli": "^0.1.0",
+    "@agboss/cli": "^0.1.1",
     "@eslint/js": "^9.39.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.0.0",
