@@ -2,7 +2,13 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BudgetExceededError, BudgetScope, createApp, ExecutionStatus } from "@agboss/core";
+import {
+  BudgetExceededError,
+  BudgetScope,
+  CostSource,
+  createApp,
+  ExecutionStatus,
+} from "@agboss/core";
 import {
   createFixtureGreenhouse,
   DOWN_BOARD,
@@ -163,7 +169,7 @@ describe("the demo's pass in process: the ledger of the search turn", () => {
         "typesafe/jev-1.13": expect.closeTo(0.00004, 9),
       });
       expect(search.spend.byCategory.tools).toBeCloseTo(6 * 0.000004, 9);
-      expect(search.spend.trace.every((line) => line.costSource === "api")).toBe(true);
+      expect(search.spend.trace.every((line) => line.costSource === CostSource.Api)).toBe(true);
       // the turn's model calls in order: the judge (Jev, one "route" decision per job) runs inside
       // the scout's tool call, between the call that asks for the search and the one that answers
       expect(openRouter.calls.slice(6).map((c) => c.about)).toEqual([

@@ -1,4 +1,4 @@
-import type { UsageRecord } from "@agboss/core";
+import { CostSource, type UsageRecord } from "@agboss/core";
 
 /** A usage record for fake router outcomes. */
 export const usageRecord = (caller: string, costUsd: number): UsageRecord => ({
@@ -9,5 +9,5 @@ export const usageRecord = (caller: string, costUsd: number): UsageRecord => ({
   cacheReadTokens: 0,
   cacheWriteTokens: 0,
   costUsd,
-  costSource: "price-table",
+  costSource: CostSource.PriceTable,
 });

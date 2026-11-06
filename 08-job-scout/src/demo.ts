@@ -21,8 +21,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  CostCategory,
   ExecutionStatus,
   GuardrailBlockedError,
+  type CostReport,
   type ExecutionOutput,
   type UsageRecord,
 } from "@agboss/core";
@@ -34,9 +36,6 @@ import {
 } from "../../scripts/tooling/offline-transports.js";
 import { createFixtureGreenhouse, DOWN_BOARD } from "../fixtures/offline-greenhouse.js";
 import { createOfflineOpenRouter } from "../fixtures/offline-openrouter.js";
-
-/** What an execution cost: `result.spend` (calls, by caller, category and model, the trace). */
-type CostReport = ExecutionOutput["spend"];
 
 const GREENHOUSE_API_URL = "https://boards-api.greenhouse.io";
 const RESUME = resolve(fileURLToPath(new URL("./data/sample-resume.md", import.meta.url)));
@@ -188,10 +187,10 @@ const EMPTY_SPEND: CostReport = {
 function reportOf(usage: readonly UsageRecord[]): CostReport {
   return usage.reduce<CostReport>((report, record) => {
     const category = record.caller.startsWith("guardrail:")
-      ? "guards"
+      ? CostCategory.Guards
       : record.caller.startsWith("router:")
-        ? "routing"
-        : "agents";
+        ? CostCategory.Routing
+        : CostCategory.Agents;
     return mergeSpend(report, {
       ...EMPTY_SPEND,
       totalUsd: record.costUsd,
