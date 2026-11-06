@@ -11,7 +11,10 @@ it?). Each branch's **verdict** is recorded. The first complete group by priorit
 compliance (priority 1) to the order, price + budget (priority 2) to a deferral; neither in time →
 the rejected finish. The order **waits for an approver** on a channel; the approver answers in free
 text ("ok but only up to $500") and a `@ReplyInterpreter` turns the words into a typed decision
-before anything resumes — an unreadable reply resumes nothing.
+before anything resumes — an unreadable reply resumes nothing. A second workflow raises a budget
+line by asking its owner a **typed question** (a question role, `.toQuestion(BudgetOwnerQuestion)`):
+the owner's free-text reply is read by code into a typed answer; a limit below the request asks
+again, at most `maxVisits` times.
 
 ```
 purchase-request-workflow-start
@@ -25,6 +28,13 @@ purchase-request-workflow-start
           group(price, budget).priority(2)     → defer-purchase-action → purchase-deferred-workflow-finish
           { deadline: 2 min })
        .onJoinError(QuorumNotReachedError → purchase-rejected-workflow-finish)
+
+budget-raise-request-workflow-start
+  └→ ⏸ budget-owner-question (free text → budget-owner-reply-interpreter, code; maxVisits 2)
+       .onError(QuestionFailedError → budget-raise-unasked-workflow-finish)
+       └→ check-budget-raise-action ─┬→ budget-raised-workflow-finish
+                                     └→ budget-owner-question again
+                                          .onError(VisitsLimitExceededError → budget-raise-unresolved-workflow-finish)
 ```
 
 ## 1. Engineering Promises Tested
@@ -38,14 +48,17 @@ purchase-request-workflow-start
 | **A free-text approval becomes a typed decision, then the run resumes** | The approver writes "ok but only up to $500" | `@ChannelRole({ approves, answeredBy: PauseAnswerer.Channel, replyInterpreter })` + `app.resume({ pauseId, reply })` → `@ReplyInterpreter` (a chat model) → `ToolCallApprovalDecisionDto` with `overrideArguments`: the tool runs at $500 | [`tests/workflows/supplier-purchase/purchase-approval.workflow.test.ts`](./tests/workflows/supplier-purchase/purchase-approval.workflow.test.ts) › "AC3: 'ok but only up to $500' resumes with the amount capped at 500, and the order is capped", › "a plain approval keeps the amount asked", › "AC3: a refusal reply ends without an order" |
 | **An unreadable reply never resumes the run** | The approver answers "🤷" (failure injection 2); a decision outside the tool's schema; an empty reply | `UninterpretableReplyError` (`pause.uninterpretable-reply`), the pause stays `PauseStatus.Pending` — the approver is asked again; an empty reply is `DtoValidationError` before the model is asked | › "AC3: an unreadable reply rejects with UninterpretableReplyError, the pause stays pending, and a second reply resumes", › "an invalid decision … is unreadable too", › "an empty reply is refused before the interpreter is asked", `npm run demo` (part 3) |
 
+| **A question role asks a typed question and puts the typed answer on the path** | A person answers in words; a `PendingPause` read without its kind | `@ChannelRole({ ask, answer, answeredBy, replyInterpreter, maxVisits })` + `.toQuestion(Role)`; `result.pending[i].kind === PauseKind.Question`, `step` the question, its `ask` opaque until narrowed (an approval's `ask.arguments` is typed only after `kind === PauseKind.Approval`); the record's `kind` stored | [`tests/workflows/budget-raise/budget-raise.workflow.test.ts`](./tests/workflows/budget-raise/budget-raise.workflow.test.ts) › "the run pauses on the question …", › "'up to $2,000' is read into the typed answer and the line is raised", › "an unreadable reply leaves the question pending …", `npm run demo` (part 4) |
+| **A question asked too often, or that cannot be asked, ends on a finish of its own** | The owner never covers the request (failure injection 3); the owners' inbox is down (failure injection 4) | `maxVisits: 2` → `VisitsLimitExceededError` before a third ask → `.onError(…)`; a `send` that throws → `QuestionFailedError` (`step.question`, `question`) → `.onError(…)` | › "maxVisits: asked twice below the request …", › "a channel that throws is QuestionFailedError …" |
+
 ## 2. Project Layout
 
 - [`src/supplier-purchase.application.ts`](./src/supplier-purchase.application.ts) — `@Application`: the workflow, the model providers, the approvers' channel (transport is infrastructure, listed here), SQLite for the ledger, the pauses and the checkpoints.
-- [`src/workflows/supplier-purchase/`](./src/workflows/supplier-purchase/) — the flow, its start and three finishes.
+- [`src/workflows/supplier-purchase/`](./src/workflows/supplier-purchase/) — the flow, its start and three finishes; [`src/workflows/budget-raise/`](./src/workflows/budget-raise/) — the question role's flow, its start and three finishes.
 - [`src/agents/`](./src/agents/) — the four reviewers and `purchase-order`, each `<name>.agent.ts` + `<name>.prompt.md`.
 - [`src/arbiters/`](./src/arbiters/) — `well-formed-review` and `policy-threshold` (code), `policy-judgement` (Jev).
-- [`src/channels/`](./src/channels/) — the role `PurchaseApproverChannel` and its one implementation `ConsoleApproverChannel`; [`src/services/approver-inbox.service.ts`](./src/services/approver-inbox.service.ts) — the stand-in for the approvers' chat app.
-- [`src/reply-interpreters/purchase/`](./src/reply-interpreters/purchase/) — the reply interpreter and its prompt.
+- [`src/channels/`](./src/channels/) — the role `PurchaseApproverChannel` and its one implementation `ConsoleApproverChannel`; the question role `BudgetOwnerQuestion` and `InboxBudgetOwnerChannel`; [`src/services/`](./src/services/) — the stand-ins for the approvers' and the budget owners' chat apps.
+- [`src/reply-interpreters/`](./src/reply-interpreters/) — the purchase reply interpreter (a model) and its prompt; the budget owner's (code).
 - `src/tools/`, `src/actions/`, `src/dto/`, `src/budgets/`, `src/environments/`, `src/model-providers/` — one kind per folder.
 - [`src/demo.ts`](./src/demo.ts) — `npm run demo` / `npm run demo:live`; [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's scripted OpenRouter (tests script models with `mockLlm` instead).
 - `tests/` mirrors `src/`.
@@ -68,7 +81,9 @@ store):
 2. the disagreement: the compliance review `Rejected` by `well-formed-review-arbiter`, price + budget
    winning, the deferred finish;
 3. "🤷" → `UninterpretableReplyError` with the pause still `pending`, then a readable reply that
-   finishes the order.
+   finishes the order;
+4. the budget raise paused on its question (`kind` `question`), "up to $500" asking again, "fine, up
+   to $2,000" raising the line — the owner asked exactly twice.
 
 The demo checks each of these and exits non-zero when one does not hold. Offline, the scripted
 OpenRouter reports nominal costs; nothing is spent. Live, every model is real
