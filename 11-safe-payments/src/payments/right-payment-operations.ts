@@ -1,9 +1,10 @@
 import {
   ExecutionContext,
   Injectable,
+  NotSentTrust,
   OutboundCallReconciliation,
   OutboundCalls,
-  fencedEffectKeyOf,
+  effectKeyOf,
 } from "@agboss/core";
 import { OrderBookRepository } from "../repositories/order-book.repository.js";
 import { OrderBookService } from "../services/order-book.service.js";
@@ -67,7 +68,7 @@ export class RightPaymentOperations extends PaymentOperations {
   override async charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
     const client = this.stubGatewayService.client();
     // the order, not the step: a second tool call, a second execution, a new version — one charge
-    const key = fencedEffectKeyOf(executionContext, "charge", { businessKey: `order:${order.orderId}` });
+    const key = effectKeyOf(executionContext, "charge", { businessKey: `order:${order.orderId}` });
     const { result } = await this.outboundCalls.send(key, {
       target: TARGET,
       operation: "charge",
@@ -82,6 +83,8 @@ export class RightPaymentOperations extends PaymentOperations {
       send: (call) =>
         client.createCharge(call.request, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
       // asked only when an earlier attempt's outcome is unknown: look it up by our reference
+      // by our reference, which does not expire: its "not there" holds at any age (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: (lookup) => chargeOf(client, order, lookup.signal),
     });
     return result;
@@ -113,12 +116,14 @@ export class RightPaymentOperations extends PaymentOperations {
     chargeId: string,
   ): Promise<StubCharge> {
     const client = this.stubGatewayService.client();
-    const key = fencedEffectKeyOf(executionContext, "confirm", { businessKey: `order:${order.orderId}` });
+    const key = effectKeyOf(executionContext, "confirm", { businessKey: `order:${order.orderId}` });
     const { result } = await this.outboundCalls.send(key, {
       target: TARGET,
       operation: "confirm",
       request: { chargeId },
       send: (call) => client.confirm(chargeId, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
+      // the charge's own status: a lookup (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async (lookup) => {
         const charge = await client.getCharge(chargeId, { signal: lookup.signal });
         return charge.status === "requires_action"
@@ -132,7 +137,7 @@ export class RightPaymentOperations extends PaymentOperations {
   override async capture(executionContext: ExecutionContext, capture: PartialCapture): Promise<StubMovement> {
     const client = this.stubGatewayService.client();
     // one key per shipment: a second execution capturing shipment 2 gets the first capture (PS18)
-    const key = fencedEffectKeyOf(executionContext, "capture", {
+    const key = effectKeyOf(executionContext, "capture", {
       businessKey: `capture:${capture.chargeId}:${String(capture.shipment)}`,
     });
     const { result } = await this.outboundCalls.send(key, {
@@ -144,6 +149,8 @@ export class RightPaymentOperations extends PaymentOperations {
           idempotencyKey: call.idempotencyKey,
           signal: call.signal,
         }),
+      // never asked: reconcile answers unknown (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: () =>
         OutboundCallReconciliation.unknown({ reason: "a capture has no lookup by shipment: check the charge" }),
     });
@@ -161,7 +168,7 @@ export class RightPaymentOperations extends PaymentOperations {
   override async refund(executionContext: ExecutionContext, refund: PaymentRefund): Promise<StubMovement> {
     const client = this.stubGatewayService.client();
     // one key for every path that refunds this payment: the undo, an operator, the customer (PS19)
-    const key = fencedEffectKeyOf(executionContext, "refund", {
+    const key = effectKeyOf(executionContext, "refund", {
       businessKey: `refund:${refund.chargeId}:${String(refund.refundNumber)}`,
     });
     const { result } = await this.outboundCalls.send(key, {
@@ -173,6 +180,8 @@ export class RightPaymentOperations extends PaymentOperations {
           idempotencyKey: call.idempotencyKey,
           signal: call.signal,
         }),
+      // the charge's refunds: its record, not the key (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async (lookup) => {
         const refunds = await client.refundsOf(refund.chargeId, { signal: lookup.signal });
         const found = refunds[refund.refundNumber - 1];
@@ -213,7 +222,7 @@ export class RightPaymentOperations extends PaymentOperations {
     amountCents: number,
   ): Promise<StubMovement> {
     const client = this.stubGatewayService.client();
-    const key = fencedEffectKeyOf(executionContext, "disposition", { businessKey: `disposition:${chargeId}` });
+    const key = effectKeyOf(executionContext, "disposition", { businessKey: `disposition:${chargeId}` });
     const { result } = await this.outboundCalls.send(key, {
       target: TARGET,
       operation: action,
@@ -223,6 +232,8 @@ export class RightPaymentOperations extends PaymentOperations {
         action === "capture"
           ? client.capture(chargeId, amountCents, { idempotencyKey: call.idempotencyKey, signal: call.signal })
           : client.void(chargeId, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
+      // the charge's own status: a lookup (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async (lookup) => {
         const charge = await client.getCharge(chargeId, { signal: lookup.signal });
         const done = action === "void" ? charge.status === "voided" : charge.capturedCents >= amountCents;

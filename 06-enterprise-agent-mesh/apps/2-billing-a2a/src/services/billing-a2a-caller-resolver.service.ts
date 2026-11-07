@@ -1,7 +1,7 @@
 import { Injectable } from "@agboss/core";
 import {
   A2ACallerResolution,
-  A2ARoute,
+  A2AOperation,
   type A2ACallerRequest,
   type A2ACallerResolver,
 } from "@agboss/core/a2a";
@@ -32,7 +32,9 @@ export class BillingA2aCallerResolver
         challenge: 'Bearer realm="billing-a2a"',
       });
     }
-    if (request.route === A2ARoute.Resume && !grant.canAnswerPauses) {
+    // a SendMessage naming its task answers that task's pause
+    const isResume = request.operation === A2AOperation.SendMessage && request.taskId !== undefined;
+    if (isResume && !grant.canAnswerPauses) {
       return A2ACallerResolution.forbidden({
         reason: "This API key is not permitted to answer pauses",
       });

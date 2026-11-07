@@ -82,11 +82,13 @@ scenarios/                                      the scenarios of 11-safe-payment
   never resent blindly ([#657](https://github.com/agbossjs/agboss/issues/657): Checkout.com ps17 c,
   CardCom ps19 — one charge, one refund), and a replay past the gateway's key retention is never
   sent ([#658](https://github.com/agbossjs/agboss/issues/658): the Stripe and Adyen wirings declare
-  `keyRetention`; Adyen ps17 d). Each is asserted exactly once.
+  `NotSentTrust.KeyReplay` with its `keyRetention`, the others `NotSentTrust.Lookup` — every call says
+  which, [#795](https://github.com/agbossjs/agboss/issues/795); Adyen ps17 d). Each is asserted exactly once.
 - **What stays the gateway's:** keeping keys (Adyen 7 days, Checkout.com 72 h, Stripe 24 h,
   PayPal's orders 6 h), protecting a concurrent duplicate (CardCom does not: ps23), signing webhooks.
 - **What stays the application's:** one business key per order and per refund, the gateway's
-  `keyRetention` where its only lookup is a replay, checking webhook signatures — and two rules every
+  `notSent` trust — `KeyReplay` with the gateway's `keyRetention` where its only lookup is a replay,
+  `Lookup` where it reads a record that does not expire —, checking webhook signatures — and two rules every
   wiring here keeps: **a lookup's hit is this order's payment only when its order id (Stripe's
   `metadata.order_id`, Checkout.com's `reference`, PayPal's `reference_id`), amount and currency are
   this order's**, the search text escaped (Stripe: an order id with a quote cannot add an `OR`

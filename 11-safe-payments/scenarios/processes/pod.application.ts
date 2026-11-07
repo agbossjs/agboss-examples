@@ -5,7 +5,7 @@ import {
   SqliteConnection,
   SqliteFencedEffectRepository,
   StoreClock,
-  type FencedEffectKey,
+  type EffectKey,
   type FencedEffectOutcome,
   type FencedEffectWork,
 } from "@agboss/core";
@@ -33,7 +33,7 @@ const NOT_IN_A_POD: readonly unknown[] = [
 @Injectable({ deps: [SqliteConnection, StoreClock, FencedEffectSettings] })
 export class PodFencedEffectRepository extends SqliteFencedEffectRepository {
   override async saveResultIfAbsent<TResult>(
-    key: FencedEffectKey,
+    key: EffectKey,
     work: FencedEffectWork<DatabaseSync, TResult>,
   ): Promise<FencedEffectOutcome<TResult>> {
     if (key.name === process.env.POD_HOLD_EFFECT) {

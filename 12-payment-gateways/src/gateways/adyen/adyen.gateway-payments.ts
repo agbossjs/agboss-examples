@@ -5,7 +5,7 @@
 // SDKs: check the official documentation before relying on it.
 import { createHash } from "node:crypto";
 import { CheckoutAPI, Client, EnvironmentEnum, type Types } from "@adyen/api-library";
-import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, OutboundCalls, effectKeyOf } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
@@ -35,7 +35,7 @@ export class AdyenGatewayPayments extends GatewayPayments {
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
     const checkout = this.checkout();
     const businessKey = `order:${order.orderId}`;
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "charge", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "charge", { businessKey }), {
       target: "adyen",
       operation: "payments",
       request: { amount: { value: order.amountCents, currency: "USD" }, reference: order.orderId, merchantAccount: MERCHANT, paymentMethod: { type: "scheme", storedPaymentMethodId: "offline" }, returnUrl: "https://shop.example/return" },
@@ -45,7 +45,7 @@ export class AdyenGatewayPayments extends GatewayPayments {
       },
       // no read API for payments: a replay of the key is the only lookup — sent only while Adyen
       // keeps the key (#658); past it, nothing is sent and a person checks the Customer Area
-      keyRetention: KEY_RETENTION,
+      notSent: { trust: NotSentTrust.KeyReplay, keyRetention: KEY_RETENTION },
       reconcile: () => OutboundCallReconciliation.notSent(),
     });
     return result;
@@ -54,7 +54,7 @@ export class AdyenGatewayPayments extends GatewayPayments {
   override async refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
     const checkout = this.checkout();
     const businessKey = `refund:${refund.paymentId}:${String(refund.refundNumber)}`;
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "refund", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "refund", { businessKey }), {
       target: "adyen",
       operation: "refunds",
       request: { amount: { value: refund.amountCents, currency: "USD" }, merchantAccount: MERCHANT, reference: `${refund.orderId}-refund-${String(refund.refundNumber)}` },
@@ -64,7 +64,7 @@ export class AdyenGatewayPayments extends GatewayPayments {
       },
       // no read API for payments: a replay of the key is the only lookup — sent only while Adyen
       // keeps the key (#658); past it, nothing is sent and a person checks the Customer Area
-      keyRetention: KEY_RETENTION,
+      notSent: { trust: NotSentTrust.KeyReplay, keyRetention: KEY_RETENTION },
       reconcile: () => OutboundCallReconciliation.notSent(),
     });
     return result;

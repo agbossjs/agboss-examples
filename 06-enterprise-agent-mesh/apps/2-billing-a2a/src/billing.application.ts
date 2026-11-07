@@ -10,6 +10,7 @@ import {
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
 } from "@agboss/core";
+import { SqliteA2ATaskRepository } from "@agboss/core/a2a";
 import { hours, seconds } from "@agboss/core/units";
 import { BillingA2AExpose } from "./a2a/billing.a2a-expose.js";
 import { BillingAppDailyBudget } from "./budgets/billing-app-daily.budget.js";
@@ -65,6 +66,8 @@ export { BillingWorkflow } from "./workflows/billing/billing.workflow.js";
     SqliteCostLedgerRepository,
     SqliteExecutionRecordRepository,
     SqliteExecutionLeaseRepository,
+    // the A2A tasks on the leases' backend: a message resent to another instance finds its task
+    SqliteA2ATaskRepository,
     SqliteExecutionTreeRepository,
     SqliteRateLimitRepository,
     SqliteExecutionHistoryRepository,

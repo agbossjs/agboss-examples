@@ -1,4 +1,4 @@
-import type { FencedEffectKey } from "@agboss/core";
+import type { EffectKey } from "@agboss/core";
 
 /** A job's receipt: what its delivery stores, once. */
 export interface Receipt {
@@ -15,5 +15,5 @@ export interface Receipt {
  * each a line over the store, listed in its application's `providers`.
  */
 export abstract class Deliveries {
-  abstract deliverOnce(key: FencedEffectKey, receipt: Receipt): Promise<Receipt>;
+  abstract deliverOnce(key: EffectKey, receipt: Receipt): Promise<Receipt>;
 }

@@ -1,5 +1,5 @@
 import type { IncomingMessage } from "node:http";
-import { A2ARoute } from "@agboss/core/a2a";
+import { A2AOperation } from "@agboss/core/a2a";
 import { testAction, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import {
@@ -51,13 +51,13 @@ describe("06-enterprise-agent-mesh — Isolated Action, Tool & Service Unit Test
     const resolver = new BillingA2aCallerResolver(directory);
 
     const unauthMissing = await resolver.resolveCaller({
-      route: A2ARoute.Execute,
+      operation: A2AOperation.SendMessage,
       http: { headers: {} } as unknown as IncomingMessage,
     });
     expect(unauthMissing.kind).toBe("unauthenticated");
 
     const unauthUnknown = await resolver.resolveCaller({
-      route: A2ARoute.Execute,
+      operation: A2AOperation.SendMessage,
       http: {
         headers: { authorization: "Bearer invalid-key" },
       } as unknown as IncomingMessage,
@@ -65,7 +65,7 @@ describe("06-enterprise-agent-mesh — Isolated Action, Tool & Service Unit Test
     expect(unauthUnknown.kind).toBe("unauthenticated");
 
     const resolved = await resolver.resolveCaller({
-      route: A2ARoute.Execute,
+      operation: A2AOperation.SendMessage,
       http: {
         headers: { authorization: "Bearer key-acme" },
       } as unknown as IncomingMessage,
@@ -73,7 +73,8 @@ describe("06-enterprise-agent-mesh — Isolated Action, Tool & Service Unit Test
     expect(resolved.kind).toBe("resolved");
 
     const forbiddenResume = await resolver.resolveCaller({
-      route: A2ARoute.Resume,
+      operation: A2AOperation.SendMessage,
+      taskId: "task-1",
       http: {
         headers: { authorization: "Bearer key-readonly" },
       } as unknown as IncomingMessage,

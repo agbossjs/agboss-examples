@@ -131,7 +131,7 @@ export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: Gatewa
       ps1,
       ps5,
       adyenWebhookTwice,
-      // past Adyen's 7 days the replay is refused (keyRetention, #658): unknown, a person decides
+      // past Adyen's 7 days the replay is refused (a KeyReplay's keyRetention, #658): unknown, a person decides
       ps17Pending("ps17d", 7 * 24 + 1, { charges: 1, notes: ["intents left pending: 1", "reconciled: unknown"] }),
       ps19("refund"),
       ps23({ charges: 1, notes: ["in-progress", "replayed"] }),

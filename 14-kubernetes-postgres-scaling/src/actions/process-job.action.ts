@@ -2,9 +2,10 @@ import {
   Action,
   ApplicationContext,
   ExecutionContext,
-  fencedEffectKeyOf,
+  NotSentTrust,
   OutboundCallReconciliation,
   OutboundCalls,
+  effectKeyOf,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -61,12 +62,12 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
       instanceId, pod, token });
 
     const receipt = await this.deliveries.deliverOnce(
-      fencedEffectKeyOf(this.executionContext, "deliver", { businessKey }),
+      effectKeyOf(this.executionContext, "deliver", { businessKey }),
       { jobId, instanceId, pod, token },
     );
 
     const { result: entry } = await this.outboundCalls.send(
-      fencedEffectKeyOf(this.executionContext, "ledger", { businessKey }),
+      effectKeyOf(this.executionContext, "ledger", { businessKey }),
       {
         target: LEDGER,
         operation: "record",
@@ -75,6 +76,8 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
         request: { jobId, deliveredBy: receipt.instanceId, pod: receipt.pod },
         send: (call) =>
           this.ledgerClient.record(call.request, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
+        // the ledger's own entries, by job: a lookup that does not expire (#795)
+        notSent: { trust: NotSentTrust.Lookup },
         reconcile: async (lookup) => {
           const found = await this.ledgerClient.find(jobId, lookup.signal);
           return found === undefined ? OutboundCallReconciliation.notSent() : OutboundCallReconciliation.completed(found);

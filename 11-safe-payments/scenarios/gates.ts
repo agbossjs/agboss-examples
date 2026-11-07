@@ -6,7 +6,7 @@ import {
   SqliteFencedEffectRepository,
   SqliteOutboundCallRepository,
   StoreClock,
-  type FencedEffectKey,
+  type EffectKey,
   type FencedEffectOutcome,
   type FencedEffectWork,
 } from "@agboss/core";
@@ -154,7 +154,7 @@ export class GatedFencedEffectRepository extends SqliteFencedEffectRepository {
   }
 
   override async saveResultIfAbsent<TResult>(
-    key: FencedEffectKey,
+    key: EffectKey,
     work: FencedEffectWork<DatabaseSync, TResult>,
   ): Promise<FencedEffectOutcome<TResult>> {
     await pass(`effect:${key.name}`, this.context.instanceId);

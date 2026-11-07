@@ -1085,11 +1085,11 @@ import { usd } from "@agboss/core/units";
 import { BillingAnswerDto } from "../dto/billing-answer.dto.js";
 import { BillingQuestionDto } from "../dto/billing-question.dto.js";
 
-// the billing desk's export, declared (#398 PR 3): what it takes, gives back and costs a call
+// the billing desk's export, declared (#398 PR 3, #809): what it takes, gives back and costs a call
 @A2AAgent({
   name: "billing-desk-a2a-agent",
   url: "https://billing.example/a2a",
-  target: { application: "billing-application", start: "billing-workflow-start" },
+  target: { application: "billing-application", skill: "billing-workflow-start" },
   input: BillingQuestionDto,
   output: BillingAnswerDto,
   price: usd(0.002),
@@ -1219,7 +1219,12 @@ import { A2AExpose } from "@agboss/core/a2a";
 import { HelpdeskWorkflowStart } from "../workflows/helpdesk/helpdesk.workflow-start.js";
 
 // what other applications may run here (#398 PR 3)
-@A2AExpose({ name: "helpdesk-a2a-expose", version: "1.0.0", exports: [HelpdeskWorkflowStart] })
+@A2AExpose({
+  name: "helpdesk-a2a-expose",
+  version: "1.0.0",
+  description: "Answers billing tickets",
+  exports: [HelpdeskWorkflowStart],
+})
 export class HelpdeskA2AExpose {}
 ```
 
@@ -1308,11 +1313,13 @@ const result = await app.execute(
 );
 console.log("\n", result.spend.totalUsd);
 
-// other applications call this workflow: POST /a2a/execute, /a2a/resume, /a2a/cancel — each request's tenant
-// from the resolver the application lists (reference 04; in a route of your own: A2AAdapter)
+// other applications call this workflow as an A2A v1.0 agent: its card at
+// /a2a/.well-known/agent-card.json, JSON-RPC at POST /a2a — each request's tenant from the resolver
+// the application lists (reference 04)
 const listener = a2aHttpListener(app, {
   expose: HelpdeskA2AExpose,
   callerResolver: HelpdeskA2aCallerResolver,
+  publicUrl: "https://helpdesk.example",
   base: "/a2a",
 });
 createServer(listener).listen(8080);

@@ -1,7 +1,7 @@
 import {
   Action,
   ExecutionContext,
-  fencedEffectKeyOf,
+  effectKeyOf,
   SqliteFencedEffectRepository,
   type ActionHandler,
   type InputOf,
@@ -37,7 +37,7 @@ export class CommitChunkEffectAction implements ActionHandler<CommitChunkEffectA
   async execute(input: InputOf<CommitChunkEffectAction>): Promise<OutputOf<CommitChunkEffectAction>> {
     const { chunkId, summary } = input.draft.value;
     const stepKey = this.executionContext.step.idempotencyKey;
-    const key = fencedEffectKeyOf(this.executionContext, "commit-chunk", {
+    const key = effectKeyOf(this.executionContext, "commit-chunk", {
       businessKey: `chunk:${chunkId}`,
     });
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>

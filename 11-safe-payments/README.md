@@ -41,7 +41,7 @@ src/your-step/your-payment-operations.ts  a copy of the right wiring for you to 
 | **One order, one charge, whoever asks** | The model calls the charge tool four times (PS7); two executions at once (PS8); a deploy that renames the call (PS12); a skewed clock (PS13) | A business key `order:<id>` — `Joined`, `Replayed`, `OutboundCallInFlightError`, `IdempotencyKeyConflictError` | [`tests/scenarios/application-duplicates.test.ts`](./tests/scenarios/application-duplicates.test.ts) |
 | **One refund, one capture, one disposition** | A refund whose answer is lost and asked again by another path (PS19); an undo interrupted (PS10); shipment 2 captured twice (PS18); a void racing a capture (PS20) | `refund:<charge>:<n>`, `capture:<charge>:<n>`, `disposition:<charge>`; the undo marked done once (#607) | [`tests/scenarios/gateway-side.test.ts`](./tests/scenarios/gateway-side.test.ts) |
 | **A webhook is applied once, by the gateway's current state** | A duplicate delivery on two pods (PS15); events out of order (PS16); a 3DS outcome from three requests (PS21) | A fenced effect under `event:stub:<eventId>`; the pause answered once (`NotPausedError`); the charge's current status read | › "ps15", › "ps16", › "ps21" |
-| **What stays the gateway's is named; an unknown outcome is never resent** | A gateway with no lookup or no keys (PS6, PS23); an error of unknown outcome, a key past its retention (PS17) | `unknown` → `OutboundCallUnreconciledError` (a person decides); an ambiguous error leaves the intent pending (#657); a `notSent()` past the declared `keyRetention` is never sent (#658) | › "ps6 …", › "ps17 c: right — exactly once", › "ps17 d: right — exactly once" |
+| **What stays the gateway's is named; an unknown outcome is never resent** | A gateway with no lookup or no keys (PS6, PS23); an error of unknown outcome, a key past its retention (PS17) | `unknown` → `OutboundCallUnreconciledError` (a person decides); an ambiguous error leaves the intent pending (#657); a `KeyReplay`'s `notSent()` past its declared `keyRetention` is never sent (#658); every call declares how far its `notSent()` is trusted (#795) | › "ps6 …", › "ps17 c: right — exactly once", › "ps17 d: right — exactly once" |
 | **The tests bite** | The right version swapped for the wrong one | each right-version assertion run on its wrong version must fail | [`tests/bites.test.ts`](./tests/bites.test.ts) |
 | **Your own gateway call can be checked the same way** | A step that forgets the idempotency key on a refund | every right-version assertion with your `PaymentOperations` | [`tests/your-step.test.ts`](./tests/your-step.test.ts) › "a step that forgets the refund key turns ps19 red" |
 
@@ -132,7 +132,8 @@ as most clients do, so a frozen holder's request still goes out when it wakes.
   reference, which does not expire. (c) After a `502` the stub had processed: an error of unknown
   outcome leaves the intent pending ([#657](https://github.com/agbossjs/agboss/issues/657)), and the
   retry reconciles by the order's reference — one charge, the order paid. (d) On a gateway whose
-  only lookup is the replay: the call declares the key's retention (`keyRetention: hours(24)`,
+  only lookup is the replay: the call declares it a replay with the key's retention (`notSent: { trust:
+  NotSentTrust.KeyReplay, keyRetention: hours(24) }`,
   [#658](https://github.com/agbossjs/agboss/issues/658)), and the recovery's `notSent()` past it is
   never sent — `unknown`, the intent left pending for a person, one charge.
 - **PS18 — a partial capture** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps18-a-partial-capture)).
@@ -204,7 +205,7 @@ All offline and $0: no key, no network beyond `127.0.0.1`, no real gateway. `npm
 - **Unknown outcomes and expired keys, guaranteed:** an error of unknown outcome (a `502` after
   the gateway charged) leaves the intent pending and is reconciled, never resent blindly
   ([#657](https://github.com/agbossjs/agboss/issues/657), PS6, PS17 c); `reconcile` is told the
-  attempt's age (`lookup.keyAge`), and a `notSent()` past the call's `keyRetention` is never sent
+  attempt's age (`lookup.keyAge`), and a `KeyReplay`'s `notSent()` past its `keyRetention` is never sent
   ([#658](https://github.com/agbossjs/agboss/issues/658), PS17 d). Both are asserted exactly once.
   Only an error the call marks definite (`isDefiniteFailure`: a decline, a validation error) is
   `Failed` and sent again.
