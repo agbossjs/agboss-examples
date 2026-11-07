@@ -21,20 +21,38 @@ export const ps13: PaymentScenario = {
     {
       row: "ps13",
       level: StubLevel.Full,
-      clockSkews: [ClockSkew.none, ClockSkew.ahead(seconds(300))],
+      instances: [{}, { clockSkew: ClockSkew.ahead(seconds(300)) }],
       wrongOperations: HomemadeLockPaymentOperations,
       wrong: { charges: 2, lost: 2500 },
-      right: { charges: 1, lost: 0, orderStatus: "paid", notes: ["outbound-call.in-flight"] },
+      right: {
+        charges: 1,
+        lost: 0,
+        orderStatus: "paid",
+        notes: ["outbound-call.in-flight"],
+      },
       async run(context) {
         const order = orderOf("ps13-order", 2500);
         await context.app(0).ready();
         await context.app(1).ready();
         context.stub.inject(StubFault.HoldAnswer, { operation: "charge" });
-        const first = settled(context.app(0).execute(CheckoutWorkflowStart, order));
-        await until(() => context.stub.heldCount === 1, "instance 1's charge is slow at the stub");
-        const retry = await settled(context.app(1).execute(CheckoutWorkflowStart, order));
+        const first = settled(
+          context.app(0).execute(CheckoutWorkflowStart, order),
+        );
+        await until(
+          () => context.stub.heldCount === 1,
+          "instance 1's charge is slow at the stub",
+        );
+        const retry = await settled(
+          context.app(1).execute(CheckoutWorkflowStart, order),
+        );
         context.stub.release();
-        return outcomeOf(context, "ps13", "ps13", [order.orderId], [`instance 1: ${await first}`, `instance 2 (+300 s): ${retry}`]);
+        return outcomeOf(
+          context,
+          "ps13",
+          "ps13",
+          [order.orderId],
+          [`instance 1: ${await first}`, `instance 2 (+300 s): ${retry}`],
+        );
       },
     },
   ],

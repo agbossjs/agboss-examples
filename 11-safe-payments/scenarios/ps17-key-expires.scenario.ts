@@ -1,5 +1,8 @@
 import { performance } from "node:perf_hooks";
-import { ExecutionLeaseEventKind, OutboundCallEventOutcome } from "@agboss/core";
+import {
+  ExecutionLeaseEventKind,
+  OutboundCallEventOutcome,
+} from "@agboss/core";
 import { hours } from "@agboss/core/units";
 import { ReplayWithinRetentionPaymentOperations } from "../src/payments/replay-within-retention.payment-operations.js";
 import { ReplayKeyReconcilePaymentOperations } from "../src/payments/wrong/replay-key-reconcile.payment-operations.js";
@@ -9,16 +12,34 @@ import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workfl
 import { orderOf } from "./checkout.js";
 import { outcomeOf, settled, until } from "./outcome.js";
 import { lateRetryAfterServerError } from "./runs.js";
-import { Variant, type PaymentScenario, type ScenarioContext, type ScenarioOutcome } from "./scenario.types.js";
+import {
+  Variant,
+  type PaymentScenario,
+  type ScenarioContext,
+  type ScenarioOutcome,
+} from "./scenario.types.js";
 import { bookedAs, passLive, requestsReached, thawed } from "./steps.js";
 
 /** (a) the first payment completed; the customer pays again 25 hours later. */
-async function againAfterCompleted(context: ScenarioContext, row: string): Promise<ScenarioOutcome> {
+async function againAfterCompleted(
+  context: ScenarioContext,
+  row: string,
+): Promise<ScenarioOutcome> {
   const order = orderOf("ps17-a-order", 2500);
-  const first = await settled(context.app(0).execute(CheckoutWorkflowStart, order));
+  const first = await settled(
+    context.app(0).execute(CheckoutWorkflowStart, order),
+  );
   await context.clock.advance(hours(25));
-  const again = await settled(context.app(1).execute(CheckoutWorkflowStart, order));
-  return outcomeOf(context, "ps17", row, [order.orderId], [`first: ${first}`, `25 h later: ${again}`]);
+  const again = await settled(
+    context.app(1).execute(CheckoutWorkflowStart, order),
+  );
+  return outcomeOf(
+    context,
+    "ps17",
+    row,
+    [order.orderId],
+    [`first: ${first}`, `25 h later: ${again}`],
+  );
 }
 
 /**
@@ -26,18 +47,31 @@ async function againAfterCompleted(context: ScenarioContext, row: string): Promi
  * log's `unknown` (#505): reconcile's `notSent()` past the `KeyReplay`'s declared `keyRetention` refused (#658).
  * Bounded by real time (it is I/O, not the clock), as `until`.
  */
-async function reconciledUnknown(context: ScenarioContext, timeout = 20_000): Promise<void> {
+async function reconciledUnknown(
+  context: ScenarioContext,
+  timeout = 20_000,
+): Promise<void> {
   const b = context.app(1);
-  const [pending] = (await b.pendingOutboundCallsOf({ tenantId: "default" })).calls;
-  if (pending === undefined) throw new Error("the charge's intent is not pending");
-  const tree = { tenantId: "default", rootExecutionId: pending.rootExecutionId };
+  const [pending] = (await b.pendingOutboundCallsOf({ tenantId: "default" }))
+    .calls;
+  if (pending === undefined)
+    throw new Error("the charge's intent is not pending");
+  const tree = {
+    tenantId: "default",
+    rootExecutionId: pending.rootExecutionId,
+  };
   const isUnknown = async (): Promise<boolean> =>
     (await b.leaseEventsOf(tree)).some(
-      (event) => event.kind === ExecutionLeaseEventKind.OutboundCall && event.outcome === OutboundCallEventOutcome.Unknown,
+      (event) =>
+        event.kind === ExecutionLeaseEventKind.OutboundCall &&
+        event.outcome === OutboundCallEventOutcome.Unknown,
     );
   const deadline = performance.now() + timeout;
   while (!(await isUnknown())) {
-    if (performance.now() > deadline) throw new Error("never reached: the pending charge reconciled as unknown");
+    if (performance.now() > deadline)
+      throw new Error(
+        "never reached: the pending charge reconciled as unknown",
+      );
     await new Promise((resolve) => setTimeout(resolve, 2));
   }
 }
@@ -47,25 +81,40 @@ async function reconciledUnknown(context: ScenarioContext, timeout = 20_000): Pr
  * stub's 24 h retention); then instance 2 starts, and its recovery sweep reconciles the intent:
  * `booked` — paid by the lookup; `false` — the replay charged again; `"unknown"` — nothing sent.
  */
-async function reconciledAfterADay(context: ScenarioContext, row: string, booked: boolean | "unknown"): Promise<ScenarioOutcome> {
+async function reconciledAfterADay(
+  context: ScenarioContext,
+  row: string,
+  booked: boolean | "unknown",
+): Promise<ScenarioOutcome> {
   const order = orderOf(`${row.replaceAll(" ", "-")}-order`, 2500);
   const [a, b] = [context.app(0), context.app(1)];
   context.stub.inject(StubFault.HoldAnswer, { operation: "charge" });
   const first = settled(a.execute(CheckoutWorkflowStart, order));
-  await until(() => context.stub.heldCount === 1, "the stub charged and holds its answer");
-  context.leases.stall(a); // instance 1 dies with the answer in flight
-  context.leases.stall(b); // and instance 2 is down too
+  await until(
+    () => context.stub.heldCount === 1,
+    "the stub charged and holds its answer",
+  );
+  context.leases.freeze(a); // instance 1 dies with the answer in flight
+  context.leases.freeze(b); // and instance 2 is down too
   await context.clock.advance(hours(25));
   thawed(context, b); // instance 2 comes back: its sweep recovers the tree
   await passLive(context, 31);
   if (booked === true) await bookedAs(context, order.orderId, "paid");
   else if (booked === false) await requestsReached(context, "charge", 2);
   else await reconciledUnknown(context);
-  const pending = (await context.app(1).pendingOutboundCallsOf({ tenantId: "default" })).calls;
+  const pending = (
+    await context.app(1).pendingOutboundCallsOf({ tenantId: "default" })
+  ).calls;
   context.stub.release();
   thawed(context, a);
   const zombie = await first;
-  return outcomeOf(context, "ps17", row, [order.orderId], [`instance 1: ${zombie}`, `intents pending: ${String(pending.length)}`]);
+  return outcomeOf(
+    context,
+    "ps17",
+    row,
+    [order.orderId],
+    [`instance 1: ${zombie}`, `intents pending: ${String(pending.length)}`],
+  );
 }
 
 /**
@@ -98,7 +147,12 @@ export const ps17: PaymentScenario = {
       wrongOperations: ReplayKeyReconcilePaymentOperations,
       wrong: { charges: 2, lost: 2500 },
       right: { charges: 1, lost: 0, orderStatus: "paid" },
-      run: (context) => reconciledAfterADay(context, "ps17 b", context.variant === Variant.Right),
+      run: (context) =>
+        reconciledAfterADay(
+          context,
+          "ps17 b",
+          context.variant === Variant.Right,
+        ),
     },
     {
       row: "ps17 c",

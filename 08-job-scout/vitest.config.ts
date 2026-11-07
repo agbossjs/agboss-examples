@@ -1,12 +1,12 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "vitest/config";
-import { agbossTest } from "@agboss/core/testing/vitest";
+import { agbossVitest } from "@agboss/core/testing/vitest";
 
 export default defineConfig({
-  // agbossTest() loads AGBoss — and the application workflowOf(JobScout) assembles in — through
+  // agbossVitest() loads AGBoss — and the application workflowOf(JobScout) assembles in — through
   // vite, with its decorators, and registers the workflow matchers (toFollowPath, toFinishWith, …)
-  test: agbossTest({
+  test: agbossVitest({
     include: ["tests/**/*.test.ts"],
     // a test that asserts nothing proves nothing (#180)
     expect: { requireAssertions: true },
