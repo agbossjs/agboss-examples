@@ -43,7 +43,7 @@ export { BillingWorkflow } from "./workflows/billing/billing.workflow.js";
   name: "billing-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [BillingWorkflow],
   budgets: [BillingAppDailyBudget, BillingTenantDailyBudget, BillingExecutionBudget],
   exposes: [BillingA2AExpose],

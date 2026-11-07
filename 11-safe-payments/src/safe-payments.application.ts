@@ -77,7 +77,8 @@ export const SAFE_PAYMENTS_PROVIDERS = [
   name: "safe-payments-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
+  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
   workflows: SAFE_PAYMENTS_WORKFLOWS,
   budgets: SAFE_PAYMENTS_BUDGETS,
   providers: SAFE_PAYMENTS_PROVIDERS,

@@ -33,7 +33,11 @@ export class PaymentBooksService {
 
   /** Books the order's payment, once (a fenced effect under `payment:<id>`). */
   async book(executionContext: ExecutionContext, orderId: string, paymentId: string): Promise<void> {
-    const key = effectKeyOf(executionContext, "book-payment", { businessKey: `payment:${paymentId}` });
+    // agbossjs/agboss#825: the payment booked for this order — the same payment for another order is a conflict
+    const key = effectKeyOf(executionContext, "book-payment", {
+      businessKey: `payment:${paymentId}`,
+      fingerprint: { orderId },
+    });
     const { tenantId } = this.tenantContext;
     await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
       this.booksRepository.bookPayment(database, { paymentId, orderId, tenantId }),

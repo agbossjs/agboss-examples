@@ -42,7 +42,7 @@ export { TriageWorkflow } from "./workflows/triage/triage.workflow.js";
   name: "triage-gateway-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [TriageWorkflow],
   budgets: [TriageAppDailyBudget, TriageTenantDailyBudget, TriageExecutionBudget],
   mesh: {

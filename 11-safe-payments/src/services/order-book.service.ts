@@ -4,7 +4,9 @@ import {
   SqliteFencedEffectRepository,
   TenantContext,
   effectKeyOf,
-  type JsonResult,
+  type FingerprintedKeyOptions,
+  type JsonValue,
+  type UnfingerprintedKeyOptions,
 } from "@agboss/core";
 import type { DatabaseSync } from "node:sqlite";
 import { OrderBookRepository, type OrderChange, type OrderRow } from "../repositories/order-book.repository.js";
@@ -50,7 +52,8 @@ export class OrderBookService {
     orderId: string,
     change: OrderChange,
   ): Promise<OrderRow> {
-    return this.once(executionContext, name, businessKey, (database) =>
+    // agbossjs/agboss#825: what the booking does is its fingerprint — another change under the key is a conflict
+    return this.once(executionContext, name, { businessKey, fingerprint: { orderId, change } }, (database) =>
       this.orderBookRepository.book(database, this.tenantContext.tenantId, businessKey, orderId, change),
     );
   }
@@ -65,14 +68,17 @@ export class OrderBookService {
     return this.orderBookRepository.order(this.tenantContext.tenantId, orderId);
   }
 
-  /** Runs `work` once per `businessKey`, in a fenced effect's transaction. */
-  async once<T>(
+  /**
+   * Runs `work` once per business key, in a fenced effect's transaction — the key says what the work does
+   * (agbossjs/agboss#825): its `fingerprint`, or `FingerprintPolicy.None` on purpose.
+   */
+  async once<T, F>(
     executionContext: ExecutionContext,
     name: string,
-    businessKey: string,
-    work: (database: DatabaseSync) => T & JsonResult<T>,
+    identity: FingerprintedKeyOptions<F> | UnfingerprintedKeyOptions,
+    work: (database: DatabaseSync) => T & JsonValue<T>,
   ): Promise<T> {
-    const key = effectKeyOf(executionContext, name, { businessKey });
+    const key = effectKeyOf(executionContext, name, identity);
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, work);
     return result;
   }

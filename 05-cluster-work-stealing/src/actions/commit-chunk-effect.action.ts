@@ -2,6 +2,7 @@ import {
   Action,
   ExecutionContext,
   effectKeyOf,
+  FingerprintPolicy,
   SqliteFencedEffectRepository,
   type ActionHandler,
   type InputOf,
@@ -37,8 +38,11 @@ export class CommitChunkEffectAction implements ActionHandler<CommitChunkEffectA
   async execute(input: InputOf<CommitChunkEffectAction>): Promise<OutputOf<CommitChunkEffectAction>> {
     const { chunkId, summary } = input.draft.value;
     const stepKey = this.executionContext.step.idempotencyKey;
+    // agbossjs/agboss#825, said on purpose: a chunk is committed once, by whichever instance commits it first — a
+    // summary a stolen chunk's second run writes replays the first, never a conflict
     const key = effectKeyOf(this.executionContext, "commit-chunk", {
       businessKey: `chunk:${chunkId}`,
+      fingerprintPolicy: FingerprintPolicy.None,
     });
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
       this.chunkLedgerRepository.recordCommit(database, { chunkId, summary, stepKey }),

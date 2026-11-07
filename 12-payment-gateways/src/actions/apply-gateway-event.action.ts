@@ -35,7 +35,12 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
     // verified for this tenant: an event about another tenant's (or another order's) payment applies nothing
     this.paymentBooksService.assertOrdersPayment(event.orderId, event.paymentId);
     const { tenantId } = this.tenantContext;
-    const key = effectKeyOf(this.executionContext, "apply-event", { businessKey: `event:${event.eventId}` });
+    // agbossjs/agboss#825: the event is the work — the same id with another payload is a conflict, never a replay
+    const { eventCode, paymentId, orderId, amountCents } = event;
+    const key = effectKeyOf(this.executionContext, "apply-event", {
+      businessKey: `event:${event.eventId}`,
+      fingerprint: { eventCode, paymentId, orderId, amountCents },
+    });
     const { status } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
       this.booksRepository.apply(database, tenantId, event),
     );

@@ -64,6 +64,7 @@ export function useGateway(gateway: GatewayUnderTest, certificate?: string): voi
   process.env.GATEWAY_STUB_URL = gateway.stub.baseUrl;
   if (certificate !== undefined) process.env.GATEWAY_STUB_CA = certificate;
   process.env.PII_PSEUDONYM_KEY ??= "payment-gateways-offline-pseudonym-key!";
+  process.env.IDEMPOTENCY_KEY ??= "payment-gateways-offline-idempotency-key";
 }
 
 /** The outcome of a run, from the stub's records. */

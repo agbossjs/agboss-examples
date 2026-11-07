@@ -200,7 +200,7 @@ All offline and $0: no key, no network beyond `127.0.0.1`, no real gateway. `npm
   pins the stub's behaviour level by level, and [`tests/bites.test.ts`](./tests/bites.test.ts)
   makes every right-version assertion fail on its wrong version.
 - **What AGBoss guarantees rests on its assumptions** (Wiki → Guarantees, A1–A12): one store
-  backend with the leases (here one SQLite file), one `pseudonymKey` on every instance, every
+  backend with the leases (here one SQLite file), one idempotency key (`idempotencyKeyField`, agbossjs/agboss#825) on every instance, every
   write inside a step, repeats inside the gateway's retention.
 - **Unknown outcomes and expired keys, guaranteed:** an error of unknown outcome (a `502` after
   the gateway charged) leaves the intent pending and is reconciled, never resent blindly

@@ -32,7 +32,8 @@ import { RefundWorkflow } from "./workflows/refund/refund.workflow.js";
   name: "payment-gateways-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
+  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
   workflows: [CheckoutWorkflow, RefundWorkflow, CaptureWorkflow, GatewayEventWorkflow],
   budgets: [GatewaysApplicationDailyBudget, GatewaysTenantDailyBudget, GatewaysExecutionBudget],
   providers: [

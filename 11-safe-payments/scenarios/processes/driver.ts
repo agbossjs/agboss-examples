@@ -67,6 +67,7 @@ export async function onRealProcesses(stub: StubGateway, kind: "ps2" | "ps5"): P
     STUB_GATEWAY_URL: stub.baseUrl,
     STUB_WEBHOOK_SECRET: stub.webhookSecret,
     PII_PSEUDONYM_KEY: process.env.PII_PSEUDONYM_KEY ?? "safe-payments-offline-pseudonym-key-32b!",
+    IDEMPOTENCY_KEY: process.env.IDEMPOTENCY_KEY ?? "safe-payments-offline-idempotency-key",
   };
   const order = orderOf(`${kind}-process-order`, 2500);
   const first = podOf({ ...env, ...(kind === "ps2" ? { POD_HOLD_EFFECT: "book-charge" } : {}) });

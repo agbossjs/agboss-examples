@@ -24,7 +24,7 @@ import { QuorumSagaWorkflow } from "./workflows/quorum-saga/quorum-saga.workflow
   name: "travel-booking-saga-application",
   version: "0.1.0",
   environment: AppEnvironment,
-  pseudonymKey: "openRouterApiKey",
+  piiKeyField: "piiPseudonymKey", // agbossjs/agboss#825: its own secret — never the provider's apiKey
   workflows: [
     PaymentSagaWorkflow,
     BudgetSagaWorkflow,

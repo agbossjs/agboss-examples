@@ -94,7 +94,7 @@ export class RightPaymentOperations extends PaymentOperations {
     // the aggregate's invariant is the application's (PS9): the draw on the wallet's row, in a
     // fenced effect's transaction — its CHECK refuses a balance below zero, once per part
     await this.orderBookService
-      .once(executionContext, "wallet-draw", `draw:${charge.orderId}`, (database) => ({
+      .once(executionContext, "wallet-draw", { businessKey: `draw:${charge.orderId}`, fingerprint: charge }, (database) => ({
         balanceCents: this.orderBookRepository.draw(database, charge.walletId, charge.amountCents),
       }))
       .catch((error: unknown) => {

@@ -196,7 +196,7 @@ tests/                                 offline proofs (see Commands)
   clock is slewed, never stepped, and the other system deduplicates on the Idempotency-Key.
 - The **external** effect is exactly once because the ledger deduplicates (A7) and the outbound call
   reconciles before it resends; a system that cannot be asked what happened needs an operator
-  (`app.pendingOutboundCalls`).
+  (`app.pendingOutboundCallsOf`).
 - The kind cluster is one node: node loss, a database failover and a network partition between nodes
   are the fault suite's (agbossjs/agboss#484) and the operator guide's, not this run's.
 - PostgreSQL here is a demo `emptyDir`: a pod restart of the database loses everything. Production

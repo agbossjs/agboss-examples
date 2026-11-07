@@ -18,6 +18,7 @@ process.env.STUB_GATEWAY_URL = stub.baseUrl;
 process.env.STUB_WEBHOOK_SECRET = stub.webhookSecret;
 // a synthetic key, the same on both instances (A8) — never a real one (R6)
 process.env.PII_PSEUDONYM_KEY ??= "safe-payments-offline-pseudonym-key-32b!";
+process.env.IDEMPOTENCY_KEY ??= "safe-payments-offline-idempotency-key";
 process.env.SAFE_PAYMENTS_UNUSED_MODEL_KEY ??= "offline-no-model-is-ever-called";
 
 /** Which `PaymentOperations` a run uses: a row's version, or one given (yours). */

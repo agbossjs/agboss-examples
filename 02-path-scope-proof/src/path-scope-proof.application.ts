@@ -13,7 +13,7 @@ import { UncompensatedFixedWorkflow } from "./workflows/uncompensated-fixed/unco
   name: "path-scope-proof-application",
   version: "0.1.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [
     MissingInputFixedWorkflow,
     OutdatedDataFixedWorkflow,

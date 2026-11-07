@@ -9,4 +9,6 @@ export class AppEnvironment {
   gatewayStubCa?: string;
   /** One pseudonym key on every instance (A8). */
   piiPseudonymKey!: Secret;
+  /** The idempotency key (agbossjs/agboss#825): business-key fingerprints only — never the PII key. */
+  idempotencyKey!: Secret;
 }

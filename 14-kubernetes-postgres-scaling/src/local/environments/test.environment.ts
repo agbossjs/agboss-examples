@@ -5,6 +5,7 @@ import type { LocalEnvironment } from "./app.environment.js";
 export const environment: LocalEnvironment = {
   sqlitePath: ":memory:",
   piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
+  idempotencyKey: secret("IDEMPOTENCY_KEY"),
   ledgerUrl: env("LEDGER_URL", { default: "http://127.0.0.1:9" }),
   podName: env("POD_NAME", { default: "test-pod" }),
   httpPort: 0,

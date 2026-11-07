@@ -16,7 +16,7 @@ import { HandbookWorkflow } from "./workflows/handbook/handbook.workflow.js";
   version: "1.0.0",
   environment: AppEnvironment,
   // one PII key for every instance and process: the same token for one value everywhere
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [HandbookWorkflow],
   defaults: { router: { model: "typesafe/jev-1.13" } },
   // the ledger the tenant and application budgets count in: SQLite on sqlitePath (":memory:" offline)

@@ -6,6 +6,7 @@ export const environment: AppEnvironment = {
   postgresUrl: secret("POSTGRES_URL"),
   postgresPoolSize: env.integer("POSTGRES_POOL_SIZE", { default: 5 }),
   piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
+  idempotencyKey: secret("IDEMPOTENCY_KEY"),
   ledgerUrl: env("LEDGER_URL", { default: "http://127.0.0.1:8081" }),
   podName: env("POD_NAME", { default: "local" }),
   httpPort: env.integer("HTTP_PORT", { default: 8080 }),
