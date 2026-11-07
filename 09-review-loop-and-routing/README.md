@@ -51,7 +51,7 @@ must be the router's routes.
 - [`src/actions/escalate-to-committee.action.ts`](./src/actions/escalate-to-committee.action.ts) — the loop's defined way out (code, no model).
 - `src/dto/`, `src/budgets/`, `src/environments/`, `src/model-providers/` — one kind per folder.
 - [`src/demo.ts`](./src/demo.ts) — `npm run demo` / `npm run demo:live`.
-- [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's offline OpenRouter (chat completions and the Decisions API, scripted, behind `createApp({ providerFetch })`) and the live demo's stubborn critic; tests never use it (they script models with `mockLlm`).
+- [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's offline OpenRouter (chat completions and the Decisions API, scripted, behind served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`)) and the live demo's stubborn critic; tests never use it (they script models with `mockLlm`).
 - [`fixtures/missing-route/`](./fixtures/missing-route/) — the negative fixture.
 - `tests/` mirrors `src/`.
 

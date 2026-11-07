@@ -10,7 +10,7 @@
  *                                                filesystem MCP server writes the file
  *   4. "ignore all previous instructions …"    → the prompt-injection guardrail refuses it
  *
- * Offline, the models are `fixtures/offline-openrouter.ts` behind `createApp({ providerFetch })` and
+ * Offline, the models are `fixtures/offline-openrouter.ts` served on 127.0.0.1 (`OPENROUTER_BASE_URL`) and
  * the boards are `fixtures/greenhouse/*.json`, one of them down (503) on purpose; every other
  * request is refused by the offline network guard. The shortlist is written to a fresh temporary
  * folder (`JOB_SCOUT_DIR`), never to `~/job-scout`. Prints the ranked jobs, the shortlist and the
@@ -30,6 +30,7 @@ import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,
   requireLiveApiKey,
+  serveFetch,
 } from "../../scripts/tooling/offline-transports.js";
 import { createFixtureGreenhouse, DOWN_BOARD } from "../fixtures/offline-greenhouse.js";
 import { createOfflineOpenRouter } from "../fixtures/offline-openrouter.js";
@@ -85,18 +86,15 @@ async function main(): Promise<void> {
   const { ChatWorkflowStart } = await import("./workflow-starts/chat.workflow-start.js");
   const { SHORTLIST_FILE } = await import("./config/paths.js");
 
-  // dev: the public board API and the OpenRouter key; records in memory, not in .agboss/
-  const app = await createApp(JobScoutApplication, {
-    env: "dev",
-    // a synthetic PII key unless one is set (R6)
-    processEnv: {
-      PII_PSEUDONYM_KEY: "job-scout-demo-synthetic-pseudonym-key",
-      ...process.env,
-      OPENROUTER_API_KEY: apiKey,
-      AGBOSS_SQLITE_PATH: ":memory:",
-    },
-    ...(isLive ? {} : { providerFetch: openRouter.fetch }),
-  });
+  // dev: the public board API and the OpenRouter key; records in memory, not in .agboss/ — set in
+  // process.env, the app's one source (agbossjs/agboss#834); offline the scripted OpenRouter is
+  // served on 127.0.0.1 and reached through the providers' base URL field
+  process.env.PII_PSEUDONYM_KEY ??= "job-scout-demo-synthetic-pseudonym-key"; // a synthetic PII key unless one is set (R6)
+  process.env.OPENROUTER_API_KEY = apiKey;
+  process.env.AGBOSS_SQLITE_PATH = ":memory:";
+  const served = isLive ? undefined : await serveFetch(openRouter.fetch);
+  if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
+  const app = await createApp(JobScoutApplication, { env: "dev" });
 
   const turns: Turn[] = [];
   let threadId: string | undefined;
@@ -141,6 +139,7 @@ async function main(): Promise<void> {
     }
   } finally {
     await app.close();
+    await served?.close();
     globalThis.fetch = guardedFetch;
     restoreFetch();
   }

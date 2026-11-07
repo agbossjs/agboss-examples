@@ -19,6 +19,7 @@ import { minutes, seconds } from "@agboss/core/units";
     "OpenRouter — multi-model gateway with prompt caching, retry policy, and circuit breaker",
   serves: [/^moonshotai\//u, /^openai\//u, /^anthropic\//u],
   baseUrl: OPENROUTER_BASE_URL,
+  baseUrlField: "openRouterBaseUrl",
   apiKey: "openRouterApiKey",
   timeout: minutes(2),
   cost: ModelCost.fromResponse(),

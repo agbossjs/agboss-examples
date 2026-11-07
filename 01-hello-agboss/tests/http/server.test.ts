@@ -1,5 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createHelloOfflineFetch } from "../../../scripts/tooling/offline-transports.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createHelloOfflineFetch,
+  serveFetch,
+  type ServedFetch,
+} from "../../../scripts/tooling/offline-transports.js";
 import { startHelloHttpServer, type RunningHttpServer } from "../../src/http/server.js";
 import {
   startPricingApiStubServer,
@@ -9,21 +13,22 @@ import {
 describe("HTTP Server (`src/http/server.ts`) — Multi-tenancy, Health Probes & Cancellation", () => {
   let pricingApi: PricingApiStubServer;
   let server: RunningHttpServer;
+  let openRouter: ServedFetch;
 
   beforeEach(async () => {
     pricingApi = await startPricingApiStubServer();
-    server = await startHelloHttpServer({
-      processEnv: {
-        ...process.env,
-        PRICING_API_BASE_URL: pricingApi.baseUrl,
-      },
-      providerFetch: createHelloOfflineFetch(),
-    });
+    // agbossjs/agboss#834: the app reads process.env; the scripted OpenRouter is served on 127.0.0.1
+    openRouter = await serveFetch(createHelloOfflineFetch());
+    vi.stubEnv("PRICING_API_BASE_URL", pricingApi.baseUrl);
+    vi.stubEnv("OPENROUTER_BASE_URL", openRouter.baseUrl);
+    server = await startHelloHttpServer();
   });
 
   afterEach(async () => {
     await server.close();
     await pricingApi.close();
+    await openRouter.close();
+    vi.unstubAllEnvs();
   });
 
   it("serves GET /health/live and GET /health/ready with HTTP 200 when healthy", async () => {

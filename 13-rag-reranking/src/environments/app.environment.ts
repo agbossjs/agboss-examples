@@ -15,4 +15,9 @@ export class AppEnvironment {
   cohereBaseUrl?: string;
   /** OpenRouter's key, for the LLM reranker and the agent (a live run only; tests script models). */
   openRouterApiKey?: Secret;
+  /**
+   * OpenRouter's base URL (the built-in providers' `openRouterBaseUrl`): the demo's scripted stand-in
+   * on 127.0.0.1 offline (agbossjs/agboss#834), unset → OpenRouter's own.
+   */
+  openRouterBaseUrl?: string;
 }

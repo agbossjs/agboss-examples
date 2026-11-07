@@ -30,5 +30,5 @@ put this project's own rules below, never there.
 - All components must remain stateless (`agboss/no-component-state`).
 - Default `npm run check`, `npm test`, and `npm run demo` must run 100% offline.
 - The models are scripted in tests (`mockLlm`); the offline demo answers through
-  `fixtures/offline-openrouter.ts` (`createApp({ providerFetch })`) — never use its answers as a
+  `fixtures/offline-openrouter.ts` (served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`)) — never use its answers as a
   test's oracle.

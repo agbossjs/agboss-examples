@@ -28,7 +28,7 @@ import { JobWorkflow } from "./workflows/job/job.workflow.js";
  * (`@agboss/postgres`) — no shared disk, so any pod on any node continues any tree. Four step slots
  * per pod (`maxConcurrentSteps`, the target of the scale rule: Wiki → Autoscaling), a 30 s graceful
  * stop (`shutdownTimeout`, below the pod's `terminationGracePeriodSeconds`), and the history the
- * verification reads (`executionRecordRetention`). `LocalScalingApplication` is the same workflows
+ * verification reads (`retention.executionRecords`). `LocalScalingApplication` is the same workflows
  * on SQLite, for the offline tests and the demo.
  */
 @Application({
@@ -39,7 +39,7 @@ import { JobWorkflow } from "./workflows/job/job.workflow.js";
   budgets: [ScalingAppDailyBudget, ScalingTenantDailyBudget, ScalingExecutionBudget],
   maxConcurrentSteps: 4,
   shutdownTimeout: seconds(30),
-  executionRecordRetention: hours(24),
+  retention: { executionRecords: hours(24) },
   // one key on every pod: business-key handles and fingerprints agree across instances (Guarantees A8)
   piiKeyField: "piiPseudonymKey",
   idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own

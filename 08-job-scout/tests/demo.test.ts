@@ -16,6 +16,7 @@ import {
   latestMessageText,
   routeOf,
 } from "../fixtures/offline-openrouter.js";
+import { serveFetch, type ServedFetch } from "../../scripts/tooling/offline-transports.js";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
 
@@ -47,31 +48,44 @@ async function runDemo(
 }
 
 /**
- * The dev environment with an offline key and records in memory (what the demo runs on). These
- * turns never save, so the shortlist MCP server is not started (`connectMcp`): its folder is the
- * one tests/shortlist.test.ts removes when it ends, possibly while this file runs.
+ * The dev environment with an offline key and records in memory (what the demo runs on), the
+ * scripted OpenRouter served on 127.0.0.1 and reached through `OPENROUTER_BASE_URL` — `createApp`
+ * takes the environment from `process.env` and no `providerFetch` (agbossjs/agboss#834). The
+ * shortlist MCP server starts in the tests' temp folder; these turns never save to it.
  */
-const offlineApp = (providerFetch: typeof fetch) =>
-  createApp(JobScoutApplication, {
-    env: "dev",
-    // createApp, not testWith: no test key — a synthetic PII key as the demo's (R6)
-    processEnv: {
-      PII_PSEUDONYM_KEY: "job-scout-demo-synthetic-pseudonym-key",
-      ...process.env,
-      OPENROUTER_API_KEY: "offline-test-key",
-      AGBOSS_SQLITE_PATH: ":memory:",
-    },
-    providerFetch,
-    connectMcp: () => Promise.resolve({ close: () => Promise.resolve() }),
-  });
+async function offlineApp(providerFetch: typeof fetch) {
+  const stub = await serveFetch(providerFetch);
+  // createApp, not testWith: no test key — a synthetic PII key as the demo's (R6)
+  vi.stubEnv("PII_PSEUDONYM_KEY", process.env.PII_PSEUDONYM_KEY ?? "job-scout-demo-synthetic-pseudonym-key");
+  vi.stubEnv("OPENROUTER_API_KEY", "offline-test-key");
+  vi.stubEnv("OPENROUTER_BASE_URL", stub.baseUrl);
+  vi.stubEnv("AGBOSS_SQLITE_PATH", ":memory:");
+  served.push(stub);
+  return createApp(JobScoutApplication, { env: "dev" });
+}
+
+/** The stubs served by this file's apps, closed after each test. */
+const served: ServedFetch[] = [];
+
+/** The loopback only (the served OpenRouter); anything else is refused. */
+const loopbackOnly = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+  const url = new URL(input instanceof Request ? input.url : input.toString());
+  return url.hostname === "127.0.0.1"
+    ? realFetch(input, init)
+    : Promise.reject(new Error(`no network in tests: ${url.href}`));
+}) as typeof fetch;
+
+const realFetch = globalThis.fetch;
 
 const refuseNetwork = ((input: Parameters<typeof fetch>[0]) =>
   Promise.reject(
     new Error(`no network in tests: ${input instanceof Request ? input.url : input.toString()}`),
   )) as typeof fetch;
 
-afterEach(() => {
+afterEach(async () => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  for (const stub of served.splice(0)) await stub.close();
 });
 
 describe("npm run demo — one resume → brief → ranked jobs → approved shortlist pass, offline at $0", () => {
@@ -112,7 +126,7 @@ describe("npm run demo — one resume → brief → ranked jobs → approved sho
 
 describe("the demo's pass in process: the ledger of the search turn", () => {
   it("one search on the fixture boards: the down board reported, 6 jobs judged by Jev, each call costed", async () => {
-    const greenhouse = createFixtureGreenhouse(GREENHOUSE, refuseNetwork);
+    const greenhouse = createFixtureGreenhouse(GREENHOUSE, loopbackOnly);
     vi.stubGlobal("fetch", greenhouse.fetch);
     const openRouter = createOfflineOpenRouter();
     const app = await offlineApp(openRouter.fetch);

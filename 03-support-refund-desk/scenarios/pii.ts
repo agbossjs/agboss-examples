@@ -10,6 +10,7 @@ import {
   getRecordedToolOperations,
   resetRecordedToolOperations,
 } from "../src/services/order-book.service.js";
+import { setProcessEnv } from "../../scripts/tooling/offline-transports.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
 import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
 
@@ -127,20 +128,19 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
     let langfuseOtelSpansMaskedPii = false;
 
     try {
-      const tracedApp = await createApp(SupportRefundDeskApplication, {
-        processEnv: {
-          ...process.env,
-          OPENROUTER_API_KEY:
-            process.env.OPENROUTER_API_KEY ??
-            process.env.OPEN_ROUTER_KEY ??
-            "offline-test-openrouter-api-key",
-          PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
-          LANGFUSE_PUBLIC_KEY: "pk-lf-agboss-proof",
-          LANGFUSE_SECRET_KEY: "sk-lf-agboss-proof",
-          LANGFUSE_BASE_URL: langfuseBaseUrl,
-          LANGFUSE_PROJECT_ID: "proj-support",
-        },
+      // agbossjs/agboss#834: the app reads process.env (createApp takes no processEnv), put back after
+      const restoreEnv = setProcessEnv({
+        OPENROUTER_API_KEY:
+          process.env.OPENROUTER_API_KEY ??
+          process.env.OPEN_ROUTER_KEY ??
+          "offline-test-openrouter-api-key",
+        PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
+        LANGFUSE_PUBLIC_KEY: "pk-lf-agboss-proof",
+        LANGFUSE_SECRET_KEY: "sk-lf-agboss-proof",
+        LANGFUSE_BASE_URL: langfuseBaseUrl,
+        LANGFUSE_PROJECT_ID: "proj-support",
       });
+      const tracedApp = await createApp(SupportRefundDeskApplication);
       try {
         const tracedResult = await tracedApp.execute(
           SupportRefundWorkflowStart,
@@ -160,6 +160,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
           `${langfuseBaseUrl}/project/proj-support/sessions/thread-langfuse-pii`;
       } finally {
         await tracedApp.close();
+        restoreEnv();
       }
 
       const rawOtelExport = Buffer.concat(exportedChunks).toString("utf8");

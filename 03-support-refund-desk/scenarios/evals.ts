@@ -13,6 +13,7 @@ import {
 } from "@agboss/core/eval";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import { resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
+import { setProcessEnv } from "../../scripts/tooling/offline-transports.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
 import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
 
@@ -210,17 +211,16 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
     const rawEmail = "alice.synth@example.com";
     const threadId = "thread-incident-draft-1";
 
-    const app = await createApp(SupportRefundDeskApplication, {
-      env: "dev",
-      processEnv: {
-        OPENROUTER_API_KEY:
-          process.env.OPENROUTER_API_KEY ??
-          process.env.OPEN_ROUTER_KEY ??
-          "offline-test-openrouter-api-key",
-        SQLITE_PATH: sqlitePath,
-        PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
-      },
+    // agbossjs/agboss#834: the app reads process.env (createApp takes no processEnv), put back after
+    const restoreEnv = setProcessEnv({
+      OPENROUTER_API_KEY:
+        process.env.OPENROUTER_API_KEY ??
+        process.env.OPEN_ROUTER_KEY ??
+        "offline-test-openrouter-api-key",
+      SQLITE_PATH: sqlitePath,
+      PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
     });
+    const app = await createApp(SupportRefundDeskApplication, { env: "dev" });
 
     let secondExecutionId = "";
     try {
@@ -254,6 +254,7 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
       secondExecutionId = secondTurn.executionId;
     } finally {
       await app.close();
+      restoreEnv();
     }
 
     const draftEnvelope = await runAgbossCli<GenerateEvalCaseCliResult>(

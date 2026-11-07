@@ -9,6 +9,7 @@ import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,
   requireLiveApiKey,
+  serveFetch,
 } from "../../scripts/tooling/offline-transports.js";
 import { createOfflineOpenRouter, withStubbornCritic } from "../fixtures/offline-openrouter.js";
 import { CreditReviewApplication } from "./credit-review.application.js";
@@ -96,19 +97,20 @@ async function main(): Promise<void> {
   const isLive = isLiveDemoRequested();
   const apiKey = isLive ? requireLiveApiKey() : "offline-demo-openrouter-api-key";
   const restoreFetch = isLive ? (): void => undefined : installOfflineNetworkGuard();
+  // agbossjs/agboss#834: the scripted OpenRouter is served on 127.0.0.1 and reached through the
+  // providers' own base URL field (OPENROUTER_BASE_URL); createApp takes no providerFetch
+  process.env.OPENROUTER_API_KEY = apiKey;
   const offline = createOfflineOpenRouter();
-  const processEnv = { ...process.env, OPENROUTER_API_KEY: apiKey };
-  const app = await createApp(CreditReviewApplication, {
-    processEnv,
-    ...(isLive ? {} : { providerFetch: offline.fetch }),
-  });
-  // the failure injection: a risk officer that never approves (scripted even when live)
-  const stubbornApp = await createApp(CreditReviewApplication, {
-    processEnv,
-    providerFetch: isLive
-      ? withStubbornCritic(fetch)
-      : createOfflineOpenRouter({ stubbornCritic: true }).fetch,
-  });
+  const served = isLive ? undefined : await serveFetch(offline.fetch);
+  if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
+  const app = await createApp(CreditReviewApplication);
+  // the failure injection (scripted even when live): its own stand-in, in front of OpenRouter live
+  const stubbornServed = await serveFetch(
+    isLive ? withStubbornCritic(fetch) : createOfflineOpenRouter({ stubbornCritic: true }).fetch,
+    isLive ? { upstream: "https://openrouter.ai" } : {},
+  );
+  process.env.OPENROUTER_BASE_URL = stubbornServed.baseUrl;
+  const stubbornApp = await createApp(CreditReviewApplication);
   console.log(
     `credit review demo — ${isLive ? "live (OpenRouter)" : "offline: no network, no key — the scripted OpenRouter reports nominal costs"}\n`,
   );
@@ -174,6 +176,8 @@ async function main(): Promise<void> {
   } finally {
     await app.close();
     await stubbornApp.close();
+    await served?.close();
+    await stubbornServed.close();
     restoreFetch();
   }
 }

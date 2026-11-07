@@ -1,6 +1,6 @@
 /**
  * The offline OpenRouter of `npm run demo`: a scripted stand-in for the chat completions the
- * built-in provider calls, passed as `createApp({ providerFetch })` — the real provider, its cost
+ * built-in provider calls, passed as served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`) — the real provider, its cost
  * reader and the budgets run; only the wire is scripted. The agent answers from the first source of
  * the knowledge it was given; the LLM reranker (when swapped in) ranks candidate 27 first.
  */

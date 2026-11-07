@@ -58,6 +58,6 @@ import { OpenRouterModelProvider } from "./model-providers/openrouter.model-prov
     SqliteChildExecutionQueueRepository,
   ],
   budgets: [ApplicationDailyBudget, TenantDailyBudget, ExecutionBudget],
-  executionRecordRetention: hours(24 * 30), // each execution's history, 30 days: agboss records export
+  retention: { executionRecords: hours(24 * 30) }, // each execution's history, 30 days: agboss records export
 })
 export class JobScoutApplication {}
