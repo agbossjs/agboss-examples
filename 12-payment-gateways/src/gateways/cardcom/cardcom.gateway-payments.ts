@@ -4,7 +4,7 @@
 // (https://secure.cardcom.solutions/api/v11/docs). Gateways change their APIs and SDKs: check the
 // official documentation before relying on it.
 import { createHash } from "node:crypto";
-import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, OutboundCalls, effectKeyOf } from "@agboss/core";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
 
@@ -30,7 +30,7 @@ export class CardcomGatewayPayments extends GatewayPayments {
   }
 
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
-    const key = fencedEffectKeyOf(executionContext, "charge", { businessKey: `order:${order.orderId}` });
+    const key = effectKeyOf(executionContext, "charge", { businessKey: `order:${order.orderId}` });
     const { result } = await this.outboundCalls.send(key, {
       target: "cardcom",
       operation: "Transactions/Transaction",
@@ -41,6 +41,8 @@ export class CardcomGatewayPayments extends GatewayPayments {
         if (answer["ResponseCode"] !== 0) throw new Error(`CardCom refused the charge: ${String(answer["ResponseCode"])}`);
         return { paymentId: String(answer["TranzactionId"]), amountCents: order.amountCents, status: "approved" };
       },
+      // found by our own id, kept with the transaction: a lookup (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async (lookup) => {
         const found = await this.post("Transactions/GetTransactionByExternalUniqTran", { ExternalUniqTranId: externalIdOf(lookup.idempotencyKey) });
         const info = found["TranzactionInfo"] as { TranzactionId?: unknown; Amount?: unknown } | undefined;
@@ -55,7 +57,7 @@ export class CardcomGatewayPayments extends GatewayPayments {
 
   /** Refunds take no key at CardCom: AGBoss never resends one blindly; one whose answer is lost is unknown, for a person. */
   override async refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
-    const key = fencedEffectKeyOf(executionContext, "refund", { businessKey: `refund:${refund.paymentId}:${String(refund.refundNumber)}` });
+    const key = effectKeyOf(executionContext, "refund", { businessKey: `refund:${refund.paymentId}:${String(refund.refundNumber)}` });
     const { result } = await this.outboundCalls.send(key, {
       target: "cardcom",
       operation: "Transactions/RefundByTransactionId",
@@ -65,6 +67,8 @@ export class CardcomGatewayPayments extends GatewayPayments {
         if (answer["ResponseCode"] !== 0) throw new Error(`CardCom refused the refund: ${String(answer["ResponseCode"])}`);
         return { movementId: String(answer["NewTranzactionId"]), status: "refunded" };
       },
+      // never asked: reconcile answers unknown, a person decides (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: () => OutboundCallReconciliation.unknown({ reason: "CardCom refunds take no key and have no lookup: check the terminal's report" }),
     });
     return result;

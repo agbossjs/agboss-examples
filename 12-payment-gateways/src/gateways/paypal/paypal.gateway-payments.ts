@@ -4,7 +4,7 @@
 // (https://developer.paypal.com/api/rest/reference/idempotency/). Gateways change their APIs and
 // SDKs: check the official documentation before relying on it.
 import { Client, Environment, OrdersController, PaymentsController, type Order } from "@paypal/paypal-server-sdk";
-import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, OutboundCalls, effectKeyOf } from "@agboss/core";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
 import { GatewayStubService } from "../../services/gateway-stub.service.js";
 import { StubTlsAgent } from "./paypal-stub-transport.js";
@@ -26,15 +26,17 @@ export class PayPalGatewayPayments extends GatewayPayments {
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
     const orders = new OrdersController(this.client());
     const businessKey = `order:${order.orderId}`;
-    const created = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "create-order", { businessKey }), {
+    const created = await this.outboundCalls.send(effectKeyOf(executionContext, "create-order", { businessKey }), {
       target: "paypal",
       operation: "orders.create",
       request: { intent: "CAPTURE", purchaseUnits: [{ referenceId: order.orderId, amount: { currencyCode: "USD", value: (order.amountCents / 100).toFixed(2) } }] },
       send: async (call) => ({ id: (await orders.createOrder({ body: call.request as never, paypalRequestId: call.idempotencyKey })).result.id ?? "" }),
+      // trusted at any age (#795): an order's creation moves no money, a stray one expires unpaid
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: () => OutboundCallReconciliation.notSent(), // no money moves here; a repeat returns the order
     });
     const paypalOrderId = created.result.id; // held before money moves: what the capture is reconciled by
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "capture", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "capture", { businessKey }), {
       target: "paypal",
       operation: "orders.capture",
       request: { paypalOrderId },
@@ -42,6 +44,8 @@ export class PayPalGatewayPayments extends GatewayPayments {
         const answer = await orders.captureOrder({ id: paypalOrderId, paypalRequestId: call.idempotencyKey });
         return { paymentId: paypalOrderId, amountCents: order.amountCents, status: String(answer.result.status) };
       },
+      // the order's GET is its own record: no capture there holds at any age (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async () => {
         const { result: current } = await orders.getOrder({ id: paypalOrderId });
         return capturesOf(current).length > 0 && current.purchaseUnits?.[0]?.referenceId === order.orderId
@@ -60,7 +64,7 @@ export class PayPalGatewayPayments extends GatewayPayments {
     if (paypalOrder.purchaseUnits?.[0]?.referenceId !== refund.orderId) throw new Error(`PayPal order ${refund.paymentId} is not order ${refund.orderId}'s`);
     const captureId = capturesOf(paypalOrder)[0]?.id ?? "";
     const businessKey = `refund:${refund.paymentId}:${String(refund.refundNumber)}`;
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "refund", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "refund", { businessKey }), {
       target: "paypal",
       operation: "captures.refund",
       request: { captureId, amount: { currencyCode: "USD", value: (refund.amountCents / 100).toFixed(2) } },
@@ -68,6 +72,8 @@ export class PayPalGatewayPayments extends GatewayPayments {
         const answer = await new PaymentsController(client).refundCapturedPayment({ captureId, paypalRequestId: call.idempotencyKey, body: { amount: call.request.amount } });
         return { movementId: answer.result.id ?? "", status: String(answer.result.status) };
       },
+      // the order's refunds, read by its GET: the record, not the key (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async () => {
         const refunds = (await orders.getOrder({ id: refund.paymentId })).result.purchaseUnits?.[0]?.payments?.refunds ?? [];
         const found = refunds[refund.refundNumber - 1];

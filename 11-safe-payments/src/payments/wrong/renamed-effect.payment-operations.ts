@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable, OutboundCallReconciliation, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, effectKeyOf } from "@agboss/core";
 import type { StubCharge } from "../../stub/stub-gateway.types.js";
 import type { ChargeOrder } from "../payment-operations.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-payment-operations.js";
@@ -16,12 +16,13 @@ export class RenamedEffectPaymentOperations extends RightPaymentOperations {
   override async charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
     const client = this.stubGatewayService.client();
     const name = deployment.version === 1 ? "charge" : `charge-v${String(deployment.version)}`;
-    const key = fencedEffectKeyOf(executionContext, name, { businessKey: `order:${order.orderId}` });
+    const key = effectKeyOf(executionContext, name, { businessKey: `order:${order.orderId}` });
     const { result } = await this.outboundCalls.send(key, {
       target: "stub-gateway",
       operation: "charge",
       request: chargeRequestOf(order),
       send: (call) => client.createCharge(call.request, { idempotencyKey: call.idempotencyKey, signal: call.signal }),
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: () => OutboundCallReconciliation.unknown({ reason: "no lookup" }),
     });
     return result;

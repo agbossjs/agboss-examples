@@ -3,7 +3,7 @@ import {
   ExecutionContext,
   SqliteFencedEffectRepository,
   TenantContext,
-  fencedEffectKeyOf,
+  effectKeyOf,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -35,7 +35,7 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
     // verified for this tenant: an event about another tenant's (or another order's) payment applies nothing
     this.paymentBooksService.assertOrdersPayment(event.orderId, event.paymentId);
     const { tenantId } = this.tenantContext;
-    const key = fencedEffectKeyOf(this.executionContext, "apply-event", { businessKey: `event:${event.eventId}` });
+    const key = effectKeyOf(this.executionContext, "apply-event", { businessKey: `event:${event.eventId}` });
     const { status } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
       this.booksRepository.apply(database, tenantId, event),
     );

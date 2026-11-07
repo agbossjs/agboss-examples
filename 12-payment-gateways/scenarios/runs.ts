@@ -29,7 +29,7 @@ async function settledIntents(context: RunContext): Promise<number> {
 
 /**
  * Until the recovering instance's `reconcile` of an intent left pending could not settle it — the
- * lease log's `unknown` (#505; a `notSent()` past `keyRetention`, #658): `"reconciled: unknown"`,
+ * lease log's `unknown` (#505; a `KeyReplay`'s `notSent()` past its `keyRetention`, #658): `"reconciled: unknown"`,
  * else nothing within the bound (the intent was never reconciled).
  */
 async function unknownNotes(context: RunContext): Promise<string[]> {

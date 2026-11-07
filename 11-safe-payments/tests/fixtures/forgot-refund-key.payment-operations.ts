@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable, OutboundCallReconciliation, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, effectKeyOf } from "@agboss/core";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../../src/payments/right-payment-operations.js";
 import type { PaymentRefund } from "../../src/payments/payment-operations.js";
 import type { StubMovement } from "../../src/stub/stub-gateway.types.js";
@@ -12,7 +12,7 @@ import type { StubMovement } from "../../src/stub/stub-gateway.types.js";
 export class ForgotRefundKeyPaymentOperations extends RightPaymentOperations {
   override async refund(executionContext: ExecutionContext, refund: PaymentRefund): Promise<StubMovement> {
     const client = this.stubGatewayService.client();
-    const key = fencedEffectKeyOf(executionContext, "refund", {
+    const key = effectKeyOf(executionContext, "refund", {
       businessKey: `refund:${refund.chargeId}:${String(refund.refundNumber)}`,
     });
     const { result } = await this.outboundCalls.send(key, {
@@ -20,6 +20,7 @@ export class ForgotRefundKeyPaymentOperations extends RightPaymentOperations {
       operation: "refund",
       request: { chargeId: refund.chargeId, amountCents: refund.amountCents },
       send: (call) => client.refund(refund.chargeId, refund.amountCents, { signal: call.signal }), // no key
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: () => OutboundCallReconciliation.notSent(),
     });
     return result;

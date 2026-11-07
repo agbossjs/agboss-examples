@@ -12,8 +12,8 @@
                        │          └── AskBillingTool (@Tool -> @A2AAgent)│
                        └───────────┬─────────────────────────┬───────────┘
                                    │                         │
-            MCP (JSON-RPC +        │                         │ A2A (HTTP + Bearer Auth +
-            _meta.callId +         │                         │ Ed25519 agboss-mesh JWS)
+            MCP (JSON-RPC +        │                         │ A2A v1.0 (Agent Card +
+            _meta.callId +         │                         │ JSON-RPC + Bearer Auth)
             agboss.dev/mesh JWS)   ▼                         ▼
 ┌──────────────────────────────────────────┐   ┌──────────────────────────────────────────┐
 │  apps/3-catalog-mcp/src/                 │   │  apps/2-billing-a2a/src/                 │
@@ -27,9 +27,9 @@
 ## 2. Three Core Engineering Guarantees Proven
 
 1. **Ed25519 Mesh Envelope + Infinite Loop / Hop Protection (`MeshLoopDetectedError`, `HopsLimitExceededError`):**
-   - Every cross-service call carries a signed `agboss-mesh` Ed25519 JWS envelope recording `origin`, `callChain`, and `bodyHash`.
-   - Forged signatures are rejected before execution with `401 mesh.signature-invalid`.
-   - Cyclic calls (`A → B → A`) throw `MeshLoopDetectedError`, and call chains exceeding `maxMeshHops: 3` throw `HopsLimitExceededError`. `TriageWorkflow` catches both deterministically via `.onError(...)` and routes to `MeshLoopFallbackWorkflowFinish`.
+   - A call to the catalog over MCP carries a signed Ed25519 JWS envelope (`_meta["agboss.dev/mesh"]`) recording `origin`, `callChain`, and `bodyHash`; the catalog refuses a forged signature before anything runs (`mesh.signature-invalid`), a chain that already passed through its tool (`limit.mesh-loop`) and one of `maxMeshHops: 3` hops (`limit.hops`).
+   - The billing call goes over A2A v1.0 (the billing server's Agent Card and its JSON-RPC binding; the client discovers the card and calls the `billing-workflow-start` skill). Its card does not declare the AGBoss mesh extension yet, so the client calls it with `A2AMesh.IfSupported`.
+   - A billing call refused as a loop (`MeshLoopDetectedError`) is caught by `TriageWorkflow` deterministically via `.onError(...)` and routed to `MeshLoopFallbackWorkflowFinish`.
 2. **Idempotent Deduplication of MCP Tool Calls (`_meta.callId`):**
    - When `1-order-gateway` invokes `lookup-sku-tool` on `3-catalog-mcp` and retries with the same `_meta.callId`, `SqliteMeshRequestRepository` deduplicates the call and returns the cached result without re-running `CatalogInventoryService`.
 3. **Static Cross-Service Contract Verification (`agboss check --federation`):**

@@ -1,5 +1,5 @@
 import { ExecutionContext } from "@agboss/core";
-import { A2AAgent, A2AClient } from "@agboss/core/a2a";
+import { A2AAgent, A2AClient, A2AMesh } from "@agboss/core/a2a";
 import { usd } from "@agboss/core/units";
 import { BillingInquiryDto } from "../dto/billing-inquiry.dto.js";
 import { BillingResolutionDto } from "../dto/billing-resolution.dto.js";
@@ -39,11 +39,13 @@ export function getCustomA2aHeaders(): Record<string, string> {
   url: "http://127.0.0.1:8081/a2a",
   target: {
     application: "billing-application",
-    start: "billing-workflow-start",
+    skill: "billing-workflow-start",
   },
   input: BillingInquiryDto,
   output: BillingResolutionDto,
   price: usd(0.002),
+  // the billing server's Agent Card does not declare the AGBoss mesh extension yet: call it without
+  mesh: A2AMesh.IfSupported,
   deps: [ExecutionContext],
 })
 export class BillingA2AAgent extends A2AClient<BillingInquiryDto, BillingResolutionDto> {

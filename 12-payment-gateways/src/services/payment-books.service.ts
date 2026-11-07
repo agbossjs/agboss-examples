@@ -3,7 +3,7 @@ import {
   Injectable,
   SqliteFencedEffectRepository,
   TenantContext,
-  fencedEffectKeyOf,
+  effectKeyOf,
 } from "@agboss/core";
 import { BooksRepository } from "../repositories/books.repository.js";
 
@@ -33,7 +33,7 @@ export class PaymentBooksService {
 
   /** Books the order's payment, once (a fenced effect under `payment:<id>`). */
   async book(executionContext: ExecutionContext, orderId: string, paymentId: string): Promise<void> {
-    const key = fencedEffectKeyOf(executionContext, "book-payment", { businessKey: `payment:${paymentId}` });
+    const key = effectKeyOf(executionContext, "book-payment", { businessKey: `payment:${paymentId}` });
     const { tenantId } = this.tenantContext;
     await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
       this.booksRepository.bookPayment(database, { paymentId, orderId, tenantId }),

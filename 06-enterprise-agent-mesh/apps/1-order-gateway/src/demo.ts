@@ -1,7 +1,7 @@
-import { createServer } from "node:http";
+import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp, ExecutionStatus } from "@agboss/core";
-import { A2AClient, a2aHttpListener } from "@agboss/core/a2a";
+import { A2AClient, A2AMesh, a2aHttpListener } from "@agboss/core/a2a";
 import { runFederationBlastRadiusProof } from "../../../federation/verify-federation.js";
 import {
   installOfflineNetworkGuard,
@@ -28,13 +28,13 @@ const restoreFetch = isLive ? (): void => undefined : installOfflineNetworkGuard
 
 try {
   const billingApp = await createApp(BillingApplication);
-  const httpServer = createServer(
-    a2aHttpListener(billingApp, {
-      expose: BillingA2AExpose,
-      callerResolver: BillingA2aCallerResolver,
-      base: "/a2a",
-    }),
-  );
+  // the Agent Card names the URL callers reach it at: the port is known once it listens
+  let listener: RequestListener = (_request, response) => {
+    response.writeHead(503).end();
+  };
+  const httpServer = createServer((request, response) => {
+    listener(request, response);
+  });
 
   await new Promise<void>((resolve) => {
     httpServer.listen(0, "127.0.0.1", () => {
@@ -42,16 +42,21 @@ try {
     });
   });
   const port = (httpServer.address() as AddressInfo).port;
+  listener = a2aHttpListener(billingApp, {
+    expose: BillingA2AExpose,
+    callerResolver: BillingA2aCallerResolver,
+    publicUrl: `http://127.0.0.1:${String(port)}`,
+    base: "/a2a",
+  });
 
   const client = new A2AClient<BillingInquiryDto, BillingResolutionDto>({
     url: `http://127.0.0.1:${String(port)}/a2a`,
     contract: {
-      target: {
-        application: "billing-application",
-        start: "billing-workflow-start",
-      },
+      application: "billing-application",
+      skill: "billing-workflow-start",
       input: BillingInquiryDto,
       output: BillingResolutionDto,
+      mesh: A2AMesh.IfSupported,
     },
     headers: {
       authorization: "Bearer key-acme",

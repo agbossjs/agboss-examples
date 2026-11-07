@@ -3,7 +3,7 @@
 // example follows Stripe's public documentation as read on 2026-11-01
 // (https://docs.stripe.com/api/idempotent_requests). Gateways change their APIs and SDKs: check the
 // official documentation before relying on it.
-import { ExecutionContext, Injectable, OutboundCallReconciliation, OutboundCalls, fencedEffectKeyOf } from "@agboss/core";
+import { ExecutionContext, Injectable, NotSentTrust, OutboundCallReconciliation, OutboundCalls, effectKeyOf } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 import Stripe from "stripe";
 import { GatewayPayments, type GatewayMovement, type GatewayOrder, type GatewayPayment, type GatewayRefund } from "../../gateway-payments.js";
@@ -33,12 +33,12 @@ export class StripeGatewayPayments extends GatewayPayments {
   override async charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
     const stripe = this.stripe();
     const businessKey = `order:${order.orderId}`;
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "charge", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "charge", { businessKey }), {
       target: "stripe",
       operation: "payment_intents.create",
       request: { amount: order.amountCents, currency: "usd", confirm: true, payment_method: "pm_card_visa", capture_method: order.capture ? "automatic" : "manual", metadata: { order_id: order.orderId } },
       // a replay under the key is sent only while Stripe keeps it (#658): past it, nothing is sent
-      keyRetention: KEY_RETENTION,
+      notSent: { trust: NotSentTrust.KeyReplay, keyRetention: KEY_RETENTION },
       send: async (call) => paymentOf(await stripe.paymentIntents.create(call.request, { idempotencyKey: call.idempotencyKey })),
       reconcile: async () => {
         // escaped (a quote or a backslash in an id cannot add a clause), every hit checked against this order
@@ -55,11 +55,13 @@ export class StripeGatewayPayments extends GatewayPayments {
   override async refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
     const stripe = this.stripe();
     const businessKey = `refund:${refund.paymentId}:${String(refund.refundNumber)}`;
-    const { result } = await this.outboundCalls.send(fencedEffectKeyOf(executionContext, "refund", { businessKey }), {
+    const { result } = await this.outboundCalls.send(effectKeyOf(executionContext, "refund", { businessKey }), {
       target: "stripe",
       operation: "refunds.create",
       request: { payment_intent: refund.paymentId, amount: refund.amountCents },
       send: async (call) => movementOf(await stripe.refunds.create(call.request, { idempotencyKey: call.idempotencyKey })),
+      // refunds.list is the payment's own record, no lag: its "not there" holds at any age (#795)
+      notSent: { trust: NotSentTrust.Lookup },
       reconcile: async () => {
         const refunds = await stripe.refunds.list({ payment_intent: refund.paymentId });
         const found = refunds.data[refund.refundNumber - 1];

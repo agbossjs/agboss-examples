@@ -3,6 +3,7 @@ import { BillingWorkflowStart } from "../workflows/billing/billing.workflow-star
 
 @A2AExpose({
   name: "billing-a2a-expose",
+  description: "Resolves invoice questions and applies SLA credits for a tenant",
   version: "1.0.0",
   exports: [BillingWorkflowStart],
 })

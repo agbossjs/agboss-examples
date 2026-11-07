@@ -1,4 +1,4 @@
-import { Injectable, SqliteFencedEffectRepository, type FencedEffectKey } from "@agboss/core";
+import { Injectable, SqliteFencedEffectRepository, type EffectKey } from "@agboss/core";
 import { Deliveries, type Receipt } from "../services/deliveries.js";
 
 /** The receipt in the SQLite fenced-effect store: the local application's delivery. */
@@ -8,7 +8,7 @@ export class SqliteDeliveries extends Deliveries {
     super();
   }
 
-  async deliverOnce(key: FencedEffectKey, receipt: Receipt): Promise<Receipt> {
+  async deliverOnce(key: EffectKey, receipt: Receipt): Promise<Receipt> {
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, () => ({ ...receipt }));
     return result;
   }

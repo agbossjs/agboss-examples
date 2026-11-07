@@ -23,7 +23,7 @@ async function againAfterCompleted(context: ScenarioContext, row: string): Promi
 
 /**
  * Until instance 2's recovery reconciled the pending charge and could not settle it — the lease
- * log's `unknown` (#505): reconcile's `notSent()` past the declared `keyRetention` refused (#658).
+ * log's `unknown` (#505): reconcile's `notSent()` past the `KeyReplay`'s declared `keyRetention` refused (#658).
  * Bounded by real time (it is I/O, not the clock), as `until`.
  */
 async function reconciledUnknown(context: ScenarioContext, timeout = 20_000): Promise<void> {
@@ -76,7 +76,8 @@ async function reconciledAfterADay(context: ScenarioContext, row: string, booked
  * finds the charge; "replay the key" (`notSent()`) charges again. (c) After an error of unknown
  * outcome (a 502 after the stub charged): the intent stays pending (#657), the retry reconciles by
  * reference — one charge. (d) A gateway whose only lookup is the replay (`NoLookup`): the call
- * declares the key's retention (`keyRetention`, #658), and a `notSent()` past it is never sent —
+ * declares its `notSent()` a replay with the key's retention (`NotSentTrust.KeyReplay`, #658, #795),
+ * and a `notSent()` past it is never sent —
  * `OutboundCallUnreconciledError`, a person decides.
  */
 export const ps17: PaymentScenario = {

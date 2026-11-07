@@ -3,7 +3,7 @@ import {
   Injectable,
   SqliteFencedEffectRepository,
   TenantContext,
-  fencedEffectKeyOf,
+  effectKeyOf,
   type JsonResult,
 } from "@agboss/core";
 import type { DatabaseSync } from "node:sqlite";
@@ -72,7 +72,7 @@ export class OrderBookService {
     businessKey: string,
     work: (database: DatabaseSync) => T & JsonResult<T>,
   ): Promise<T> {
-    const key = fencedEffectKeyOf(executionContext, name, { businessKey });
+    const key = effectKeyOf(executionContext, name, { businessKey });
     const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, work);
     return result;
   }
