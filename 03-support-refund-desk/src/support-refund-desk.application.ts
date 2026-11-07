@@ -44,8 +44,7 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
     SqliteRateLimitRepository,
     SqliteExecutionHistoryRepository,
   ],
-  executionRecordRetention: hours(24 * 30),
-  pauseRecordRetention: hours(24),
+  retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
   shutdownTimeout: seconds(15),
   defaults: {
     models: { temperature: 0 },

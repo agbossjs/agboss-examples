@@ -5,6 +5,7 @@
  * does not hold.
  */
 import { createApp } from "@agboss/core";
+import { serveFetch } from "../../scripts/tooling/offline-transports.js";
 import { HandbookApplication } from "./handbook.application.js";
 import { createOfflineOpenRouter } from "./offline/offline-openrouter.js";
 import { ANSWER, HANDBOOK } from "./rag/handbook.data.js";
@@ -20,12 +21,13 @@ function check(condition: boolean, what: string): void {
 const stub = new CohereRerankStub();
 const openRouter = createOfflineOpenRouter();
 process.env.COHERE_BASE_URL = await stub.start();
-const app = await createApp(HandbookApplication, {
-  env: "offline",
-  // a synthetic PII key unless one is set (R6)
-  processEnv: { PII_PSEUDONYM_KEY: "handbook-demo-synthetic-pseudonym-key", ...process.env, OPENROUTER_API_KEY: "offline" },
-  providerFetch: openRouter.fetch,
-});
+// agbossjs/agboss#834: the app reads process.env; the scripted OpenRouter is served on 127.0.0.1
+// and reached through the providers' base URL field — createApp takes no providerFetch
+const served = await serveFetch(openRouter.fetch);
+process.env.PII_PSEUDONYM_KEY ??= "handbook-demo-synthetic-pseudonym-key"; // a synthetic PII key unless one is set (R6)
+process.env.OPENROUTER_API_KEY = "offline";
+process.env.OPENROUTER_BASE_URL = served.baseUrl;
+const app = await createApp(HandbookApplication, { env: "offline" });
 
 try {
   console.log(`Question: ${QUESTION}`);
@@ -50,5 +52,6 @@ try {
   console.log("\nAll checks passed.");
 } finally {
   await app.close();
+  await served.close();
   await stub.stop();
 }

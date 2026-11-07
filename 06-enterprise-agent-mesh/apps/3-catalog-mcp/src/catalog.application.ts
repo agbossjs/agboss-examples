@@ -67,8 +67,7 @@ export { CatalogWorkflow } from "./workflows/catalog/catalog.workflow.js";
     SqliteExecutionHistoryRepository,
     SqliteMeshRequestRepository,
   ],
-  executionRecordRetention: hours(24 * 30),
-  pauseRecordRetention: hours(24),
+  retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
   shutdownTimeout: seconds(15),
 })
 export class CatalogApplication {}

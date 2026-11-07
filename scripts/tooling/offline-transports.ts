@@ -96,7 +96,7 @@ export function installOfflineNetworkGuard(): () => void {
 }
 
 /**
- * Stub `providerFetch` for `01-hello-agboss` when running `npm run demo` offline without
+ * The scripted OpenRouter (served by `serveFetch`) for `01-hello-agboss` when running `npm run demo` offline without
  * `OPENROUTER_API_KEY`, exercising the real `OpenRouterChatModelProvider` HTTP wire pipeline.
  */
 export function createHelloOfflineFetch(): typeof fetch {
@@ -1059,4 +1059,101 @@ export abstract class MigrationOfflineTransport {
       cost: usdBrand(0.0001),
     });
   }
+}
+
+/** A local HTTP server answering with a `fetch` handler: what `serveFetch` started. */
+export interface ServedFetch {
+  /** `http://127.0.0.1:<port>` + the path the provider's base URL has (`/api/v1`). */
+  readonly baseUrl: string;
+  readonly close: () => Promise<void>;
+}
+
+/** Headers a hop sets for itself, never forwarded. */
+const HOP_HEADERS = new Set(["host", "connection", "content-length", "transfer-encoding", "keep-alive"]);
+/** Response headers the decoded body no longer matches. */
+const DECODED_HEADERS = new Set(["content-encoding", "content-length", "transfer-encoding", "connection"]);
+
+/**
+ * Serves `handler` on 127.0.0.1 (agbossjs/agboss#834): the offline demos reach their scripted
+ * OpenRouter through the provider's own base URL field (`OPENROUTER_BASE_URL` →
+ * `openRouterBaseUrl`), the way a deployment points a provider at a gateway — `createApp` takes no
+ * `providerFetch`. Each request reaches `handler` at `upstream` + its path (default the loopback
+ * origin), so a handler that wraps the real `fetch` forwards to OpenRouter itself.
+ */
+export async function serveFetch(
+  handler: typeof fetch,
+  options: { readonly basePath?: string; readonly upstream?: string } = {},
+): Promise<ServedFetch> {
+  const { createServer } = await import("node:http");
+  const server = createServer((req, res) => {
+    void (async () => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = Buffer.concat(chunks);
+      const headers = new Headers();
+      for (const [name, value] of Object.entries(req.headers)) {
+        if (value !== undefined && !HOP_HEADERS.has(name)) headers.set(name, String(value));
+      }
+      const origin = options.upstream ?? `http://127.0.0.1:${String(req.socket.localPort)}`;
+      try {
+        const response = await handler(`${origin}${req.url ?? "/"}`, {
+          method: req.method ?? "GET",
+          headers,
+          // as text, as the providers send it (a stand-in reads `init.body` as a JSON string)
+          ...(body.length === 0 ? {} : { body: body.toString("utf8") }),
+        });
+        const answered: Record<string, string> = {};
+        response.headers.forEach((value, name) => {
+          if (!DECODED_HEADERS.has(name)) answered[name] = value;
+        });
+        res.writeHead(response.status, answered);
+        res.end(Buffer.from(await response.arrayBuffer()));
+      } catch (error) {
+        res.writeHead(502, { "content-type": "text/plain" });
+        res.end(error instanceof Error ? error.message : String(error));
+      }
+    })();
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  const port = typeof address === "object" && address !== null ? address.port : 0;
+  return {
+    baseUrl: `http://127.0.0.1:${String(port)}${options.basePath ?? "/api/v1"}`,
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve();
+        });
+      }),
+  };
+}
+
+/**
+ * Sets process variables for `work` and puts the old values back after it (agbossjs/agboss#834:
+ * an app reads its environment from `process.env` — `createApp` takes no `processEnv`).
+ */
+export async function withProcessEnv<T>(
+  variables: Readonly<Record<string, string>>,
+  work: () => Promise<T>,
+): Promise<T> {
+  const restore = setProcessEnv(variables);
+  try {
+    return await work();
+  } finally {
+    restore();
+  }
+}
+
+/** Sets process variables now; the function it returns puts the old values back. */
+export function setProcessEnv(variables: Readonly<Record<string, string>>): () => void {
+  const before = Object.fromEntries(Object.keys(variables).map((name) => [name, process.env[name]]));
+  Object.assign(process.env, variables);
+  return () => {
+    for (const [name, value] of Object.entries(before)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
 }

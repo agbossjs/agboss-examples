@@ -36,7 +36,7 @@ import { SqliteDeliveries } from "./sqlite-deliveries.js";
   budgets: [ScalingAppDailyBudget, ScalingTenantDailyBudget, ScalingExecutionBudget],
   maxConcurrentSteps: 4,
   shutdownTimeout: seconds(30),
-  executionRecordRetention: hours(24),
+  retention: { executionRecords: hours(24) },
   // one key on every pod: business-key handles and fingerprints agree across instances (Guarantees A8)
   piiKeyField: "piiPseudonymKey",
   idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own

@@ -8,4 +8,5 @@ export const environment: AppEnvironment = {
   cohereBaseUrl: env("COHERE_BASE_URL", { default: "http://127.0.0.1:4790" }),
   // the demo's offline OpenRouter takes any key
   openRouterApiKey: secret("OPENROUTER_API_KEY"),
+  openRouterBaseUrl: env.optional("OPENROUTER_BASE_URL"),
 };

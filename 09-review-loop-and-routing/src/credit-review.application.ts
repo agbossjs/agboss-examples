@@ -11,7 +11,7 @@ import { CreditReviewWorkflow } from "./workflows/credit-review/credit-review.wo
  * The credit desk: one workflow (two starts, one review loop), its model providers — OpenRouter
  * for the agents, the Decisions API for the model router, the same in every environment — and its
  * budgets. `npm test` scripts every model (`testWith`); `npm run demo` scripts the wire
- * (`createApp({ providerFetch })`); `npm run demo:live` calls OpenRouter.
+ * (served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`)); `npm run demo:live` calls OpenRouter.
  */
 @Application({
   name: "credit-review-application",

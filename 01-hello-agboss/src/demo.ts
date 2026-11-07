@@ -4,6 +4,7 @@ import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,
   requireLiveApiKey,
+  serveFetch,
 } from "../../scripts/tooling/offline-transports.js";
 import { HelloAgbossApplication } from "./hello-agboss.application.js";
 import { startPricingApiStubServer } from "./services/pricing-catalog.service.js";
@@ -16,14 +17,12 @@ async function main(): Promise<void> {
   const pricingStub = await startPricingApiStubServer();
   process.env.PRICING_API_BASE_URL = pricingStub.baseUrl;
 
-  const app = await createApp(HelloAgbossApplication, {
-    processEnv: {
-      ...process.env,
-      OPENROUTER_API_KEY: liveApiKey ?? "offline-test-openrouter-api-key",
-      PRICING_API_BASE_URL: pricingStub.baseUrl,
-    },
-    ...(isLive ? {} : { providerFetch: createHelloOfflineFetch() }),
-  });
+  // agbossjs/agboss#834: the app reads its environment from process.env, and offline the scripted
+  // OpenRouter is served on 127.0.0.1 through the provider's base URL field
+  process.env.OPENROUTER_API_KEY = liveApiKey ?? "offline-test-openrouter-api-key";
+  const served = isLive ? undefined : await serveFetch(createHelloOfflineFetch());
+  if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
+  const app = await createApp(HelloAgbossApplication);
 
   try {
     const execOptions = {
@@ -97,6 +96,7 @@ async function main(): Promise<void> {
   } finally {
     await app.close();
     await pricingStub.close();
+    await served?.close();
     restoreFetch();
   }
 }

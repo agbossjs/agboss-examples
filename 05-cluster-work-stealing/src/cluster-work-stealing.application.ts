@@ -69,8 +69,7 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
     SqliteFencedEffectRepository, // a chunk's commit, once per chunk (#500, #508)
     SqliteConnection, // the file's one connection, for the ledger too
   ],
-  executionRecordRetention: hours(24 * 30),
-  pauseRecordRetention: hours(24),
+  retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
   shutdownTimeout: seconds(15),
 })
 export class ClusterWorkStealingApplication {}

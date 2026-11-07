@@ -16,7 +16,7 @@ const jobIdsOfInput = (input: unknown): string[] =>
 
 /**
  * A batch's evidence, through the public API of any instance: its kept record (the history,
- * `executionRecordRetention`), its tree's lease log and its outbound calls. A batch still running
+ * `retention.executionRecords`), its tree's lease log and its outbound calls. A batch still running
  * has no record yet: its tree is read by `rootExecutionId` (from the stub's work calls).
  */
 /** What the reader needs of an app: its container and its operator reads (an `App`, a `TestApp`). */

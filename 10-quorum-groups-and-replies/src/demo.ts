@@ -19,6 +19,7 @@ import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,
   requireLiveApiKey,
+  serveFetch,
 } from "../../scripts/tooling/offline-transports.js";
 import { createOfflineOpenRouter, withUncitedCompliance } from "../fixtures/offline-openrouter.js";
 import type { PurchaseRequestDto } from "./dto/purchase-request.dto.js";
@@ -79,18 +80,19 @@ async function main(): Promise<void> {
   const isLive = isLiveDemoRequested();
   const apiKey = isLive ? requireLiveApiKey() : "offline-demo-openrouter-api-key";
   const restoreFetch = isLive ? (): void => undefined : installOfflineNetworkGuard();
-  const processEnv = { ...process.env, OPENROUTER_API_KEY: apiKey };
-  const app = await createApp(SupplierPurchaseApplication, {
-    processEnv,
-    ...(isLive ? {} : { providerFetch: createOfflineOpenRouter().fetch }),
-  });
-  // the failure injection: a compliance reviewer that cites no clause (scripted even when live)
-  const disagreeingApp = await createApp(SupplierPurchaseApplication, {
-    processEnv,
-    providerFetch: isLive
-      ? withUncitedCompliance(fetch)
-      : createOfflineOpenRouter({ uncitedCompliance: true }).fetch,
-  });
+  // agbossjs/agboss#834: the scripted OpenRouter is served on 127.0.0.1 and reached through the
+  // providers' own base URL field (OPENROUTER_BASE_URL); createApp takes no providerFetch
+  process.env.OPENROUTER_API_KEY = apiKey;
+  const served = isLive ? undefined : await serveFetch(createOfflineOpenRouter().fetch);
+  if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
+  const app = await createApp(SupplierPurchaseApplication);
+  // the failure injection (scripted even when live): its own stand-in, in front of OpenRouter live
+  const disagreeingServed = await serveFetch(
+    isLive ? withUncitedCompliance(fetch) : createOfflineOpenRouter({ uncitedCompliance: true }).fetch,
+    isLive ? { upstream: "https://openrouter.ai" } : {},
+  );
+  process.env.OPENROUTER_BASE_URL = disagreeingServed.baseUrl;
+  const disagreeingApp = await createApp(SupplierPurchaseApplication);
   console.log(
     `supplier purchase demo — ${isLive ? "live (OpenRouter)" : "offline: no network, no key — the scripted OpenRouter reports nominal costs"}\n`,
   );
@@ -166,6 +168,8 @@ async function main(): Promise<void> {
   } finally {
     await app.close();
     await disagreeingApp.close();
+    await served?.close();
+    await disagreeingServed.close();
     restoreFetch();
   }
 }

@@ -1,7 +1,7 @@
 /**
  * The offline OpenRouter of `npm run demo` and `tests/demo.test.ts`: a scripted stand-in for the two
  * HTTP APIs job-scout's model providers call — chat completions (`OpenRouterModelProvider`, Kimi)
- * and the Decisions API (`DecisionsModelProvider`, Jev). It is passed as `createApp({ providerFetch })`,
+ * and the Decisions API (`DecisionsModelProvider`, Jev). It is passed as served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`),
  * so every real provider, retry policy, cost reader and budget runs; only the wire is scripted.
  *
  * The script reads what the framework sends (the tools offered, the conversation, the tool results)
