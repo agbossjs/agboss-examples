@@ -43,11 +43,13 @@ const FIXTURE_COMMIT = "a9f27de065f0f145f927bd78daaaff02c06089b0";
 const FIXTURE_EXAMPLES_COMMIT = "c187739a00000000000000000000000000000001";
 const FIXTURE_AGBOSS_INTEGRITY =
   "sha512-VYryKKwoo/kSAu0Kj+R+EFtxm1iVm8KTy5aDcyRoE89OM7n6dM8qxQUyi71qEI3/pfCyhA8ZfzLRsTFEbQ+7Hg==";
-const FIXTURE_AGBOSS_SHA256 = "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66667777888899990000";
+const FIXTURE_AGBOSS_SHA256 =
+  "aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff66667777888899990000";
 const FIXTURE_AGBOSS_SHASUM = "28da5ed72ef2870ee8b535abe2c43512f023be97";
 const FIXTURE_CLI_INTEGRITY =
   "sha512-HJzFsjjIfpYeEibr2Eo7scYIWadq06WCjyTzGqCWV/2Oiw7q27bsjAJ67ft4TDN+5JaSXTUiAEqs6Jtl9iQQIg==";
-const FIXTURE_CLI_SHA256 = "1111aaaa2222bbbb3333cccc4444dddd5555eeee6666ffff7777888899990000";
+const FIXTURE_CLI_SHA256 =
+  "1111aaaa2222bbbb3333cccc4444dddd5555eeee6666ffff7777888899990000";
 const FIXTURE_CLI_SHASUM = "7cbce837a502d26b9cb6c356c162fc3385b9965c";
 
 function makeManifest(overrides = {}) {
@@ -134,7 +136,9 @@ function makeLastRun({
     runId: "run-fixture-1",
     provenanceType,
     frameworkSourceCommit:
-      provenanceType === "PUBLIC_NPM_REGISTRY" ? "PUBLIC_NPM_REGISTRY" : FIXTURE_COMMIT,
+      provenanceType === "PUBLIC_NPM_REGISTRY"
+        ? "PUBLIC_NPM_REGISTRY"
+        : FIXTURE_COMMIT,
     examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
     frameworkVersion: "0.1.0",
     cliVersion: "0.1.0",
@@ -161,8 +165,10 @@ function makePublishedManifest(overrides = {}) {
       agbossCliVersion: "0.1.0",
       agbossIntegrity: FIXTURE_AGBOSS_INTEGRITY,
       agbossCliIntegrity: FIXTURE_CLI_INTEGRITY,
-      agbossResolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
-      agbossCliResolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
+      agbossResolved:
+        "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+      agbossCliResolved:
+        "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
       isRegistryInstall: true,
       hasLocalLinks: false,
     };
@@ -292,7 +298,12 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
   });
 
   it("selects a single specified project via --project even when it is P1", () => {
-    const selectedP1 = selectProjects(["--project", "05-cluster-work-stealing", "--mode", "demo"]);
+    const selectedP1 = selectProjects([
+      "--project",
+      "05-cluster-work-stealing",
+      "--mode",
+      "demo",
+    ]);
     assert.deepEqual(
       selectedP1.map((p) => p.name),
       ["05-cluster-work-stealing"],
@@ -332,7 +343,10 @@ describe("run-all.mjs P0/P1 & --project selection contract (Section 4.3)", () =>
         provenance: "published",
       },
     );
-    assert.throws(() => parseRunAllArgs(["--provenance", "invalid"]), /Invalid --provenance/);
+    assert.throws(
+      () => parseRunAllArgs(["--provenance", "invalid"]),
+      /Invalid --provenance/,
+    );
   });
 });
 
@@ -349,21 +363,38 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
     assert.equal(typeof meta.mode, "string");
     assert.ok(meta.primaryProof.length > 0);
     const shapeOf = (m) => Object.keys(m).sort();
-    for (const peer of ["05-cluster-work-stealing", "06-enterprise-agent-mesh"]) {
+    for (const peer of [
+      "05-cluster-work-stealing",
+      "06-enterprise-agent-mesh",
+    ]) {
       const other = PROJECTS.find((p) => p.name === peer);
       assert.deepEqual(shapeOf(meta), shapeOf(other));
       assert.equal(other.priority, meta.priority);
     }
     const names = PROJECTS.map((p) => p.name);
-    assert.deepEqual(names, [...names].sort(), "the catalog stays in folder order");
+    assert.deepEqual(
+      names,
+      [...names].sort(),
+      "the catalog stays in folder order",
+    );
   });
 
   it("a P0-only run skips 08-job-scout in every mode; --include-p1 and --project select it", () => {
     for (const mode of ["check", "test", "demo", "all"]) {
       const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
-      assert.equal(p0.includes(JOB_SCOUT), false, `P0-only --mode ${mode} skips it`);
-      const all = selectProjects(["--include-p1", "--mode", mode]).map((p) => p.name);
-      assert.equal(all.includes(JOB_SCOUT), true, `--include-p1 --mode ${mode} runs it`);
+      assert.equal(
+        p0.includes(JOB_SCOUT),
+        false,
+        `P0-only --mode ${mode} skips it`,
+      );
+      const all = selectProjects(["--include-p1", "--mode", mode]).map(
+        (p) => p.name,
+      );
+      assert.equal(
+        all.includes(JOB_SCOUT),
+        true,
+        `--include-p1 --mode ${mode} runs it`,
+      );
     }
     assert.deepEqual(
       selectProjects(["--project", JOB_SCOUT]).map((p) => p.name),
@@ -394,23 +425,44 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
   });
 
   it("install:packed and install:published install every registered project, 08 included", () => {
-    const packedSource = readFileSync(join(REPO_ROOT, "scripts", "install-packed.mjs"), "utf8");
-    const packedDirs = [...packedSource.matchAll(/^ {2}"(\d{2}-[a-z0-9-]+)",$/gm)].map((m) => m[1]);
-    assert.deepEqual(packedDirs, PROJECTS.map((p) => p.name));
-    assert.deepEqual([...PUBLISHED_TARGET_DIRS], PROJECTS.map((p) => p.name));
+    const packedSource = readFileSync(
+      join(REPO_ROOT, "scripts", "install-packed.mjs"),
+      "utf8",
+    );
+    const packedDirs = [
+      ...packedSource.matchAll(/^ {2}"(\d{2}-[a-z0-9-]+)",$/gm),
+    ].map((m) => m[1]);
+    assert.deepEqual(
+      packedDirs,
+      PROJECTS.map((p) => p.name),
+    );
+    assert.deepEqual(
+      [...PUBLISHED_TARGET_DIRS],
+      PROJECTS.map((p) => p.name),
+    );
   });
 
   it("08-job-scout follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, JOB_SCOUT);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
-    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
-    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    const specs = JSON.stringify({
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    });
+    assert.equal(
+      /file:|link:|workspace:|git\+|github:/.test(specs),
+      false,
+      specs,
+    );
     for (const file of [
       ".env.example",
       "AGENTS.md",
@@ -434,7 +486,10 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
       assert.equal(readme.includes(section), true, `README names "${section}"`);
     }
     const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
-    assert.match(rootReadme, /\| \[\*\*`08-job-scout`\*\*\]\(\.\/08-job-scout\/\) \| \*\*P1\*\* \|/);
+    assert.match(
+      rootReadme,
+      /\| \[\*\*`08-job-scout`\*\*\]\(\.\/08-job-scout\/\) \| \*\*P1\*\* \|/,
+    );
   });
 });
 
@@ -457,7 +512,11 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
   it("a P0-only run selects 09-review-loop-and-routing in every mode", () => {
     for (const mode of ["check", "test", "demo", "all"]) {
       const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
-      assert.equal(p0.includes(REVIEW_LOOP), true, `P0-only --mode ${mode} runs it`);
+      assert.equal(
+        p0.includes(REVIEW_LOOP),
+        true,
+        `P0-only --mode ${mode} runs it`,
+      );
     }
     assert.deepEqual(
       selectProjects(["--project", REVIEW_LOOP]).map((p) => p.name),
@@ -468,14 +527,24 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
   it("09-review-loop-and-routing follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, REVIEW_LOOP);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
-    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
-    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    const specs = JSON.stringify({
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    });
+    assert.equal(
+      /file:|link:|workspace:|git\+|github:/.test(specs),
+      false,
+      specs,
+    );
     for (const file of [
       ".env.example",
       "AGENTS.md",
@@ -490,7 +559,7 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
       assert.equal(existsSync(join(dir, file)), true, `${REVIEW_LOOP}/${file}`);
     }
     const vitestConfig = readFileSync(join(dir, "vitest.config.ts"), "utf8");
-    assert.match(vitestConfig, /agbossTest\(/);
+    assert.match(vitestConfig, /agbossVitest\(/);
     const readme = readFileSync(join(dir, "README.md"), "utf8");
     for (const section of [
       "Promise",
@@ -523,15 +592,29 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       assert.deepEqual(shapeOf(meta), shapeOf(other));
     }
     const names = PROJECTS.map((p) => p.name);
-    assert.deepEqual(names, [...names].sort(), "the catalog stays in folder order");
+    assert.deepEqual(
+      names,
+      [...names].sort(),
+      "the catalog stays in folder order",
+    );
   });
 
   it("a P0-only run skips 10-quorum-groups-and-replies; --include-p1 and --project select it", () => {
     for (const mode of ["check", "test", "demo", "all"]) {
       const p0 = selectProjects(["--mode", mode]).map((p) => p.name);
-      assert.equal(p0.includes(QUORUM_REPLIES), false, `P0-only --mode ${mode} skips it`);
-      const all = selectProjects(["--include-p1", "--mode", mode]).map((p) => p.name);
-      assert.equal(all.includes(QUORUM_REPLIES), true, `--include-p1 --mode ${mode} runs it`);
+      assert.equal(
+        p0.includes(QUORUM_REPLIES),
+        false,
+        `P0-only --mode ${mode} skips it`,
+      );
+      const all = selectProjects(["--include-p1", "--mode", mode]).map(
+        (p) => p.name,
+      );
+      assert.equal(
+        all.includes(QUORUM_REPLIES),
+        true,
+        `--include-p1 --mode ${mode} runs it`,
+      );
     }
     assert.deepEqual(
       selectProjects(["--project", QUORUM_REPLIES]).map((p) => p.name),
@@ -542,14 +625,24 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
   it("10-quorum-groups-and-replies follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, QUORUM_REPLIES);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
-    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
-    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
+    const specs = JSON.stringify({
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    });
+    assert.equal(
+      /file:|link:|workspace:|git\+|github:/.test(specs),
+      false,
+      specs,
+    );
     for (const file of [
       ".env.example",
       "AGENTS.md",
@@ -560,9 +653,16 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       "vitest.config.ts",
       ".claude/skills/agboss/SKILL.md",
     ]) {
-      assert.equal(existsSync(join(dir, file)), true, `${QUORUM_REPLIES}/${file}`);
+      assert.equal(
+        existsSync(join(dir, file)),
+        true,
+        `${QUORUM_REPLIES}/${file}`,
+      );
     }
-    assert.match(readFileSync(join(dir, "vitest.config.ts"), "utf8"), /agbossTest\(/);
+    assert.match(
+      readFileSync(join(dir, "vitest.config.ts"), "utf8"),
+      /agbossVitest\(/,
+    );
     const readme = readFileSync(join(dir, "README.md"), "utf8");
     for (const section of [
       "Promise",
@@ -595,29 +695,64 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
       assert.deepEqual(shapeOf(meta), shapeOf(other));
     }
     for (const mode of ["check", "test", "demo"]) {
-      assert.equal(selectProjects(["--mode", mode]).some((p) => p.name === SAFE_PAYMENTS), true);
+      assert.equal(
+        selectProjects(["--mode", mode]).some((p) => p.name === SAFE_PAYMENTS),
+        true,
+      );
     }
   });
 
   it("11-safe-payments follows the folder contract: scripts, published ranges, required files", () => {
     const dir = join(REPO_ROOT, SAFE_PAYMENTS);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
-    const specs = JSON.stringify({ ...pkg.dependencies, ...pkg.devDependencies });
-    assert.equal(/file:|link:|workspace:|git\+|github:/.test(specs), false, specs);
-    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"]) {
-      assert.equal(existsSync(join(dir, file)), true, `${SAFE_PAYMENTS}/${file}`);
+    const specs = JSON.stringify({
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    });
+    assert.equal(
+      /file:|link:|workspace:|git\+|github:/.test(specs),
+      false,
+      specs,
+    );
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+    ]) {
+      assert.equal(
+        existsSync(join(dir, file)),
+        true,
+        `${SAFE_PAYMENTS}/${file}`,
+      );
     }
     const readme = readFileSync(join(dir, "README.md"), "utf8");
-    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary"]) {
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+    ]) {
       assert.equal(readme.includes(section), true, `README names "${section}"`);
     }
     const rootReadme = readFileSync(join(REPO_ROOT, "README.md"), "utf8");
-    assert.match(rootReadme, /\| \[\*\*`11-safe-payments`\*\*\]\(\.\/11-safe-payments\/\) \| \*\*P0\*\* \|/);
+    assert.match(
+      rootReadme,
+      /\| \[\*\*`11-safe-payments`\*\*\]\(\.\/11-safe-payments\/\) \| \*\*P0\*\* \|/,
+    );
   });
 });
 
@@ -628,21 +763,50 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
     assert.ok(meta, "12-payment-gateways is in PROJECTS");
     assert.equal(meta.priority, "P0");
     const shapeOf = (m) => Object.keys(m).sort();
-    assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
+    assert.deepEqual(
+      shapeOf(meta),
+      shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")),
+    );
     const dir = join(REPO_ROOT, GATEWAYS);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
-    for (const [name, version] of Object.entries({ stripe: "23.1.0", "@adyen/api-library": "32.2.0", "@paypal/paypal-server-sdk": "2.5.0", "checkout-sdk-node": "5.8.0" }))
+    for (const [name, version] of Object.entries({
+      stripe: "23.1.0",
+      "@adyen/api-library": "32.2.0",
+      "@paypal/paypal-server-sdk": "2.5.0",
+      "checkout-sdk-node": "5.8.0",
+    }))
       assert.equal(pkg.dependencies[name], version, name);
-    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+    ])
       assert.equal(existsSync(join(dir, file)), true, `${GATEWAYS}/${file}`);
     const readme = readFileSync(join(dir, "README.md"), "utf8");
-    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary"])
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+    ])
       assert.equal(readme.includes(section), true, `README names "${section}"`);
-    assert.match(readFileSync(join(REPO_ROOT, "README.md"), "utf8"), /\| \[\*\*`12-payment-gateways`\*\*\]\(\.\/12-payment-gateways\/\) \| \*\*P0\*\* \|/);
+    assert.match(
+      readFileSync(join(REPO_ROOT, "README.md"), "utf8"),
+      /\| \[\*\*`12-payment-gateways`\*\*\]\(\.\/12-payment-gateways\/\) \| \*\*P0\*\* \|/,
+    );
   });
 });
 
@@ -653,20 +817,45 @@ describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
     assert.ok(meta, "13-rag-reranking is in PROJECTS");
     assert.equal(meta.priority, "P1");
     const shapeOf = (m) => Object.keys(m).sort();
-    assert.deepEqual(shapeOf(meta), shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")));
+    assert.deepEqual(
+      shapeOf(meta),
+      shapeOf(PROJECTS.find((p) => p.name === "04-travel-booking-saga")),
+    );
     const dir = join(REPO_ROOT, RERANKING);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-    assert.equal(pkg.scripts.check, "agboss check --strict --cassettes && tsc --noEmit && eslint .");
+    assert.equal(
+      pkg.scripts.check,
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.dependencies["cohere-ai"], "8.1.0");
-    for (const file of [".env.example", "AGENTS.md", "CLAUDE.md", "README.md", "eslint.config.js", "tsconfig.json", "vitest.config.ts", ".claude/skills/agboss/SKILL.md"])
+    for (const file of [
+      ".env.example",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "eslint.config.js",
+      "tsconfig.json",
+      "vitest.config.ts",
+      ".claude/skills/agboss/SKILL.md",
+    ])
       assert.equal(existsSync(join(dir, file)), true, `${RERANKING}/${file}`);
     const readme = readFileSync(join(dir, "README.md"), "utf8");
-    for (const section of ["Promise", "Threat / Failure Injected", "Mechanism", "Executable Proof", "Guarantee Boundary", "Independent example, not affiliated"])
+    for (const section of [
+      "Promise",
+      "Threat / Failure Injected",
+      "Mechanism",
+      "Executable Proof",
+      "Guarantee Boundary",
+      "Independent example, not affiliated",
+    ])
       assert.equal(readme.includes(section), true, `README names "${section}"`);
-    assert.match(readFileSync(join(REPO_ROOT, "README.md"), "utf8"), /\| \[\*\*`13-rag-reranking`\*\*\]\(\.\/13-rag-reranking\/\) \| \*\*P1\*\* \|/);
+    assert.match(
+      readFileSync(join(REPO_ROOT, "README.md"), "utf8"),
+      /\| \[\*\*`13-rag-reranking`\*\*\]\(\.\/13-rag-reranking\/\) \| \*\*P1\*\* \|/,
+    );
   });
 });
 
@@ -677,7 +866,13 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
       /Missing required mode flag/,
     );
     assert.throws(
-      () => parseVerifyPublishedArgs(["--from-packed", "--live-registry", "--version", "0.1.0"]),
+      () =>
+        parseVerifyPublishedArgs([
+          "--from-packed",
+          "--live-registry",
+          "--version",
+          "0.1.0",
+        ]),
       /Conflicting mode flags/,
     );
     assert.throws(
@@ -685,26 +880,43 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
       /Missing or invalid --version/,
     );
     assert.throws(
-      () => parseVerifyPublishedArgs(["--live-registry", "--version", "not-semver"]),
+      () =>
+        parseVerifyPublishedArgs([
+          "--live-registry",
+          "--version",
+          "not-semver",
+        ]),
       /Missing or invalid --version/,
     );
     assert.throws(
-      () => parseVerifyPublishedArgs(["--live-registry", "--version", "0.1.0", "--unknown"]),
+      () =>
+        parseVerifyPublishedArgs([
+          "--live-registry",
+          "--version",
+          "0.1.0",
+          "--unknown",
+        ]),
       /Unknown or ambiguous argument/,
     );
 
-    assert.deepEqual(parseVerifyPublishedArgs(["--from-packed", "--version", "0.1.0"]), {
-      mode: "from-packed",
-      sourceLabel: "LOCAL_PACKED_RELEASE_CANDIDATE",
-      version: "0.1.0",
-      tag: "latest",
-    });
-    assert.deepEqual(parseVerifyPublishedArgs(["--live-registry", "--version", "0.1.0"]), {
-      mode: "live-registry",
-      sourceLabel: "PUBLIC_NPM_REGISTRY",
-      version: "0.1.0",
-      tag: "latest",
-    });
+    assert.deepEqual(
+      parseVerifyPublishedArgs(["--from-packed", "--version", "0.1.0"]),
+      {
+        mode: "from-packed",
+        sourceLabel: "LOCAL_PACKED_RELEASE_CANDIDATE",
+        version: "0.1.0",
+        tag: "latest",
+      },
+    );
+    assert.deepEqual(
+      parseVerifyPublishedArgs(["--live-registry", "--version", "0.1.0"]),
+      {
+        mode: "live-registry",
+        sourceLabel: "PUBLIC_NPM_REGISTRY",
+        version: "0.1.0",
+        tag: "latest",
+      },
+    );
   });
 
   it("validates live npm registry metadata and fails closed on deprecated, missing, or mismatched versions", () => {
@@ -757,7 +969,10 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
     // Deprecated version fails closed
     const deprecated = validateRegistryMetadata({
       ...validMeta,
-      agbossMeta: { ...validMeta.agbossMeta, deprecated: "Initial setup placeholder" },
+      agbossMeta: {
+        ...validMeta.agbossMeta,
+        deprecated: "Initial setup placeholder",
+      },
     });
     assert.equal(deprecated.valid, false);
     assert.match(deprecated.reasons.join("; "), /deprecated/i);
@@ -775,7 +990,10 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
       ...validMeta,
       agbossCliMeta: {
         ...validMeta.agbossCliMeta,
-        dist: { ...validMeta.agbossCliMeta.dist, tarball: "file:/tmp/agboss-cli-0.1.0.tgz" },
+        dist: {
+          ...validMeta.agbossCliMeta.dist,
+          tarball: "file:/tmp/agboss-cli-0.1.0.tgz",
+        },
       },
     });
     assert.equal(localUrl.valid, false);
@@ -784,9 +1002,17 @@ describe("verify-published.mjs explicit mode & registry metadata validation (P0-
 
   it("validates 40-char git SHA in pin-framework-sha.mjs (P1-1)", () => {
     assert.throws(() => parsePinShaArgs([]), /Invalid or missing --sha/);
-    assert.throws(() => parsePinShaArgs(["--sha", "short123"]), /Invalid or missing --sha/);
+    assert.throws(
+      () => parsePinShaArgs(["--sha", "short123"]),
+      /Invalid or missing --sha/,
+    );
     assert.deepEqual(
-      parsePinShaArgs(["--sha", FIXTURE_COMMIT.toUpperCase(), "--branch", "main"]),
+      parsePinShaArgs([
+        "--sha",
+        FIXTURE_COMMIT.toUpperCase(),
+        "--branch",
+        "main",
+      ]),
       { sha: FIXTURE_COMMIT, branch: "main" },
     );
   });
@@ -849,7 +1075,10 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
     assert.equal(reportOptionalP1.gates.p1Gate, "NOT_RUN");
     assert.equal(reportOptionalP1.allP1Passed, false);
 
-    const partialP1Run = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
+    const partialP1Run = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+    });
     partialP1Run.projects["06-enterprise-agent-mesh"].checkStatus = "SKIPPED";
     partialP1Run.projects["06-enterprise-agent-mesh"].testStatus = "SKIPPED";
     partialP1Run.projects["06-enterprise-agent-mesh"].demoStatus = "SKIPPED";
@@ -885,7 +1114,10 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
     assert.equal(reportMissingOnDisk.gates.p0Gate, "FAILED");
     assert.equal(reportMissingOnDisk.gates.overallGate, "FAILED");
 
-    const lastRunMissingEntry = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
+    const lastRunMissingEntry = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+    });
     delete lastRunMissingEntry.projects["01-hello-agboss"];
     const reportMissingEntry = evaluateProofReport({
       lastRun: lastRunMissingEntry,
@@ -898,11 +1130,17 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
   });
 
   it("6. Package verification JSON is missing -> NOT_RUN / BLOCKED and overall gate FAILED", () => {
-    const vMissingPkgVerify = validatePackageVerification(undefined, makeManifest());
+    const vMissingPkgVerify = validatePackageVerification(
+      undefined,
+      makeManifest(),
+    );
     assert.equal(vMissingPkgVerify.status, "NOT_RUN");
     assert.equal(vMissingPkgVerify.valid, false);
 
-    const vMissingManifest = validatePackageVerification(makePkgVerify(), undefined);
+    const vMissingManifest = validatePackageVerification(
+      makePkgVerify(),
+      undefined,
+    );
     assert.equal(vMissingManifest.status, "BLOCKED");
     assert.equal(vMissingManifest.valid, false);
 
@@ -930,8 +1168,12 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
   });
 
   it("8. Report belongs to an outdated source commit -> FAILED", () => {
-    const staleLastRun = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
-    staleLastRun.frameworkSourceCommit = "0000000000000000000000000000000000000000";
+    const staleLastRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+    });
+    staleLastRun.frameworkSourceCommit =
+      "0000000000000000000000000000000000000000";
     const report = evaluateProofReport({
       lastRun: staleLastRun,
       manifest: makeManifest(),
@@ -944,7 +1186,10 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
   });
 
   it("9. Report belongs to different tarball hashes -> FAILED", () => {
-    const mismatchedLastRun = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
+    const mismatchedLastRun = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+    });
     mismatchedLastRun.packageHashes.agboss = "sha512-tamperedHash==";
     const report = evaluateProofReport({
       lastRun: mismatchedLastRun,
@@ -958,11 +1203,15 @@ describe("collect-results.mjs fail-closed release proof gates (RC mode: 10 requi
   });
 
   it("10. Previous successful results cannot hide a failed or missing check in a fresh run", () => {
-    const previousSuccessState = makeLastRun({ p0Status: "PASSED", p1Status: "PASSED" });
+    const previousSuccessState = makeLastRun({
+      p0Status: "PASSED",
+      p1Status: "PASSED",
+    });
     const newProvenance = {
       provenanceType: "RELEASE_CANDIDATE",
       nodeVersion: process.versions.node,
-      frameworkSourceCommit: "new-commit-9999999999999999999999999999999999999999",
+      frameworkSourceCommit:
+        "new-commit-9999999999999999999999999999999999999999",
       examplesSourceCommit: FIXTURE_EXAMPLES_COMMIT,
       frameworkVersion: "0.1.0",
       cliVersion: "0.1.0",
@@ -1025,7 +1274,10 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
     });
     assert.equal(report.gates.provenanceGate, "FAILED");
     assert.equal(report.gates.overallGate, "FAILED");
-    assert.match(report.gateReasons.join("; "), /Stale RC run results cannot satisfy/);
+    assert.match(
+      report.gateReasons.join("; "),
+      /Stale RC run results cannot satisfy/,
+    );
 
     // Also initializeOrLoadRunState resets all statuses to NOT_RUN when switching from RC to PUBLIC_NPM_REGISTRY
     const resetOnSwitch = initializeOrLoadRunState({
@@ -1054,7 +1306,10 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
       verificationMode: "from-packed",
       registryVerified: false,
     });
-    const vCheck = validatePublishedVerification(packedVerify, makePublishedManifest());
+    const vCheck = validatePublishedVerification(
+      packedVerify,
+      makePublishedManifest(),
+    );
     assert.equal(vCheck.valid, false);
     assert.equal(vCheck.status, "FAILED");
 
@@ -1075,7 +1330,10 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
   });
 
   it("3. Missing registry metadata or missing published-manifest.json fails closed -> BLOCKED / FAILED", () => {
-    const mCheck = validatePublishedManifest(undefined, FIXTURE_EXAMPLES_COMMIT);
+    const mCheck = validatePublishedManifest(
+      undefined,
+      FIXTURE_EXAMPLES_COMMIT,
+    );
     assert.equal(mCheck.status, "BLOCKED");
     assert.equal(mCheck.valid, false);
 
@@ -1119,7 +1377,8 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
 
   it("5. Mixed tarball / registry installation fails closed -> FAILED", () => {
     const mixedManifest = makePublishedManifest();
-    mixedManifest.projects["05-cluster-work-stealing"].isRegistryInstall = false;
+    mixedManifest.projects["05-cluster-work-stealing"].isRegistryInstall =
+      false;
     mixedManifest.projects["05-cluster-work-stealing"].hasLocalLinks = true;
     mixedManifest.projects["05-cluster-work-stealing"].agbossResolved =
       "file:../.packed/agboss-0.1.0.tgz";
@@ -1138,7 +1397,10 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
     });
     assert.equal(report.gates.provenanceGate, "FAILED");
     assert.equal(report.gates.overallGate, "FAILED");
-    assert.match(report.gateReasons.join("; "), /non-registry or mixed tarball/);
+    assert.match(
+      report.gateReasons.join("; "),
+      /non-registry or mixed tarball/,
+    );
   });
 
   it("6. Missing tests, partial execution, P0 skipped, P1 skipped with --require-p1, or failed demo -> FAILED", () => {
@@ -1178,7 +1440,9 @@ describe("Published-package provenance separation & negative tests (P0-3)", () =
 });
 
 function createFixtureWorkspace() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "agboss-scaffold-prov-test-")));
+  const root = realpathSync(
+    mkdtempSync(join(tmpdir(), "agboss-scaffold-prov-test-")),
+  );
   const repoRoot = join(root, "repo");
   const projectRoot = join(repoRoot, "01-hello-agboss");
   const packedDir = join(repoRoot, ".packed");
@@ -1212,14 +1476,16 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
               name: "@agboss/core",
               version: "0.1.0",
               filename: "agboss-core-0.1.0.tgz",
-              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-core-0.1.0.tgz",
+              tarballPath:
+                "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
             agbossCli: {
               name: "@agboss/cli",
               version: "0.1.0",
               filename: "agboss-cli-0.1.0.tgz",
-              tarballPath: "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-cli-0.1.0.tgz",
+              tarballPath:
+                "/home/runner/work/agboss-examples/agboss-examples/.packed/agboss-cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1251,9 +1517,18 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
 
       assert.equal(cfg.provenance, "rc");
       assert.equal(cfg.useOverrides, true);
-      assert.equal(cfg.agbossSpec, `file:${join(ws.repoRoot, ".packed", "agboss-core-0.1.0.tgz")}`);
-      assert.equal(cfg.cliSpec, `file:${join(ws.repoRoot, ".packed", "agboss-cli-0.1.0.tgz")}`);
-      assert.deepEqual(cfg.expectedVersion, { agboss: "0.1.0", agbossCli: "0.1.0" });
+      assert.equal(
+        cfg.agbossSpec,
+        `file:${join(ws.repoRoot, ".packed", "agboss-core-0.1.0.tgz")}`,
+      );
+      assert.equal(
+        cfg.cliSpec,
+        `file:${join(ws.repoRoot, ".packed", "agboss-cli-0.1.0.tgz")}`,
+      );
+      assert.deepEqual(cfg.expectedVersion, {
+        agboss: "0.1.0",
+        agbossCli: "0.1.0",
+      });
       assert.deepEqual(cfg.expectedIntegrity, {
         agboss: FIXTURE_AGBOSS_INTEGRITY,
         agbossCli: FIXTURE_CLI_INTEGRITY,
@@ -1283,12 +1558,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
           packages: {
             "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+              resolved:
+                "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
             "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
+              resolved:
+                "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1344,7 +1621,9 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
       // Missing lockfile entries
       writeFileSync(
         join(ws.nodeModulesDir, ".package-lock.json"),
-        JSON.stringify({ packages: { "node_modules/@agboss/core": { version: "0.1.0" } } }),
+        JSON.stringify({
+          packages: { "node_modules/@agboss/core": { version: "0.1.0" } },
+        }),
       );
       assert.throws(
         () =>
@@ -1368,7 +1647,8 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
             },
             "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
+              resolved:
+                "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1391,7 +1671,8 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
           packages: {
             "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://evil.example.com/@agboss/core/-/core-0.1.0.tgz",
+              resolved:
+                "https://evil.example.com/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
             "node_modules/@agboss/cli": {
@@ -1419,12 +1700,14 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
           packages: {
             "node_modules/@agboss/core": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
+              resolved:
+                "https://registry.npmjs.org/@agboss/core/-/core-0.1.0.tgz",
               integrity: FIXTURE_AGBOSS_INTEGRITY,
             },
             "node_modules/@agboss/cli": {
               version: "0.1.0",
-              resolved: "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
+              resolved:
+                "https://registry.npmjs.org/@agboss/cli/-/cli-0.1.0.tgz",
               integrity: FIXTURE_CLI_INTEGRITY,
             },
           },
@@ -1457,15 +1740,30 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
     const ws = createFixtureWorkspace();
     try {
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "../agboss-core-0.1.0.tgz", "@agboss/core"),
+        () =>
+          resolvePortablePackedTarballPath(
+            ws.repoRoot,
+            "../agboss-core-0.1.0.tgz",
+            "@agboss/core",
+          ),
         /Invalid or unsafe tarball filename/,
       );
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "sub/agboss-core-0.1.0.tgz", "@agboss/core"),
+        () =>
+          resolvePortablePackedTarballPath(
+            ws.repoRoot,
+            "sub/agboss-core-0.1.0.tgz",
+            "@agboss/core",
+          ),
         /Invalid or unsafe tarball filename/,
       );
       assert.throws(
-        () => resolvePortablePackedTarballPath(ws.repoRoot, "agboss-core-0.1.0.zip", "@agboss/core"),
+        () =>
+          resolvePortablePackedTarballPath(
+            ws.repoRoot,
+            "agboss-core-0.1.0.zip",
+            "@agboss/core",
+          ),
         /Invalid or unsafe tarball filename/,
       );
 
@@ -1476,7 +1774,10 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
         join(outsideAgboss, "package.json"),
         JSON.stringify({ name: "@agboss/core", version: "0.1.0" }),
       );
-      rmSync(join(ws.nodeModulesDir, "@agboss", "core"), { recursive: true, force: true });
+      rmSync(join(ws.nodeModulesDir, "@agboss", "core"), {
+        recursive: true,
+        force: true,
+      });
       symlinkSync(outsideAgboss, join(ws.nodeModulesDir, "@agboss", "core"));
 
       assert.throws(
@@ -1496,7 +1797,10 @@ describe("Provenance-aware scaffold helpers (resolveScaffoldTestConfig & verifyS
 
 describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative checksum tests", () => {
   it("computes genuine SHA-256 (64 hex), SHA-1 shasum (40 hex), and SHA-512 SRI integrity from tarball bytes", () => {
-    const sampleBytes = Buffer.from("agboss-canonical-tarball-bytes-fixture", "utf8");
+    const sampleBytes = Buffer.from(
+      "agboss-canonical-tarball-bytes-fixture",
+      "utf8",
+    );
     const digests = computeTarballDigests(sampleBytes);
     assert.match(digests.sha256, /^[0-9a-f]{64}$/);
     assert.match(digests.shasum, /^[0-9a-f]{40}$/);
@@ -1614,7 +1918,10 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
       measuredTarballs: undefined,
     });
     assert.equal(missingMeasured.valid, false);
-    assert.match(missingMeasured.reasons.join("; "), /Missing or invalid measured 64-char SHA-256/);
+    assert.match(
+      missingMeasured.reasons.join("; "),
+      /Missing or invalid measured 64-char SHA-256/,
+    );
 
     // Measured SHA-256 differs from canonical .packed/manifest.json -> fails closed
     const mismatchedCanonical = validateRegistryMetadata({
@@ -1623,7 +1930,8 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
         ...baseMeta.measuredTarballs,
         agboss: {
           ...baseMeta.measuredTarballs.agboss,
-          sha256: "9999999999999999999999999999999999999999999999999999999999999999",
+          sha256:
+            "9999999999999999999999999999999999999999999999999999999999999999",
         },
       },
     });
@@ -1638,16 +1946,28 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
     // 1. 40-char SHA-1 placed into publishedManifest.packages.agboss.sha256 -> FAILED
     const sha1InManifestSha256 = makePublishedManifest();
     sha1InManifestSha256.packages.agboss.sha256 = FIXTURE_AGBOSS_SHASUM;
-    const mCheck1 = validatePublishedManifest(sha1InManifestSha256, FIXTURE_EXAMPLES_COMMIT);
+    const mCheck1 = validatePublishedManifest(
+      sha1InManifestSha256,
+      FIXTURE_EXAMPLES_COMMIT,
+    );
     assert.equal(mCheck1.valid, false);
-    assert.match(mCheck1.reasons.join("; "), /not a 64-character SHA-256 hex digest/);
+    assert.match(
+      mCheck1.reasons.join("; "),
+      /not a 64-character SHA-256 hex digest/,
+    );
 
     // 2. 64-char SHA-256 placed into publishedManifest.packages.agboss.shasum -> FAILED
     const sha256InManifestShasum = makePublishedManifest();
     sha256InManifestShasum.packages.agboss.shasum = FIXTURE_AGBOSS_SHA256;
-    const mCheck2 = validatePublishedManifest(sha256InManifestShasum, FIXTURE_EXAMPLES_COMMIT);
+    const mCheck2 = validatePublishedManifest(
+      sha256InManifestShasum,
+      FIXTURE_EXAMPLES_COMMIT,
+    );
     assert.equal(mCheck2.valid, false);
-    assert.match(mCheck2.reasons.join("; "), /not a 40-character SHA-1 hex digest/);
+    assert.match(
+      mCheck2.reasons.join("; "),
+      /not a 40-character SHA-1 hex digest/,
+    );
 
     // 3. 40-char SHA-1 placed into lastRun.packageHashes.agbossSha256 (the exact legacy bug) -> FAILED
     const legacyLastRun = makeLastRun({
@@ -1666,7 +1986,10 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
     });
     assert.equal(rLegacy.gates.provenanceGate, "FAILED");
     assert.equal(rLegacy.gates.overallGate, "FAILED");
-    assert.match(rLegacy.gateReasons.join("; "), /agbossSha256 is missing, not a 64-character/);
+    assert.match(
+      rLegacy.gateReasons.join("; "),
+      /agbossSha256 is missing, not a 64-character/,
+    );
 
     // 4. 64-char SHA-256 placed into lastRun.packageHashes.agbossShasum -> FAILED
     const badShasumRun = makeLastRun({
@@ -1685,7 +2008,10 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
     });
     assert.equal(rBadShasum.gates.provenanceGate, "FAILED");
     assert.equal(rBadShasum.gates.overallGate, "FAILED");
-    assert.match(rBadShasum.gateReasons.join("; "), /agbossShasum is not a 40-character/);
+    assert.match(
+      rBadShasum.gateReasons.join("; "),
+      /agbossShasum is not a 40-character/,
+    );
 
     // 5. Mismatched SHA-256 between publishedManifest and canonical .packed/manifest.json -> FAILED
     const canonicalMismatchManifest = makeManifest();
@@ -1738,11 +2064,37 @@ describe("SHA-256 vs SHA-1 digest separation, tarball measurement & negative che
     });
 
     const md = renderProofMarkdown(report);
-    assert.match(md, new RegExp(`\\*\\*agboss integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_AGBOSS_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``));
-    assert.match(md, new RegExp(`\\*\\*agboss SHA-256:\\*\\* \`${FIXTURE_AGBOSS_SHA256}\``));
-    assert.match(md, new RegExp(`\\*\\*agboss npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_AGBOSS_SHASUM}\``));
-    assert.match(md, new RegExp(`\\*\\*agboss-cli integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_CLI_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``));
-    assert.match(md, new RegExp(`\\*\\*agboss-cli SHA-256:\\*\\* \`${FIXTURE_CLI_SHA256}\``));
-    assert.match(md, new RegExp(`\\*\\*agboss-cli npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_CLI_SHASUM}\``));
+    assert.match(
+      md,
+      new RegExp(
+        `\\*\\*agboss integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_AGBOSS_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``,
+      ),
+    );
+    assert.match(
+      md,
+      new RegExp(`\\*\\*agboss SHA-256:\\*\\* \`${FIXTURE_AGBOSS_SHA256}\``),
+    );
+    assert.match(
+      md,
+      new RegExp(
+        `\\*\\*agboss npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_AGBOSS_SHASUM}\``,
+      ),
+    );
+    assert.match(
+      md,
+      new RegExp(
+        `\\*\\*agboss-cli integrity \\(SHA-512\\):\\*\\* \`${FIXTURE_CLI_INTEGRITY.replace(/[+/=]/g, "\\$&")}\``,
+      ),
+    );
+    assert.match(
+      md,
+      new RegExp(`\\*\\*agboss-cli SHA-256:\\*\\* \`${FIXTURE_CLI_SHA256}\``),
+    );
+    assert.match(
+      md,
+      new RegExp(
+        `\\*\\*agboss-cli npm shasum \\(SHA-1\\):\\*\\* \`${FIXTURE_CLI_SHASUM}\``,
+      ),
+    );
   });
 });

@@ -3,7 +3,13 @@ import { expect } from "vitest";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 import type { Class } from "@agboss/core";
-import { override, testWith, type TestApp, type TestLeases, type VirtualClock } from "@agboss/core/testing";
+import {
+  override,
+  testWith,
+  type TestApp,
+  type TestLeases,
+  type VirtualClock,
+} from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { GatewayPayments } from "../src/gateway-payments.js";
 import { PaymentGatewaysApplication } from "../src/payment-gateways.application.js";
@@ -60,7 +66,10 @@ export interface GatewayRow {
 }
 
 /** The stub of the test file, where the application's environment finds it. */
-export function useGateway(gateway: GatewayUnderTest, certificate?: string): void {
+export function useGateway(
+  gateway: GatewayUnderTest,
+  certificate?: string,
+): void {
   process.env.GATEWAY_STUB_URL = gateway.stub.baseUrl;
   if (certificate !== undefined) process.env.GATEWAY_STUB_CA = certificate;
   process.env.PII_PSEUDONYM_KEY ??= "payment-gateways-offline-pseudonym-key!";
@@ -68,7 +77,12 @@ export function useGateway(gateway: GatewayUnderTest, certificate?: string): voi
 }
 
 /** The outcome of a run, from the stub's records. */
-export function outcomeOf(context: RunContext, scenario: string, orderId: string, notes: readonly string[]): GatewayOutcome {
+export function outcomeOf(
+  context: RunContext,
+  scenario: string,
+  orderId: string,
+  notes: readonly string[],
+): GatewayOutcome {
   const money = context.gateway.stub.moneyFor(orderId);
   return {
     gateway: context.gateway.slug,
@@ -83,14 +97,21 @@ export function outcomeOf(context: RunContext, scenario: string, orderId: string
 }
 
 /** What does not match (none: as expected). */
-export function mismatchesOf(outcome: GatewayOutcome, expected: GatewayExpectation): string[] {
+export function mismatchesOf(
+  outcome: GatewayOutcome,
+  expected: GatewayExpectation,
+): string[] {
   const mismatches: string[] = [];
   for (const field of ["charges", "captures", "refunds"] as const) {
     const want = expected[field];
-    if (want !== undefined && outcome[field] !== want) mismatches.push(`${field}: ${String(outcome[field])}, expected ${String(want)}`);
+    if (want !== undefined && outcome[field] !== want)
+      mismatches.push(
+        `${field}: ${String(outcome[field])}, expected ${String(want)}`,
+      );
   }
   for (const note of expected.notes ?? [])
-    if (!outcome.notes.some((seen) => seen.includes(note))) mismatches.push(`no note "${note}" in ${outcome.notes.join("; ")}`);
+    if (!outcome.notes.some((seen) => seen.includes(note)))
+      mismatches.push(`no note "${note}" in ${outcome.notes.join("; ")}`);
   return mismatches;
 }
 
@@ -127,11 +148,10 @@ export function gatewayTest(gateway: GatewayUnderTest, row: GatewayRow): void {
       expect(mismatches).toEqual([]);
     } finally {
       gateway.stub.release();
-      for (const each of apps) leases.resume(each);
+      for (const each of apps) leases.thaw(each);
     }
   });
 }
-
 
 /** What a call ended with: `finished`, or its error's codes along the cause chain. */
 export async function settled(call: Promise<unknown>): Promise<string> {
@@ -140,17 +160,33 @@ export async function settled(call: Promise<unknown>): Promise<string> {
     return "finished";
   } catch (error) {
     const codes: string[] = [];
-    for (let at: unknown = error; typeof at === "object" && at !== null; at = (at as { cause?: unknown }).cause) {
-      const code = (at as { code?: unknown }).code ?? (at.constructor as { code?: unknown }).code;
+    for (
+      let at: unknown = error;
+      typeof at === "object" && at !== null;
+      at = (at as { cause?: unknown }).cause
+    ) {
+      const code =
+        (at as { code?: unknown }).code ??
+        (at.constructor as { code?: unknown }).code;
       const name = (at as { name?: unknown }).name;
-      codes.push(typeof code === "string" ? code : typeof name === "string" ? name : "error");
+      codes.push(
+        typeof code === "string"
+          ? code
+          : typeof name === "string"
+            ? name
+            : "error",
+      );
     }
     return codes.join(" ← ");
   }
 }
 
 /** Until `isReached()` — real I/O, bounded by real time only to stop a hang. */
-export async function until(isReached: () => boolean, what: string, timeout = 20_000): Promise<void> {
+export async function until(
+  isReached: () => boolean,
+  what: string,
+  timeout = 20_000,
+): Promise<void> {
   const deadline = performance.now() + timeout;
   while (!isReached()) {
     if (performance.now() > deadline) throw new Error(`never reached: ${what}`);
@@ -159,13 +195,20 @@ export async function until(isReached: () => boolean, what: string, timeout = 20
 }
 
 /** A holder frozen past its lease; the other instance's sweep takes the tree over (live steps after). */
-export async function frozenPastLease(context: RunContext, frozen: TestApp): Promise<void> {
-  context.leases.stall(frozen);
+export async function frozenPastLease(
+  context: RunContext,
+  frozen: TestApp,
+): Promise<void> {
+  context.leases.freeze(frozen);
   await context.clock.advance(seconds(31));
   await passLive(context, 31);
 }
 
 /** Time passing for live instances: steps of at most a renewal (10 s). */
-export async function passLive(context: RunContext, secondsToPass: number): Promise<void> {
-  for (let left = secondsToPass; left > 0; left -= 10) await context.clock.advance(seconds(Math.min(left, 10)));
+export async function passLive(
+  context: RunContext,
+  secondsToPass: number,
+): Promise<void> {
+  for (let left = secondsToPass; left > 0; left -= 10)
+    await context.clock.advance(seconds(Math.min(left, 10)));
 }

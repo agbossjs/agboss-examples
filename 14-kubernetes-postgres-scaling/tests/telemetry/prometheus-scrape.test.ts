@@ -16,7 +16,7 @@ import { BatchWorkflowStart } from "../../src/workflows/batch/batch.workflow-sta
 const { meterProvider, exporter } = prometheusTelemetry(0);
 ledgerStubForFile();
 const test = testWith(LocalScalingApplication, {
-  meterProviders: [meterProvider],
+  instances: [{ meterProvider }],
   allowNetwork: ["127.0.0.1"], // the scrape and the ledger stub, our own servers
 });
 let server: Server;
@@ -45,9 +45,16 @@ const DOCUMENTED: Readonly<Record<string, "gauge" | "counter">> = {
   agboss_instance_executions_ended_total: "counter",
 };
 
-test("AC1: scraping the exporter returns the documented metrics in Prometheus format", async ({ app }) => {
-  const jobs = Array.from({ length: 6 }, (_, index) => ({ jobId: `j-${String(index)}`, durationMs: 0 }));
-  const result = await app.execute(BatchWorkflowStart, jobs, { tenant: { tenantId: "acme" } });
+test("AC1: scraping the exporter returns the documented metrics in Prometheus format", async ({
+  app,
+}) => {
+  const jobs = Array.from({ length: 6 }, (_, index) => ({
+    jobId: `j-${String(index)}`,
+    durationMs: 0,
+  }));
+  const result = await app.execute(BatchWorkflowStart, jobs, {
+    tenant: { tenantId: "acme" },
+  });
 
   const response = await fetch(url);
   const text = await response.text();
@@ -63,5 +70,6 @@ test("AC1: scraping the exporter returns the documented metrics in Prometheus fo
     /^agboss_instance_executions_ended_total\{workflow="job-workflow",outcome="finished",[^}]*\} 6$/mu,
   );
   // bounded labels: no tenant, execution or thread id is a label value
-  for (const id of ["acme", result.executionId, result.threadId]) expect(text).not.toContain(`"${id}"`);
+  for (const id of ["acme", result.executionId, result.threadId])
+    expect(text).not.toContain(`"${id}"`);
 });

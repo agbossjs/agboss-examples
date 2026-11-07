@@ -9,12 +9,12 @@ the offline tests and the demo.
 Before writing or changing any AGBoss code, read `.claude/skills/agboss/SKILL.md` — it is the
 framework's own guide for the installed `agboss` version and routes each task to one reference:
 
-| Task                                                   | Read                                                                  |
-| ------------------------------------------------------ | --------------------------------------------------------------------- |
-| Writing `*.workflow.ts` paths                          | `.claude/skills/agboss/references/02-flow-dsl-all-combinations.md`    |
-| Components, DI, lifecycle hooks, `app.execute`         | `.claude/skills/agboss/references/03-components-di-and-lifecycle.md`  |
-| Storage, metrics, shutdown, several instances          | `.claude/skills/agboss/references/09-persistence-k8s-and-deploy.md`   |
-| Tests: `testWith`, instances, leases, `meterProviders` | `.claude/skills/agboss/references/10-testing-vcr-and-evals.md`        |
+| Task                                                                   | Read                                                                 |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Writing `*.workflow.ts` paths                                          | `.claude/skills/agboss/references/02-flow-dsl-all-combinations.md`   |
+| Components, DI, lifecycle hooks, `app.execute`                         | `.claude/skills/agboss/references/03-components-di-and-lifecycle.md` |
+| Storage, metrics, shutdown, several instances                          | `.claude/skills/agboss/references/09-persistence-k8s-and-deploy.md`  |
+| Tests: `testWith`, instances, leases, `instances: [{ meterProvider }]` | `.claude/skills/agboss/references/10-testing-vcr-and-evals.md`       |
 
 The loop after every change: `npx agboss check` → `npm test` → `npm run demo`; after a change to
 `deploy/`: `npm run check:k8s` (Docker, the network); for the cluster: `npm run cluster:up` →
@@ -25,6 +25,7 @@ The loop after every change: `npx agboss check` → `npm test` → `npm run demo
 put this project's own rules below, never there.
 
 ## Project rules
+
 - All components must remain stateless (`agboss/no-component-state`).
 - `npm run check`, `npm test` and `npm run demo` run 100% offline, $0, no model, no key.
 - Metrics come only from the core through the official OpenTelemetry exporter (`src/telemetry.ts`):
