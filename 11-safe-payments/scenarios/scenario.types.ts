@@ -1,8 +1,18 @@
 import type { Class } from "@agboss/core";
-import type { ClockSkew, Override, TestApp, TestLeases, VirtualClock, WorkflowFixtures } from "@agboss/core/testing";
+import type {
+  Override,
+  TestApp,
+  TestInstanceOptions,
+  TestLeases,
+  VirtualClock,
+  WorkflowFixtures,
+} from "@agboss/core/testing";
 import type { PaymentOperations } from "../src/payments/payment-operations.js";
 import type { StubGateway } from "../src/stub/stub-gateway.js";
-import type { StubLevel, StubSettings } from "../src/stub/stub-gateway.types.js";
+import type {
+  StubLevel,
+  StubSettings,
+} from "../src/stub/stub-gateway.types.js";
 
 /** Which version of the scenario runs. */
 export enum Variant {
@@ -78,7 +88,8 @@ export interface ScenarioRow {
   readonly wrong?: Expectation;
   /** The wrong version: one class overriding `PaymentOperations`. */
   readonly wrongOperations?: Class<PaymentOperations>;
-  readonly clockSkews?: readonly ClockSkew[];
+  /** The row's two instances, each its own settings (agbossjs/agboss#831: a clock skew); default two plain ones. */
+  readonly instances?: readonly TestInstanceOptions[];
   /** The scenario's own seams (its gates, a store that fails): never the application's code. */
   readonly overrides?: readonly Override[];
   /** The right version, when it is not `RightPaymentOperations` (PS17 d: a replay-only lookup). */

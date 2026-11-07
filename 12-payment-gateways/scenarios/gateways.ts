@@ -1,21 +1,51 @@
-import { STRIPE_SEARCH_LAG, startStripeStub } from "../src/gateways/stripe/stub/stripe.stub.js";
+import {
+  STRIPE_SEARCH_LAG,
+  startStripeStub,
+} from "../src/gateways/stripe/stub/stripe.stub.js";
 import { StripeGatewayPayments } from "../src/gateways/stripe/stripe.gateway-payments.js";
 import { CheckoutComGatewayPayments } from "../src/gateways/checkout-com/checkout-com.gateway-payments.js";
 import { startCheckoutComStub } from "../src/gateways/checkout-com/stub/checkout-com.stub.js";
 import { CardcomGatewayPayments } from "../src/gateways/cardcom/cardcom.gateway-payments.js";
 import { startCardcomStub } from "../src/gateways/cardcom/stub/cardcom.stub.js";
 import { PayPalGatewayPayments } from "../src/gateways/paypal/paypal.gateway-payments.js";
-import { PAYPAL_SANDBOX_HOST, startPayPalStub } from "../src/gateways/paypal/stub/paypal.stub.js";
+import {
+  PAYPAL_SANDBOX_HOST,
+  startPayPalStub,
+} from "../src/gateways/paypal/stub/paypal.stub.js";
 import { AdyenGatewayPayments } from "../src/gateways/adyen/adyen.gateway-payments.js";
 import { startAdyenWebhookReceiver } from "../src/gateways/adyen/adyen-webhook.receiver.js";
-import { ADYEN_TEST_HMAC_KEY, refundWebhook, startAdyenStub } from "../src/gateways/adyen/stub/adyen.stub.js";
+import {
+  ADYEN_TEST_HMAC_KEY,
+  refundWebhook,
+  startAdyenStub,
+} from "../src/gateways/adyen/stub/adyen.stub.js";
 import { BooksRepository } from "../src/repositories/books.repository.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
 import { RefundWorkflowStart } from "../src/workflows/refund/refund.workflow-start.js";
 import { seconds } from "@agboss/core/units";
 import { StubFault } from "../src/stub-kit/stub-kit.js";
-import { frozenPastLease, outcomeOf, passLive, until, type GatewayRow, type GatewayUnderTest } from "./harness.js";
-import { paymentIdOf, refundOwnership, ps1, ps17Completed, ps17Failed, ps17Pending, ps18Shipments, ps19, ps2, ps23, ps5, ps8 } from "./runs.js";
+import {
+  frozenPastLease,
+  outcomeOf,
+  passLive,
+  until,
+  type GatewayRow,
+  type GatewayUnderTest,
+} from "./harness.js";
+import {
+  paymentIdOf,
+  refundOwnership,
+  ps1,
+  ps17Completed,
+  ps17Failed,
+  ps17Pending,
+  ps18Shipments,
+  ps19,
+  ps2,
+  ps23,
+  ps5,
+  ps8,
+} from "./runs.js";
 
 /**
  * A hostile order id on Stripe: it is written to break out of the search query and name another
@@ -29,44 +59,109 @@ const stripeHostileOrderId: GatewayRow = {
   title: "an order id that tries to break out of the search query",
   expected: { charges: 1, notes: ["own payment"] },
   async run(context) {
-    const victim = { orderId: "stripe-victim", amountCents: 2500, capture: true, failShipping: false };
-    const hostile = { ...victim, orderId: "x' OR metadata['order_id']:'stripe-victim" };
+    const victim = {
+      orderId: "stripe-victim",
+      amountCents: 2500,
+      capture: true,
+      failShipping: false,
+    };
+    const hostile = {
+      ...victim,
+      orderId: "x' OR metadata['order_id']:'stripe-victim",
+    };
     const paid = await context.app(0).execute(CheckoutWorkflowStart, victim);
     await context.clock.advance(seconds(STRIPE_SEARCH_LAG / 1000)); // the victim is in the search now
     const a = context.app(0);
     context.gateway.stub.inject(StubFault.HoldAnswer, { operation: "charge" });
-    const first = a.execute(CheckoutWorkflowStart, hostile).catch(() => undefined);
-    await until(() => context.gateway.stub.heldCount === 1, "the hostile order's charge is held");
+    const first = a
+      .execute(CheckoutWorkflowStart, hostile)
+      .catch(() => undefined);
+    await until(
+      () => context.gateway.stub.heldCount === 1,
+      "the hostile order's charge is held",
+    );
     await frozenPastLease(context, a);
     await passLive(context, 60);
     context.gateway.stub.release();
-    context.leases.resume(a);
+    context.leases.thaw(a);
     await first;
     const theirs = context.gateway.stub.moneyFor(hostile.orderId).charges;
     const victimPayment = paymentIdOf(paid.output);
-    const trees = await Promise.all(["execution-1", "execution-2", "execution-3"].map((rootExecutionId) => context.app(1).outboundCallsOf({ tenantId: "default", rootExecutionId })));
+    const trees = await Promise.all(
+      ["execution-1", "execution-2", "execution-3"].map((rootExecutionId) =>
+        context
+          .app(1)
+          .outboundCallsOf({ tenantId: "default", rootExecutionId }),
+      ),
+    );
     // the hostile order's own charge intent (execution 2): its stored receipt names which payment it took
-    const taken = trees[1]?.map((call) => (JSON.parse(call.result ?? "{}") as { paymentId?: string }).paymentId) ?? [];
-    const own = !taken.includes(victimPayment) && theirs === 1 ? "own payment" : `took the victim's ${victimPayment}`;
-    return outcomeOf(context, "hostile-id", hostile.orderId, [own, `the hostile order's charges: ${String(theirs)}`]);
+    const taken =
+      trees[1]?.map(
+        (call) =>
+          (JSON.parse(call.result ?? "{}") as { paymentId?: string }).paymentId,
+      ) ?? [];
+    const own =
+      !taken.includes(victimPayment) && theirs === 1
+        ? "own payment"
+        : `took the victim's ${victimPayment}`;
+    return outcomeOf(context, "hostile-id", hostile.orderId, [
+      own,
+      `the hostile order's charges: ${String(theirs)}`,
+    ]);
   },
 };
 
 /** Stripe: its stub, its wiring, and the scenarios of its row in the README's table. */
-export async function stripe(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
+export async function stripe(): Promise<{
+  gateway: GatewayUnderTest;
+  rows: GatewayRow[];
+}> {
   return {
-    gateway: { slug: "stripe", name: "Stripe", stub: await startStripeStub(), operations: StripeGatewayPayments, chargeOperation: "charge" },
-    rows: [ps1, ps2, ps5, ps8, ps17Completed(25), ps17Pending("ps17b", 25, { charges: 1 }), ps19("refund"), refundOwnership, stripeHostileOrderId],
+    gateway: {
+      slug: "stripe",
+      name: "Stripe",
+      stub: await startStripeStub(),
+      operations: StripeGatewayPayments,
+      chargeOperation: "charge",
+    },
+    rows: [
+      ps1,
+      ps2,
+      ps5,
+      ps8,
+      ps17Completed(25),
+      ps17Pending("ps17b", 25, { charges: 1 }),
+      ps19("refund"),
+      refundOwnership,
+      stripeHostileOrderId,
+    ],
   };
 }
 
 export { STRIPE_SEARCH_LAG };
 
 /** Checkout.com: its stub, its wiring, the scenarios of its row. */
-export async function checkoutCom(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
+export async function checkoutCom(): Promise<{
+  gateway: GatewayUnderTest;
+  rows: GatewayRow[];
+}> {
   return {
-    gateway: { slug: "checkout-com", name: "Checkout.com", stub: await startCheckoutComStub(), operations: CheckoutComGatewayPayments, chargeOperation: "charge" },
-    rows: [ps1, ps5, ps8, ps17Failed(73, { charges: 1 }), ps18Shipments, ps19("refund"), refundOwnership],
+    gateway: {
+      slug: "checkout-com",
+      name: "Checkout.com",
+      stub: await startCheckoutComStub(),
+      operations: CheckoutComGatewayPayments,
+      chargeOperation: "charge",
+    },
+    rows: [
+      ps1,
+      ps5,
+      ps8,
+      ps17Failed(73, { charges: 1 }),
+      ps18Shipments,
+      ps19("refund"),
+      refundOwnership,
+    ],
   };
 }
 
@@ -77,16 +172,49 @@ const adyenWebhookTwice: GatewayRow = {
   expected: { charges: 1, refunds: 1, notes: ["events applied: 1"] },
   async run(context) {
     const orderId = "adyen-ps15";
-    const checkout = await context.app(0).execute(CheckoutWorkflowStart, { orderId, amountCents: 5000, capture: true, failShipping: false });
+    const checkout = await context
+      .app(0)
+      .execute(CheckoutWorkflowStart, {
+        orderId,
+        amountCents: 5000,
+        capture: true,
+        failShipping: false,
+      });
     const paymentId = paymentIdOf(checkout.output);
-    const refund = await context.app(0).execute(RefundWorkflowStart, { orderId, paymentId, amountCents: 2000, refundNumber: 1 });
-    const receiver = await startAdyenWebhookReceiver(context.apps, ADYEN_TEST_HMAC_KEY);
+    const refund = await context
+      .app(0)
+      .execute(RefundWorkflowStart, {
+        orderId,
+        paymentId,
+        amountCents: 2000,
+        refundNumber: 1,
+      });
+    const receiver = await startAdyenWebhookReceiver(
+      context.apps,
+      ADYEN_TEST_HMAC_KEY,
+    );
     try {
-      const body = refundWebhook(refund.output?.movementId ?? "", paymentId, orderId, 2000);
-      const post = () => fetch(receiver.url, { method: "POST", headers: { "content-type": "application/json" }, body }).then((response) => response.status);
+      const body = refundWebhook(
+        refund.output?.movementId ?? "",
+        paymentId,
+        orderId,
+        2000,
+      );
+      const post = () =>
+        fetch(receiver.url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body,
+        }).then((response) => response.status);
       const statuses = await Promise.all([post(), post()]);
-      const applied = context.app(1).resolve(BooksRepository).applied("default", orderId);
-      return outcomeOf(context, "ps15", orderId, [`deliveries: ${statuses.join(", ")}`, `events applied: ${String(applied)}`]);
+      const applied = context
+        .app(1)
+        .resolve(BooksRepository)
+        .applied("default", orderId);
+      return outcomeOf(context, "ps15", orderId, [
+        `deliveries: ${statuses.join(", ")}`,
+        `events applied: ${String(applied)}`,
+      ]);
     } finally {
       await receiver.close();
     }
@@ -100,17 +228,52 @@ const adyenWebhookTwice: GatewayRow = {
 const adyenWebhookOtherTenant: GatewayRow = {
   scenario: "tenancy",
   title: "a webhook for another tenant's payment applies nothing",
-  expected: { charges: 1, refunds: 1, notes: ["delivery to tenant B: 500", "applied for tenant A: 0", "applied for tenant B: 0"] },
+  expected: {
+    charges: 1,
+    refunds: 1,
+    notes: [
+      "delivery to tenant B: 500",
+      "applied for tenant A: 0",
+      "applied for tenant B: 0",
+    ],
+  },
   async run(context) {
     const orderId = "adyen-tenancy";
     const tenant = { tenant: { tenantId: "tenant-a" } };
-    const checkout = await context.app(0).execute(CheckoutWorkflowStart, { orderId, amountCents: 5000, capture: true, failShipping: false }, tenant);
+    const checkout = await context
+      .app(0)
+      .execute(
+        CheckoutWorkflowStart,
+        { orderId, amountCents: 5000, capture: true, failShipping: false },
+        tenant,
+      );
     const paymentId = paymentIdOf(checkout.output);
-    const refund = await context.app(0).execute(RefundWorkflowStart, { orderId, paymentId, amountCents: 2000, refundNumber: 1 }, tenant);
-    const receiverOfB = await startAdyenWebhookReceiver(context.apps, ADYEN_TEST_HMAC_KEY, "tenant-b");
+    const refund = await context
+      .app(0)
+      .execute(
+        RefundWorkflowStart,
+        { orderId, paymentId, amountCents: 2000, refundNumber: 1 },
+        tenant,
+      );
+    const receiverOfB = await startAdyenWebhookReceiver(
+      context.apps,
+      ADYEN_TEST_HMAC_KEY,
+      "tenant-b",
+    );
     try {
-      const body = refundWebhook(refund.output?.movementId ?? "", paymentId, orderId, 2000);
-      const status = (await fetch(receiverOfB.url, { method: "POST", headers: { "content-type": "application/json" }, body })).status;
+      const body = refundWebhook(
+        refund.output?.movementId ?? "",
+        paymentId,
+        orderId,
+        2000,
+      );
+      const status = (
+        await fetch(receiverOfB.url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body,
+        })
+      ).status;
       const books = context.app(1).resolve(BooksRepository);
       return outcomeOf(context, "tenancy", orderId, [
         `delivery to tenant B: ${String(status)}`,
@@ -124,15 +287,27 @@ const adyenWebhookOtherTenant: GatewayRow = {
 };
 
 /** Adyen: its stub, its wiring, the scenarios of its row. */
-export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
+export async function adyen(): Promise<{
+  gateway: GatewayUnderTest;
+  rows: GatewayRow[];
+}> {
   return {
-    gateway: { slug: "adyen", name: "Adyen", stub: await startAdyenStub(), operations: AdyenGatewayPayments, chargeOperation: "charge" },
+    gateway: {
+      slug: "adyen",
+      name: "Adyen",
+      stub: await startAdyenStub(),
+      operations: AdyenGatewayPayments,
+      chargeOperation: "charge",
+    },
     rows: [
       ps1,
       ps5,
       adyenWebhookTwice,
       // past Adyen's 7 days the replay is refused (a KeyReplay's keyRetention, #658): unknown, a person decides
-      ps17Pending("ps17d", 7 * 24 + 1, { charges: 1, notes: ["intents left pending: 1", "reconciled: unknown"] }),
+      ps17Pending("ps17d", 7 * 24 + 1, {
+        charges: 1,
+        notes: ["intents left pending: 1", "reconciled: unknown"],
+      }),
       ps19("refund"),
       ps23({ charges: 1, notes: ["in-progress", "replayed"] }),
       refundOwnership,
@@ -142,15 +317,29 @@ export async function adyen(): Promise<{ gateway: GatewayUnderTest; rows: Gatewa
 }
 
 /** CardCom: its stub, its wiring (its HTTP API v11 by fetch), the scenarios of its row. */
-export async function cardcom(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[] }> {
+export async function cardcom(): Promise<{
+  gateway: GatewayUnderTest;
+  rows: GatewayRow[];
+}> {
   return {
-    gateway: { slug: "cardcom", name: "CardCom", stub: await startCardcomStub(), operations: CardcomGatewayPayments, chargeOperation: "charge" },
+    gateway: {
+      slug: "cardcom",
+      name: "CardCom",
+      stub: await startCardcomStub(),
+      operations: CardcomGatewayPayments,
+      chargeOperation: "charge",
+    },
     rows: [
       ps1,
       ps5,
       ps8,
       // refunds take no key at CardCom: a lost answer stays unknown — a person decides, one refund
-      ps19("refund", { charges: 1, refunds: 1, notes: ["outbound-call.unreconciled"], boundary: "CardCom refunds take no key: unknown, for a person" }),
+      ps19("refund", {
+        charges: 1,
+        refunds: 1,
+        notes: ["outbound-call.unreconciled"],
+        boundary: "CardCom refunds take no key: unknown, for a person",
+      }),
       // CardCom does not protect a concurrent duplicate (KB 509: "wait … up to 7 seconds")
       ps23({ charges: 2, boundary: "CardCom's own in-flight gap (KB 509)" }),
       refundOwnership,
@@ -159,7 +348,11 @@ export async function cardcom(): Promise<{ gateway: GatewayUnderTest; rows: Gate
 }
 
 /** PayPal: its TLS stub (a certificate made now), its wiring, the scenarios of its row. */
-export async function paypal(): Promise<{ gateway: GatewayUnderTest; rows: GatewayRow[]; certificate: string }> {
+export async function paypal(): Promise<{
+  gateway: GatewayUnderTest;
+  rows: GatewayRow[];
+  certificate: string;
+}> {
   const { stub, certificate } = await startPayPalStub();
   return {
     gateway: {
@@ -170,7 +363,14 @@ export async function paypal(): Promise<{ gateway: GatewayUnderTest; rows: Gatew
       chargeOperation: "capture", // money moves at the capture
       allowNetwork: [PAYPAL_SANDBOX_HOST], // the name the SDK requests; its agent connects to 127.0.0.1 only
     },
-    rows: [ps1, ps5, ps8, ps17Pending("ps17b", 7, { charges: 1 }), ps19("refund"), refundOwnership],
+    rows: [
+      ps1,
+      ps5,
+      ps8,
+      ps17Pending("ps17b", 7, { charges: 1 }),
+      ps19("refund"),
+      refundOwnership,
+    ],
     certificate,
   };
 }
