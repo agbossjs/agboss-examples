@@ -1,7 +1,7 @@
 {
   "repository": "agbossjs/agboss",
-  "branch": "main",
-  "frameworkSha": "eb75439885388ef21735cdf332700fb337f8b3d0",
+  "branch": "fix/825-undo-fingerprint-keys",
+  "frameworkSha": "fb688c311ea3a083d730e122d85d5cf0debfb186",
   "version": "0.1.1",
   "postgres": {
     "repository": "agbossjs/postgres",
