@@ -14,7 +14,7 @@ import { HelloAgbossWorkflow } from "./workflows/hello-agboss/hello-agboss.workf
   environment: AppEnvironment,
   tenantContext: HelloTenantContext,
   executionContext: HelloExecutionContext,
-  pseudonymKey: "openRouterApiKey",
+  piiKeyField: "piiPseudonymKey", // agbossjs/agboss#825: its own secret — never the provider's apiKey
   workflows: [HelloAgbossWorkflow],
   providers: [OpenRouterChatModelProvider, SqliteCostLedgerRepository],
   budgets: [HelloApplicationDailyBudget, HelloTenantDailyBudget, HelloExecutionBudget],

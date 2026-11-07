@@ -8,6 +8,8 @@ export class AppEnvironment {
   postgresPoolSize?: number;
   /** The PII key every pod shares (`pseudonymKey`): fingerprints and key handles agree across pods. */
   piiPseudonymKey!: Secret;
+  /** The idempotency key (agbossjs/agboss#825): business-key fingerprints only — never the PII key. */
+  idempotencyKey!: Secret;
   /** The other system the jobs call: their remote work and the ledger. */
   ledgerUrl!: string;
   /** The pod's name (the downward API), on every receipt and work call. */

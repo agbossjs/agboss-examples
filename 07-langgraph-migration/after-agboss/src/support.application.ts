@@ -23,7 +23,7 @@ import { SupportWorkflow } from "./workflows/support/support.workflow.js";
   name: "support-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [SupportWorkflow],
   budgets: [SupportApplicationBudget, SupportTenantBudget, SupportExecutionBudget],
   providers: [

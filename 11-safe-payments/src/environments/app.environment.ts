@@ -9,6 +9,8 @@ export class AppEnvironment {
   stubWebhookSecret!: Secret;
   /** One pseudonym key on every instance (A8): business-key fingerprints agree across instances. */
   piiPseudonymKey!: Secret;
+  /** The idempotency key (agbossjs/agboss#825): business-key fingerprints only — never the PII key. */
+  idempotencyKey!: Secret;
   /** Read by the (never called) model provider: left unset, the agents' turns are scripted. */
   openRouterApiKey?: Secret;
   openRouterBaseUrl?: string;

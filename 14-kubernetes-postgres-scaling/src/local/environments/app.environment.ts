@@ -6,6 +6,8 @@ export class LocalEnvironment {
   sqlitePath!: string;
   /** The PII key both local instances share. */
   piiPseudonymKey!: Secret;
+  /** The idempotency key (agbossjs/agboss#825): business-key fingerprints only — never the PII key. */
+  idempotencyKey!: Secret;
   /** The other system the jobs call (the stub, in-process). */
   ledgerUrl!: string;
   /** The "pod" name on every receipt. */

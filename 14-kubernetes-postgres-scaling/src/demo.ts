@@ -18,6 +18,7 @@ import { BatchWorkflowStart } from "./workflows/batch/batch.workflow-start.js";
 
 // offline, synthetic (R6): the two local instances share this PII key
 process.env.PII_PSEUDONYM_KEY ??= "local-demo-synthetic-pseudonym-key";
+process.env.IDEMPOTENCY_KEY ??= "kubernetes-postgres-scaling-offline-idempotency-key";
 const stub = await startLedgerStub(0, "127.0.0.1");
 process.env.LEDGER_URL = stub.url;
 process.env.SQLITE_PATH ??= join(mkdtempSync(join(tmpdir(), "agboss-scaling-")), "demo.sqlite");

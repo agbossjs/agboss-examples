@@ -62,7 +62,7 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
       instanceId, pod, token });
 
     const receipt = await this.deliveries.deliverOnce(
-      effectKeyOf(this.executionContext, "deliver", { businessKey }),
+      effectKeyOf(this.executionContext, "deliver", { businessKey, fingerprint: { jobId } }),
       { jobId, instanceId, pod, token },
     );
 

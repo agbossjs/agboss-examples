@@ -49,7 +49,8 @@ export class PodFencedEffectRepository extends SqliteFencedEffectRepository {
   name: "safe-payments-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
+  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
   workflows: [CheckoutWorkflow],
   budgets: SAFE_PAYMENTS_BUDGETS,
   providers: [

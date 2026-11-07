@@ -40,7 +40,10 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
     });
     const tenantId = this.orderBookService.tenantId;
     // an existing order of this tenant only: an event never creates a row
-    const row = await this.orderBookService.once(this.executionContext, "apply-event", `event:stub:${event.eventId}`, (database) =>
+    // agbossjs/agboss#825: the event as delivered is the work — another payload under its id is a conflict
+    const { type, chargeId, reference, created } = event;
+    const identity = { businessKey: `event:stub:${event.eventId}`, fingerprint: { type, chargeId, reference, created } };
+    const row = await this.orderBookService.once(this.executionContext, "apply-event", identity, (database) =>
       this.orderBookRepository.bookState(database, tenantId, applied.orderId, applied.status, applied.heldCents) ?? { orderId: applied.orderId, status: "unknown", heldCents: 0 },
     );
     return { orderId: row.orderId, status: row.status, heldCents: row.heldCents };

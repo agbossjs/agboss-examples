@@ -14,7 +14,7 @@ export class AppEnvironment {
   /** OpenRouter's base URL (`baseUrlField: "openRouterBaseUrl"`); unset → the provider's default. */
   openRouterBaseUrl?: string;
   /**
-   * The application's PII pseudonym key (`@Application({ pseudonymKey: "piiPseudonymKey" })`): one
+   * The application's PII pseudonym key (`@Application({ piiKeyField: "piiPseudonymKey" })`): one
    * token per value on every instance and in every process, not a key of each execution.
    */
   piiPseudonymKey!: Secret;

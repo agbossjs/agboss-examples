@@ -42,7 +42,7 @@ export async function crashBeforeAnswer(
   await frozenPastLease(context, a);
   if (booked) await bookedAs(context, order.orderId, "paid");
   else await requestsReached(context, "lookup", 1);
-  const pending = await context.app(1).pendingOutboundCalls({ tenantId: "default" });
+  const pending = (await context.app(1).pendingOutboundCallsOf({ tenantId: "default" })).calls;
   context.stub.release();
   thawed(context, a);
   const zombie = await first;

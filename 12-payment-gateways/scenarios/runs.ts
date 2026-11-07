@@ -17,7 +17,7 @@ const order = (context: RunContext, scenario: string, amountCents = 2500) => ({
 
 /** Until no intent waits for reconciliation: the recovering instance settled it (or failed it). */
 async function settledIntents(context: RunContext): Promise<number> {
-  const pending = async () => (await context.app(1).pendingOutboundCalls({ tenantId: "default" })).length;
+  const pending = async () => (await context.app(1).pendingOutboundCallsOf({ tenantId: "default" })).calls.length;
   let left = await pending();
   // bounded: an intent may stay pending for a person (unknown) — then this many are reported
   for (let turn = 0; turn < 200 && left > 0; turn += 1) {
@@ -34,7 +34,7 @@ async function settledIntents(context: RunContext): Promise<number> {
  */
 async function unknownNotes(context: RunContext): Promise<string[]> {
   const b = context.app(1);
-  const [pending] = await b.pendingOutboundCalls({ tenantId: "default" });
+  const [pending] = (await b.pendingOutboundCallsOf({ tenantId: "default" })).calls;
   if (pending === undefined) return [];
   const tree = { tenantId: "default", rootExecutionId: pending.rootExecutionId };
   for (let turn = 0; turn < 200; turn += 1) {

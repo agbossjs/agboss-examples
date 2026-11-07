@@ -38,7 +38,8 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
   name: "cluster-work-stealing-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
+  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
   workflows: [
     CoordinatorWorkflow,
     ChunkWorkerWorkflow,

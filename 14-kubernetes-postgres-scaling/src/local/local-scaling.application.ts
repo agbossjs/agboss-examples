@@ -38,7 +38,8 @@ import { SqliteDeliveries } from "./sqlite-deliveries.js";
   shutdownTimeout: seconds(30),
   executionRecordRetention: hours(24),
   // one key on every pod: business-key handles and fingerprints agree across instances (Guarantees A8)
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
+  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
   providers: [
     SqliteConnection,
     SqliteCheckpointSaver,

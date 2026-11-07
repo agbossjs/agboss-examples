@@ -28,7 +28,7 @@ async function againAfterCompleted(context: ScenarioContext, row: string): Promi
  */
 async function reconciledUnknown(context: ScenarioContext, timeout = 20_000): Promise<void> {
   const b = context.app(1);
-  const [pending] = await b.pendingOutboundCalls({ tenantId: "default" });
+  const [pending] = (await b.pendingOutboundCallsOf({ tenantId: "default" })).calls;
   if (pending === undefined) throw new Error("the charge's intent is not pending");
   const tree = { tenantId: "default", rootExecutionId: pending.rootExecutionId };
   const isUnknown = async (): Promise<boolean> =>
@@ -61,7 +61,7 @@ async function reconciledAfterADay(context: ScenarioContext, row: string, booked
   if (booked === true) await bookedAs(context, order.orderId, "paid");
   else if (booked === false) await requestsReached(context, "charge", 2);
   else await reconciledUnknown(context);
-  const pending = await context.app(1).pendingOutboundCalls({ tenantId: "default" });
+  const pending = (await context.app(1).pendingOutboundCallsOf({ tenantId: "default" })).calls;
   context.stub.release();
   thawed(context, a);
   const zombie = await first;

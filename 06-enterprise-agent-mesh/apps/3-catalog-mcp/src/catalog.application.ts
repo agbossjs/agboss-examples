@@ -41,7 +41,7 @@ export { CatalogWorkflow } from "./workflows/catalog/catalog.workflow.js";
   name: "catalog-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [CatalogWorkflow],
   budgets: [CatalogAppDailyBudget, CatalogTenantDailyBudget, CatalogExecutionBudget],
   exposes: [CatalogMcp],

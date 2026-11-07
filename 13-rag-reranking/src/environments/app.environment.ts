@@ -5,7 +5,7 @@ export class AppEnvironment {
   /** The SQLite file of the cost ledger the tenant and application budgets count in. */
   sqlitePath!: string;
   /**
-   * The application's PII pseudonym key (`@Application({ pseudonymKey: "piiPseudonymKey" })`): one
+   * The application's PII pseudonym key (`@Application({ piiKeyField: "piiPseudonymKey" })`): one
    * token per value on every instance and in every process, not a key of each execution.
    */
   piiPseudonymKey!: Secret;

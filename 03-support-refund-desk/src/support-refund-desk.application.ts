@@ -28,7 +28,7 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
   environment: AppEnvironment,
   tenantContext: SupportTenantContext,
   executionContext: SupportExecutionContext,
-  pseudonymKey: "piiPseudonymKey",
+  piiKeyField: "piiPseudonymKey",
   workflows: [SupportRefundWorkflow, LiveSupportRefundWorkflow],
   budgets: [SupportAppDailyBudget, SupportTenantDailyBudget, SupportExecutionBudget],
   piiPolicies: [CustomerContactPiiPolicy],

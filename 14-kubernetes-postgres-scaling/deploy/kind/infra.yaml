@@ -16,6 +16,7 @@ stringData:
   POSTGRES_PASSWORD: kind-demo-only
   POSTGRES_URL: postgres://postgres:kind-demo-only@postgres:5432/postgres
   PII_PSEUDONYM_KEY: kind-demo-synthetic-pseudonym-key
+  IDEMPOTENCY_KEY: kind-demo-synthetic-idempotency-key
 ---
 apiVersion: apps/v1
 kind: Deployment
