@@ -96,7 +96,7 @@ export function installOfflineNetworkGuard(): () => void {
 }
 
 /**
- * Stub `providerFetch` for `01-hello-agboss` when running `npm run demo` offline without
+ * The scripted OpenRouter (served by `serveFetch`) for `01-hello-agboss` when running `npm run demo` offline without
  * `OPENROUTER_API_KEY`, exercising the real `OpenRouterChatModelProvider` HTTP wire pipeline.
  */
 export function createHelloOfflineFetch(): typeof fetch {
