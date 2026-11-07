@@ -4,16 +4,16 @@
     "SKILL.md": "sha256-4c13fa99d6c6ee88b5234eba6f4dbcceb9c24c629d0301dd753e5142cbf1ef16",
     "references/01-composition-and-architecture.md": "sha256-04b0da456d32456381963ce16ec77611bb292609871b7e45a8cf183f23b0d775",
     "references/02-flow-dsl-all-combinations.md": "sha256-42d4a612bcf7445a26747e03adbaaa3f042d82201bb569201c9a5943b5a186f6",
-    "references/03-components-di-and-lifecycle.md": "sha256-0d87c444b856bc6fe7eb75708e84966686f2f7e02abda0b946e2ea69ab6b90f3",
+    "references/03-components-di-and-lifecycle.md": "sha256-3e3656a413ae2eb071acd604ab552beae1092b8c874199eb56ee5f1104ca63eb",
     "references/04-mcp-and-a2a.md": "sha256-768bad9197f10594ff34005248aa6a15b6629a4bebbc25794c921b828cf98afe",
     "references/05-channels-and-human-in-the-loop.md": "sha256-19052bda689d8dd356b70ea4276aa0ca628105831dd9193076824177d81f1685",
     "references/06-finops-providers-and-queues.md": "sha256-246f8c94a40bec9dc8fc2891adbbd566c8df0fdeca588e6e55714c99bd82bf0e",
-    "references/07-guardrails-pii-and-security.md": "sha256-b31b51d7010e010a935e44d05046e380a6e1a569c6144876d958d9a9878ec9ee",
+    "references/07-guardrails-pii-and-security.md": "sha256-1d018e0a15a51d44d8da5fd0daba541d6d7f69f680b5a7ecefe2c6ca69ae2136",
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
-    "references/09-persistence-k8s-and-deploy.md": "sha256-915e38f05cbc6ecd57a6ca67a4e8cc9b3fcd5b24a31d75ad78249a7d88e330d2",
+    "references/09-persistence-k8s-and-deploy.md": "sha256-381086e9c6c9d34082fb5b15b5b6f2a1e943d2ecdcaf311c5210eb0f0a03a7ac",
     "references/10-testing-vcr-and-evals.md": "sha256-f8b9ab90771e86be38ab302c1e3ebe2766528ff9937c43a53466b6db0374a5dc",
-    "references/11-cli-studio-and-error-catalog.md": "sha256-94e35dee2c67426da358ee22c3084586d1b751a309bb7ef3e0c1d7b74e95b89c",
-    "references/12-end-to-end-recipes.md": "sha256-b704a0f9b6a5d7f498c2862897e9358977444f3e841a9a6dad3e7d77e5e9097b",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-cf933d8e46bce5a0252c389706ec02ba91edb3dd34f88b21024a84371a51d5c8",
+    "references/12-end-to-end-recipes.md": "sha256-38f4801d21a8bb74d2e0427232de1775c95e09bcb06e3bb47c47690de273e736",
     "references/13-migrating-from-langgraph.md": "sha256-8e562a9c8de0d835dffd569127aaa41ae12c62d3c5b18c5a22326dd5f78464c3"
   }
 }
