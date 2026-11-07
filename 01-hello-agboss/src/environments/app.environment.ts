@@ -8,9 +8,10 @@ export class AppEnvironment {
   catalogCurrency!: string;
   openRouterApiKey!: Secret;
   /**
-   * The PII key (agbossjs/agboss#825): a Secret of its own — never the model provider's, which the provider rotates.
+   * The PII key (agbossjs/agboss#825): a Secret of its own — never the model provider's, which the
+   * provider rotates. `test` leaves it out: `testWith` makes tokens with a fixed key.
    */
-  piiPseudonymKey!: Secret;
+  piiPseudonymKey?: Secret;
   pricingApiBaseUrl!: string;
   sqlitePath!: string;
 }
