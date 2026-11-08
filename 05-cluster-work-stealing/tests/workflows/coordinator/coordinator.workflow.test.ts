@@ -182,7 +182,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
         "execution-1",
         seconds(30),
       );
-      expect(stolenLease?.leaseEpoch).toBeGreaterThan(1);
+      expect(stolenLease?.token).toBeGreaterThan(1);
 
       await clock.advance(seconds(10));
 
