@@ -7,12 +7,12 @@
     "references/03-components-di-and-lifecycle.md": "sha256-710ebbd919f2ac2e1828583c5ddfed02b305b8b20b847d3701baab7c3b15dd6f",
     "references/04-mcp-and-a2a.md": "sha256-e68be8e45a50235bcba4181e31634a8fb0fa3a3813bf25261abb1a81c793b8fd",
     "references/05-channels-and-human-in-the-loop.md": "sha256-1e867bf48c480d3a6162e7c7ffd3be71dc342798841e64c5e9a18c25a6dbc3b4",
-    "references/06-finops-providers-and-queues.md": "sha256-246f8c94a40bec9dc8fc2891adbbd566c8df0fdeca588e6e55714c99bd82bf0e",
+    "references/06-finops-providers-and-queues.md": "sha256-5934878453bbbb32edc23bbdbabd6cc32d976fe27f6f6fa6b9995ac3237c85aa",
     "references/07-guardrails-pii-and-security.md": "sha256-1d018e0a15a51d44d8da5fd0daba541d6d7f69f680b5a7ecefe2c6ca69ae2136",
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
-    "references/09-persistence-k8s-and-deploy.md": "sha256-49c456c116a0346473fc6b4df2cf02a4c8bf1e3f887c5730a177b063245ff81e",
+    "references/09-persistence-k8s-and-deploy.md": "sha256-22c74b23f3892b5f2c5adb4c3ef000314e17f5aec9b24d68a37a002ef86a94fa",
     "references/10-testing-vcr-and-evals.md": "sha256-41aa3221247d5e0ffaa698de52e908b9f4fd70e036412473b6183aba8dbe32e6",
-    "references/11-cli-studio-and-error-catalog.md": "sha256-f50956cf5bc2efb97dd9f0d2396f3d26e2aa63d9d2872b2306de89a5147b1b47",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-b2880ddcdc7dd21cefa0e83a7a917b0b319543dd91237516d6283f69f52b9a8d",
     "references/12-end-to-end-recipes.md": "sha256-38f4801d21a8bb74d2e0427232de1775c95e09bcb06e3bb47c47690de273e736",
     "references/13-migrating-from-langgraph.md": "sha256-8e562a9c8de0d835dffd569127aaa41ae12c62d3c5b18c5a22326dd5f78464c3"
   }

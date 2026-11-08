@@ -1,10 +1,10 @@
 {
   "repository": "agbossjs/agboss",
   "branch": "main",
-  "frameworkSha": "79f1374803df8110e829861a9e17c98ab3214742",
+  "frameworkSha": "d769036e6a94739bd006c597c599c7925b9d2be1",
   "version": "0.1.1",
   "postgres": {
     "repository": "agbossjs/postgres",
-    "sha": "3a922a521e0ffd66d06593535a44ee316f9e44a3"
+    "sha": "2b30ab40eab4db27ddeaf000534c680ec9d31a5c"
   }
 }
