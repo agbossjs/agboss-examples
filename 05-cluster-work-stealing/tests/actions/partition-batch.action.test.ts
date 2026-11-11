@@ -1,5 +1,5 @@
-import { ThisWorkflow } from "@agboss/core";
-import { testAction, testTool } from "@agboss/core/testing";
+import { FencedEffectRepository, SqliteFencedEffectRepository, ThisWorkflow } from "@agboss/core";
+import { override, testAction, testTool } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { AggregateBatchResultsAction } from "../../src/actions/aggregate-batch-results.action.js";
 import { CommitChunkEffectAction } from "../../src/actions/commit-chunk-effect.action.js";
@@ -41,9 +41,11 @@ describe("05-cluster-work-stealing — Isolated Action & Tool Unit Tests", () =>
       payload: "Segment #1 of batch-1",
     });
 
-    // the commit is a fenced effect on the SQLite file (#500): the runner needs the file
+    // the commit is a fenced effect on the SQLite file (#500): the runner needs the file, and the
+    // application's store (the action injects FencedEffects, agbossjs/agboss#890)
     const runCommit = testAction(CommitChunkEffectAction, {
       environment: { sqlitePath: ":memory:" },
+      overrides: [override(FencedEffectRepository, SqliteFencedEffectRepository)],
     });
     const committed = await runCommit({
       draft: {
