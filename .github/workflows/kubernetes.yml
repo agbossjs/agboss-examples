@@ -68,6 +68,8 @@ jobs:
         env:
           AGBOSS_REPO_DIR: .agboss-source
           AGBOSS_POSTGRES_DIR: .agboss-postgres-source
+          # this job installs example 14 only: its one store package (agbossjs/agboss#891)
+          AGBOSS_PACK_STORES: postgres
         run: |
           npm ci
           npm --prefix .agboss-source ci

@@ -29,6 +29,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { localBinOf } from "./local-bin.mjs";
 import { npmBeforeOf, rangeInstallArguments } from "./npm-before.mjs";
+import { packedStoresOf, storeProbeScriptOf } from "./store-packages.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.env.npm_config_cache = join(ROOT, ".packed", ".npm-cache");
@@ -770,12 +771,16 @@ function runMain() {
       scaffoldTypecheck: "not_run",
       scaffoldUnitTests: "not_run",
       scaffoldDescribe: "not_run",
+      // agbossjs/agboss#891: the store packages, from the packed tarballs until they are on npm
+      storePackages: { status: "not_run", verified: [], reason: null },
     },
     reasons: [],
   };
 
   let agbossSpec;
   let cliSpec;
+  /** The packed store packages installed beside the core in --from-packed mode: `{ store, spec }`. */
+  let storeSpecs = [];
   let expectedIntegrity = { agboss: null, agbossCli: null };
 
   if (mode === "from-packed") {
@@ -822,6 +827,11 @@ function runMain() {
     }
     agbossSpec = `file:${agbossTarballPath}`;
     cliSpec = `file:${cliTarballPath}`;
+    storeSpecs = packedStoresOf(manifest).map(({ store, packed }) => {
+      const tarball = resolvePackedTarball(packed);
+      if (tarball === null) throw new Error(`Packed ${store.name} tarball listed in .packed/manifest.json does not exist on disk`);
+      return { store, spec: `file:${tarball}` };
+    });
     expectedIntegrity = {
       agboss: packedAgboss.integrity,
       agbossCli: packedCli.integrity,
@@ -859,6 +869,13 @@ function runMain() {
       };
       agbossSpec = version;
       cliSpec = version;
+      // never a silent pass: the store packages are released on their own and verified here from
+      // the packed tarballs only (agbossjs/agboss#891)
+      baseReport.checks.storePackages = {
+        status: "not_run",
+        verified: [],
+        reason: "the store packages are verified from the packed tarballs (--from-packed); this mode checks @agboss/core and @agboss/cli on the registry",
+      };
     } catch (err) {
       baseReport.status = "FAILED";
       baseReport.checks.registryMetadata = "failed";
@@ -884,7 +901,10 @@ function runMain() {
       version: "0.0.1",
       private: true,
       type: "module",
-      dependencies: { "@agboss/core": agbossSpec },
+      dependencies: {
+        "@agboss/core": agbossSpec,
+        ...Object.fromEntries(storeSpecs.map(({ store, spec }) => [store.name, spec])),
+      },
       devDependencies: {
         "@agboss/cli": cliSpec,
         eslint: "^9.39.0",
@@ -892,7 +912,13 @@ function runMain() {
         vitest: "^3.2.0",
       },
       ...(mode === "from-packed"
-        ? { overrides: { "@agboss/core": agbossSpec, "@agboss/cli": cliSpec } }
+        ? {
+            overrides: {
+              "@agboss/core": agbossSpec,
+              "@agboss/cli": cliSpec,
+              ...Object.fromEntries(storeSpecs.map(({ store, spec }) => [store.name, spec])),
+            },
+          }
         : {}),
     };
     writeFileSync(
@@ -986,6 +1012,24 @@ function runMain() {
     const probeJsonLine = probeOut.split("\n").pop();
     const parsedProbe = JSON.parse(probeJsonLine);
     baseReport.checks.subpathExportsVerified = parsedProbe.verified;
+
+    if (storeSpecs.length > 0) {
+      console.log(`[verify-published] 2b/5 Verifying the packed store packages (${storeSpecs.map(({ store }) => store.name).join(", ")})...`);
+      baseReport.checks.storePackages.status = "failed";
+      writeFileSync(join(tempWorkspace, "probe-stores.mjs"), storeProbeScriptOf(storeSpecs.map(({ store }) => store)), "utf8");
+      const storesOut = execFileSync("node", ["probe-stores.mjs"], { cwd: tempWorkspace, encoding: "utf8" }).trim();
+      const verifiedStores = JSON.parse(storesOut.split("\n").pop()).verified;
+      for (const { store } of storeSpecs.filter(({ store }) => store.bin !== undefined)) {
+        const help = execFileSync(join(tempWorkspace, "node_modules", ".bin", store.bin), ["--help"], {
+          cwd: tempWorkspace,
+          encoding: "utf8",
+        });
+        if (!help.includes("migrate")) throw new Error(`'${store.bin} --help' does not describe its migrate command`);
+      }
+      baseReport.checks.storePackages = { status: "passed", verified: verifiedStores, reason: null };
+    } else if (mode === "from-packed") {
+      baseReport.checks.storePackages = { status: "not_run", verified: [], reason: "no store package in .packed/manifest.json" };
+    }
 
     console.log("[verify-published] 3/5 Verifying CLI binary resolution (--help, help --json, agboss-cli --help)...");
     const cliBin = join(tempWorkspace, "node_modules", ".bin", "agboss");

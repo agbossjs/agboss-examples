@@ -1,20 +1,6 @@
 import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
-import {
-  PostgresCheckpointSaver,
-  PostgresChildExecutionQueueRepository,
-  PostgresCostLedgerRepository,
-  PostgresExecutionHistoryRepository,
-  PostgresExecutionAuditLogRepository,
-  PostgresExecutionLeaseRepository,
-  PostgresExecutionRecordRepository,
-  PostgresExecutionTreeRepository,
-  PostgresFencedEffectRepository,
-  PostgresMeshRequestRepository,
-  PostgresOutboundCallRepository,
-  PostgresPausedExecutionRepository,
-  PostgresRateLimitRepository,
-} from "@agboss/postgres";
+import { POSTGRES_STORES } from "@agboss/postgres";
 import { ScalingAppDailyBudget } from "./budgets/scaling-app-daily.budget.js";
 import { ScalingExecutionBudget } from "./budgets/scaling-execution.budget.js";
 import { ScalingTenantDailyBudget } from "./budgets/scaling-tenant-daily.budget.js";
@@ -42,20 +28,9 @@ import { JobWorkflow } from "./workflows/job/job.workflow.js";
   // one key on every pod: business-key handles and fingerprints agree across instances (Guarantees A8)
   piiKeyField: "piiPseudonymKey",
   idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
-  providers: [
-    PostgresCheckpointSaver,
-    PostgresChildExecutionQueueRepository,
-    PostgresCostLedgerRepository,
-    PostgresExecutionHistoryRepository,
-    PostgresExecutionAuditLogRepository,
-    PostgresExecutionLeaseRepository,
-    PostgresExecutionRecordRepository,
-    PostgresExecutionTreeRepository,
-    PostgresFencedEffectRepository,
-    PostgresMeshRequestRepository,
-    PostgresOutboundCallRepository,
-    PostgresPausedExecutionRepository,
-    PostgresRateLimitRepository,
-  ],
+  // every store of @agboss/postgres — leases, records, checkpoints, the queue, fenced effects,
+  // outbound calls, … (agbossjs/agboss#891: the bundle, in place of listing each class)
+  providers: [...POSTGRES_STORES],
+
 })
 export class KubernetesScalingApplication {}

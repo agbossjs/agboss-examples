@@ -64,6 +64,28 @@ jobs:
           ref: ${{ steps.postgres-pin.outputs.sha }}
           path: .agboss-postgres-source
 
+      - name: Resolve the pinned @agboss/mongodb (agbossjs/agboss#891)
+        id: mongodb-pin
+        run: echo "sha=$(node -p "require('./.agboss-version.json').mongodb.sha")" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout agbossjs/mongodb at its pinned SHA (packed with the core until it is on npm)
+        uses: actions/checkout@v4
+        with:
+          repository: agbossjs/mongodb
+          ref: ${{ steps.mongodb-pin.outputs.sha }}
+          path: .agboss-mongodb-source
+
+      - name: Resolve the pinned @agboss/redis (agbossjs/agboss#891)
+        id: redis-pin
+        run: echo "sha=$(node -p "require('./.agboss-version.json').redis.sha")" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout agbossjs/redis at its pinned SHA (packed with the core until it is on npm)
+        uses: actions/checkout@v4
+        with:
+          repository: agbossjs/redis
+          ref: ${{ steps.redis-pin.outputs.sha }}
+          path: .agboss-redis-source
+
       - name: 1d. Assert checked-out framework commit matches target SHA
         run: |
           ACTUAL_SHA="$(git -C .agboss-source rev-parse HEAD)"
@@ -101,6 +123,8 @@ jobs:
         env:
           AGBOSS_REPO_DIR: .agboss-source
           AGBOSS_POSTGRES_DIR: .agboss-postgres-source
+          AGBOSS_MONGODB_DIR: .agboss-mongodb-source
+          AGBOSS_REDIS_DIR: .agboss-redis-source
           VERIFY_PINNED_FRAMEWORK_SHA: "1"
         run: npm run pack:framework
 
