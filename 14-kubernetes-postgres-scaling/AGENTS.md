@@ -37,7 +37,7 @@ put this project's own rules below, never there.
 - The job step depends only on contracts (`Deliveries`, `OutboundCalls`): one `Deliveries` per store
   set, listed in its application's `providers` — never a store's own class in a shared component.
 - No table of the example's own, no SQL, no query of the core's tables (`tests/source/no-own-fencing.test.ts`, AC6).
-- The verification reads the public API only (`ExecutionHistoryRepository`, `app.leaseEventsOf`,
+- The verification reads the public API only (`ExecutionHistoryRepository`, `app.auditLogOf`,
   `app.outboundCallsOf`, the stub's state) and never console output; a new failure the scenario injects
   gets its expected classification and a sabotage case in `tests/verification/verify.test.ts`.
 - The kind manifests stay inside the node's budget (`tests/deploy/kind-manifests.test.ts`): requests

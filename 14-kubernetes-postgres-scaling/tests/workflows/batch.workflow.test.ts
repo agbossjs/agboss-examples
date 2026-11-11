@@ -1,7 +1,7 @@
 /**
  * agbossjs/agboss#487 AC3 — a batch on two instances of the local application: every job is done
  * once, delivered once and entered in the ledger once, and the verification — from the kept record,
- * the lease log, the outbound calls and the stub's state — says so. agbossjs/agboss#763: a job the
+ * the audit log, the outbound calls and the stub's state — says so. agbossjs/agboss#763: a job the
  * other system rejects ends at its own failure finish, and the batch finishes with the others.
  */
 import { ChildExecutionStatus } from "@agboss/core";

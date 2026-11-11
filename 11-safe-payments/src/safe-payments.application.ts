@@ -16,6 +16,8 @@ import { PaymentsTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
 import { AppEnvironment } from "./environments/app.environment.js";
 import { RightPaymentOperations } from "./payments/right-payment-operations.js";
 import { OrderBookRepository } from "./repositories/order-book.repository.js";
+import { PaymentAuditObserver } from "./observers/payment-audit.observer.js";
+import { OnCallLogService } from "./services/on-call-log.service.js";
 import { OrderBookService } from "./services/order-book.service.js";
 import { StubGatewayService } from "./services/stub-gateway.service.js";
 import { ApprovalInboxChannel } from "./channels/approval-inbox.channel.js";
@@ -57,6 +59,7 @@ export const SAFE_PAYMENTS_PROVIDERS = [
   StubGatewayService,
   OrderBookService,
   OrderBookRepository,
+  OnCallLogService, // where PaymentAuditObserver writes (agbossjs/agboss#889)
   SqliteCheckpointSaver,
   SqliteExecutionRecordRepository,
   SqlitePausedExecutionRepository,
@@ -82,5 +85,6 @@ export const SAFE_PAYMENTS_PROVIDERS = [
   workflows: SAFE_PAYMENTS_WORKFLOWS,
   budgets: SAFE_PAYMENTS_BUDGETS,
   providers: SAFE_PAYMENTS_PROVIDERS,
+  observers: [PaymentAuditObserver], // the four hooks of the execution audit log (agbossjs/agboss#889)
 })
 export class SafePaymentsApplication {}

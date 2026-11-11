@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks";
 import {
-  ExecutionLeaseEventKind,
+  ExecutionAuditEventKind,
   OutboundCallEventOutcome,
 } from "@agboss/core";
 import { hours } from "@agboss/core/units";
@@ -61,9 +61,9 @@ async function reconciledUnknown(
     rootExecutionId: pending.rootExecutionId,
   };
   const isUnknown = async (): Promise<boolean> =>
-    (await b.leaseEventsOf(tree)).some(
+    (await b.auditLogOf(tree)).some(
       (event) =>
-        event.kind === ExecutionLeaseEventKind.OutboundCall &&
+        event.kind === ExecutionAuditEventKind.OutboundCall &&
         event.outcome === OutboundCallEventOutcome.Unknown,
     );
   const deadline = performance.now() + timeout;

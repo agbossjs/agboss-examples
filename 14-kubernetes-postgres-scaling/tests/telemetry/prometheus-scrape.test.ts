@@ -36,7 +36,7 @@ afterAll(async () => {
 const DOCUMENTED: Readonly<Record<string, "gauge" | "counter">> = {
   agboss_cluster_children_queued: "gauge",
   agboss_cluster_children_running: "gauge",
-  agboss_cluster_children_oldest_queued_seconds: "gauge",
+  agboss_cluster_children_oldest_queued_age: "gauge",
   agboss_instance_step_slots_limit: "gauge",
   agboss_instance_step_slots_busy: "gauge",
   agboss_instance_step_slots_free: "gauge",

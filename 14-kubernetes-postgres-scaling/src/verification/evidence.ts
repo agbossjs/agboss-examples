@@ -16,11 +16,11 @@ const jobIdsOfInput = (input: unknown): string[] =>
 
 /**
  * A batch's evidence, through the public API of any instance: its kept record (the history,
- * `retention.executionRecords`), its tree's lease log and its outbound calls. A batch still running
+ * `retention.executionRecords`), its tree's audit log and its outbound calls. A batch still running
  * has no record yet: its tree is read by `rootExecutionId` (from the stub's work calls).
  */
 /** What the reader needs of an app: its container and its operator reads (an `App`, a `TestApp`). */
-export type EvidenceSource = Pick<App, "resolve" | "leaseEventsOf" | "outboundCallsOf">;
+export type EvidenceSource = Pick<App, "resolve" | "auditLogOf" | "outboundCallsOf">;
 
 export async function batchEvidenceOf(
   app: EvidenceSource,
@@ -30,14 +30,14 @@ export async function batchEvidenceOf(
 ): Promise<BatchEvidence> {
   const records = await app.resolve(ExecutionHistoryRepository).findAllByTenantIdAndThreadId(TENANT, batchId);
   const record = records.at(-1);
-  if (record === undefined) return { batchId, jobIds: jobIds ?? [], failedJobIds, record, leaseEvents: [], outboundCalls: [] };
+  if (record === undefined) return { batchId, jobIds: jobIds ?? [], failedJobIds, record, auditLog: [], outboundCalls: [] };
   const tree = { tenantId: TENANT, rootExecutionId: record.rootExecutionId };
   return {
     batchId,
     jobIds: jobIds ?? jobIdsOfInput(record.input),
     failedJobIds,
     record,
-    leaseEvents: await app.leaseEventsOf(tree),
+    auditLog: await app.auditLogOf(tree),
     outboundCalls: await app.outboundCallsOf(tree),
   };
 }

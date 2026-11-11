@@ -10,12 +10,12 @@
 import {
   ChildExecutionStatus,
   ExecutionHistoryStatus,
-  ExecutionLeaseEventKind,
+  ExecutionAuditEventKind,
   FencedEffectEventOutcome,
   LeaseTakeoverReason,
   OutboundCallStatus,
   type ExecutionHistoryRecord,
-  type ExecutionLeaseEventRecord,
+  type ExecutionAuditEventRecord,
   type OutboundCallRecord,
 } from "@agboss/core";
 import { describe, expect, it } from "vitest";
@@ -31,10 +31,10 @@ const deliver = (
   token: number,
   outcome: FencedEffectEventOutcome,
   extra: Record<string, number> = {},
-): ExecutionLeaseEventRecord =>
+): ExecutionAuditEventRecord =>
   ({
     ...BASE,
-    kind: ExecutionLeaseEventKind.FencedEffect,
+    kind: ExecutionAuditEventKind.FencedEffect,
     executionId: exec(jobId),
     scopeKey: `default:${exec(jobId)}`,
     token,
@@ -45,10 +45,10 @@ const deliver = (
     ...extra,
   });
 
-const takeover = (jobId: string, by: string, token: number, from: string, previousToken: number): ExecutionLeaseEventRecord =>
+const takeover = (jobId: string, by: string, token: number, from: string, previousToken: number): ExecutionAuditEventRecord =>
   ({
     ...BASE,
-    kind: ExecutionLeaseEventKind.Takeover,
+    kind: ExecutionAuditEventKind.Takeover,
     executionId: exec(jobId),
     scopeKey: `default:${exec(jobId)}`,
     token,
@@ -70,7 +70,7 @@ const child = (jobId: string, status = ChildExecutionStatus.Finished, finish = "
 
 function batchOf(
   jobIds: readonly string[],
-  events: readonly ExecutionLeaseEventRecord[],
+  events: readonly ExecutionAuditEventRecord[],
   overrides: {
     children?: unknown[];
     calls?: OutboundCallRecord[];
@@ -91,7 +91,7 @@ function batchOf(
     jobIds,
     failedJobIds: failed,
     record: overrides.record === "missing" ? undefined : record,
-    leaseEvents: events,
+    auditLog: events,
     outboundCalls: overrides.calls ?? jobIds.map((jobId) => call(jobId)),
   };
 }
@@ -122,7 +122,7 @@ const stubOf = (jobIds: readonly string[], extra: readonly string[] = [], reject
 
 const JOBS = ["j1", "j2", "z", "k", "r"];
 /** The dead-and-risen run: z's zombie refused, k's killed holder never wrote, r replayed. */
-const DEAD_AND_RISEN: ExecutionLeaseEventRecord[] = [
+const DEAD_AND_RISEN: ExecutionAuditEventRecord[] = [
   deliver("j1", "a", 1, FencedEffectEventOutcome.Ran),
   deliver("j2", "b", 1, FencedEffectEventOutcome.Ran),
   takeover("z", "b", 2, "zombie", 1),
@@ -191,7 +191,7 @@ describe("AC3 + AC5: the verification bites", () => {
 
   it("a replay of a token no Ran wrote is inconsistent", () => {
     const events = DEAD_AND_RISEN.map((event) =>
-      event.kind === ExecutionLeaseEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Replayed ? { ...event, writtenToken: 7 } : event,
+      event.kind === ExecutionAuditEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Replayed ? { ...event, writtenToken: 7 } : event,
     );
     expect(problemsOf(fails(batchOf(JOBS, events), stubOf(JOBS)), "r")).toContain("which no Ran wrote");
   });
@@ -207,7 +207,7 @@ describe("AC3 + AC5: the verification bites", () => {
   });
 
   it("a clean result with the zombie's refusal missing fails: a clean final result alone never passes", () => {
-    const events = DEAD_AND_RISEN.filter((event) => !(event.kind === ExecutionLeaseEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Refused));
+    const events = DEAD_AND_RISEN.filter((event) => !(event.kind === ExecutionAuditEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Refused));
     const report = fails(batchOf(JOBS, events), stubOf(JOBS), EXPECTED);
     expect(report.jobs.every((job) => job.problems.length === 0)).toBe(true);
     expect(report.expectations.find((one) => one.jobId === "z")?.found).toBe(false);
@@ -280,7 +280,7 @@ describe("agbossjs/agboss#763: a failed job ends at its own failure finish, the 
 
 describe("the verification stands alone: no effect applied or replayed at a stale token", () => {
   const STALE = ["s"];
-  const verifyStale = (events: ExecutionLeaseEventRecord[]) =>
+  const verifyStale = (events: ExecutionAuditEventRecord[]) =>
     verifyRun({ batches: [batchOf(STALE, events)], stub: stubOf(STALE), expectations: [] });
 
   it("a zombie's replay at its stale token, after the lease was taken over at a newer one, fails", () => {
