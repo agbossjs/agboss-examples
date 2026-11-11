@@ -4,7 +4,7 @@
 //
 // Every claim comes from state: the Deployment's replicas and the pods (Kubernetes), the slot demand
 // (Prometheus), the stub's record of what reached the other system, and the coordinator's
-// verification over the kept execution records, the lease log and the outbound calls. Nothing is
+// verification over the kept execution records, the audit log and the outbound calls. Nothing is
 // parsed from an application's console. The run is written to .artifacts/kubernetes-run.json; the
 // exit code is 0 only when every check passed.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -150,7 +150,7 @@ const podViewOf = (pod) => {
   }
   return view;
 };
-/** What a batch that does not finish left, from public evidence only: its record, its trees' lease log and calls, the pods. */
+/** What a batch that does not finish left, from public evidence only: its record, its trees' audit log and calls, the pods. */
 async function stuckEvidenceOf(batchId) {
   const calls = await stubState().catch(() => ({
     work: [],
@@ -412,7 +412,7 @@ try {
     `${victim.pod} gone; workers now ${replaced.map((pod) => pod.name).join(", ")}`,
   );
   const victimTree = await treeOf(victim.rootExecutionId);
-  const takenOver = victimTree.leaseEvents.filter(
+  const takenOver = victimTree.auditLog.filter(
     (event) =>
       event.kind === "takeover" &&
       event.previousHolderInstanceId === victim.instanceId,
@@ -420,7 +420,7 @@ try {
   check(
     "AC3 its jobs recovered",
     takenOver.length >= 1,
-    `${String(takenOver.length)} lease(s) of ${victim.pod} taken over by other pods (lease log)`,
+    `${String(takenOver.length)} lease(s) of ${victim.pod} taken over by other pods (audit log)`,
   );
   events.recovered = takenOver.map((event) => ({
     executionId: event.executionId,
@@ -472,13 +472,13 @@ try {
     "another pod took the zombie's job over and delivered it",
     async () => {
       const tree = await treeOf(frozen.rootExecutionId);
-      const takeover = tree.leaseEvents.find(
+      const takeover = tree.auditLog.find(
         (event) =>
           event.kind === "takeover" &&
           event.executionId === frozen.executionId &&
           event.previousHolderInstanceId === frozen.instanceId,
       );
-      const ran = tree.leaseEvents.find(
+      const ran = tree.auditLog.find(
         (event) =>
           event.kind === "fenced-effect" &&
           event.executionId === frozen.executionId &&
@@ -499,7 +499,7 @@ try {
   // write accepted at its token is the only failure.
   await finished(id("zombie"));
   const zombieEvents = async () =>
-    (await treeOf(frozen.rootExecutionId)).leaseEvents.filter(
+    (await treeOf(frozen.rootExecutionId)).auditLog.filter(
       (event) =>
         event.kind === "fenced-effect" &&
         event.executionId === frozen.executionId &&

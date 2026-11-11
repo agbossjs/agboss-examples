@@ -176,6 +176,7 @@ async function main(): Promise<void> {
 const EMPTY_SPEND: CostReport = {
   totalUsd: 0,
   calls: 0,
+  unknownCalls: 0,
   cacheReadTokens: 0,
   byCaller: {},
   byCategory: {} as CostReport["byCategory"],
@@ -212,6 +213,7 @@ function mergeSpend(a: CostReport, b: CostReport): CostReport {
   return {
     totalUsd: a.totalUsd + b.totalUsd,
     calls: a.calls + b.calls,
+    unknownCalls: a.unknownCalls + b.unknownCalls,
     cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
     byCaller: add(a.byCaller, b.byCaller),
     byCategory: add(a.byCategory, b.byCategory) as CostReport["byCategory"],

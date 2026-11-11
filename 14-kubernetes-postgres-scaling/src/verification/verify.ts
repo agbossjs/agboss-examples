@@ -1,16 +1,16 @@
 // The verification of a run (agbossjs/agboss#487), from public evidence only: the batches' kept
-// execution records (`ExecutionHistoryRecord`), their trees' lease log (`app.leaseEventsOf`) and
+// execution records (`ExecutionHistoryRecord`), their trees' audit log (`app.auditLogOf`) and
 // outbound calls (`app.outboundCallsOf`), and the other system's own state (the stub). Never the
 // console, never the core's tables. A clean final result alone never passes: every protected write
 // attempt is classified, and the scenario's expected classifications must be found.
 import {
   ChildExecutionStatus,
   ExecutionHistoryStatus,
-  ExecutionLeaseEventKind,
+  ExecutionAuditEventKind,
   FencedEffectEventOutcome,
   OutboundCallStatus,
   type ExecutionHistoryRecord,
-  type ExecutionLeaseEventRecord,
+  type ExecutionAuditEventRecord,
   type FencedEffectRecord,
   type LeaseTakeoverRecord,
   type OutboundCallRecord,
@@ -74,7 +74,7 @@ export interface BatchEvidence {
    */
   readonly failedJobIds?: readonly string[];
   readonly record: ExecutionHistoryRecord | undefined;
-  readonly leaseEvents: readonly ExecutionLeaseEventRecord[];
+  readonly auditLog: readonly ExecutionAuditEventRecord[];
   readonly outboundCalls: readonly OutboundCallRecord[];
 }
 
@@ -117,19 +117,19 @@ const jobIdOf = (input: unknown): string | undefined => {
   return typeof job["jobId"] === "string" ? job["jobId"] : undefined;
 };
 
-const isDeliver = (event: ExecutionLeaseEventRecord): event is FencedEffectRecord =>
-  event.kind === ExecutionLeaseEventKind.FencedEffect && event.name === DELIVER;
+const isDeliver = (event: ExecutionAuditEventRecord): event is FencedEffectRecord =>
+  event.kind === ExecutionAuditEventKind.FencedEffect && event.name === DELIVER;
 
-const isTakeover = (event: ExecutionLeaseEventRecord): event is LeaseTakeoverRecord =>
-  event.kind === ExecutionLeaseEventKind.Takeover;
+const isTakeover = (event: ExecutionAuditEventRecord): event is LeaseTakeoverRecord =>
+  event.kind === ExecutionAuditEventKind.Takeover;
 
 /**
- * The lease's latest epoch when each `deliver` event happened, in the lease log's order: the highest
+ * The lease's latest epoch when each `deliver` event happened, in the audit log's order: the highest
  * token a takeover or an accepted or replayed write showed before it. A write applied or replayed
  * below it was made by a holder whose lease had already been taken over — a zombie the store let
  * through — whatever the rest of the evidence says.
  */
-function epochsAt(events: readonly ExecutionLeaseEventRecord[]): Map<FencedEffectRecord, number> {
+function epochsAt(events: readonly ExecutionAuditEventRecord[]): Map<FencedEffectRecord, number> {
   const epochs = new Map<FencedEffectRecord, number>();
   let epoch = 0;
   for (const event of events) {
@@ -151,7 +151,7 @@ const staleOf = (event: FencedEffectRecord, epoch: number): WriteAttempt => ({
 });
 
 /** Every attempt at the job's write: one per `deliver` event, one per holder taken over without one. */
-function attemptsOf(events: readonly ExecutionLeaseEventRecord[]): WriteAttempt[] {
+function attemptsOf(events: readonly ExecutionAuditEventRecord[]): WriteAttempt[] {
   const deliveries = events.filter(isDeliver);
   const takeovers = events.filter(isTakeover);
   const epochs = epochsAt(events);
@@ -212,7 +212,7 @@ function verifyJob(batch: BatchEvidence, jobId: string, stub: StubState): JobVer
     else if (child.finish?.name !== finish)
       problems.push(`its child ${child.executionId} finished at ${child.finish?.name ?? "no finish"} (expected ${finish})`);
   const executions = new Set(children.map((child) => child.executionId));
-  const events = batch.leaseEvents.filter((event) => executions.has(event.executionId));
+  const events = batch.auditLog.filter((event) => executions.has(event.executionId));
   const deliveries = events.filter(isDeliver);
   const attempts = attemptsOf(events);
   const ran = deliveries.filter((event) => event.outcome === FencedEffectEventOutcome.Ran).length;
@@ -286,7 +286,7 @@ export function verifyRun(input: {
       problems.push(
         `its output says ${String(output["succeeded"])} succeeded and ${String(output["failed"])} failed (expected ${String(succeeded)} and ${String(failed)})`,
       );
-    const ran = batch.leaseEvents.filter((event) => isDeliver(event) && event.outcome === FencedEffectEventOutcome.Ran).length;
+    const ran = batch.auditLog.filter((event) => isDeliver(event) && event.outcome === FencedEffectEventOutcome.Ran).length;
     if (ran !== succeeded) problems.push(`${String(ran)} deliveries ran in its tree for ${String(succeeded)} jobs done`);
     for (const jobId of batch.jobIds) jobs.push(verifyJob(batch, jobId, input.stub));
     return { batchId: batch.batchId, status: record?.status ?? "missing", jobs: batch.jobIds.length, problems };

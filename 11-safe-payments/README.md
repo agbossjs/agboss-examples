@@ -163,6 +163,17 @@ NotSentTrust.KeyReplay, keyRetention: hours(24) }`,
   `409 in_progress`, then the retry replays — one charge; on `NoKeys`: two. The gateway's side:
   there is no wrong version of the application here.
 
+### What the on-call engineer sees
+
+`PaymentAuditObserver` (`src/observers/payment-audit.observer.ts`, listed in
+`@Application({ observers })`) implements the four hooks of the execution audit log —
+`AuditLogHooks`: `onExecutionLeaseTakeover`, `onStepHandedOver`, `onFencedEffect`,
+`onOutboundCall` — and writes one line per event to `OnCallLogService` (an alerting client in
+production). On PS3's right run it hears instance 2's takeover of the frozen tree, the zombie's
+hand-over at its fence, the booking's fenced effect and the charge's intent recorded, then sent
+(`tests/audit-hooks.test.ts`). Each event's row is already in `app.auditLogOf(tree)` when the hook
+runs ([Wiki → Observability](https://github.com/agbossjs/agboss/wiki/Observability)).
+
 ## 3. Commands
 
 ```bash

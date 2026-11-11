@@ -13,7 +13,7 @@ import { BatchWorkflowStart } from "../workflows/batch/batch.workflow-start.js";
  * - `POST /api/batches {batchId, jobs}` — starts a batch on thread `batchId` and answers 202 at
  *   once: the tree runs on, held by its lease, and any pod continues it if this one dies;
  * - `GET /api/batches/:batchId` — its kept execution record;
- * - `GET /api/trees/:rootExecutionId` — a running tree's lease log and outbound calls;
+ * - `GET /api/trees/:rootExecutionId` — a running tree's audit log and outbound calls;
  * - `POST /api/verification {batches: [{batchId, jobIds, failedJobIds}], expectations}` — the report
  *   (`verifyRun`); `failedJobIds` are the jobs the other system was told to reject.
  *
@@ -75,7 +75,7 @@ async function handle(app: App, options: ServeOptions, request: IncomingMessage,
     send(response, evidence.record === undefined ? 404 : 200, evidence.record ?? { error: "not-kept-yet" });
   } else if (request.method === "GET" && path.startsWith("/api/trees/")) {
     const tree = { tenantId: TENANT, rootExecutionId: decodeURIComponent(path.slice("/api/trees/".length)) };
-    send(response, 200, { leaseEvents: await app.leaseEventsOf(tree), outboundCalls: await app.outboundCallsOf(tree) });
+    send(response, 200, { auditLog: await app.auditLogOf(tree), outboundCalls: await app.outboundCallsOf(tree) });
   } else if (route === "POST /api/verification") {
     const { batches, expectations = [] } = (await bodyOf(request)) as VerificationRequest;
     const evidence = await Promise.all(batches.map((batch) => batchEvidenceOf(app, batch.batchId, batch.jobIds, batch.failedJobIds)));

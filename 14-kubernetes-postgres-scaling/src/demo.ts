@@ -2,7 +2,7 @@
 // file (LocalScalingApplication), the ledger stub in-process, a batch of twelve jobs — one of them
 // rejected by the other system: it ends at its own failure finish and the others go on. Prometheus is
 // scraped while the backlog waits and after it; then the run is verified from state — the kept
-// records, the lease log, the outbound calls and the stub's ledger — as the cluster's scenario does.
+// records, the audit log, the outbound calls and the stub's ledger — as the cluster's scenario does.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { mkdtempSync } from "node:fs";

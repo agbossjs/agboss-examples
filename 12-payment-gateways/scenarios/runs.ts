@@ -1,5 +1,5 @@
 import {
-  ExecutionLeaseEventKind,
+  ExecutionAuditEventKind,
   OutboundCallEventOutcome,
 } from "@agboss/core";
 import { hours } from "@agboss/core/units";
@@ -43,7 +43,7 @@ async function settledIntents(context: RunContext): Promise<number> {
 
 /**
  * Until the recovering instance's `reconcile` of an intent left pending could not settle it — the
- * lease log's `unknown` (#505; a `KeyReplay`'s `notSent()` past its `keyRetention`, #658): `"reconciled: unknown"`,
+ * audit log's `unknown` (#505; a `KeyReplay`'s `notSent()` past its `keyRetention`, #658): `"reconciled: unknown"`,
  * else nothing within the bound (the intent was never reconciled).
  */
 async function unknownNotes(context: RunContext): Promise<string[]> {
@@ -56,11 +56,11 @@ async function unknownNotes(context: RunContext): Promise<string[]> {
     rootExecutionId: pending.rootExecutionId,
   };
   for (let turn = 0; turn < 200; turn += 1) {
-    const events = await b.leaseEventsOf(tree);
+    const events = await b.auditLogOf(tree);
     if (
       events.some(
         (event) =>
-          event.kind === ExecutionLeaseEventKind.OutboundCall &&
+          event.kind === ExecutionAuditEventKind.OutboundCall &&
           event.outcome === OutboundCallEventOutcome.Unknown,
       )
     )
