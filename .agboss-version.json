@@ -1,18 +1,18 @@
 {
   "repository": "agbossjs/agboss",
   "branch": "main",
-  "frameworkSha": "2d57c97e0e23a56b0a2063fded7fed8058776605",
+  "frameworkSha": "b3b049a98170d240c2bec64557f418fe1452ef6e",
   "version": "0.1.1",
   "postgres": {
     "repository": "agbossjs/postgres",
-    "sha": "333f214135f8095a42d09cc570d3d53f2a2a7e1b"
+    "sha": "476cf12da98d19baa7a343ad86e270500dc9a4a5"
   },
   "mongodb": {
     "repository": "agbossjs/mongodb",
-    "sha": "814d9914002bb5aabcc61d4df645c70e31c88f50"
+    "sha": "d0069e39a916ae17c11e49689404e4d78931f29c"
   },
   "redis": {
     "repository": "agbossjs/redis",
-    "sha": "4bfe249e2557cfd7d175fe529c89bfddcdffc00c"
+    "sha": "97ef49d4741226d19d1b00f5d452dcfcd01eed75"
   }
 }
