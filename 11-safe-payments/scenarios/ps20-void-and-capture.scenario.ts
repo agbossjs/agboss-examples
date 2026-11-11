@@ -13,7 +13,7 @@ import type { PaymentScenario } from "./scenario.types.js";
  * the cancel takes the refusal for "already cancelled", and the order is booked cancelled while the
  * money stays captured — never refunded. Right: one business key for the authorization's outcome,
  * `disposition:<charge>`, the action in the request: the void is the other fingerprint
- * (`IdempotencyKeyConflictError`), and the cancel takes the other route — it refunds.
+ * (`BusinessKeyConflictError`), and the cancel takes the other route — it refunds.
  */
 export const ps20: PaymentScenario = {
   id: "ps20",

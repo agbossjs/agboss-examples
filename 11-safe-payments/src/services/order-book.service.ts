@@ -1,7 +1,7 @@
 import {
   ExecutionContext,
   Injectable,
-  SqliteFencedEffectRepository,
+  FencedEffects,
   TenantContext,
   effectKeyOf,
   type FingerprintedKeyOptions,
@@ -26,10 +26,10 @@ export class ChargeOwnershipError extends Error {
   }
 }
 
-@Injectable({ deps: [SqliteFencedEffectRepository, OrderBookRepository, TenantContext] })
+@Injectable({ deps: [FencedEffects, OrderBookRepository, TenantContext] })
 export class OrderBookService {
   constructor(
-    private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
+    private readonly fencedEffects: FencedEffects,
     private readonly orderBookRepository: OrderBookRepository,
     private readonly tenantContext: TenantContext,
   ) {}
@@ -79,7 +79,7 @@ export class OrderBookService {
     work: (database: DatabaseSync) => T & JsonValue<T>,
   ): Promise<T> {
     const key = effectKeyOf(executionContext, name, identity);
-    const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, work);
+    const { result } = await this.fencedEffects.runOnce(key, work);
     return result;
   }
 }

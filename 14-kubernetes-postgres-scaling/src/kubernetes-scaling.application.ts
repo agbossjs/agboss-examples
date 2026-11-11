@@ -19,7 +19,6 @@ import { ScalingAppDailyBudget } from "./budgets/scaling-app-daily.budget.js";
 import { ScalingExecutionBudget } from "./budgets/scaling-execution.budget.js";
 import { ScalingTenantDailyBudget } from "./budgets/scaling-tenant-daily.budget.js";
 import { AppEnvironment } from "./environments/app.environment.js";
-import { PostgresDeliveries } from "./services/postgres-deliveries.js";
 import { BatchWorkflow } from "./workflows/batch/batch.workflow.js";
 import { JobWorkflow } from "./workflows/job/job.workflow.js";
 
@@ -57,7 +56,6 @@ import { JobWorkflow } from "./workflows/job/job.workflow.js";
     PostgresOutboundCallRepository,
     PostgresPausedExecutionRepository,
     PostgresRateLimitRepository,
-    PostgresDeliveries, // the job's delivery on the fenced-effect store above
   ],
 })
 export class KubernetesScalingApplication {}

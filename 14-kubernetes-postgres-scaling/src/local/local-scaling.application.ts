@@ -21,12 +21,11 @@ import { ScalingTenantDailyBudget } from "../budgets/scaling-tenant-daily.budget
 import { BatchWorkflow } from "../workflows/batch/batch.workflow.js";
 import { JobWorkflow } from "../workflows/job/job.workflow.js";
 import { LocalEnvironment } from "./environments/app.environment.js";
-import { SqliteDeliveries } from "./sqlite-deliveries.js";
 
 /**
  * The same workflows on one machine (`npm test`, `npm run demo`, offline, R4): the SQLite stores in
- * one file instead of PostgreSQL. The job step depends only on the contracts
- * (`FencedEffectRepository`, `OutboundCalls`), so it is the cluster's code that runs here.
+ * one file instead of PostgreSQL. The job step depends only on the core's services
+ * (`FencedEffects`, `OutboundCalls`), so it is the cluster's code that runs here.
  */
 @Application({
   name: "local-scaling-application",
@@ -54,7 +53,6 @@ import { SqliteDeliveries } from "./sqlite-deliveries.js";
     SqliteOutboundCallRepository,
     SqlitePausedExecutionRepository,
     SqliteRateLimitRepository,
-    SqliteDeliveries, // the job's delivery on the fenced-effect store above
   ],
 })
 export class LocalScalingApplication {}

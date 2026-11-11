@@ -11,7 +11,7 @@ import type { PaymentScenario } from "./scenario.types.js";
  * PS7 — the model calls the charge tool twice: twice in one turn, once more in the next, then once
  * with another amount. Each tool call is a step of its own. Wrong: keyed by the step, every call
  * charges. Right: keyed by the order (`order:<id>`): the first charges, the others get its receipt
- * (`Joined` / `Replayed`), and the other amount is refused (`IdempotencyKeyConflictError`).
+ * (`Joined` / `Replayed`), and the other amount is refused (`BusinessKeyConflictError`).
  */
 export const ps7: PaymentScenario = {
   id: "ps7",
@@ -22,7 +22,7 @@ export const ps7: PaymentScenario = {
       level: StubLevel.Full,
       wrongOperations: StepKeyedPaymentOperations,
       wrong: { charges: 4 },
-      right: { charges: 1, lost: 0, notes: ["fenced-effect.key-conflict"] },
+      right: { charges: 1, lost: 0, notes: ["fenced-effect.business-key-conflict"] },
       async run(context) {
         const charge = { orderId: "ps7-order", amountCents: 2500 };
         context.mockLlm(PaymentAgent).thenReturn(

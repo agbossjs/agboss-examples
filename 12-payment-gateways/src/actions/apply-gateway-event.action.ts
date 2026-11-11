@@ -1,7 +1,8 @@
+import type { DatabaseSync } from "node:sqlite";
 import {
   Action,
   ExecutionContext,
-  SqliteFencedEffectRepository,
+  FencedEffects,
   TenantContext,
   effectKeyOf,
   type ActionHandler,
@@ -19,12 +20,12 @@ import { PaymentBooksService } from "../services/payment-books.service.js";
   description: "Applies a gateway event to the shop's books, once per event",
   input: { event: GatewayEventDto },
   output: MovementDto,
-  deps: [ExecutionContext, SqliteFencedEffectRepository, BooksRepository, PaymentBooksService, TenantContext],
+  deps: [ExecutionContext, FencedEffects, BooksRepository, PaymentBooksService, TenantContext],
 })
 export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventAction> {
   constructor(
     private readonly executionContext: ExecutionContext,
-    private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
+    private readonly fencedEffects: FencedEffects,
     private readonly booksRepository: BooksRepository,
     private readonly paymentBooksService: PaymentBooksService,
     private readonly tenantContext: TenantContext,
@@ -41,7 +42,7 @@ export class ApplyGatewayEventAction implements ActionHandler<ApplyGatewayEventA
       businessKey: `event:${event.eventId}`,
       fingerprint: { eventCode, paymentId, orderId, amountCents },
     });
-    const { status } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
+    const { status } = await this.fencedEffects.runOnce(key, (database: DatabaseSync) =>
       this.booksRepository.apply(database, tenantId, event),
     );
     return { movementId: event.eventId, status };

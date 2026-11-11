@@ -153,12 +153,12 @@ export class GatedFencedEffectRepository extends SqliteFencedEffectRepository {
     super(connection, clock, settings);
   }
 
-  override async saveResultIfAbsent<TResult>(
+  override async runOnce<TResult>(
     key: EffectKey,
     work: FencedEffectWork<DatabaseSync, TResult>,
   ): Promise<FencedEffectOutcome<TResult>> {
     await pass(`effect:${key.name}`, this.context.instanceId);
-    return super.saveResultIfAbsent(key, work);
+    return super.runOnce(key, work);
   }
 }
 

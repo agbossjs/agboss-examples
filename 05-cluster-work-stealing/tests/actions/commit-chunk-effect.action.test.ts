@@ -1,5 +1,5 @@
-import { ExecutionFencedError } from "@agboss/core";
-import { testAction } from "@agboss/core/testing";
+import { ExecutionFencedError, FencedEffectRepository, SqliteFencedEffectRepository } from "@agboss/core";
+import { override, testAction } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { CommitChunkEffectAction } from "../../src/actions/commit-chunk-effect.action.js";
 import { ChunkWorkerAgent } from "../../src/agents/chunk-worker/chunk-worker.agent.js";
@@ -13,7 +13,11 @@ import { ChunkWorkerAgent } from "../../src/agents/chunk-worker/chunk-worker.age
 const draft = (chunkId: string, summary: string) => ({
   draft: { producer: ChunkWorkerAgent, value: { chunkId, summary } },
 });
-const onFile = { environment: { sqlitePath: ":memory:" } };
+// the action injects FencedEffects (agbossjs/agboss#890): the store is the one the application lists, SQLite's
+const onFile = {
+  environment: { sqlitePath: ":memory:" },
+  overrides: [override(FencedEffectRepository, SqliteFencedEffectRepository)],
+};
 
 describe("CommitChunkEffectAction — one commit per chunk", () => {
   it("the step run again gets the commit it made, and writes no second row", async () => {
