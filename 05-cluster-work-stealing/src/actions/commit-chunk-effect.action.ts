@@ -1,9 +1,10 @@
+import type { DatabaseSync } from "node:sqlite";
 import {
   Action,
   ExecutionContext,
   effectKeyOf,
+  FencedEffects,
   FingerprintPolicy,
-  SqliteFencedEffectRepository,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -19,19 +20,20 @@ import { ChunkLedgerRepository } from "../repositories/chunk-ledger.repository.j
  * chunk (#508, `chunk:<chunkId>`), not the step: the step run again after a crash, or a second
  * worker for the same chunk on another instance, gets the first commit back and writes nothing; a
  * worker whose lease was taken over is refused (`ExecutionFencedError`, a hand-over) and writes
- * nothing either.
+ * nothing either. It injects the application's `FencedEffects` (agbossjs/agboss#890), never the
+ * store: the application lists `SqliteFencedEffectRepository`, whose transaction is a `DatabaseSync`.
  */
 @Action({
   name: "commit-chunk-effect-action",
   description: "Commits the chunk to the cluster's ledger, once per chunk",
   input: { draft: ChunkDraftDto },
   output: ChunkResultDto,
-  deps: [ExecutionContext, SqliteFencedEffectRepository, ChunkLedgerRepository],
+  deps: [ExecutionContext, FencedEffects, ChunkLedgerRepository],
 })
 export class CommitChunkEffectAction implements ActionHandler<CommitChunkEffectAction> {
   constructor(
     private readonly executionContext: ExecutionContext,
-    private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
+    private readonly fencedEffects: FencedEffects,
     private readonly chunkLedgerRepository: ChunkLedgerRepository,
   ) {}
 
@@ -44,7 +46,7 @@ export class CommitChunkEffectAction implements ActionHandler<CommitChunkEffectA
       businessKey: `chunk:${chunkId}`,
       fingerprintPolicy: FingerprintPolicy.None,
     });
-    const { result } = await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
+    const { result } = await this.fencedEffects.runOnce(key, (database: DatabaseSync) =>
       this.chunkLedgerRepository.recordCommit(database, { chunkId, summary, stepKey }),
     );
     return { chunkId: result.chunkId, summary: result.summary, idempotencyKey: result.stepKey };

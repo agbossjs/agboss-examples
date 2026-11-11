@@ -1,7 +1,8 @@
+import type { DatabaseSync } from "node:sqlite";
 import {
   ExecutionContext,
   Injectable,
-  SqliteFencedEffectRepository,
+  FencedEffects,
   TenantContext,
   effectKeyOf,
 } from "@agboss/core";
@@ -23,10 +24,10 @@ export class PaymentOwnershipError extends Error {
  * form, a customer's request): it moves money only when the shop's own books tie it to that order
  * and that tenant, never on the caller's word (an IDOR otherwise).
  */
-@Injectable({ deps: [SqliteFencedEffectRepository, BooksRepository, TenantContext] })
+@Injectable({ deps: [FencedEffects, BooksRepository, TenantContext] })
 export class PaymentBooksService {
   constructor(
-    private readonly sqliteFencedEffectRepository: SqliteFencedEffectRepository,
+    private readonly fencedEffects: FencedEffects,
     private readonly booksRepository: BooksRepository,
     private readonly tenantContext: TenantContext,
   ) {}
@@ -39,7 +40,7 @@ export class PaymentBooksService {
       fingerprint: { orderId },
     });
     const { tenantId } = this.tenantContext;
-    await this.sqliteFencedEffectRepository.saveResultIfAbsent(key, (database) =>
+    await this.fencedEffects.runOnce(key, (database: DatabaseSync) =>
       this.booksRepository.bookPayment(database, { paymentId, orderId, tenantId }),
     );
   }

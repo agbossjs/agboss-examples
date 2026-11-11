@@ -6,18 +6,22 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ExecutionFencedError, OutboundCallRepository, SqliteOutboundCallRepository } from "@agboss/core";
+import {
+  ExecutionFencedError,
+  FencedEffectRepository,
+  OutboundCallRepository,
+  SqliteFencedEffectRepository,
+  SqliteOutboundCallRepository,
+} from "@agboss/core";
 import { override, testAction, type UnitOptions } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { ProcessJobAction } from "../../src/actions/process-job.action.js";
-import { SqliteDeliveries } from "../../src/local/sqlite-deliveries.js";
-import { Deliveries } from "../../src/services/deliveries.js";
 import { JobWorkflowStart } from "../../src/workflows/job/job.workflow-start.js";
 import { ledgerStubForFile } from "../support/stub.js";
 
 const stub = ledgerStubForFile();
 const local = () => ({
-  overrides: [override(Deliveries, SqliteDeliveries)],
+  overrides: [override(FencedEffectRepository, SqliteFencedEffectRepository)],
   // the local application's environment (the generated type is the cluster application's)
   environment: {
     sqlitePath: ":memory:",
@@ -29,7 +33,7 @@ const local = () => ({
 });
 /** Two pods on one database: each its own pod name, the stores in one SQLite file. */
 const onePodOf = (sqlitePath: string, podName: string) => ({
-  overrides: [override(Deliveries, SqliteDeliveries), override(OutboundCallRepository, SqliteOutboundCallRepository)],
+  overrides: [override(FencedEffectRepository, SqliteFencedEffectRepository), override(OutboundCallRepository, SqliteOutboundCallRepository)],
   environment: { sqlitePath, ledgerUrl: stub.current().url, podName, httpPort: 0, metricsPort: 0 } as unknown as UnitOptions["environment"],
 });
 const job = (jobId: string) => ({ job: { producer: JobWorkflowStart, value: { jobId, durationMs: 0 } } });

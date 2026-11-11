@@ -32,7 +32,7 @@ const NOT_IN_A_POD: readonly unknown[] = [
  */
 @Injectable({ deps: [SqliteConnection, StoreClock, FencedEffectSettings] })
 export class PodFencedEffectRepository extends SqliteFencedEffectRepository {
-  override async saveResultIfAbsent<TResult>(
+  override async runOnce<TResult>(
     key: EffectKey,
     work: FencedEffectWork<DatabaseSync, TResult>,
   ): Promise<FencedEffectOutcome<TResult>> {
@@ -40,7 +40,7 @@ export class PodFencedEffectRepository extends SqliteFencedEffectRepository {
       process.send?.({ at: `effect:${key.name}` });
       await new Promise<never>(() => undefined);
     }
-    return super.saveResultIfAbsent(key, work);
+    return super.runOnce(key, work);
   }
 }
 

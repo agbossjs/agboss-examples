@@ -1,7 +1,7 @@
 import {
   Action,
   ExecutionContext,
-  IdempotencyKeyConflictError,
+  BusinessKeyConflictError,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -15,13 +15,13 @@ import { OrderBookService } from "../services/order-book.service.js";
 /** Whether an error, or one of its causes, is the business key's conflict. */
 function isConflict(error: unknown): boolean {
   for (let at: unknown = error; at instanceof Error; at = at.cause)
-    if (at instanceof IdempotencyKeyConflictError) return true;
+    if (at instanceof BusinessKeyConflictError) return true;
   return false;
 }
 
 /**
  * The customer cancels: void the authorization. When fulfilment already settled it — the void is
- * the other fingerprint of `disposition:<charge>`, `IdempotencyKeyConflictError` — the order takes
+ * the other fingerprint of `disposition:<charge>`, `BusinessKeyConflictError` — the order takes
  * the other route: refund what was captured (PS20).
  */
 @Action({

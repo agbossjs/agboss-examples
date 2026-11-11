@@ -34,8 +34,8 @@ put this project's own rules below, never there.
   (`tests/telemetry/scale-queries.test.ts`).
 - The pod's `terminationGracePeriodSeconds` stays above the preStop sleep plus the app's
   `shutdownTimeout`.
-- The job step depends only on contracts (`Deliveries`, `OutboundCalls`): one `Deliveries` per store
-  set, listed in its application's `providers` — never a store's own class in a shared component.
+- The job step depends only on the core's services (`FencedEffects`, `OutboundCalls`, agbossjs/agboss#890)
+  over the stores its application lists — never a store's own class in a shared component.
 - No table of the example's own, no SQL, no query of the core's tables (`tests/source/no-own-fencing.test.ts`, AC6).
 - The verification reads the public API only (`ExecutionHistoryRepository`, `app.auditLogOf`,
   `app.outboundCallsOf`, the stub's state) and never console output; a new failure the scenario injects

@@ -2,6 +2,7 @@ import {
   Action,
   ApplicationContext,
   ExecutionContext,
+  FencedEffects,
   NotSentTrust,
   OutboundCallReconciliation,
   OutboundCalls,
@@ -12,9 +13,16 @@ import {
 } from "@agboss/core";
 import { JobDto } from "../dto/job.dto.js";
 import { JobReceiptDto } from "../dto/job-receipt.dto.js";
-import { Deliveries } from "../services/deliveries.js";
 import { LedgerClient } from "../services/ledger.client.js";
 import { WorkClient } from "../services/work.client.js";
+
+/** A job's receipt: what its delivery stores, once. */
+interface Receipt {
+  readonly jobId: string;
+  readonly instanceId: string;
+  readonly pod: string;
+  readonly token: number;
+}
 
 /** The ledger's target name, for operators (`app.outboundCallsOf`). */
 const LEDGER = "ledger-stub";
@@ -23,7 +31,9 @@ const LEDGER = "ledger-stub";
  * One job, the way a worker must do it on several pods (agbossjs/agboss#487):
  *
  * 1. the remote work — the slow part; the client takes no signal (`WorkClient`);
- * 2. the delivery, a fenced effect (#500) keyed by the job (`job:<jobId>`, #508): its receipt is
+ * 2. the delivery, a fenced effect (#500) keyed by the job (`job:<jobId>`, #508) through the
+ *    application's `FencedEffects` (#890: whatever store it lists — PostgreSQL in the cluster,
+ *    SQLite locally — the same code): its receipt is
  *    stored once in the store's own transaction, checked against the step's lease — a step run
  *    again after a crash gets the first receipt back (`Replayed`), a zombie whose lease was taken
  *    over is refused (`ExecutionFencedError`, a hand-over) and writes nothing;
@@ -38,7 +48,7 @@ const LEDGER = "ledger-stub";
   description: "Works on one job, delivers it once and records it in the ledger once",
   input: { job: JobDto },
   output: JobReceiptDto,
-  deps: [ExecutionContext, ApplicationContext, WorkClient, LedgerClient, Deliveries, OutboundCalls],
+  deps: [ExecutionContext, ApplicationContext, WorkClient, LedgerClient, FencedEffects, OutboundCalls],
 })
 export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
   constructor(
@@ -46,7 +56,7 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
     private readonly applicationContext: ApplicationContext,
     private readonly workClient: WorkClient,
     private readonly ledgerClient: LedgerClient,
-    private readonly deliveries: Deliveries,
+    private readonly fencedEffects: FencedEffects,
     private readonly outboundCalls: OutboundCalls,
   ) {}
 
@@ -61,9 +71,9 @@ export class ProcessJobAction implements ActionHandler<ProcessJobAction> {
       rootExecutionId: this.executionContext.root.executionId,
       instanceId, pod, token });
 
-    const receipt = await this.deliveries.deliverOnce(
+    const { result: receipt } = await this.fencedEffects.runOnce(
       effectKeyOf(this.executionContext, "deliver", { businessKey, fingerprint: { jobId } }),
-      { jobId, instanceId, pod, token },
+      (): Receipt => ({ jobId, instanceId, pod, token }),
     );
 
     const { result: entry } = await this.outboundCalls.send(
