@@ -1,0 +1,5 @@
+{"type":"init","session_id":"s1","model":"gemini-2.5-pro"}
+{"type":"message","role":"user","content":"(the prompt)"}
+{"type":"message","role":"assistant","content":"```json\n{\"kind\":\"tool_calls\",\"text\":null,","delta":true}
+{"type":"message","role":"assistant","content":"\"calls\":[{\"name\":\"calculate-quote\",\"arguments\":{\"seats\":12,\"tier\":\"pro\"}}]}\n```","delta":true}
+{"type":"result","status":"success","stats":{"total_tokens":300,"input_tokens":250,"output_tokens":50}}

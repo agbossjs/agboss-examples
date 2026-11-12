@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a1d201-b4d3-7602-8da6-eb78f45dd62b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"kind\":\"text\",\"text\":\"Hello from the fixture\",\"calls\":null}"}}
+{"type":"turn.completed","usage":{"input_tokens":15289,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":26,"reasoning_output_tokens":0}}

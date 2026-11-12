@@ -1,0 +1,3 @@
+{"type":"system","subtype":"init","tools":[],"mcp_servers":[]}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"StructuredOutput","input":{"kind":"tool_calls","text":null,"calls":[{"name":"calculate-quote","arguments":{"seats":12,"tier":"pro"}}]}}]}}
+{"type":"result","subtype":"success","is_error":false,"result":"","structured_output":{"kind":"tool_calls","text":null,"calls":[{"name":"calculate-quote","arguments":{"seats":12,"tier":"pro"}}]},"total_cost_usd":0.01,"usage":{"input_tokens":120,"cache_read_input_tokens":3000,"cache_creation_input_tokens":200,"output_tokens":40}}

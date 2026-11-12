@@ -88,3 +88,23 @@ npm run check
 npm test
 npm run demo
 ```
+
+### Try it on your own subscription (demo / local only)
+
+The same workflow can run on a vendor's own CLI, under your own login, with no API key. It plugs in
+through the public transport contract (`@ModelProvider` with `complete(request)`); core is not touched
+and `npm run check` / `npm test` / `npm run demo` stay offline.
+
+```bash
+npm run demo:codex-cli     # codex exec on a ChatGPT plan (OpenAI documents this use)
+npm run demo:claude-cli    # claude -p      (Anthropic's terms prohibit this for third-party products)
+npm run demo:gemini-cli    # gemini -p      (Google's Gemini CLI terms prohibit this for third-party tools)
+```
+
+Each provider logs a startup warning that quotes the vendor's terms: agboss does not and cannot
+guarantee compliance, the account risk is yours. The Claude and Gemini providers exist only behind
+`acknowledgeVendorTermsRisk: true`. The code is in `src/cli-providers/` (one runner: a fresh temp cwd,
+an environment allowlist with no keys, the CLI's own tools off, one process at a time, the process
+tree killed on abort); the credential files of the vendors are never read. The Claude and Gemini
+fixtures in `tests/cli-providers/fixtures/` are written from the vendors' docs, not recorded.
+Full guide: the Wiki page "Try agboss on a subscription".
