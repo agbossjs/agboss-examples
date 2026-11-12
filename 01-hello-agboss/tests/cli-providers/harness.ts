@@ -43,12 +43,12 @@ export interface FakeCli {
 }
 
 /** An executable that stands in for a vendor CLI: replays `replay` (fixtures, in order) in `mode`. */
-export function fakeCli(replay: readonly string[], mode = "replay"): FakeCli {
+export function fakeCli(replay: readonly string[], mode = "replay", orderLog?: string): FakeCli {
   const dir = mkdtempSync(join(tmpdir(), "fake-cli-"));
   const log = join(dir, "calls.jsonl");
   const binary = join(dir, "cli");
   const files = replay.map(fixture).join(",");
-  writeFileSync(binary, `#!/bin/sh\nexec "${process.execPath}" "${join(HERE, "fake-cli.js")}" "${files}" ${mode} "${log}" "$@"\n`);
+  writeFileSync(binary, `#!/bin/sh\nORDER_LOG="${orderLog ?? ""}" exec "${process.execPath}" "${join(HERE, "fake-cli.js")}" "${files}" ${mode} "${log}" "$@"\n`);
   chmodSync(binary, 0o755);
   return {
     binary,

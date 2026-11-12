@@ -35,6 +35,9 @@ if (mode === "fail") {
   process.exit(1);
 }
 record({ startedAt: Date.now() });
+const order = (word) => process.env.ORDER_LOG && appendFileSync(process.env.ORDER_LOG, `${word}\n`);
+order("start");
 if (mode === "slow") await sleep(400);
+order("end");
 const files = replay.split(",");
 process.stdout.write(readFileSync(files[Math.min(calls, files.length - 1)], "utf8"));

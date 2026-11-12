@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { claudeCliModelProvider } from "../../src/cli-providers/claude-cli.provider.js";
 import { CodexCliModelProvider } from "../../src/cli-providers/codex-cli.provider.js";
@@ -61,8 +64,9 @@ describe("a call is cancelled, or times out", () => {
 
 describe("one CLI process at a time", () => {
   it("runs concurrent calls one after the other, across vendors", async () => {
-    const codex = fakeCli(["codex/text.jsonl"], "slow");
-    const claude = fakeCli(["claude/tool-call.jsonl"], "slow");
+    const order = join(mkdtempSync(join(tmpdir(), "order-")), "order.log");
+    const codex = fakeCli(["codex/text.jsonl"], "slow", order);
+    const claude = fakeCli(["claude/tool-call.jsonl"], "slow", order);
     process.env.AGBOSS_CODEX_BINARY = codex.binary;
     process.env.AGBOSS_CLAUDE_BINARY = claude.binary;
     const Claude = claudeCliModelProvider({ acknowledgeVendorTermsRisk: true });
@@ -71,14 +75,7 @@ describe("one CLI process at a time", () => {
 
     await Promise.all([a.complete(request()), b.complete(request()), a.complete(request())]);
 
-    const starts = [...codex.calls(), ...claude.calls()]
-      .filter((call) => call.startedAt !== undefined)
-      .map((call) => call.startedAt ?? 0)
-      .sort((x, y) => x - y);
-    expect(starts).toHaveLength(3);
-    // each run sleeps 400 ms: a start is never within 350 ms of the one before
-    const [first = 0, second = 0, third = 0] = starts;
-    expect(second - first).toBeGreaterThanOrEqual(350);
-    expect(third - second).toBeGreaterThanOrEqual(350);
+    // never two at once: every start is followed by its end before the next start
+    expect(readFileSync(order, "utf8")).toBe("start\nend\n".repeat(3));
   });
 });
