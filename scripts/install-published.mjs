@@ -41,6 +41,7 @@ export const TARGET_DIRS = [
   "12-payment-gateways",
   "13-rag-reranking",
   "14-kubernetes-postgres-scaling",
+  "15-mongo-redis",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {

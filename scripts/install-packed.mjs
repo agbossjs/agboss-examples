@@ -13,6 +13,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rangeInstallArguments } from "./npm-before.mjs";
 import { resolvePortablePackedTarballPath } from "./run-all.mjs";
+import { STORE_PACKAGES } from "./store-packages.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /** The pinned core's version (`.agboss-version.json`): the public range each manifest is restored to. */
@@ -35,6 +36,7 @@ const TARGET_DIRS = [
   "12-payment-gateways",
   "13-rag-reranking",
   "14-kubernetes-postgres-scaling",
+  "15-mongo-redis",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = PINNED_VERSION, cliVersion = PINNED_VERSION) {
@@ -50,7 +52,7 @@ function restorePublicPkg(pkg, frameworkVersion = PINNED_VERSION, cliVersion = P
     delete copy.overrides["@agboss/cli"];
     delete copy.overrides["agboss"];
     delete copy.overrides["agboss-cli"];
-    delete copy.overrides["@agboss/postgres"];
+    for (const store of STORE_PACKAGES) delete copy.overrides[store.name];
     if (Object.keys(copy.overrides).length === 0) {
       delete copy.overrides;
     }
@@ -82,7 +84,7 @@ if (!existsSync(MANIFEST_PATH)) {
 }
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
-const { agboss, agbossCli, postgres } = manifest.packages;
+const { agboss, agbossCli } = manifest.packages;
 const agbossTarballPath = resolvePortablePackedTarballPath(ROOT, agboss.filename, "@agboss/core");
 const cliTarballPath = resolvePortablePackedTarballPath(ROOT, agbossCli.filename, "@agboss/cli");
 
@@ -112,17 +114,19 @@ for (const relDir of TARGET_DIRS) {
     "@agboss/core": relAgboss,
     "@agboss/cli": relCli,
   };
-  // @agboss/postgres (agbossjs/agboss#487), packed until it is on npm: the project's own range stays
-  // in git (the published one), the tarball is installed in its place
-  if (packedPkg.dependencies?.["@agboss/postgres"] !== undefined) {
-    if (postgres === undefined) {
+  // the store packages (agbossjs/agboss#487, #891), packed until they are on npm: the project's
+  // own range stays in git (the published one), the tarball is installed in its place
+  for (const store of STORE_PACKAGES) {
+    if (packedPkg.dependencies?.[store.name] === undefined) continue;
+    const packed = manifest.packages[store.key];
+    if (packed === undefined) {
       throw new Error(
-        `[install-packed] ${relDir} needs @agboss/postgres: pin it in .agboss-version.json (postgres.sha) and run npm run pack:framework`,
+        `[install-packed] ${relDir} needs ${store.name}: pin it in .agboss-version.json (${store.key}.sha) and run npm run pack:framework`,
       );
     }
-    const relPostgres = `file:${relative(projectDir, resolvePortablePackedTarballPath(ROOT, postgres.filename, "@agboss/postgres"))}`;
-    packedPkg.dependencies["@agboss/postgres"] = relPostgres;
-    packedPkg.overrides["@agboss/postgres"] = relPostgres;
+    const relStore = `file:${relative(projectDir, resolvePortablePackedTarballPath(ROOT, packed.filename, store.name))}`;
+    packedPkg.dependencies[store.name] = relStore;
+    packedPkg.overrides[store.name] = relStore;
   }
 
   try {

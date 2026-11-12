@@ -1,0 +1,37 @@
+{
+  "name": "mongo-redis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P1 Proof: AGBoss on MongoDB + Redis — Redis coordinates (leases, the child queue, rate limits; @agboss/redis) and MongoDB keeps everything durable (@agboss/mongodb), wired by the store bundles and provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository) with no `new`; a recount whose shelves run as children on any instance.",
+  "agboss": {
+    "application": "src/mongo-redis.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check --application src/local/local-mongo-redis.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx src/demo.ts --live",
+    "migrate": "agboss-mongodb migrate"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.1",
+    "@agboss/mongodb": "^0.1.1",
+    "@agboss/redis": "^0.1.1"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.1",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

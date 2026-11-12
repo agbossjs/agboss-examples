@@ -510,19 +510,19 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
     async ({ app, mockLlm, mockOf }) => {
       // the billing call refused as a loop: billing-application is already in the call chain
       mockOf(BillingA2AAgent).execute.mockRejectedValue(
-        new MeshLoopDetectedError(
-          {
+        new MeshLoopDetectedError({
+          entry: {
             application: "billing-application",
             start: "billing-workflow-start",
           },
-          [
+          chain: [
             {
               application: "billing-application",
               start: "billing-workflow-start",
               executionId: "exec_loop_1",
             },
           ],
-        ),
+        }),
       );
       mockLlm(TriageAgent).thenReturn(
         callTool(AskBillingTool, {

@@ -121,6 +121,13 @@ export const PROJECTS = [
     primaryProof:
       "Kubernetes + PostgreSQL: a backlog scales the workers out and back in, a killed and a frozen worker are recovered and fenced, every job and every ledger entry exactly once — verified from state (offline: the verification and its sabotage cases, a batch on two instances; the kind run: npm run cluster:scenario)",
   },
+  {
+    name: "15-mongo-redis",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "MongoDB + Redis: Redis coordinates (leases, the child queue, rate limits) and MongoDB keeps everything durable, wired by the store bundles and provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository) with no new; the assembly refuses fenced effects and outbound calls on Redis leases (offline: the local twin and the wiring; live: npm run demo:live)",
+  },
 ];
 
 export function parseRunAllArgs(args) {
