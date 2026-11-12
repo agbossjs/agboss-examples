@@ -8,4 +8,5 @@ export const environment: AppEnvironment = {
   mongodbDatabase: env.optional("MONGODB_DATABASE"),
   mongodbSchemaSetup: env.optional("MONGODB_SCHEMA_SETUP"),
   redisUrl: secret("REDIS_URL"),
+  redisKeyPrefix: env.optional("REDIS_KEY_PREFIX"),
 };

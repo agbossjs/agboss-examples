@@ -65,6 +65,12 @@ npx vitest run tests/live               # the same as a test
 `MONGODB_SCHEMA_SETUP=migrate-on-start` makes each start migrate first instead; the default
 (`check`) refuses an unmigrated or newer schema, so pods need no rights to change it.
 
+**One Redis key prefix per MongoDB database** (`REDIS_KEY_PREFIX`, `redisKeyPrefix`; the live test
+sets its own with its database). A lease key is never deleted, and a retired lease is never taken
+again; the execution ids come from MongoDB (`EXECUTION_ID_STORE`) and start again with a new
+database — an id handed out as new whose lease key already exists in Redis fails with
+`RedisLeaseKeyConflictError` instead of waiting for a take that cannot succeed.
+
 ## 3. Layout
 
 - `src/mongo-redis.application.ts` — the stores and the workflows; `src/environments/` its settings

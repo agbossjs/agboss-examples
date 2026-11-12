@@ -1,7 +1,7 @@
 {
   "repository": "agbossjs/agboss",
   "branch": "main",
-  "frameworkSha": "b3b049a98170d240c2bec64557f418fe1452ef6e",
+  "frameworkSha": "9d94b9d543b9b876ccc4b39ef9eee660ef331c30",
   "version": "0.1.1",
   "postgres": {
     "repository": "agbossjs/postgres",
@@ -13,6 +13,6 @@
   },
   "redis": {
     "repository": "agbossjs/redis",
-    "sha": "97ef49d4741226d19d1b00f5d452dcfcd01eed75"
+    "sha": "b494271f4d75c97118bf60351b849e7b9295725f"
   }
 }

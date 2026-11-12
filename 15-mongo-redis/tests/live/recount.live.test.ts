@@ -2,8 +2,9 @@
  * agbossjs/agboss#891 AC6 — the recount on two instances of MongoRedisApplication against a real
  * replica set and Redis server: skipped (visibly) unless MONGODB_URL and REDIS_URL are set. Two
  * `createApp` instances on the system clock, as two pods are — the leases and the queue on Redis's own
- * time, nothing on a test's virtual clock. Each run uses its own database; the test environment
- * migrates the schema at start.
+ * time, nothing on a test's virtual clock. Each run uses its own database and its own Redis key
+ * prefix (a new database restarts the execution ids: they must not meet the lease keys of an earlier
+ * run's); the test environment migrates the schema at start.
  */
 import { randomUUID } from "node:crypto";
 import { ChildExecutionStatus, createApp } from "@agboss/core";
@@ -20,6 +21,7 @@ describe.skipIf(!isLive)("#891 AC6 live: MongoDB + Redis (MONGODB_URL, REDIS_URL
     "#891 AC6: twelve shelves on two instances of the real application — each counted once",
     async () => {
       process.env.MONGODB_DATABASE = `recount_live_${run}`;
+      process.env.REDIS_KEY_PREFIX = `recount_live_${run}:`;
       const a = await createApp(MongoRedisApplication, { env: "test" });
       const b = await createApp(MongoRedisApplication, { env: "test" });
       try {

@@ -12,7 +12,7 @@
     "references/08-observability-and-tracing.md": "sha256-900f576210abd3d48ffeaa520515c8c57d6acbc9c0bf4abf846125da8ac25d03",
     "references/09-persistence-k8s-and-deploy.md": "sha256-4a66194230747e0aac3c8ecc14e9a2f74167eeaa8bb9715fbcf26ca34fd1e8f0",
     "references/10-testing-vcr-and-evals.md": "sha256-9214f8c658c3d12aebc9d4c7bfbc8cdef67be7371d7c71da5b9030929d24e9a5",
-    "references/11-cli-studio-and-error-catalog.md": "sha256-4d92774eeb274f473d742a8ba5a671e58527370fe661092b5f33ea04ba0f9af6",
+    "references/11-cli-studio-and-error-catalog.md": "sha256-20e43f75d515a917e9420338e565a85771983503e45972f61280ce616609f65f",
     "references/12-end-to-end-recipes.md": "sha256-38f4801d21a8bb74d2e0427232de1775c95e09bcb06e3bb47c47690de273e736",
     "references/13-migrating-from-langgraph.md": "sha256-8e562a9c8de0d835dffd569127aaa41ae12c62d3c5b18c5a22326dd5f78464c3"
   }

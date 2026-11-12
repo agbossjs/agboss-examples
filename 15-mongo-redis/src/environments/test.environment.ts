@@ -8,4 +8,5 @@ export const environment: AppEnvironment = {
   mongodbDatabase: env.optional("MONGODB_DATABASE"),
   mongodbSchemaSetup: "migrate-on-start",
   redisUrl: secret("REDIS_URL"),
+  redisKeyPrefix: env.optional("REDIS_KEY_PREFIX"),
 };
