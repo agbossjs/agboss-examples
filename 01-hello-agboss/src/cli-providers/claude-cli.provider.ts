@@ -32,6 +32,7 @@ const CLAUDE: VendorSpec = {
   stdin: ({ body }) => body,
   reader: () => {
     let result: Record<string, unknown> | undefined;
+    let toolsOff = false; // the init event listed no tool: the CLI itself confirms they are off
     return {
       onEvent: (event) => {
         if (!isJson(event)) return;
@@ -43,10 +44,15 @@ const CLAUDE: VendorSpec = {
             }
           }
         }
+        if (event["type"] === "system" && event["subtype"] === "init" && Array.isArray(event["tools"])) {
+          if (event["tools"].length > 0) throw new CliNativeToolError("init:tools-listed");
+          toolsOff = true;
+        }
         if (event["type"] === "result") result = event;
       },
       finding: () => {
-        if (result === undefined || result["is_error"] === true) return undefined;
+        // fail closed: no confirmation that the tools are off, no answer
+        if (!toolsOff || result === undefined || result["is_error"] === true) return undefined;
         const u = isJson(result["usage"]) ? result["usage"] : {};
         const read = Number(u["cache_read_input_tokens"] ?? 0);
         const write = Number(u["cache_creation_input_tokens"] ?? 0);

@@ -7,7 +7,7 @@ import { ModelProvider } from "@agboss/core/models";
 import type { ModelProviderHandler, ModelProviderRequest, ModelProviderResponse } from "@agboss/core/models";
 import { childEnv } from "./child-env.js";
 import { completeViaCli, type VendorSpec } from "./cli-turn.js";
-import { CliNativeToolError } from "./errors.js";
+import { CliNativeToolError, CliSetupError } from "./errors.js";
 import { CODEX_NOTICE, warn } from "./notice.js";
 import { CLI_PROVIDER_POLICY } from "./provider-policy.js";
 import { isJson } from "./strict-schema.js";
@@ -20,15 +20,33 @@ const TOOL_FEATURES = [
 ];
 const HARMLESS_ITEMS = new Set(["agent_message", "reasoning", "todo_list", "error"]);
 const known = new Map<string, Promise<readonly string[]>>();
+/** At least one of these must be in the listing: it proves the format is the one we understand. */
+const LANDMARKS = ["shell_tool", "unified_exec"];
 
+/** The feature names `codex features list` prints; anything we cannot read is a refusal to run. */
+async function listFeatures(binary: string): Promise<readonly string[]> {
+  let stdout: string;
+  try {
+    ({ stdout } = await promisify(execFile)(binary, ["features", "list"], {
+      env: childEnv(process.env, ["CODEX_HOME"]),
+    }));
+  } catch (error) {
+    throw new CliSetupError(`codex: \`codex features list\` failed (${String(error)}); cannot confirm its tools can be turned off`);
+  }
+  const names = stdout.split("\n").map((row) => row.trim().split(/\s+/u)[0] ?? "");
+  if (!LANDMARKS.some((name) => names.includes(name))) {
+    throw new CliSetupError("codex: the output of `codex features list` is not in a format we know; refusing to run with its tools possibly on");
+  }
+  return names;
+}
+
+/** A listing that fails the check is never cached: the next call asks again. */
 function knownFeatures(binary: string): Promise<readonly string[]> {
   let listed = known.get(binary);
   if (listed === undefined) {
-    listed = promisify(execFile)(binary, ["features", "list"], { env: childEnv(process.env, ["CODEX_HOME"]) }).then(
-      ({ stdout }) => stdout.split("\n").map((row) => row.trim().split(/\s+/u)[0] ?? ""),
-      () => TOOL_FEATURES, // no listing: pass the whole list
-    );
+    listed = listFeatures(binary);
     known.set(binary, listed);
+    listed.catch(() => known.delete(binary));
   }
   return listed;
 }

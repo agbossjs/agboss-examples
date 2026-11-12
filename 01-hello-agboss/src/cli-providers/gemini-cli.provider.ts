@@ -1,10 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Clock, Logger } from "@agboss/core";
 import { ModelProvider } from "@agboss/core/models";
 import type { ModelProviderHandler, ModelProviderRequest, ModelProviderResponse } from "@agboss/core/models";
 import { completeViaCli, type VendorSpec } from "./cli-turn.js";
-import { CliNativeToolError, RiskNotAcknowledgedError } from "./errors.js";
+import { CliNativeToolError, CliSetupError, RiskNotAcknowledgedError } from "./errors.js";
 import { GEMINI_NOTICE, warn } from "./notice.js";
 import { CLI_PROVIDER_POLICY } from "./provider-policy.js";
 import { isJson } from "./strict-schema.js";
@@ -34,6 +34,12 @@ const GEMINI: VendorSpec = {
     await mkdir(join(dir, "policy"), { recursive: true });
     await writeFile(join(dir, ".gemini", "settings.json"), JSON.stringify(SETTINGS));
     await writeFile(join(dir, "policy", "deny-all.toml"), DENY_ALL);
+    // fail closed: read back what the CLI will load; a missing or different file means no run
+    const back = await readFile(join(dir, ".gemini", "settings.json"), "utf8").catch(() => "");
+    const policy = await readFile(join(dir, "policy", "deny-all.toml"), "utf8").catch(() => "");
+    if (back !== JSON.stringify(SETTINGS) || policy !== DENY_ALL) {
+      throw new CliSetupError("gemini: cannot confirm the tools-off settings and deny-all policy are in place");
+    }
   },
   args: ({ dir, model }) =>
     Promise.resolve([
