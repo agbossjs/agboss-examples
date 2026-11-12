@@ -61,8 +61,8 @@ function effortOf(spec: VendorSpec, request: ModelProviderRequest): ReasoningEff
 function failed(spec: VendorSpec, exitCode: number | null, stderr: string): Error {
   if (NOT_LOGGED_IN.test(stderr)) return new CliSetupError(`${spec.name} is not logged in: ${spec.loginHint}`);
   const failure = RATE_LIMITED.test(stderr) ? ModelFailure.RateLimited : ModelFailure.ServerError;
-  // the pinned core's signature: (failure, { retryAfter?, cause? })
-  return new ModelProviderFailureError(failure, {
+  return new ModelProviderFailureError({
+    failure,
     cause: new Error(`${spec.name} exited with ${String(exitCode)}: ${stderr}`),
   });
 }
