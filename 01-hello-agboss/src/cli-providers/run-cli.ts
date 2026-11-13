@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { rmSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,6 +22,44 @@ async function acquire(): Promise<() => void> {
   });
   await previous;
   return release;
+}
+
+/**
+ * What is alive right now: the CLI process groups and their temp directories. On process exit or a
+ * stop signal they are cleaned up synchronously (SIGKILL the group, rmSync the directory): Ctrl+C
+ * ends the process before an async `finally` runs, and a CLI may ignore SIGTERM.
+ */
+const livePids = new Set<number>();
+const liveDirs = new Set<string>();
+let cleanupInstalled = false;
+/** Set by a stop signal: no new run may start (a retry would spawn a CLI nobody cleans up). */
+let stopping = false;
+
+function cleanupNow(): void {
+  for (const pid of livePids) killTree(pid, false);
+  for (const dir of liveDirs) rmSync(dir, { recursive: true, force: true });
+  livePids.clear();
+  liveDirs.clear();
+}
+
+function refuseWhenStopping(): void {
+  if (stopping) throw new Error("cli.stopping: the process is stopping; no new CLI run");
+}
+
+function installCleanup(): void {
+  if (cleanupInstalled) return;
+  cleanupInstalled = true;
+  process.on("exit", cleanupNow);
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    const listener = (): void => {
+      stopping = true;
+      cleanupNow();
+      process.off(signal, listener);
+      // nobody else listens (the app's own stop handler does): end as the signal would have
+      if (process.listenerCount(signal) === 0) process.kill(process.pid, signal);
+    };
+    process.on(signal, listener);
+  }
 }
 
 /** Kills the whole tree: the process group on POSIX (SIGTERM, then SIGKILL), `taskkill /T /F` on Windows. */
@@ -74,6 +113,7 @@ function spawnAndRead(
     });
     let failure: Error | undefined;
     let closed = false;
+    if (child.pid !== undefined) livePids.add(child.pid);
     let stderr = "";
     let pending = "";
 
@@ -104,6 +144,7 @@ function spawnAndRead(
       }
     };
     const finish = (settle: () => void): void => {
+      if (child.pid !== undefined) livePids.delete(child.pid);
       options.signal.removeEventListener("abort", onAbort);
       closed = true;
       settle();
@@ -153,14 +194,21 @@ function spawnAndRead(
  * after the process has exited removes the directory and lets the next run start.
  */
 export async function runCli(options: CliRunOptions): Promise<CliRunResult> {
+  refuseWhenStopping();
   const release = await acquire();
   let dir: string | undefined;
   try {
     options.signal.throwIfAborted();
+    installCleanup();
+    refuseWhenStopping();
     dir = await mkdtemp(join(tmpdir(), "agboss-cli-")); // mode 0700
+    liveDirs.add(dir);
     return await spawnAndRead(options, dir, await options.prepare(dir));
   } finally {
-    if (dir !== undefined) await rm(dir, { recursive: true, force: true });
+    if (dir !== undefined) {
+      await rm(dir, { recursive: true, force: true });
+      liveDirs.delete(dir);
+    }
     release();
   }
 }

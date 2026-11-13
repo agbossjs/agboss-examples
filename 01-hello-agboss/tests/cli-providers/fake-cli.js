@@ -5,11 +5,13 @@
 import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const [replay, mode, log, ...args] = process.argv.slice(2);
 if (args[0] === "features" && mode === "unknown-features") {
   console.log("{\"features\": [\"alpha\", \"beta\"]}");
   process.exit(0);
 }
+if (args[0] === "features" && mode === "hang-features") await sleep(600_000);
 if (args[0] === "features" && mode === "broken-features") process.exit(3);
 if (args[0] === "features") {
   console.log("shell_tool  stable  true\nunified_exec  stable  true\nsome_new_feature  stable  true");
@@ -21,7 +23,6 @@ const calls = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boo
 const schemaAt = args.indexOf("--output-schema");
 const schema = schemaAt >= 0 ? readFileSync(args[schemaAt + 1], "utf8") : undefined;
 const record = (extra) => appendFileSync(log, `${JSON.stringify({ args, stdin, schema, cwd: process.cwd(), env: Object.keys(process.env), files: readdirSync("."), ...extra })}\n`);
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 if (mode === "hang") {
   // a grandchild in the same process group: killing only this process would leave it running
