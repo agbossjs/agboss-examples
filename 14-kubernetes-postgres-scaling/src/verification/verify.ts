@@ -9,7 +9,6 @@ import {
   ExecutionAuditEventKind,
   FencedEffectEventOutcome,
   OutboundCallStatus,
-  type ExecutionHistoryRecord,
   type ExecutionAuditEventRecord,
   type FencedEffectRecord,
   type LeaseTakeoverRecord,
@@ -63,6 +62,24 @@ export interface JobVerification {
   readonly problems: readonly string[];
 }
 
+/** One child execution of the batch's record, as far as the verification reads it. */
+export interface BatchChild {
+  readonly executionId: string;
+  readonly status: ChildExecutionStatus;
+  readonly input: unknown;
+  readonly finish?: { readonly name: string };
+}
+
+/**
+ * The batch's execution record (`ExecutionHistoryRecord`), as far as the verification reads it: its
+ * status, its output and its children — so hand-built evidence needs no full record.
+ */
+export interface BatchRecord {
+  readonly status: ExecutionHistoryStatus;
+  readonly output?: unknown;
+  readonly children: readonly BatchChild[];
+}
+
 /** One batch's evidence, as read from the coordinator. */
 export interface BatchEvidence {
   readonly batchId: string;
@@ -73,7 +90,7 @@ export interface BatchEvidence {
    * at its failure finish with nothing delivered and nothing in the ledger, the batch finishing.
    */
   readonly failedJobIds?: readonly string[];
-  readonly record: ExecutionHistoryRecord | undefined;
+  readonly record: BatchRecord | undefined;
   readonly auditLog: readonly ExecutionAuditEventRecord[];
   readonly outboundCalls: readonly OutboundCallRecord[];
 }
