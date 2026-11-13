@@ -14,13 +14,12 @@ import {
   FencedEffectEventOutcome,
   LeaseTakeoverReason,
   OutboundCallStatus,
-  type ExecutionHistoryRecord,
   type ExecutionAuditEventRecord,
   type OutboundCallRecord,
 } from "@agboss/core";
 import { describe, expect, it } from "vitest";
 import type { StubState } from "../../src/stub/ledger-stub.js";
-import { verifyRun, WriteVerdict, type BatchEvidence, type Expectation } from "../../src/verification/verify.js";
+import { verifyRun, WriteVerdict, type BatchChild, type BatchEvidence, type BatchRecord, type Expectation } from "../../src/verification/verify.js";
 
 const BASE = { tenantId: "default", rootExecutionId: "root-1", occurredAt: "2026-11-02T10:00:00.000Z" };
 const exec = (jobId: string): string => `child-${jobId}`;
@@ -61,7 +60,7 @@ const takeover = (jobId: string, by: string, token: number, from: string, previo
 const call = (jobId: string, status = OutboundCallStatus.Completed): OutboundCallRecord =>
   ({ executionId: exec(jobId), name: "ledger", status }) as OutboundCallRecord;
 
-const child = (jobId: string, status = ChildExecutionStatus.Finished, finish = "job-done-workflow-finish") => ({
+const child = (jobId: string, status = ChildExecutionStatus.Finished, finish = "job-done-workflow-finish"): BatchChild => ({
   executionId: exec(jobId),
   status,
   input: { jobId, durationMs: 0 },
@@ -72,20 +71,20 @@ function batchOf(
   jobIds: readonly string[],
   events: readonly ExecutionAuditEventRecord[],
   overrides: {
-    children?: unknown[];
+    children?: BatchChild[];
     calls?: OutboundCallRecord[];
     record?: "missing";
+    status?: ExecutionHistoryStatus;
     failedJobIds?: string[];
     output?: Record<string, number>;
   } = {},
 ): BatchEvidence {
   const failed = overrides.failedJobIds ?? [];
-  const record = {
-    status: ExecutionHistoryStatus.Finished,
-    rootExecutionId: "root-1",
+  const record: BatchRecord = {
+    status: overrides.status ?? ExecutionHistoryStatus.Finished,
     output: overrides.output ?? { jobs: jobIds.length, succeeded: jobIds.length - failed.length, failed: failed.length, workers: 2 },
     children: overrides.children ?? jobIds.map((jobId) => child(jobId)),
-  } as unknown as ExecutionHistoryRecord;
+  };
   return {
     batchId: "b",
     jobIds,
@@ -272,8 +271,7 @@ describe("agbossjs/agboss#763: a failed job ends at its own failure finish, the 
   });
 
   it("a failed job that cancelled its batch fails", () => {
-    const record = { ...failedBatch().record, status: ExecutionHistoryStatus.Cancelled } as ExecutionHistoryRecord;
-    const report = verifyRun({ batches: [{ ...failedBatch(), record }], stub: stubOf(JOBS, [], ["f"]), expectations: [] });
+    const report = verifyRun({ batches: [failedBatch({ status: ExecutionHistoryStatus.Cancelled })], stub: stubOf(JOBS, [], ["f"]), expectations: [] });
     expect(report.batches[0]?.problems.join("; ")).toContain("the batch ended cancelled");
   });
 });
