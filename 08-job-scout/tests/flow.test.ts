@@ -1,56 +1,70 @@
-import { describe, expect, it } from "vitest";
-import { callTool, replyWith, routeTo, testWith, workflowOf } from "@agboss/core/testing";
-import { JobScout } from "../src/job-scout.workflow.js";
+import { describe, expect } from "vitest";
+import { callTool, replyWith, routeTo, testWith } from "@agboss/core/testing";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import { MainRouter } from "../src/routers/main.router.js";
 import { ProfilerAgent } from "../src/agents/profiler.agent.js";
+import { ScoutAgent } from "../src/agents/scout.agent.js";
 import { ShortlistAgent } from "../src/agents/shortlist.agent.js";
 import { SaveShortlist } from "../src/mcp/save-shortlist.mcp.js";
 import { ShortlistServer } from "../src/mcp/shortlist.server.js";
 import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
 import { ChatWorkflowFinish } from "../src/workflow-finishes/chat.workflow-finish.js";
 
-const workflow = await workflowOf(JobScout);
+const test = testWith(JobScoutApplication);
 
 describe("job-scout on the path grammar (#272)", () => {
-  it("three agents, each answering on its own path to the finish", () => {
-    expect(Object.keys(workflow.config.agents)).toEqual([
-      "profiler-agent",
-      "scout-agent",
-      "shortlist-agent",
-    ]);
+  test("the main router sends to the profiler, whose answer finishes the turn", async ({
+    app,
+    mockLlm,
+  }) => {
+    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent));
+    mockLlm(ProfilerAgent).thenReturn(replyWith("ok"));
+
+    const result = await app.execute(ChatWorkflowStart, { text: "hello" });
+
+    expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ProfilerAgent, ChatWorkflowFinish]);
   });
 
-  it("the main router is Jev, one visit a run, its routes sorted by name", () => {
-    const [main] = workflow.routers;
+  test("the main router sends to the scout, whose answer finishes the turn", async ({
+    app,
+    mockLlm,
+  }) => {
+    mockLlm(MainRouter).thenReturn(routeTo(ScoutAgent));
+    mockLlm(ScoutAgent).thenReturn(replyWith("ok"));
 
-    expect(workflow.routers).toHaveLength(1);
-    expect(main).toMatchObject({ name: "main-router", model: "typesafe/jev-1.13", maxVisits: 1 });
-    expect(main?.routes.map((item) => item.option)).toEqual([
-      "profiler-agent",
-      "scout-agent",
-      "shortlist-agent",
-    ]);
+    const result = await app.execute(ChatWorkflowStart, { text: "hello" });
+
+    expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ScoutAgent, ChatWorkflowFinish]);
   });
 
-  it("guardrails, the approval pause and compaction stay on", () => {
-    expect(workflow.guardrails?.byElement.get("main-router")).toMatchObject({
-      input: [{ name: "prompt-injection-guardrail" }],
-      output: [],
-    });
-    expect(workflow.guardrails?.byElement.get("scout-agent")).toMatchObject({
-      input: [{ name: "prompt-injection-guardrail" }],
-      output: [{ name: "personal-data-guardrail" }],
-    });
-    expect(workflow.config.compactions?.["conversation-compaction"]).toMatchObject({
-      turnsBetweenCompactions: 5,
-      summaryQueueLength: 10,
-      model: { maxTokens: 400 },
+  test("the main router sends to the shortlist agent, whose answer finishes the turn", async ({
+    app,
+    mockLlm,
+  }) => {
+    mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
+    mockLlm(ShortlistAgent).thenReturn(replyWith("ok"));
+
+    const result = await app.execute(ChatWorkflowStart, { text: "hello" });
+
+    expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ShortlistAgent, ChatWorkflowFinish]);
+  });
+
+  test("the main router chooses among three routes, listed by name", async ({ app, mockLlm }) => {
+    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent));
+    mockLlm(ProfilerAgent).thenReturn(replyWith("ok"));
+
+    await app.execute(ChatWorkflowStart, { text: "hello" });
+
+    expect(mockLlm(MainRouter).onlyRequest).toMatchObject({
+      kind: "decision",
+      options: ["profiler-agent", "scout-agent", "shortlist-agent"],
     });
   });
 });
 
-const test = testWith(JobScoutApplication);
+// guardrails, compaction and the router's model: the ledger of tests/demo.test.ts (2 input
+// guardrails, the router, the scout's calls, the output guardrail), the config by `agboss check`
+
 const job = {
   title: "Backend Engineer",
   company: "Fireblocks",

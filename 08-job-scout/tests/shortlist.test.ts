@@ -1,8 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
-import { callTool, mcpServerStub, replyWith, routeTo, testWith, toolOf, workflowOf } from "@agboss/core/testing";
-import { JobScout } from "../src/job-scout.workflow.js";
+import { afterAll, describe, expect } from "vitest";
+import { callTool, replyWith, routeTo, testWith } from "@agboss/core/testing";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import { SHORTLIST_DIR, SHORTLIST_FILE } from "../src/config/paths.js";
 import { ShortlistAgent } from "../src/agents/shortlist.agent.js";
@@ -55,36 +54,33 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
         "- [Backend Engineer 3 — Fireblocks, Tel Aviv](https://example.com/3) · fit 83%",
       ]);
       expect(read).toEqual({ kind: "ok", value: { content: file } });
-      expect((await workflowOf(JobScout)).config.agents["shortlist-agent"]?.tools).toEqual([
-        "read-shortlist-tool",
-        "save-shortlist-tool",
-      ]);
     },
     30_000,
   );
 
-  it("AC4: tested alone with a stub server — a missing file is an empty shortlist", async () => {
-    const written: string[] = [];
-    const server = mcpServerStub(ShortlistServer, {
-      read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
-      write_file: ({ content }) => {
-        written.push(content);
-        return Promise.resolve({ content: "ok" });
-      },
-    });
+  scripted(
+    "AC4: tested alone with a stub server — a missing file is an empty shortlist",
+    async ({ app, mcpOf }) => {
+      const written: string[] = [];
+      mcpOf(ShortlistServer).thenReturn({
+        read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
+        write_file: ({ content }) => {
+          written.push(content);
+          return Promise.resolve({ content: "ok" });
+        },
+      });
 
-    const saved = await toolOf(new SaveShortlist(server, "/tmp/shortlist.md")).invoke({
-      jobs: [job(1)],
-    });
+      const saved = await app.tool(SaveShortlist).invoke({ jobs: [job(1)] });
 
-    expect(saved).toEqual({
-      kind: "ok",
-      value: { added: ["Backend Engineer 1"], alreadyThere: [] },
-    });
-    expect(written).toEqual([
-      "# Shortlist\n- [Backend Engineer 1 — Fireblocks, Tel Aviv](https://example.com/1) · fit 81%\n",
-    ]);
-  });
+      expect(saved).toEqual({
+        kind: "ok",
+        value: { added: ["Backend Engineer 1"], alreadyThere: [] },
+      });
+      expect(written).toEqual([
+        "# Shortlist\n- [Backend Engineer 1 — Fireblocks, Tel Aviv](https://example.com/1) · fit 81%\n",
+      ]);
+    },
+  );
 
   scripted(
     "only the save waits for the user's approval: reading the shortlist goes on at once",

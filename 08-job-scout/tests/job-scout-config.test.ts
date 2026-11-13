@@ -16,10 +16,18 @@ const { application } = testExecutionContext({
 
 const probeBoard = (board: string, words: readonly string[], fetchJson: FetchJson) =>
   new GreenhouseBoards({ boards: {}, places: {} }, application, fetchJson).probe(board, words);
-import { workflowOf } from "@agboss/core/testing";
-import { JobScout } from "../src/job-scout.workflow.js";
+import { replyWith, routeTo, testWith, type ModelRequest } from "@agboss/core/testing";
+import { JobScoutApplication } from "../src/job-scout.application.js";
+import { ProfilerAgent } from "../src/agents/profiler.agent.js";
+import { ScoutAgent } from "../src/agents/scout.agent.js";
+import { MainRouter } from "../src/routers/main.router.js";
+import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
 import { jobScoutPromptVariables } from "../src/config/prompt-variables.js";
 import { jobSearchConfig, JobSearchSchema } from "../src/config/search.config.js";
+
+const test = testWith(JobScoutApplication);
+
+const systemOf = (request: ModelRequest): string => (request.kind === "chat" ? request.system : "");
 
 describe("job-scout search config", () => {
   it("rejects a config without boards", () => {
@@ -48,10 +56,15 @@ describe("job-scout search config", () => {
     );
   });
 
-  it("assembled prompts: every variable filled, the rules in place", async () => {
-    const { prompts } = await workflowOf(JobScout);
-    const p = prompts["profiler-agent"];
-    const s = prompts["scout-agent"];
+  test("assembled prompts: every variable filled, the rules in place", async ({ app, mockLlm }) => {
+    // the system prompts the two agents' models are given: what assembly made of them
+    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent), routeTo(ScoutAgent));
+    mockLlm(ProfilerAgent).thenReturn(replyWith("brief"));
+    mockLlm(ScoutAgent).thenReturn(replyWith("jobs"));
+    await app.execute(ChatWorkflowStart, { text: "propose a brief" });
+    await app.execute(ChatWorkflowStart, { text: "search" });
+    const p = systemOf(mockLlm(ProfilerAgent).onlyRequest);
+    const s = systemOf(mockLlm(ScoutAgent).onlyRequest);
     const boards = String(Object.keys(jobSearchConfig.boards).length);
 
     expect(p).not.toContain("{{");
@@ -61,10 +74,7 @@ describe("job-scout search config", () => {
     expect(p).not.toMatch(/^\d\. /m);
     expect(s).toContain("Never add a filter of your own.");
     // the list comes first and is never dropped for the notes-based explanation (found in #92 M1)
-    const scout = s ?? "";
-    expect(scout.indexOf("numbered list")).toBeLessThan(
-      (scout as any).indexOf("search-company-notes-rag-tool"),
-    );
+    expect(s.indexOf("numbered list")).toBeLessThan(s.indexOf("search-company-notes-rag-tool"));
     expect(s).toContain("Never drop this list");
     expect(s).not.toMatch(/e\.g\. (Lead|Senior)/);
     expect(s).toContain("they also match their cities): israel");
