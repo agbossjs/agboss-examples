@@ -1,5 +1,5 @@
 import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
-import { A2AClient, A2AMesh } from "@agboss/core/a2a";
+import { A2AClient } from "@agboss/core/a2a";
 import { seconds } from "@agboss/core/units";
 import {
   BillingA2AAgent,
@@ -36,7 +36,6 @@ export class AskBillingTool implements ToolHandler<BillingInquiryDto, BillingRes
               skill: "billing-workflow-start",
               input: BillingInquiryDto,
               output: BillingResolutionDto,
-              mesh: A2AMesh.IfSupported,
             },
             headers: {
               authorization: `Bearer ${getActiveBillingApiKey()}`,
