@@ -46,6 +46,8 @@ afterAll(() => {
 export interface FakeCli {
   readonly binary: string;
   readonly calls: () => Call[];
+  /** pids the hanging `features list` of mode hang-features-child recorded: itself, then its child. */
+  readonly listingPids: () => number[];
 }
 
 /** An executable that stands in for a vendor CLI: replays `replay` (fixtures, in order) in `mode`. */
@@ -59,6 +61,8 @@ export function fakeCli(replay: readonly string[], mode = "replay", orderLog?: s
   chmodSync(binary, 0o755);
   return {
     binary,
+    listingPids: () =>
+      existsSync(`${log}.features`) ? readFileSync(`${log}.features`, "utf8").split("\n").filter(Boolean).map(Number) : [],
     calls: () =>
       existsSync(log)
         ? readFileSync(log, "utf8").split("\n").filter(Boolean).map((row) => JSON.parse(row) as Call)

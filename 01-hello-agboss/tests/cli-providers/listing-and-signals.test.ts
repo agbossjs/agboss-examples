@@ -49,6 +49,23 @@ describe("a hung `codex features list`", () => {
   });
 });
 
+describe("an aborted `codex features list`", () => {
+  it("kills the listing's whole process group: no child survives", async () => {
+    const cli = fakeCli([], "hang-features-child");
+    process.env.AGBOSS_CODEX_BINARY = cli.binary;
+    const abort = new AbortController();
+    const settled = codex().complete(request({ signal: abort.signal })).then(() => "DONE", () => "ABORTED");
+    await until(() => cli.listingPids().length === 2);
+    const [lister = 0, child = 0] = cli.listingPids();
+    expect(alive(lister) && alive(child)).toBe(true);
+    abort.abort(new Error("cancelled"));
+    expect(await Promise.race([settled, wait(4000).then(() => "STILL PENDING")])).toBe("ABORTED");
+    await until(() => !alive(lister) && !alive(child), 5000);
+    expect(alive(lister)).toBe(false);
+    expect(alive(child)).toBe(false);
+  });
+});
+
 describe("Ctrl+C on the demo", () => {
   it("leaves no CLI, no grandchild and no temp directory, even for a CLI that ignores SIGTERM", async () => {
     const root = mkdtempSync(join(tmpdir(), "sigint-"));

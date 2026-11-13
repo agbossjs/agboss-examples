@@ -28,7 +28,7 @@ export interface VendorSpec {
    * Before the lock, under the call's signal: what must be confirmed before the CLI may run (Codex:
    * its tools can be turned off). Throws to refuse; a refusal is never remembered.
    */
-  readonly preflight?: (signal: AbortSignal) => Promise<void>;
+  readonly preflight?: (signal: AbortSignal, clock: Clock) => Promise<void>;
   readonly prepare?: (dir: string) => Promise<void>;
   readonly args: (call: {
     readonly dir: string;
@@ -79,7 +79,7 @@ async function runOnce(
   schema: Json,
   correction: string | undefined,
 ): Promise<{ readonly finding: Finding; readonly stderr: string }> {
-  await spec.preflight?.(request.signal); // outside the shared lock: an abort is heard, nobody waits
+  await spec.preflight?.(request.signal, clock); // outside the shared lock: an abort is heard, nobody waits
   const reader = spec.reader();
   const prompt = buildPrompt(request, schema, spec.inlineSchema);
   const body = correction === undefined ? prompt.body : `${prompt.body}\n${correction}`;
