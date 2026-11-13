@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { Clock, Logger } from "@agboss/core";
@@ -19,36 +20,43 @@ const TOOL_FEATURES = [
   "sleep_tool", "code_mode_host", "goals", "tool_suggest", "skill_search", "in_app_browser",
 ];
 const HARMLESS_ITEMS = new Set(["agent_message", "reasoning", "todo_list", "error"]);
-const known = new Map<string, Promise<readonly string[]>>();
+/** Listings that passed the check, by binary. A failed, hung or aborted one is never kept. */
+const known = new Map<string, readonly string[]>();
 /** At least one of these must be in the listing: it proves the format is the one we understand. */
 const LANDMARKS = ["shell_tool", "unified_exec"];
+const LISTING_TIMEOUT_MS = 30_000;
 
-/** The feature names `codex features list` prints; anything we cannot read is a refusal to run. */
-async function listFeatures(binary: string): Promise<readonly string[]> {
-  let stdout: string;
+/**
+ * The feature names `codex features list` prints, asked in an empty temp directory with the same
+ * environment allowlist, under the call's signal and a timeout. Anything we cannot read is a refusal.
+ */
+async function listFeatures(binary: string, signal: AbortSignal): Promise<readonly string[]> {
+  const dir = await mkdtemp(join(tmpdir(), "agboss-cli-list-"));
   try {
-    ({ stdout } = await promisify(execFile)(binary, ["features", "list"], {
+    const { stdout } = await promisify(execFile)(binary, ["features", "list"], {
+      cwd: dir,
       env: childEnv(process.env, ["CODEX_HOME"]),
-    }));
+      signal,
+      timeout: LISTING_TIMEOUT_MS,
+      killSignal: "SIGKILL",
+    });
+    const names = stdout.split("\n").map((row) => row.trim().split(/\s+/u)[0] ?? "");
+    if (!LANDMARKS.some((name) => names.includes(name))) {
+      throw new CliSetupError("codex: the output of `codex features list` is not in a format we know; refusing to run with its tools possibly on");
+    }
+    return names;
   } catch (error) {
+    signal.throwIfAborted();
+    if (error instanceof CliSetupError) throw error;
     throw new CliSetupError(`codex: \`codex features list\` failed (${String(error)}); cannot confirm its tools can be turned off`);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
   }
-  const names = stdout.split("\n").map((row) => row.trim().split(/\s+/u)[0] ?? "");
-  if (!LANDMARKS.some((name) => names.includes(name))) {
-    throw new CliSetupError("codex: the output of `codex features list` is not in a format we know; refusing to run with its tools possibly on");
-  }
-  return names;
 }
 
-/** A listing that fails the check is never cached: the next call asks again. */
-function knownFeatures(binary: string): Promise<readonly string[]> {
-  let listed = known.get(binary);
-  if (listed === undefined) {
-    listed = listFeatures(binary);
-    known.set(binary, listed);
-    listed.catch(() => known.delete(binary));
-  }
-  return listed;
+async function confirmFeatures(signal: AbortSignal): Promise<void> {
+  const binary = process.env[CODEX.binaryEnv] ?? CODEX.defaultBinary;
+  if (!known.has(binary)) known.set(binary, await listFeatures(binary, signal));
 }
 
 const CODEX: VendorSpec = {
@@ -59,8 +67,10 @@ const CODEX: VendorSpec = {
   extraEnv: ["CODEX_HOME", "CODEX_CA_CERTIFICATE"],
   loginHint: "run `codex login`",
   inlineSchema: false,
+  preflight: confirmFeatures,
   args: async ({ dir, model, schema, effort }) => {
-    const listed = await knownFeatures(process.env[CODEX.binaryEnv] ?? CODEX.defaultBinary);
+    const listed = known.get(process.env[CODEX.binaryEnv] ?? CODEX.defaultBinary);
+    if (listed === undefined) throw new CliSetupError("codex: its tools-off setup was not confirmed; refusing to run");
     const schemaPath = join(dir, "schema.json");
     await writeFile(schemaPath, JSON.stringify(schema));
     return [

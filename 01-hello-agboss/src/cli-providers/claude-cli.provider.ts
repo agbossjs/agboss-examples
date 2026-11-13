@@ -45,7 +45,9 @@ const CLAUDE: VendorSpec = {
           }
         }
         if (event["type"] === "system" && event["subtype"] === "init" && Array.isArray(event["tools"])) {
-          if (event["tools"].length > 0) throw new CliNativeToolError("init:tools-listed");
+          // exactly the structured-output tool may be listed (Claude docs), by its known name
+          const others = event["tools"].filter((tool) => tool !== STRUCTURED_OUTPUT_TOOL);
+          if (others.length > 0) throw new CliNativeToolError("init:tools-listed");
           toolsOff = true;
         }
         if (event["type"] === "result") result = event;

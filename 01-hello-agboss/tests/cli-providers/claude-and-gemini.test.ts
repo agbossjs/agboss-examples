@@ -68,4 +68,16 @@ describe("Gemini CLI provider", () => {
     process.env.AGBOSS_GEMINI_BINARY = fakeCli(["gemini/native-tool.jsonl"]).binary;
     await expect(gemini().complete(request())).rejects.toBeInstanceOf(CliNativeToolError);
   });
+
+  it("kills the run on an event type it does not know (an allowlist, as for Codex)", async () => {
+    process.env.AGBOSS_GEMINI_BINARY = fakeCli(["gemini/unknown-event.jsonl"]).binary;
+    await expect(gemini().complete(request())).rejects.toBeInstanceOf(CliNativeToolError);
+  });
+});
+
+describe("Claude: the structured-output tool in init is tolerated, and only it", () => {
+  it("answers when init lists exactly StructuredOutput", async () => {
+    process.env.AGBOSS_CLAUDE_BINARY = fakeCli(["claude/init-structured.jsonl"]).binary;
+    expect((await claude().complete(request())).text).toBe("x");
+  });
 });

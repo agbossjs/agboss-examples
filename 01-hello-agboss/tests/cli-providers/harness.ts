@@ -1,7 +1,8 @@
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { afterAll } from "vitest";
 import { Clock, Logger, type LogEntry } from "@agboss/core";
 import { ModelProviderMessageRole, PromptCaching, Reasoning, type ModelProviderRequest } from "@agboss/core/models";
 import type { Milliseconds } from "@agboss/core/units";
@@ -37,6 +38,11 @@ export interface Call {
   readonly grandchild?: number;
 }
 
+const made: string[] = [];
+afterAll(() => {
+  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
 export interface FakeCli {
   readonly binary: string;
   readonly calls: () => Call[];
@@ -45,6 +51,7 @@ export interface FakeCli {
 /** An executable that stands in for a vendor CLI: replays `replay` (fixtures, in order) in `mode`. */
 export function fakeCli(replay: readonly string[], mode = "replay", orderLog?: string): FakeCli {
   const dir = mkdtempSync(join(tmpdir(), "fake-cli-"));
+  made.push(dir);
   const log = join(dir, "calls.jsonl");
   const binary = join(dir, "cli");
   const files = replay.map(fixture).join(",");

@@ -19,6 +19,7 @@ const SETTINGS = {
   tools: { core: [] },
   context: { fileName: "AGBOSS_NO_CONTEXT.md" },
 };
+const HARMLESS_EVENTS = new Set(["init", "message", "result", "error"]);
 const DENY_ALL = '[[rule]]\ntoolName = "*"\ndecision = "deny"\npriority = 999\n';
 
 const GEMINI: VendorSpec = {
@@ -56,7 +57,8 @@ const GEMINI: VendorSpec = {
       onEvent: (event) => {
         if (!isJson(event)) return;
         const type = String(event["type"]);
-        if (type === "tool_use" || type === "tool_result") throw new CliNativeToolError(type);
+        // an allowlist, as for Codex: anything but these kills the run
+        if (!HARMLESS_EVENTS.has(type)) throw new CliNativeToolError(type);
         if (type === "message" && event["role"] === "assistant" && typeof event["content"] === "string") {
           text += event["content"];
         }
