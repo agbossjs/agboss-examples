@@ -66,6 +66,21 @@
           "reason": "listed"
         },
         {
+          "contract": "A2ATaskRepository",
+          "implementation": "InMemoryA2ATaskRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "A2AFileRepository",
+          "implementation": "InlineA2AFileRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "A2ADirectMessageRepository",
+          "implementation": "InMemoryA2ADirectMessageRepository",
+          "reason": "default"
+        },
+        {
           "contract": "ExecutionHistoryRepository",
           "implementation": "SqliteExecutionHistoryRepository",
           "reason": "listed"
@@ -74,6 +89,21 @@
           "contract": "ChildExecutionQueueRepository",
           "implementation": "InMemoryChildExecutionQueueRepository",
           "reason": "default"
+        },
+        {
+          "contract": "FencedEffectRepository",
+          "implementation": "InMemoryFencedEffectRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "ExecutionAuditLogRepository",
+          "implementation": "InMemoryExecutionAuditLogRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "OutboundCallRepository",
+          "implementation": "SqliteOutboundCallRepository",
+          "reason": "listed"
         }
       ],
       "modelProviders": [
@@ -139,16 +169,18 @@
           {
             "kind": "a2a",
             "client": "billing-a2a-agent",
-            "target": {
-              "application": "billing-application",
-              "start": "billing-workflow-start"
-            },
             "usedBy": [
               {
                 "workflow": "triage-workflow",
                 "tool": "ask-billing-tool"
               }
             ],
+            "price": 0.002,
+            "foreign": false,
+            "target": {
+              "application": "billing-application",
+              "skill": "billing-workflow-start"
+            },
             "input": {
               "dto": "BillingInquiryDto",
               "schemaHash": "fe7c983c6a39c34267ba9ac9b4cb5486fa90b67f473bf90e2f9987f76db04964"
@@ -156,8 +188,7 @@
             "output": {
               "dto": "BillingResolutionDto",
               "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
-            },
-            "price": 0.002
+            }
           },
           {
             "kind": "mcp",

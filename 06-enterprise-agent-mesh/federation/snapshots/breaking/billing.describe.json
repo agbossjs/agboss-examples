@@ -66,6 +66,21 @@
           "reason": "listed"
         },
         {
+          "contract": "A2ATaskRepository",
+          "implementation": "SqliteA2ATaskRepository",
+          "reason": "listed"
+        },
+        {
+          "contract": "A2AFileRepository",
+          "implementation": "InlineA2AFileRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "A2ADirectMessageRepository",
+          "implementation": "InMemoryA2ADirectMessageRepository",
+          "reason": "default"
+        },
+        {
           "contract": "ExecutionHistoryRepository",
           "implementation": "SqliteExecutionHistoryRepository",
           "reason": "listed"
@@ -73,6 +88,21 @@
         {
           "contract": "ChildExecutionQueueRepository",
           "implementation": "InMemoryChildExecutionQueueRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "FencedEffectRepository",
+          "implementation": "InMemoryFencedEffectRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "ExecutionAuditLogRepository",
+          "implementation": "InMemoryExecutionAuditLogRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "OutboundCallRepository",
+          "implementation": "InMemoryOutboundCallRepository",
           "reason": "default"
         }
       ],
@@ -130,7 +160,7 @@
             "kind": "a2a",
             "expose": "billing-a2a-expose",
             "version": "1.0.0",
-            "start": "billing-workflow-start",
+            "skill": "billing-workflow-start",
             "workflow": "billing-workflow",
             "input": {
               "dto": "BillingInquiryDto",
@@ -142,7 +172,9 @@
                 "dto": "BillingResolutionDto",
                 "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
               }
-            ]
+            ],
+            "reply": "task",
+            "cardFileFields": "extension"
           }
         ],
         "imports": [],

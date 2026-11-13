@@ -7,6 +7,7 @@ import {
   SqliteExecutionRecordRepository,
   SqliteExecutionTreeRepository,
   SqliteMeshRequestRepository,
+  SqliteOutboundCallRepository,
   SqlitePausedExecutionRepository,
   SqliteRateLimitRepository,
 } from "@agboss/core";
@@ -61,6 +62,8 @@ export { TriageWorkflow } from "./workflows/triage/triage.workflow.js";
     SqliteRateLimitRepository,
     SqliteExecutionHistoryRepository,
     SqliteMeshRequestRepository,
+    // the A2A accept round trip is an outbound call: its intent is kept beside the leases
+    SqliteOutboundCallRepository,
   ],
   retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
   shutdownTimeout: seconds(15),

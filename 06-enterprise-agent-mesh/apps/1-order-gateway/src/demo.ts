@@ -1,7 +1,7 @@
 import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp, ExecutionStatus } from "@agboss/core";
-import { A2AClient, A2AMesh, a2aHttpListener } from "@agboss/core/a2a";
+import { A2AClient, a2aHttpListener } from "@agboss/core/a2a";
 import { runFederationBlastRadiusProof } from "../../../federation/verify-federation.js";
 import {
   installOfflineNetworkGuard,
@@ -56,7 +56,6 @@ try {
       skill: "billing-workflow-start",
       input: BillingInquiryDto,
       output: BillingResolutionDto,
-      mesh: A2AMesh.IfSupported,
     },
     headers: {
       authorization: "Bearer key-acme",
