@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 import { agbossVitest } from "@agboss/core/testing/vitest";
 
 export default defineConfig({
-  // agbossVitest() loads AGBoss — and the application workflowOf(JobScout) assembles in — through
+  // agbossVitest() loads AGBoss — and the application testWith(JobScoutApplication) assembles — through
   // vite, with its decorators, and registers the workflow matchers (toFollowPath, toFinishWith, …)
   test: agbossVitest({
     include: ["tests/**/*.test.ts"],

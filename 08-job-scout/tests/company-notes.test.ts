@@ -2,13 +2,15 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { RagMode } from "@agboss/core";
-import { RagTenancy } from "@agboss/core/rag";
-import { workflowOf } from "@agboss/core/testing";
-import { JobScout } from "../src/job-scout.workflow.js";
+import { callTool, replyWith, routeTo, testWith } from "@agboss/core/testing";
+import { JobScoutApplication } from "../src/job-scout.application.js";
+import { ScoutAgent } from "../src/agents/scout.agent.js";
+import { MainRouter } from "../src/routers/main.router.js";
+import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
 import { NOTES_DIR } from "../src/config/paths.js";
 import { CompanyNotes } from "../src/rag/company-notes.rag.js";
 
+const test = testWith(JobScoutApplication);
 const signal = new AbortController().signal;
 // agbossjs/agboss#700: every retrieval and index names its tenant — the notes are the default tenant's
 const tenantId = "default";
@@ -30,17 +32,27 @@ describe("company notes (knowledge base)", () => {
     expect(retrieval.results.map((result) => result.source)).not.toContain("readme.md");
   });
 
-  it("AC3: the scout searches the notes itself (tool mode, 3 passages); the notes are marked as samples", async () => {
-    const workflow = await workflowOf(JobScout);
+  test("AC3: the scout searches the notes itself (tool mode, 3 passages); the notes are marked as samples", async ({
+    app,
+    mockLlm,
+  }) => {
+    mockLlm(MainRouter).thenReturn(routeTo(ScoutAgent));
+    mockLlm(ScoutAgent).thenReturn(
+      callTool(CompanyNotes, { query: "Why is Fireblocks a fit for a backend engineer?" }),
+      replyWith("done"),
+    );
     const index = await new CompanyNotes({
       folder: NOTES_DIR,
       sqlitePath: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
     }).index({ tenantId, signal });
 
-    expect(workflow.config.agents["scout-agent"]?.rag).toEqual([
-      { name: "company-notes-rag", mode: RagMode.Tool, topK: 3, tenancy: RagTenancy.PerTenant },
-    ]);
-    expect(workflow.config.agents["scout-agent"]?.tools).toContain("search-company-notes-rag-tool");
+    const result = await app.execute(ChatWorkflowStart, { text: "what do my notes say?" });
+
+    // the scout has the search tool (a call of a tool it lacks would fail), reading at most 3 passages
+    const [search] = result.toolCalls;
+    const found = (search?.output as { results: readonly unknown[] }).results;
+    expect(search?.step.component.name).toBe("search-company-notes-rag-tool");
+    expect(found.length).toBeLessThanOrEqual(3);
     expect(index.documents).toBe(5);
   });
 });

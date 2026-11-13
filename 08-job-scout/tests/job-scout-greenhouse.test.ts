@@ -1,7 +1,8 @@
-import { secret } from "@agboss/core";
-import { testExecutionContext, toolOf } from "@agboss/core/testing";
+import { ExecutionContext, Injectable, secret, Tool } from "@agboss/core";
+import { testExecutionContext, testTool } from "@agboss/core/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
+import { JobMatches, JobQuery } from "../src/tools/greenhouse-jobs.dto.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
 import { GreenhouseBoards } from "../src/services/greenhouse-boards.service.js";
 import { JobFitJudge } from "../src/services/job-fit.service.js";
@@ -17,19 +18,6 @@ const { application } = testExecutionContext({
   },
 }).tenant;
 
-const greenhouse = (deps: {
-  judge: FitJudge;
-  fetchJson: (url: string) => Promise<unknown>;
-  search: typeof testSearch;
-}) =>
-  toolOf(
-    new GreenhouseJobs(
-      { rate: deps.judge },
-      deps.search,
-      new GreenhouseBoards(deps.search, application, deps.fetchJson),
-      testExecutionContext(),
-    ),
-  );
 import type { JobSearch } from "../src/config/search.config.js";
 import { usageRecord } from "./helpers.js";
 
@@ -77,6 +65,44 @@ const judge = vi.fn<FitJudge>((_profile, j) =>
   }),
 );
 
+/** What the fakes below call: a test says which judge and which board fetch it runs on. */
+let judgeImpl: FitJudge = judge;
+let fetchImpl: (url: string) => Promise<unknown> = fetchJson;
+
+@Injectable()
+class FakeJudge {
+  rate: FitJudge = (profile, j) => judgeImpl(profile, j);
+}
+
+@Injectable()
+class FakeSearch {
+  readonly boards = testSearch.boards;
+  readonly places = testSearch.places;
+}
+
+@Injectable()
+class FakeBoards extends GreenhouseBoards {
+  constructor() {
+    super(testSearch, application, (url) => fetchImpl(url));
+  }
+}
+
+/** The tool with its dependencies replaced: the same class and `run`, the container makes it. */
+@Tool({
+  name: "greenhouse-jobs-tool",
+  description: "The greenhouse tool on fake dependencies.",
+  input: JobQuery,
+  output: JobMatches,
+  deps: [FakeJudge, FakeSearch, FakeBoards, ExecutionContext],
+})
+class TestGreenhouseJobs extends GreenhouseJobs {}
+
+const greenhouse = (deps: { judge?: FitJudge; fetchJson?: (url: string) => Promise<unknown> }) => {
+  judgeImpl = deps.judge ?? judge;
+  fetchImpl = deps.fetchJson ?? fetchJson;
+  return testTool(TestGreenhouseJobs);
+};
+
 const search = {
   profile: "Senior backend, Java or Kotlin primary; no management roles",
   locations: ["Israel"],
@@ -85,38 +111,45 @@ const search = {
   boards: ["fireblocks", "similarweb", "jfrog", "ghost"],
 };
 
+/** A tool input as the model fills it, the DTO's defaults written out. */
+const query = (over: Partial<JobQuery> = {}): JobQuery => ({
+  titleMustInclude: [],
+  count: 20,
+  minFit: 0,
+  ...search,
+  ...over,
+});
+
 describe("greenhouse-jobs-tool", () => {
   it("filters hard, lets the judge rank the rest and returns the best with links", async () => {
-    const tool = greenhouse({ judge, fetchJson, search: testSearch });
+    const tool = greenhouse({});
 
-    const result = await tool.invoke({ ...search, minFit: 0.5 });
+    const { output } = await tool(query({ minFit: 0.5 }));
 
-    expect(result.kind).toBe("ok");
-    if (result.kind !== "ok") return;
-    expect(result.value.jobs.map((j) => [j.company, j.title, j.fit])).toEqual([
+    expect(output.jobs.map((j) => [j.company, j.title, j.fit])).toEqual([
       ["Fireblocks", "Senior Backend Engineer", 90],
       ["Similarweb", "Backend Engineer, Platform", 70],
     ]);
-    expect(result.value.jobs[0]?.matchedSkills).toEqual(["Java", "Kotlin", "Kafka"]);
-    expect(result.value).toMatchObject({ afterFilters: 3, judged: 3, passed: 2, judgeFailures: 0 });
-    expect(result.value.failedBoards).toEqual([{ board: "ghost", error: "Error: 404" }]);
+    expect(output.jobs[0]?.matchedSkills).toEqual(["Java", "Kotlin", "Kafka"]);
+    expect(output).toMatchObject({ afterFilters: 3, judged: 3, passed: 2, judgeFailures: 0 });
+    expect(output.failedBoards).toEqual([{ board: "ghost", error: "Error: 404" }]);
   });
 
   it("ranks everything by default (no floor)", async () => {
-    const tool = greenhouse({ judge, fetchJson, search: testSearch });
+    const tool = greenhouse({});
 
-    const result = await tool.invoke(search);
+    const { output } = await tool(query());
 
-    expect(result.kind === "ok" && result.value.jobs.map((j) => j.fit)).toEqual([90, 70, 10]);
+    expect(output.jobs.map((j) => j.fit)).toEqual([90, 70, 10]);
   });
 
   it("caches boards and judgements for the same profile", async () => {
     fetchJson.mockClear();
     judge.mockClear();
-    const tool = greenhouse({ judge, fetchJson, search: testSearch });
+    const tool = greenhouse({});
 
-    await tool.invoke({ ...search, boards: ["similarweb"] });
-    await tool.invoke({ ...search, boards: ["similarweb"], count: 5 });
+    await tool(query({ boards: ["similarweb"] }));
+    await tool(query({ boards: ["similarweb"], count: 5 }));
 
     expect(fetchJson).toHaveBeenCalledTimes(1);
     expect(judge).toHaveBeenCalledTimes(1);
@@ -124,17 +157,17 @@ describe("greenhouse-jobs-tool", () => {
 
   it("uses all configured boards by default and counts judge failures", async () => {
     const failing: FitJudge = () => Promise.resolve({ fit: undefined, costUsd: 0 });
-    const tool = greenhouse({ judge: failing, fetchJson, search: testSearch });
+    const tool = greenhouse({ judge: failing });
 
-    const result = await tool.invoke({ profile: search.profile, locations: ["Israel"] });
+    const { output } = await tool(query({ boards: [], skills: [], excludeTitleWords: [] }));
 
-    expect(result.kind === "ok" && result.value.searched).toEqual([
+    expect(output.searched).toEqual([
       "fireblocks",
       "similarweb",
       "jfrog",
       "ghost",
     ]);
-    expect(result.kind === "ok" && result.value.judgeFailures).toBe(4);
+    expect(output.judgeFailures).toBe(4);
   });
 });
 
@@ -183,15 +216,13 @@ describe("JobFitJudge (Jev per job)", () => {
 describe("hard filters", () => {
   it("keeps only titles with a required word and drops excluded ones, before the judge", async () => {
     judge.mockClear();
-    const tool = greenhouse({ judge, fetchJson, search: testSearch });
+    const tool = greenhouse({});
 
-    const result = await tool.invoke({
-      ...search,
-      titleMustInclude: ["Senior"],
-      excludeTitleWords: ["Lead"],
-    });
+    const { output } = await tool(
+      query({ titleMustInclude: ["Senior"], excludeTitleWords: ["Lead"] }),
+    );
 
-    expect(result.kind === "ok" && result.value.jobs.map((j) => j.title)).toEqual([
+    expect(output.jobs.map((j) => j.title)).toEqual([
       "Senior Backend Engineer",
     ]);
     expect(judge).toHaveBeenCalledTimes(1);
@@ -199,16 +230,14 @@ describe("hard filters", () => {
 
   it("matches Israeli cities for Israel", async () => {
     const tool = greenhouse({
-      judge,
-      search: testSearch,
       fetchJson: () =>
         Promise.resolve(
           board([job("Backend", "Or Yehuda", "Java"), job("Backend", "Berlin", "Java")]),
         ),
     });
 
-    const result = await tool.invoke({ ...search, boards: ["x"], excludeTitleWords: [] });
+    const { output } = await tool(query({ boards: ["x"], excludeTitleWords: [] }));
 
-    expect(result.kind === "ok" && result.value.jobs.map((j) => j.location)).toEqual(["Or Yehuda"]);
+    expect(output.jobs.map((j) => j.location)).toEqual(["Or Yehuda"]);
   });
 });
