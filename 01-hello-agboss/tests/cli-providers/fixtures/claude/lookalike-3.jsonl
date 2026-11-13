@@ -1,0 +1,2 @@
+{"type": "system", "subtype": "init", "tools": ["StructuredOutput "], "mcp_servers": []}
+{"type": "result", "subtype": "success", "is_error": false, "result": "", "structured_output": {"kind": "text", "text": "x", "calls": null}, "usage": {"input_tokens": 1, "output_tokens": 1}}

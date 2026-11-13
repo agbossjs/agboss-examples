@@ -1,12 +1,11 @@
-import { execFile } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { Clock, Logger } from "@agboss/core";
 import { ModelProvider } from "@agboss/core/models";
 import type { ModelProviderHandler, ModelProviderRequest, ModelProviderResponse } from "@agboss/core/models";
 import { childEnv } from "./child-env.js";
+import { runListing } from "./run-listing.js";
 import { completeViaCli, type VendorSpec } from "./cli-turn.js";
 import { CliNativeToolError, CliSetupError } from "./errors.js";
 import { CODEX_NOTICE, warn } from "./notice.js";
@@ -24,21 +23,19 @@ const HARMLESS_ITEMS = new Set(["agent_message", "reasoning", "todo_list", "erro
 const known = new Map<string, readonly string[]>();
 /** At least one of these must be in the listing: it proves the format is the one we understand. */
 const LANDMARKS = ["shell_tool", "unified_exec"];
-const LISTING_TIMEOUT_MS = 30_000;
 
 /**
  * The feature names `codex features list` prints, asked in an empty temp directory with the same
  * environment allowlist, under the call's signal and a timeout. Anything we cannot read is a refusal.
  */
-async function listFeatures(binary: string, signal: AbortSignal): Promise<readonly string[]> {
+async function listFeatures(binary: string, signal: AbortSignal, clock: Clock): Promise<readonly string[]> {
   const dir = await mkdtemp(join(tmpdir(), "agboss-cli-list-"));
   try {
-    const { stdout } = await promisify(execFile)(binary, ["features", "list"], {
+    const stdout = await runListing(binary, ["features", "list"], {
       cwd: dir,
       env: childEnv(process.env, ["CODEX_HOME"]),
       signal,
-      timeout: LISTING_TIMEOUT_MS,
-      killSignal: "SIGKILL",
+      clock,
     });
     const names = stdout.split("\n").map((row) => row.trim().split(/\s+/u)[0] ?? "");
     if (!LANDMARKS.some((name) => names.includes(name))) {
@@ -54,9 +51,9 @@ async function listFeatures(binary: string, signal: AbortSignal): Promise<readon
   }
 }
 
-async function confirmFeatures(signal: AbortSignal): Promise<void> {
+async function confirmFeatures(signal: AbortSignal, clock: Clock): Promise<void> {
   const binary = process.env[CODEX.binaryEnv] ?? CODEX.defaultBinary;
-  if (!known.has(binary)) known.set(binary, await listFeatures(binary, signal));
+  if (!known.has(binary)) known.set(binary, await listFeatures(binary, signal, clock));
 }
 
 const CODEX: VendorSpec = {

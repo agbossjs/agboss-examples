@@ -80,4 +80,12 @@ describe("Claude: the structured-output tool in init is tolerated, and only it",
     process.env.AGBOSS_CLAUDE_BINARY = fakeCli(["claude/init-structured.jsonl"]).binary;
     expect((await claude().complete(request())).text).toBe("x");
   });
+
+  it.each(["StructuredOutputX", "Structured", "structuredoutput", "StructuredOutput ", "mcp__StructuredOutput"].map((name, index) => [name, index] as const))(
+    "kills the run for the look-alike tool %j in init",
+    async (_name, index) => {
+      process.env.AGBOSS_CLAUDE_BINARY = fakeCli([`claude/lookalike-${String(index)}.jsonl`]).binary;
+      await expect(claude().complete(request())).rejects.toBeInstanceOf(CliNativeToolError);
+    },
+  );
 });
