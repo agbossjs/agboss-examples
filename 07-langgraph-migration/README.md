@@ -55,4 +55,4 @@ npm run demo    # Runs side-by-side before-langgraph vs after-agboss comparison
 
 This project is a **deterministic before/after reference showcase**: it runs the pre-written `before-langgraph/support.graph.ts` and `after-agboss/src/` implementations side by side in offline mode (`$0`, no external LLM keys) and proves that the AGBoss architecture eliminates the 15-field God State, untyped string edges, unbounded fan-out, and dynamic system prompt interpolation.
 
-An **unassisted live coding-agent migration benchmark** (measuring an external LLM coding agent's multi-attempt success rate when migrating `before-langgraph/` from scratch using `.claude/skills/agboss/references/13-migrating-from-langgraph.md`) requires live paid LLM API execution and is documented as **not yet verified** in offline CI.
+An **unassisted live coding-agent migration benchmark** (measuring an external LLM coding agent's multi-attempt success rate when migrating `before-langgraph/` from scratch using `.agents/skills/agboss/references/13-migrating-from-langgraph.md`) requires live paid LLM API execution and is documented as **not yet verified** in offline CI.

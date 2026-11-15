@@ -5,6 +5,6 @@ import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
   name: "chunk-sign-off-channel",
   description: "Operator approval required before committing a high-risk chunk",
   approves: ChunkTaskDto,
-  answeredBy: PauseAnswerer.ThreadOwner,
+  answerer: PauseAnswerer.ThreadOwner,
 })
 export abstract class ChunkSignOffChannel extends ChannelOf<ChunkSignOffChannel> {}

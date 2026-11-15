@@ -10,6 +10,8 @@ import {
   SqliteRateLimitRepository,
 } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
+import { OnCallRefundApproverChannel } from "./channels/on-call-refund-approver.channel.js";
+import { OnCallSeniorApproverChannel } from "./channels/on-call-senior-approver.channel.js";
 import { SupportAppDailyBudget } from "./budgets/support-app-daily.budget.js";
 import { SupportExecutionBudget } from "./budgets/support-execution.budget.js";
 import { SupportTenantDailyBudget } from "./budgets/support-tenant-daily.budget.js";
@@ -19,7 +21,11 @@ import { AppEnvironment } from "./environments/app.environment.js";
 import { AuditTrailToolInterceptor } from "./interceptors/audit.interceptor.js";
 import { SupportOfflineModelProvider } from "./model-providers/support-offline.model-provider.js";
 import { CustomerContactPiiPolicy } from "./pii-policies/customer-contact.pii-policy.js";
+import { RefundDeskPauseListener } from "./listeners/refund-desk.pause-listener.js";
+import { ApprovalInboxService } from "./services/approval-inbox.service.js";
+import { OnCallLogService } from "./services/on-call-log.service.js";
 import { LiveSupportRefundWorkflow } from "./workflows/live-support-refund/live-support-refund.workflow.js";
+import { RefundApprovalWorkflow } from "./workflows/refund-approval/refund-approval.workflow.js";
 import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund.workflow.js";
 
 @Application({
@@ -29,12 +35,17 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
   tenantContext: SupportTenantContext,
   executionContext: SupportExecutionContext,
   piiKeyField: "piiPseudonymKey",
-  workflows: [SupportRefundWorkflow, LiveSupportRefundWorkflow],
+  workflows: [SupportRefundWorkflow, LiveSupportRefundWorkflow, RefundApprovalWorkflow],
   budgets: [SupportAppDailyBudget, SupportTenantDailyBudget, SupportExecutionBudget],
   piiPolicies: [CustomerContactPiiPolicy],
   toolInterceptors: [AuditTrailToolInterceptor],
   providers: [
     SupportOfflineModelProvider,
+    OnCallRefundApproverChannel,
+    OnCallSeniorApproverChannel,
+    RefundDeskPauseListener,
+    ApprovalInboxService,
+    OnCallLogService,
     SqliteCheckpointSaver,
     SqliteExecutionRecordRepository,
     SqlitePausedExecutionRepository,

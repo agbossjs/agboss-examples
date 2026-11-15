@@ -4,7 +4,7 @@ import {
   CompensationStatus,
   createApp,
   ExecutionStatus,
-  PauseResolution,
+  PauseClosedReason,
 } from "@agboss/core";
 import { describe, expect, it } from "vitest";
 import { assertLifoCompensationOrder } from "../../../../scripts/tooling/assertions/execution-events.js";
@@ -14,7 +14,7 @@ import {
 } from "../../../../scripts/tooling/assertions/idempotency.js";
 import { runBudgetExceededScenario } from "../../../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../../../scenarios/cancel-and-rollback.js";
-import { runPauseWithdrawalScenario } from "../../../scenarios/pause-withdrawal.js";
+import { runPauseClosedScenario } from "../../../scenarios/pause-closed.js";
 import { runPaymentFailureScenario } from "../../../scenarios/payment-failure.js";
 import { runQuorumApprovalScenario } from "../../../scenarios/quorum-approval.js";
 import { runRollbackCrashScenario } from "../../../scenarios/rollback-crash.js";
@@ -76,14 +76,14 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     assertIdempotencyKeysPresent(res.ledgerEntries);
   });
 
-  it("Scenario C: cancels paused HITL execution, withdraws channel ask, and rolls back reservations in LIFO order", async () => {
+  it("Scenario C: cancels paused HITL execution, closes the approval message once, and rolls back reservations in LIFO order", async () => {
     const res = await runCancelAndRollbackScenario("SCENARIO-C1");
 
     expect(res.initialStatus).toBe(ExecutionStatus.Paused);
     expect(res.cancelled).toBe(true);
-    expect(res.withdrawnCount).toBe(1);
-    expect(res.withdrawnResolution).toBe(PauseResolution.Cancelled);
-    expect(res.lateResumeRejectedWithNotPaused).toBe(true);
+    expect(res.closedCount).toBe(1);
+    expect(res.closedReason).toBe(PauseClosedReason.Cancelled);
+    expect(res.lateResumeRejectedWithPauseClosed).toBe(PauseClosedReason.Cancelled);
     expect(res.hotelState).toBe("RELEASED");
     expect(res.flightState).toBe("RELEASED");
 
@@ -115,7 +115,7 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     assertIdempotencyKeysPresent(res.ledgerEntries);
   });
 
-  it("Scenario E & F: achieves 2-of-3 parallel reviewer quorum and withdraws superseded paused 3rd branch", async () => {
+  it("Scenario E & F: achieves 2-of-3 parallel reviewer quorum and closes the superseded 3rd branch's approval message", async () => {
     const resE = await runQuorumApprovalScenario("QUORUM-E1");
 
     expect(resE.status).toBe(ExecutionStatus.Finished);
@@ -124,13 +124,13 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     const accepted = resE.branches.filter((b) => b.verdict === BranchVerdict.Counted);
     expect(accepted.length).toBe(2);
 
-    const resF = await runPauseWithdrawalScenario("WITHDRAW-F1");
+    const resF = await runPauseClosedScenario("CLOSED-F1");
     expect(resF.status).toBe(ExecutionStatus.Finished);
     expect(resF.outcomeStatus).toBe("CONFIRMED_BY_QUORUM");
     expect(resF.sentPauseId).not.toBe("");
-    expect(resF.withdrawnPauseId).toBe(resF.sentPauseId);
-    expect(resF.withdrawnResolution).toBe(PauseResolution.Withdrawn);
-    expect(resF.lateResumeRejectedWithNotPaused).toBe(true);
+    expect(resF.closedPauseId).toBe(resF.sentPauseId);
+    expect(resF.closedReason).toBe(PauseClosedReason.Withdrawn);
+    expect(resF.lateResumeRejectedWithPauseClosed).toBe(PauseClosedReason.Withdrawn);
   });
 
   it("Idempotency: deduplicates repeated reserve, authorize, confirm, and release calls with identical idempotency keys", async () => {

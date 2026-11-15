@@ -34,3 +34,6 @@ eval-report.html
 *.log
 .idea/
 .vscode/
+
+# The local link to each project's skills (the files live in .agents/skills/agboss, committed)
+**/.claude/skills/agboss

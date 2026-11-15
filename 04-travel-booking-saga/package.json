@@ -2,7 +2,7 @@
   "name": "travel-booking-saga",
   "version": "0.1.0",
   "private": true,
-  "description": "AGBoss P0 Proof — Transaction compensation, interruption, SQLite recovery, idempotency, 2-of-3 quorum, and HITL pause withdrawal",
+  "description": "AGBoss P0 Proof — Transaction compensation, interruption, SQLite recovery, idempotency, 2-of-3 quorum, and closed approval messages (onPauseClosed)",
   "type": "module",
   "agboss": {
     "application": "src/travel-booking-saga.application.ts"

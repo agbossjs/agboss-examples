@@ -1,8 +1,9 @@
 import {
   Channel,
   type ChannelAsk,
+  type ChannelPauseClosedEvent,
   ChannelOutcome,
-  type ChannelWithdrawal,
+  type PauseClosedReason,
 } from "@agboss/core";
 import { BookingApprovalChannelRole } from "./booking-approval.channel-role.js";
 
@@ -12,19 +13,38 @@ export interface RecordedPauseAsk {
   readonly arguments: Readonly<Record<string, unknown>>;
 }
 
-export interface RecordedPauseWithdrawal {
+/** What the approval message's owner learns when a pause closes: the reason, once per notice. */
+export interface RecordedPauseClose {
   readonly pauseId: string;
-  readonly resolution: string;
+  readonly reason: PauseClosedReason;
+  readonly deliveryId: string;
 }
 
 const sentAsks: RecordedPauseAsk[] = [];
-const withdrawnAsks: RecordedPauseWithdrawal[] = [];
+const closedAsks: RecordedPauseClose[] = [];
+const seenDeliveries = new Set<string>();
 let askWaiters: (() => void)[] = [];
+let closeWaiters: (() => void)[] = [];
 
 export function resetChannelRecords(): void {
   sentAsks.length = 0;
-  withdrawnAsks.length = 0;
+  closedAsks.length = 0;
+  seenDeliveries.clear();
   askWaiters = [];
+  closeWaiters = [];
+}
+
+/**
+ * Resolves once the channel has been told of a close. A notice is delivered at least once, after the
+ * transition that closed the pause — the run, the resume and the cancel never wait for it.
+ */
+export function waitForChannelClose(): Promise<void> {
+  if (closedAsks.length > 0) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => {
+    closeWaiters.push(resolve);
+  });
 }
 
 export function waitForChannelAskSent(): Promise<void> {
@@ -40,13 +60,13 @@ export function getSentChannelAsks(): readonly RecordedPauseAsk[] {
   return [...sentAsks];
 }
 
-export function getWithdrawnChannelAsks(): readonly RecordedPauseWithdrawal[] {
-  return [...withdrawnAsks];
+export function getClosedChannelAsks(): readonly RecordedPauseClose[] {
+  return [...closedAsks];
 }
 
 @Channel({
   name: "corporate-booking-approval-channel",
-  description: "Posts high-value travel hold approvals and withdraws them on cancellation or sibling failure",
+  description: "Posts high-value travel hold approvals and closes the message when the pause closes, whoever closed it",
 })
 export class CorporateBookingApprovalChannel extends BookingApprovalChannelRole {
   override send(
@@ -63,11 +83,24 @@ export class CorporateBookingApprovalChannel extends BookingApprovalChannelRole 
     return Promise.resolve(ChannelOutcome.awaitReply());
   }
 
-  override withdraw(withdrawal: ChannelWithdrawal<BookingApprovalChannelRole>): Promise<void> {
-    withdrawnAsks.push({
-      pauseId: withdrawal.pauseId,
-      resolution: withdrawal.resolution,
+  /**
+   * At least once, for every close of a pause this channel sent: a cancel, a quorum decided
+   * elsewhere, an answer, an expiry. `deliveryId` is the key to deduplicate by: a redelivered
+   * notice closes the approval message once.
+   */
+  override onPauseClosed(event: ChannelPauseClosedEvent<BookingApprovalChannelRole>): Promise<void> {
+    if (seenDeliveries.has(event.deliveryId)) {
+      return Promise.resolve();
+    }
+    seenDeliveries.add(event.deliveryId);
+    closedAsks.push({
+      pauseId: event.pauseId,
+      reason: event.reason,
+      deliveryId: event.deliveryId,
     });
+    for (const waiter of closeWaiters.splice(0)) {
+      waiter();
+    }
     return Promise.resolve();
   }
 }

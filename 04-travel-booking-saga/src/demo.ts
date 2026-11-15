@@ -1,7 +1,8 @@
+import { PauseClosedReason } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
 import { runBudgetExceededScenario } from "../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../scenarios/cancel-and-rollback.js";
-import { runPauseWithdrawalScenario } from "../scenarios/pause-withdrawal.js";
+import { runPauseClosedScenario } from "../scenarios/pause-closed.js";
 import { runPaymentFailureScenario } from "../scenarios/payment-failure.js";
 import { runQuorumApprovalScenario } from "../scenarios/quorum-approval.js";
 import { runRollbackCrashScenario } from "../scenarios/rollback-crash.js";
@@ -14,13 +15,13 @@ async function main(): Promise<void> {
     const scenarioC = await runCancelAndRollbackScenario();
     const scenarioD = await runRollbackCrashScenario();
     const scenarioE = await runQuorumApprovalScenario();
-    const scenarioF = await runPauseWithdrawalScenario();
+    const scenarioF = await runPauseClosedScenario();
 
     if (
       !scenarioB.rejectedWithBudgetExceeded ||
       !scenarioC.cancelled ||
       !scenarioD.compensationFailedErrorSurfaced ||
-      !scenarioF.lateResumeRejectedWithNotPaused
+      scenarioF.lateResumeRejectedWithPauseClosed !== PauseClosedReason.Withdrawn
     ) {
       throw new Error("One or more Travel Booking Saga demo assertions failed.");
     }
@@ -41,8 +42,9 @@ async function main(): Promise<void> {
           },
           scenarioC_CancelAndRollback: {
             cancelled: scenarioC.cancelled,
-            withdrawnResolution: scenarioC.withdrawnResolution,
-            lateResumeRejectedWithNotPaused: scenarioC.lateResumeRejectedWithNotPaused,
+            closedCount: scenarioC.closedCount,
+            closedReason: scenarioC.closedReason,
+            lateResumeRejectedWithPauseClosed: scenarioC.lateResumeRejectedWithPauseClosed,
             flightState: scenarioC.flightState,
             hotelState: scenarioC.hotelState,
           },
@@ -57,10 +59,10 @@ async function main(): Promise<void> {
             summary: scenarioE.summary,
             branches: scenarioE.branches,
           },
-          scenarioF_PauseWithdrawal: {
+          scenarioF_PauseClosed: {
             outcomeStatus: scenarioF.outcomeStatus,
-            withdrawnResolution: scenarioF.withdrawnResolution,
-            lateResumeRejectedWithNotPaused: scenarioF.lateResumeRejectedWithNotPaused,
+            closedReason: scenarioF.closedReason,
+            lateResumeRejectedWithPauseClosed: scenarioF.lateResumeRejectedWithPauseClosed,
           },
         },
         null,
