@@ -5,15 +5,21 @@ import {
   type InputOf,
   type OutputOf,
 } from "@agboss/core";
+import { RefundRefusedError } from "../errors/refund-refused.error.js";
 import { RefundApprovalAskDto } from "../dto/refund-approval-ask.dto.js";
 import { RefundApprovalDecisionDto } from "../dto/refund-approval-decision.dto.js";
 import { RefundApprovalOutcomeDto } from "../dto/refund-approval-outcome.dto.js";
 import { OrderBookService } from "../services/order-book.service.js";
 
-/** Issues the refund when the decision approves it, once per step (the step's idempotency key). */
+/**
+ * Issues the refund when the decision approves it, once per step (the step's idempotency key). The
+ * ask came from a model or a customer, so nothing in it is trusted: the order is the tenant's own
+ * (`RefundRefusedError` otherwise), the amount is positive and at most the order's, and the
+ * confirmation goes to the order's email — never an address from the ask.
+ */
 function settle(
   orderBook: OrderBookService,
-  idempotencyKey: string,
+  context: ExecutionContext,
   ask: RefundApprovalAskDto,
   decision: RefundApprovalDecisionDto,
   decidedBy: string,
@@ -23,9 +29,23 @@ function settle(
   }
   const order = orderBook.findById(ask.orderId);
   if (order === undefined) {
-    throw new Error(`Order ${ask.orderId} not found`);
+    throw new RefundRefusedError("unknown-order", ask.orderId);
   }
-  const receipt = orderBook.issueRefund(order, ask.customerEmail, ask.amountUsd, idempotencyKey);
+  if (order.tenantId !== context.tenant.tenantId) {
+    throw new RefundRefusedError("other-tenant", ask.orderId);
+  }
+  if (!(ask.amountUsd > 0)) {
+    throw new RefundRefusedError("amount-invalid", ask.orderId);
+  }
+  if (ask.amountUsd > order.amountUsd) {
+    throw new RefundRefusedError("amount-over-order", ask.orderId);
+  }
+  const receipt = orderBook.issueRefund(
+    order,
+    order.customerEmail,
+    ask.amountUsd,
+    context.step.idempotencyKey,
+  );
   return { orderId: ask.orderId, status: receipt.status, decidedBy, refundId: receipt.refundId };
 }
 
@@ -44,7 +64,7 @@ export class SettleRefundAction implements ActionHandler<SettleRefundAction> {
 
   execute({ ask, decision }: InputOf<SettleRefundAction>): Promise<OutputOf<SettleRefundAction>> {
     return Promise.resolve(
-      settle(this.orderBook, this.executionContext.step.idempotencyKey, ask.value, decision.value, "approver"),
+      settle(this.orderBook, this.executionContext, ask.value, decision.value, "approver"),
     );
   }
 }
@@ -69,7 +89,7 @@ export class SettleEscalatedRefundAction implements ActionHandler<SettleEscalate
     return Promise.resolve(
       settle(
         this.orderBook,
-        this.executionContext.step.idempotencyKey,
+        this.executionContext,
         ask.value,
         decision.value,
         "senior-approver",

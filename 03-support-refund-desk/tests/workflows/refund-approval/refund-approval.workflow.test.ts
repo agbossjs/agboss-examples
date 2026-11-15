@@ -186,3 +186,76 @@ describe("a deadline the person can move, a reminder before it, a default when n
     expect(refusal).toBeInstanceOf(PauseClosedError);
   });
 });
+
+describe("the approved refund trusts nothing in the ask", () => {
+  async function approved(app: Parameters<typeof driveApprovalEscalation>[0], ask: Record<string, unknown>) {
+    const inbox = app.resolve(ApprovalInboxService);
+    await app.execute(
+      RefundApprovalWorkflowStart,
+      { ...ORDER, ...ask } as typeof ORDER,
+      CONTEXTS,
+    );
+    const first = inbox.newest("approver");
+    if (first === undefined) throw new Error("the first approver was never asked");
+    return { inbox, first };
+  }
+  const outcomeOf = (work: Promise<unknown>) =>
+    work.then(
+      (value) => ({ value }),
+      (error: unknown) => ({ error }),
+    );
+
+  test("the approver sees the whole ask: amount, email and reason", async ({ app }) => {
+    await app.ready();
+    const { first } = await approved(app, {});
+    expect(first).toMatchObject({
+      orderId: "ORD-1002",
+      amountUsd: 1_450,
+      customerEmail: "alice.synth@example.com",
+      reason: "the workstation arrived broken",
+    });
+  });
+
+  test("another tenant's order is refused, no refund", async ({ app }) => {
+    await app.ready();
+    resetRecordedToolOperations();
+    const { first } = await approved(app, {});
+    // the run is acme's; an order of another tenant in the ask is refused
+    resetRecordedToolOperations();
+    const other = await approved(app, { orderId: "ORD-2001" });
+    const result = await outcomeOf(app.resume({ pauseId: other.first.pauseId, decision: { approved: true } }, lead));
+    expect(result).toHaveProperty("error");
+    expect(first.pauseId).not.toBe(other.first.pauseId);
+    expect(getRecordedToolOperations().filter((entry) => entry.kind === "refund")).toHaveLength(0);
+  });
+
+  test("a refund above the order's amount, or not above zero, is refused", async ({ app }) => {
+    await app.ready();
+    resetRecordedToolOperations();
+    for (const amountUsd of [1_450.01, 0]) {
+      const { first } = await approved(app, { amountUsd });
+      const result = await outcomeOf(app.resume({ pauseId: first.pauseId, decision: { approved: true } }, lead));
+      expect(result).toHaveProperty("error");
+    }
+    expect(getRecordedToolOperations().filter((entry) => entry.kind === "refund")).toHaveLength(0);
+  });
+
+  test("a negative amount never gets as far as an approver: the edge refuses it", async ({ app }) => {
+    await app.ready();
+    const result = await outcomeOf(
+      app.execute(RefundApprovalWorkflowStart, { ...ORDER, amountUsd: -5 }, CONTEXTS),
+    );
+    expect(result).toHaveProperty("error");
+    expect(app.resolve(ApprovalInboxService).posted()).toHaveLength(0);
+  });
+
+  test("the confirmation goes to the order's email, never the ask's", async ({ app }) => {
+    await app.ready();
+    resetRecordedToolOperations();
+    const { first } = await approved(app, { customerEmail: "attacker@example.com" });
+    await app.resume({ pauseId: first.pauseId, decision: { approved: true } }, lead);
+    const refunds = getRecordedToolOperations().filter((entry) => entry.kind === "refund");
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]?.receivedEmail).toBe("alice.synth@example.com");
+  });
+});

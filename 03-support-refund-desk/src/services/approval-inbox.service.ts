@@ -6,6 +6,8 @@ export interface PostedApproval {
   readonly pauseId: string;
   readonly orderId: string;
   readonly amountUsd: number;
+  readonly customerEmail: string;
+  readonly reason: string;
 }
 
 /**

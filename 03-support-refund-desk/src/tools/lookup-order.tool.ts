@@ -2,6 +2,7 @@ import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
 import { OrderDetailsDto } from "../dto/order-details.dto.js";
 import { OrderLookupInputDto } from "../dto/order-lookup-input.dto.js";
+import { RefundRefusedError } from "../errors/refund-refused.error.js";
 import { OrderBookService } from "../services/order-book.service.js";
 
 @Tool({
@@ -22,6 +23,9 @@ export class LookupOrderTool implements ToolHandler<OrderLookupInputDto, OrderDe
     const order = this.orderBookService.findById(input.orderId);
     if (order === undefined) {
       throw new Error(`Order ${input.orderId} not found`);
+    }
+    if (order.tenantId !== this.executionContext.tenant.tenantId) {
+      throw new RefundRefusedError("other-tenant", input.orderId);
     }
     this.orderBookService.recordLookup(
       order,

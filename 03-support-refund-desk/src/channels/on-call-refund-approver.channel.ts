@@ -24,6 +24,8 @@ export class OnCallRefundApproverChannel extends RefundApproverQuestion {
       pauseId: ask.pauseId,
       orderId: ask.value.orderId,
       amountUsd: ask.value.amountUsd,
+      customerEmail: ask.value.customerEmail,
+      reason: ask.value.reason,
     });
     return Promise.resolve(ChannelOutcome.awaitReply());
   }
