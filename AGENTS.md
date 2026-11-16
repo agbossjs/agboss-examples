@@ -9,7 +9,7 @@ This repository contains standalone executable proofs for **AGBoss** (`@agboss/c
 2. **Independent Projects (R1 & R2):**
    - Each example directory (`01-hello-agboss`, `02-path-scope-proof`, `03-support-refund-desk`, `04-travel-booking-saga`, `05-cluster-work-stealing`, `06-enterprise-agent-mesh`, `07-langgraph-migration`, `08-job-scout`, `09-review-loop-and-routing`, `10-quorum-groups-and-replies`, `11-safe-payments`, `12-payment-gateways`, `13-rag-reranking`, `14-kubernetes-postgres-scaling`) is a self-contained project.
    - Never import from `../agboss/src` or private internals. Use only public `@agboss/core` exports.
-   - Each generated/authored AGBoss project syncs its own coding-agent skills via `agboss check` (`.claude/skills/agboss/SKILL.md` and modules `01`–`13`).
+   - Each generated/authored AGBoss project syncs its own coding-agent skills via `agboss check` (`.agents/skills/agboss/SKILL.md` and modules `01`–`13`).
 3. **Offline-First Verification (R4 & R5):**
    - `npm run check`, `npm test`, and `npm run demo` must run 100% offline without `OPENROUTER_API_KEY`.
    - Negative fixtures (e.g. `02-path-scope-proof/cases/*/agboss-broken`) are tested through `tests/diagnostics.test.ts` so the suite asserts the expected compiler errors while exiting `0`.

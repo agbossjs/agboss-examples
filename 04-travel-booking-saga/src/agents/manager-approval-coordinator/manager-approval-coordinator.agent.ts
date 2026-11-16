@@ -7,7 +7,8 @@ import { RequestManagerApprovalTool } from "../../tools/request-manager-approval
 
 @Agent({
   name: "manager-approval-coordinator-agent",
-  description: "Coordinates human-in-the-loop manager approval via RequestManagerApprovalTool",
+  description:
+    "Coordinates human-in-the-loop manager approval via RequestManagerApprovalTool",
   model: "saga-model",
   promptUrls: ["./manager-approval-coordinator.prompt.md"],
   input: {

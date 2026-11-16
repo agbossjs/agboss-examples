@@ -1,4 +1,9 @@
-import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
+import {
+  Action,
+  type ActionHandler,
+  type InputOf,
+  type OutputOf,
+} from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { ItineraryBriefDto } from "../dto/itinerary-brief.dto.js";
@@ -16,9 +21,7 @@ import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
   },
   output: TravelBookingOutcomeDto,
 })
-export class FinalizeBudgetItineraryAction
-  implements ActionHandler<FinalizeBudgetItineraryAction>
-{
+export class FinalizeBudgetItineraryAction implements ActionHandler<FinalizeBudgetItineraryAction> {
   async execute(
     input: InputOf<FinalizeBudgetItineraryAction>,
   ): Promise<OutputOf<FinalizeBudgetItineraryAction>> {

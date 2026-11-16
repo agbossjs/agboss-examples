@@ -23,7 +23,10 @@ import { PaymentSagaWorkflowStart } from "../../src/workflows/payment-saga/payme
 const produced = <TProducer, TValue>(
   producer: TProducer,
   value: TValue,
-): { readonly producer: TProducer; readonly value: TValue } => ({ producer, value });
+): { readonly producer: TProducer; readonly value: TValue } => ({
+  producer,
+  value,
+});
 
 describe("04-travel-booking-saga — Isolated Component Unit Tests", () => {
   describe("BookingQuorumArbiter (@Arbiter unit runner)", () => {

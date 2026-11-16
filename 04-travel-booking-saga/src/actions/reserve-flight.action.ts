@@ -24,7 +24,9 @@ export class ReserveFlightAction implements ActionHandler<ReserveFlightAction> {
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async execute(input: InputOf<ReserveFlightAction>): Promise<OutputOf<ReserveFlightAction>> {
+  async execute(
+    input: InputOf<ReserveFlightAction>,
+  ): Promise<OutputOf<ReserveFlightAction>> {
     const res = this.airline.reserveSeat({
       bookingId: input.request.value.bookingId,
       flightCode: input.request.value.flightCode,

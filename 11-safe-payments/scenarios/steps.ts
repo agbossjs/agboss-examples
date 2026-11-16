@@ -13,11 +13,14 @@ import type { ScenarioContext } from "./scenario.types.js";
 export async function frozenPastLease(
   context: ScenarioContext,
   frozen: TestApp,
+  liveFor = 31,
 ): Promise<void> {
   context.leases.freeze(frozen);
   await context.clock.advance(seconds(31));
-  // the new holder is live: its renewals reach the store in time (#534)
-  await passLive(context, 31);
+  // the new holder is live: its renewals reach the store in time (#534). A scenario that holds the
+  // new holder inside a store call gives `liveFor` under the store-call bound (15 s, #928): a call
+  // held longer on the clock is cut with `store.call-timeout`, as a real hung store call is
+  await passLive(context, liveFor);
 }
 
 /**

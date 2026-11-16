@@ -2,22 +2,22 @@
 
 This is an [AGBoss](https://agboss.dev) application (`PaymentGatewaysApplication`).
 
-Before writing or changing any AGBoss code, read `.claude/skills/agboss/SKILL.md` — it is the
+Before writing or changing any AGBoss code, read `.agents/skills/agboss/SKILL.md` — it is the
 framework's own guide for the installed `agboss` version and routes each task to one reference:
 
 | Task                                                        | Read                                                                     |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Designing a workflow, its DTOs                              | `.claude/skills/agboss/references/01-composition-and-architecture.md`    |
-| Writing `*.workflow.ts` paths, `.onError`                   | `.claude/skills/agboss/references/02-flow-dsl-all-combinations.md`       |
-| Components, DI, lifecycle hooks, `app.execute`              | `.claude/skills/agboss/references/03-components-di-and-lifecycle.md`     |
-| Approvals, pauses, channels, `app.resume`                   | `.claude/skills/agboss/references/05-channels-and-human-in-the-loop.md`  |
-| Storage, recovery, shutdown, several instances              | `.claude/skills/agboss/references/09-persistence-k8s-and-deploy.md`      |
-| Tests: unit runners, `testWith`, instances, leases           | `.claude/skills/agboss/references/10-testing-vcr-and-evals.md`           |
-| A `[rule.code]` error, a CLI command                        | `.claude/skills/agboss/references/11-cli-studio-and-error-catalog.md`    |
+| Designing a workflow, its DTOs                              | `.agents/skills/agboss/references/01-composition-and-architecture.md`    |
+| Writing `*.workflow.ts` paths, `.onError`                   | `.agents/skills/agboss/references/02-flow-dsl-all-combinations.md`       |
+| Components, DI, lifecycle hooks, `app.execute`              | `.agents/skills/agboss/references/03-components-di-and-lifecycle.md`     |
+| Approvals, pauses, channels, `app.resume`                   | `.agents/skills/agboss/references/05-channels-and-human-in-the-loop.md`  |
+| Storage, recovery, shutdown, several instances              | `.agents/skills/agboss/references/09-persistence-k8s-and-deploy.md`      |
+| Tests: unit runners, `testWith`, instances, leases           | `.agents/skills/agboss/references/10-testing-vcr-and-evals.md`           |
+| A `[rule.code]` error, a CLI command                        | `.agents/skills/agboss/references/11-cli-studio-and-error-catalog.md`    |
 
 The loop after every change: `npx agboss check` → `npm test` → `npm run demo`.
 
-`.claude/skills/agboss/` is managed by `agboss check` and replaced on every `agboss` upgrade —
+`.agents/skills/agboss/` is managed by `agboss check` and replaced on every `agboss` upgrade —
 put this project's own rules below, never there.
 
 ## Project rules

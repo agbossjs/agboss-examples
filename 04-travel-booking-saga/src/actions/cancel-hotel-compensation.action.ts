@@ -17,9 +17,7 @@ import { FakeHotelService } from "../services/fake-hotel.service.js";
   },
   deps: [FakeHotelService, ExecutionContext],
 })
-export class CancelHotelCompensationAction
-  implements ActionHandler<CancelHotelCompensationAction>
-{
+export class CancelHotelCompensationAction implements ActionHandler<CancelHotelCompensationAction> {
   constructor(
     private readonly hotel: FakeHotelService,
     private readonly executionContext: ExecutionContext,

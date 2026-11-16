@@ -91,8 +91,14 @@ export async function runRollbackCrashScenario(
     );
     hotelCompensationIdempotencyKey = hotelReleaseEntry?.idempotencyKey ?? "";
 
-    const hotelStateAfterFirstAttempt = getResourceState("hotel", `HOTEL-${bookingId}`);
-    const flightStateAfterFirstAttempt = getResourceState("airline", `FLIGHT-${bookingId}`);
+    const hotelStateAfterFirstAttempt = getResourceState(
+      "hotel",
+      `HOTEL-${bookingId}`,
+    );
+    const flightStateAfterFirstAttempt = getResourceState(
+      "airline",
+      `FLIGHT-${bookingId}`,
+    );
 
     // Replay both compensations using their deterministic step idempotency keys:
     // Hotel release is deduplicated; Airline release succeeds on retry.
@@ -110,8 +116,14 @@ export async function runRollbackCrashScenario(
       idempotencyKey: failedCompensationIdempotencyKey ?? "fallback-key",
     });
 
-    const flightStateAfterRecoveryReplay = getResourceState("airline", `FLIGHT-${bookingId}`);
-    const hotelStateAfterRecoveryReplay = getResourceState("hotel", `HOTEL-${bookingId}`);
+    const flightStateAfterRecoveryReplay = getResourceState(
+      "airline",
+      `FLIGHT-${bookingId}`,
+    );
+    const hotelStateAfterRecoveryReplay = getResourceState(
+      "hotel",
+      `HOTEL-${bookingId}`,
+    );
 
     // Part 2: SQLite Cross-Restart Pause & Resume Recovery
     const tempDir = mkdtempSync(join(tmpdir(), "agboss-saga-sqlite-"));
@@ -156,7 +168,9 @@ export async function runRollbackCrashScenario(
           { answeredBy: "director-99" },
         );
         sqliteResumedAcrossRestartStatus = resumed.status;
-        sqliteResumedOutputStatus = (resumed.output as { status?: string } | undefined)?.status;
+        sqliteResumedOutputStatus = (
+          resumed.output as { status?: string } | undefined
+        )?.status;
       } finally {
         await instance2.close();
       }

@@ -36,7 +36,11 @@ function persistIfNeeded(): void {
     resultsByKey: Object.fromEntries(state.resultsByKey.entries()),
     resourceStates: Object.fromEntries(state.resourceStates.entries()),
   };
-  writeFileSync(state.persistenceFilePath, JSON.stringify(snapshot, null, 2), "utf8");
+  writeFileSync(
+    state.persistenceFilePath,
+    JSON.stringify(snapshot, null, 2),
+    "utf8",
+  );
 }
 
 export function configureLedgerFile(filePath: string | undefined): void {
@@ -96,7 +100,10 @@ export function recordIdempotentOperation<T>(params: {
 
   const computed = params.computeResult();
   state.resultsByKey.set(compositeKey, computed);
-  state.resourceStates.set(`${params.service}:${params.resourceId}`, params.nextResourceState);
+  state.resourceStates.set(
+    `${params.service}:${params.resourceId}`,
+    params.nextResourceState,
+  );
   state.entries.push({
     seq: state.nextSeq++,
     service: params.service,
@@ -113,6 +120,9 @@ export function getOperationLedgerEntries(): readonly OperationLedgerEntry[] {
   return [...state.entries];
 }
 
-export function getResourceState(service: string, resourceId: string): string | undefined {
+export function getResourceState(
+  service: string,
+  resourceId: string,
+): string | undefined {
   return state.resourceStates.get(`${service}:${resourceId}`);
 }

@@ -53,7 +53,7 @@ export const ps4: PaymentScenario = {
         holdAt(write, { instanceId: instanceIdOf(b) });
         const first = settled(a.execute(CheckoutWorkflowStart, order));
         await until(() => heldAt() === 1, "instance 1 frozen at its write");
-        await frozenPastLease(context, a);
+        await frozenPastLease(context, a, 10); // instance 2 is held at its write: under the 15 s store-call bound
         await until(() => heldAt() === 2, "instance 2 took over, held at its write");
         // the zombie writes first
         letGoOldest();

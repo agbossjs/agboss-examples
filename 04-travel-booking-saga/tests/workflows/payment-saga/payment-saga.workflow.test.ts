@@ -83,7 +83,7 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     expect(res.cancelled).toBe(true);
     expect(res.withdrawnCount).toBe(1);
     expect(res.withdrawnResolution).toBe(PauseResolution.Cancelled);
-    expect(res.lateResumeRejectedWithNotPaused).toBe(true);
+    expect(res.lateResumeRejectedWithPauseClosed).toBe(true);
     expect(res.hotelState).toBe("RELEASED");
     expect(res.flightState).toBe("RELEASED");
 
@@ -121,7 +121,9 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     expect(resE.status).toBe(ExecutionStatus.Finished);
     expect(resE.outcomeStatus).toBe("CONFIRMED_BY_QUORUM");
     expect(resE.summary).toContain("Quorum achieved (2/3)");
-    const accepted = resE.branches.filter((b) => b.verdict === BranchVerdict.Counted);
+    const accepted = resE.branches.filter(
+      (b) => b.verdict === BranchVerdict.Counted,
+    );
     expect(accepted.length).toBe(2);
 
     const resF = await runPauseWithdrawalScenario("WITHDRAW-F1");
@@ -130,7 +132,7 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     expect(resF.sentPauseId).not.toBe("");
     expect(resF.withdrawnPauseId).toBe(resF.sentPauseId);
     expect(resF.withdrawnResolution).toBe(PauseResolution.Withdrawn);
-    expect(resF.lateResumeRejectedWithNotPaused).toBe(true);
+    expect(resF.lateResumeRejectedWithPauseClosed).toBe(true);
   });
 
   it("Idempotency: deduplicates repeated reserve, authorize, confirm, and release calls with identical idempotency keys", async () => {
@@ -172,7 +174,10 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
             hotelCode: "LONDON-GRAND-1",
             idempotencyKey: entry.idempotencyKey,
           });
-        } else if (entry.service === "payments" && entry.operation === "authorize") {
+        } else if (
+          entry.service === "payments" &&
+          entry.operation === "authorize"
+        ) {
           payments.authorizeAndCapture({
             bookingId: "IDEMP-01",
             amountUsd: 1800,

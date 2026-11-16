@@ -40,7 +40,7 @@ export const ps11: PaymentScenario = {
       row: "ps11",
       level: StubLevel.Full,
       wrong: { charges: 2 },
-      right: { charges: 1, lost: 0, orderStatus: "paid", notes: ["not-paused"] },
+      right: { charges: 1, lost: 0, orderStatus: "paid", notes: ["pause.closed"] },
       async run(context) {
         context.mockLlm(ApprovalAgent).thenReturn(
           callTool(ApprovedChargeTool, charge),

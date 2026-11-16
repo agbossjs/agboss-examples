@@ -20,9 +20,11 @@ async function main(): Promise<void> {
       !scenarioB.rejectedWithBudgetExceeded ||
       !scenarioC.cancelled ||
       !scenarioD.compensationFailedErrorSurfaced ||
-      !scenarioF.lateResumeRejectedWithNotPaused
+      !scenarioF.lateResumeRejectedWithPauseClosed
     ) {
-      throw new Error("One or more Travel Booking Saga demo assertions failed.");
+      throw new Error(
+        "One or more Travel Booking Saga demo assertions failed.",
+      );
     }
 
     console.log(
@@ -42,14 +44,18 @@ async function main(): Promise<void> {
           scenarioC_CancelAndRollback: {
             cancelled: scenarioC.cancelled,
             withdrawnResolution: scenarioC.withdrawnResolution,
-            lateResumeRejectedWithNotPaused: scenarioC.lateResumeRejectedWithNotPaused,
+            lateResumeRejectedWithPauseClosed:
+              scenarioC.lateResumeRejectedWithPauseClosed,
             flightState: scenarioC.flightState,
             hotelState: scenarioC.hotelState,
           },
           scenarioD_RollbackCrashAndSqliteRecovery: {
-            compensationFailedErrorSurfaced: scenarioD.compensationFailedErrorSurfaced,
-            flightStateAfterRecoveryReplay: scenarioD.flightStateAfterRecoveryReplay,
-            sqliteResumedAcrossRestartStatus: scenarioD.sqliteResumedAcrossRestartStatus,
+            compensationFailedErrorSurfaced:
+              scenarioD.compensationFailedErrorSurfaced,
+            flightStateAfterRecoveryReplay:
+              scenarioD.flightStateAfterRecoveryReplay,
+            sqliteResumedAcrossRestartStatus:
+              scenarioD.sqliteResumedAcrossRestartStatus,
             sqliteResumedOutputStatus: scenarioD.sqliteResumedOutputStatus,
           },
           scenarioE_QuorumApproval: {
@@ -60,7 +66,8 @@ async function main(): Promise<void> {
           scenarioF_PauseWithdrawal: {
             outcomeStatus: scenarioF.outcomeStatus,
             withdrawnResolution: scenarioF.withdrawnResolution,
-            lateResumeRejectedWithNotPaused: scenarioF.lateResumeRejectedWithNotPaused,
+            lateResumeRejectedWithPauseClosed:
+              scenarioF.lateResumeRejectedWithPauseClosed,
           },
         },
         null,

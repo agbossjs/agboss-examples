@@ -1,14 +1,10 @@
-import {
-  createApp,
-  ExecutionStatus,
-  NotPausedError,
-} from "@agboss/core";
+import { createApp, ExecutionStatus, PauseClosedError } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import {
   getSentChannelAsks,
-  getWithdrawnChannelAsks,
   resetChannelRecords,
 } from "../src/channels/corporate-booking-approval.channel.js";
+import { waitForWithdrawnChannelAsks } from "./wait-for-withdrawn.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
@@ -20,7 +16,7 @@ export interface PauseWithdrawalScenarioResult {
   readonly sentPauseId: string;
   readonly withdrawnPauseId: string | undefined;
   readonly withdrawnResolution: string | undefined;
-  readonly lateResumeRejectedWithNotPaused: boolean;
+  readonly lateResumeRejectedWithPauseClosed: boolean;
 }
 
 /**
@@ -32,8 +28,8 @@ export interface PauseWithdrawalScenarioResult {
  * 3. `FinanceReviewerAgent` and `ComplianceReviewerAgent` both return approved votes, satisfying
  *    the 2-of-3 quorum (`max: 2`).
  * 4. AGBoss automatically cancels the superseded Branch 3 pause and invokes
- *    `CorporateBookingApprovalChannel.withdraw()` with `PauseResolution.Withdrawn`.
- * 5. A late `app.resume({ pauseId, decision })` on the withdrawn pause is rejected with `NotPausedError`.
+ *    `CorporateBookingApprovalChannel.onPauseClosed()` with `PauseClosedReason.Withdrawn`.
+ * 5. A late `app.resume({ pauseId, decision })` on the withdrawn pause is rejected with `PauseClosedError`.
  */
 export async function runPauseWithdrawalScenario(
   bookingId = "WITHDRAW-F1",
@@ -55,10 +51,10 @@ export async function runPauseWithdrawalScenario(
     );
 
     const sent = getSentChannelAsks();
-    const withdrawn = getWithdrawnChannelAsks();
+    const withdrawn = await waitForWithdrawnChannelAsks();
     const sentPauseId = sent[0]?.pauseId ?? "";
 
-    let lateResumeRejectedWithNotPaused = false;
+    let lateResumeRejectedWithPauseClosed = false;
     if (sentPauseId !== "") {
       try {
         await app.resume(
@@ -72,7 +68,7 @@ export async function runPauseWithdrawalScenario(
           { answeredBy: "risk-manager-7" },
         );
       } catch (error) {
-        lateResumeRejectedWithNotPaused = error instanceof NotPausedError;
+        lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError;
       }
     }
 
@@ -82,7 +78,7 @@ export async function runPauseWithdrawalScenario(
       sentPauseId,
       withdrawnPauseId: withdrawn[0]?.pauseId,
       withdrawnResolution: withdrawn[0]?.resolution,
-      lateResumeRejectedWithNotPaused,
+      lateResumeRejectedWithPauseClosed,
     };
   } finally {
     await app.close();

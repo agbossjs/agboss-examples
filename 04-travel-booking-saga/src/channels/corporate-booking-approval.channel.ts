@@ -2,7 +2,8 @@ import {
   Channel,
   type ChannelAsk,
   ChannelOutcome,
-  type ChannelWithdrawal,
+  type ChannelPauseClosedEvent,
+  PauseClosedReason,
 } from "@agboss/core";
 import { BookingApprovalChannelRole } from "./booking-approval.channel-role.js";
 
@@ -19,11 +20,13 @@ export interface RecordedPauseWithdrawal {
 
 const sentAsks: RecordedPauseAsk[] = [];
 const withdrawnAsks: RecordedPauseWithdrawal[] = [];
+const seenDeliveries = new Set<string>();
 let askWaiters: (() => void)[] = [];
 
 export function resetChannelRecords(): void {
   sentAsks.length = 0;
   withdrawnAsks.length = 0;
+  seenDeliveries.clear();
   askWaiters = [];
 }
 
@@ -46,7 +49,8 @@ export function getWithdrawnChannelAsks(): readonly RecordedPauseWithdrawal[] {
 
 @Channel({
   name: "corporate-booking-approval-channel",
-  description: "Posts high-value travel hold approvals and withdraws them on cancellation or sibling failure",
+  description:
+    "Posts high-value travel hold approvals and withdraws them on cancellation or sibling failure",
 })
 export class CorporateBookingApprovalChannel extends BookingApprovalChannelRole {
   override send(
@@ -63,11 +67,17 @@ export class CorporateBookingApprovalChannel extends BookingApprovalChannelRole 
     return Promise.resolve(ChannelOutcome.awaitReply());
   }
 
-  override withdraw(withdrawal: ChannelWithdrawal<BookingApprovalChannelRole>): Promise<void> {
-    withdrawnAsks.push({
-      pauseId: withdrawal.pauseId,
-      resolution: withdrawal.resolution,
-    });
+  // at least once, whenever a sent pause closes: the receiver deduplicates by `deliveryId`
+  override onPauseClosed(
+    event: ChannelPauseClosedEvent<BookingApprovalChannelRole>,
+  ): Promise<void> {
+    if (
+      event.reason !== PauseClosedReason.Answered &&
+      !seenDeliveries.has(event.deliveryId)
+    ) {
+      seenDeliveries.add(event.deliveryId);
+      withdrawnAsks.push({ pauseId: event.pauseId, resolution: event.reason });
+    }
     return Promise.resolve();
   }
 }
