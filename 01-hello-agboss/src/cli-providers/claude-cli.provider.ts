@@ -52,6 +52,10 @@ const CLAUDE: VendorSpec = {
         }
         if (event["type"] === "result") result = event;
       },
+      failure: () =>
+        result?.["is_error"] === true
+          ? `api ${String(result["api_error_status"])} ${String(result["api_error_type"])}: ${String(result["result"])}`
+          : "",
       finding: () => {
         // fail closed: no confirmation that the tools are off, no answer
         if (!toolsOff || result === undefined || result["is_error"] === true) return undefined;

@@ -1,8 +1,18 @@
-Written by hand from Anthropic's `--output-format stream-json` documentation, NOT recorded from a live
-`claude` run (a live run is the maintainer's call: account risk). Re-record before relying on the shapes.
+`live-text.jsonl`, `live-tool-call.jsonl` and `live-error.jsonl` were RECORDED from a real `claude -p` run
+(Claude Code 2.1.325, logged in with the maintainer's own plan, model `haiku`, 2026-11-16, agbossjs/agboss#963),
+driving the provider itself, so the flags, the prompt and the temp directory are the provider's own. Raw
+recordings stay outside the repository; `scripts/scrub-fixture.ts` replaces ids, home and temp paths, emails,
+signatures, the plugin list, cost and rate-limit fields, and `tests/cli-providers/fixtures-are-scrubbed.test.ts`
+fails if any fixture holds an email, a home path, or a UUID that is not a placeholder. Re-record with
+`npx tsx scripts/record-cli-fixtures.ts claude` (a live run is the maintainer's call: account risk).
 
-The `init` event of a real `claude -p --json-schema` run may list the structured-output tool
-(`StructuredOutput`, the name in Anthropic's docs) among its `tools`. The provider's tools-off check
-tolerates exactly that name and nothing else: any other listed tool kills the run, and an init event
-without a `tools` array gives no answer. `init-structured.jsonl` has that shape. Re-record both once a
-live run is approved.
+What a real run showed (all handled by the provider):
+- `init.tools` is exactly `["StructuredOutput"]` with `--tools ""` and `--json-schema`.
+- The model first answers in a plain text block, the CLI then injects a synthetic user turn
+  (`[structured-output-enforce]`) and the model calls `StructuredOutput`; `result.structured_output` is the reply.
+- Extra events the provider ignores: `ui_invalidate`, `thinking_tokens`, `rate_limit_event`, `user`.
+- An unknown model gives `result.is_error: true` with `api_error_status: 404` and the text on stdout, a short
+  stderr line `[claude-code:unrecognized_model]`, and no `structured_output`.
+
+The remaining hand-written files (`tool-call`, `init-*`, `lookalike-*`, `native-tool`, `no-init`) are fail-closed
+cases a real run cannot be made to produce (a tool of the CLI's own would have to run).

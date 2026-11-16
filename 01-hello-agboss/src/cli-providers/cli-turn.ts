@@ -40,11 +40,17 @@ export interface VendorSpec {
   /** Claude gets the instructions as a system prompt flag; the others read everything on stdin. */
   readonly stdin: (parts: { readonly instructions: string; readonly body: string }) => string;
   /** A fresh reader per run. `onEvent` throws `CliNativeToolError` on any tool event of the CLI. */
-  readonly reader: () => { onEvent: (event: unknown) => void; finding: () => Finding | undefined };
+  readonly reader: () => {
+    onEvent: (event: unknown) => void;
+    finding: () => Finding | undefined;
+    /** What the CLI said on stdout about a failed run (Claude: an `is_error` result): classified like stderr. */
+    failure?: () => string;
+  };
 }
 
 const MODEL_ID = /^[A-Za-z0-9._:-]{1,100}$/u;
 const RATE_LIMITED = /rate.?limit|usage limit|quota|too many requests|\b429\b/iu;
+const MODEL_UNKNOWN = /unrecognized_model|model_not_found|issue with the selected model/iu;
 const NOT_LOGGED_IN = /not logged in|log ?in required|please (log ?in|sign in)|unauthori[sz]ed|\b401\b|authenticat/iu;
 
 function modelOf(spec: VendorSpec, model: string): string | undefined {
@@ -65,6 +71,8 @@ function effortOf(spec: VendorSpec, request: ModelProviderRequest): ReasoningEff
 
 function failed(spec: VendorSpec, exitCode: number | null, stderr: string): Error {
   if (NOT_LOGGED_IN.test(stderr)) return new CliSetupError(`${spec.name} is not logged in: ${spec.loginHint}`);
+  // a wrong model name never gets better: a setup error, not a retryable server error
+  if (MODEL_UNKNOWN.test(stderr)) return new CliSetupError(`${spec.name} does not know the model: ${stderr.trim().slice(0, 300)}`);
   const failure = RATE_LIMITED.test(stderr) ? ModelFailure.RateLimited : ModelFailure.ServerError;
   return new ModelProviderFailureError({
     failure,
@@ -105,7 +113,7 @@ async function runOnce(
     },
   });
   const finding = reader.finding();
-  if (result.exitCode !== 0 || finding === undefined) throw failed(spec, result.exitCode, result.stderr);
+  if (result.exitCode !== 0 || finding === undefined) throw failed(spec, result.exitCode, `${result.stderr}\n${reader.failure?.() ?? ""}`);
   return { finding, stderr: result.stderr };
 }
 
