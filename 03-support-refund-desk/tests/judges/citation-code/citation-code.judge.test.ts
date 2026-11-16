@@ -11,6 +11,7 @@ import {
   resetRecordedToolOperations,
 } from "../../../src/services/order-book.service.js";
 import { TicketPatternService } from "../../../src/services/ticket-pattern.service.js";
+import { SupportTenantContext } from "../../../src/contexts/support-tenant.context.js";
 import { IssueRefundTool } from "../../../src/tools/issue-refund.tool.js";
 import { LookupOrderTool } from "../../../src/tools/lookup-order.tool.js";
 
@@ -87,7 +88,7 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
 
   it("LookupOrderTool, IssueRefundTool, and domain services operate deterministically", async () => {
     resetRecordedToolOperations();
-    const runLookup = testTool(LookupOrderTool);
+    const runLookup = testTool(LookupOrderTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
     const { output: lookedUp } = await runLookup({
       orderId: "ORD-1001",
       customerEmail: "alice.synth@example.com",
@@ -95,7 +96,7 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
     expect(lookedUp.amountUsd).toBe(180);
     expect(lookedUp.eligibleByWindow).toBe(true);
 
-    const runRefund = testTool(IssueRefundTool);
+    const runRefund = testTool(IssueRefundTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
     const { output: receipt } = await runRefund({
       orderId: "ORD-1001",
       customerEmail: "alice.synth@example.com",

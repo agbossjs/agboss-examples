@@ -1,10 +1,16 @@
-import { createApp, ExecutionStatus, PauseClosedError } from "@agboss/core";
+import {
+  createApp,
+  ExecutionStatus,
+  PauseClosedError,
+  type PauseClosedReason,
+} from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import {
   getSentChannelAsks,
+  getClosedChannelAsks,
   resetChannelRecords,
+  waitForChannelClose,
 } from "../src/channels/corporate-booking-approval.channel.js";
-import { waitForWithdrawnChannelAsks } from "./wait-for-withdrawn.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import {
   getOperationLedgerEntries,
@@ -18,9 +24,9 @@ export interface CancelAndRollbackScenarioResult {
   readonly initialStatus: ExecutionStatus;
   readonly cancelled: boolean;
   readonly pauseId: string;
-  readonly withdrawnCount: number;
-  readonly withdrawnResolution: string | undefined;
-  readonly lateResumeRejectedWithPauseClosed: boolean;
+  readonly closedCount: number;
+  readonly closedReason: PauseClosedReason | undefined;
+  readonly lateResumeRejectedWithPauseClosed: PauseClosedReason | undefined;
   readonly flightState: string | undefined;
   readonly hotelState: string | undefined;
   readonly ledgerEntries: ReturnType<typeof getOperationLedgerEntries>;
@@ -31,9 +37,10 @@ export interface CancelAndRollbackScenarioResult {
  * 1. Flight and hotel reservations succeed.
  * 2. Workflow pauses waiting for manager approval (`CorporateBookingApprovalChannel`).
  * 3. Caller invokes `app.cancel(threadId)`.
- * 4. AGBoss closes the channel pause (`PauseClosedReason.Cancelled`, told to `onPauseClosed`) and runs open compensations
+ * 4. AGBoss closes the pause (`PauseResolution.Cancelled`), tells the channel once through
+ *    `onPauseClosed` (`PauseClosedReason.Cancelled`) and runs open compensations
  *    (`CancelHotelCompensationAction` -> `CancelFlightCompensationAction`) in LIFO order.
- * 5. A late `app.resume({ pauseId, decision })` throws `PauseClosedError`.
+ * 5. A late `app.resume({ pauseId, decision })` throws `PauseClosedError` (`reason: cancelled`).
  */
 export async function runCancelAndRollbackScenario(
   bookingId = "SCENARIO-C",
@@ -58,9 +65,10 @@ export async function runCancelAndRollbackScenario(
     const pauseId = asks[0]?.pauseId ?? "";
 
     const cancelRes = await app.cancel(pausedRun.threadId);
-    const withdrawn = await waitForWithdrawnChannelAsks();
+    await waitForChannelClose();
+    const closed = getClosedChannelAsks();
 
-    let lateResumeRejectedWithPauseClosed = false;
+    let lateResumeRejectedWithPauseClosed: PauseClosedReason | undefined;
     try {
       await app.resume(
         {
@@ -73,15 +81,15 @@ export async function runCancelAndRollbackScenario(
         { answeredBy: "manager-42" },
       );
     } catch (error) {
-      lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError;
+      lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;
     }
 
     return {
       initialStatus: pausedRun.status,
       cancelled: cancelRes.cancelled,
       pauseId,
-      withdrawnCount: withdrawn.length,
-      withdrawnResolution: withdrawn[0]?.resolution,
+      closedCount: closed.length,
+      closedReason: closed[0]?.reason,
       lateResumeRejectedWithPauseClosed,
       flightState: getResourceState("airline", `FLIGHT-${bookingId}`),
       hotelState: getResourceState("hotel", `HOTEL-${bookingId}`),

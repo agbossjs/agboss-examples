@@ -2,6 +2,7 @@ import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
 import { IssueRefundInputDto } from "../dto/issue-refund-input.dto.js";
 import { RefundReceiptDto } from "../dto/refund-receipt.dto.js";
+import { RefundRefusedError } from "../errors/refund-refused.error.js";
 import { OrderBookService } from "../services/order-book.service.js";
 
 @Tool({
@@ -21,11 +22,21 @@ export class IssueRefundTool implements ToolHandler<IssueRefundInputDto, RefundR
   run(input: IssueRefundInputDto): Promise<RefundReceiptDto> {
     const order = this.orderBookService.findById(input.orderId);
     if (order === undefined) {
-      throw new Error(`Order ${input.orderId} not found`);
+      throw new RefundRefusedError("unknown-order", input.orderId);
+    }
+    // the input is the model's: the order must be the tenant's, the amount the order's to give back
+    if (order.tenantId !== this.executionContext.tenant.tenantId) {
+      throw new RefundRefusedError("other-tenant", input.orderId);
+    }
+    if (!(input.amountUsd > 0)) {
+      throw new RefundRefusedError("amount-invalid", input.orderId);
+    }
+    if (input.amountUsd > order.amountUsd) {
+      throw new RefundRefusedError("amount-over-order", input.orderId);
     }
     const receipt = this.orderBookService.issueRefund(
       order,
-      input.customerEmail,
+      order.customerEmail,
       input.amountUsd,
       this.executionContext.step.idempotencyKey,
     );

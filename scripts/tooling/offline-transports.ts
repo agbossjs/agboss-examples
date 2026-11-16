@@ -756,7 +756,7 @@ export abstract class SagaOfflineTransport {
     }
 
     if (systemText.includes("Finance Reviewer Agent") && answerTool !== undefined) {
-      if (bookingId.startsWith("WITHDRAW-") && this.waitForChannelAsk) {
+      if (bookingId.startsWith("CLOSED-") && this.waitForChannelAsk) {
         await this.waitForChannelAsk();
       }
       return {
@@ -778,7 +778,7 @@ export abstract class SagaOfflineTransport {
     }
 
     if (systemText.includes("Compliance Reviewer Agent") && answerTool !== undefined) {
-      if (bookingId.startsWith("WITHDRAW-") && this.waitForChannelAsk) {
+      if (bookingId.startsWith("CLOSED-") && this.waitForChannelAsk) {
         await this.waitForChannelAsk();
       }
       return {
@@ -801,7 +801,7 @@ export abstract class SagaOfflineTransport {
 
     if (systemText.includes("Risk Reviewer Agent")) {
       if (
-        bookingId.startsWith("WITHDRAW-") &&
+        bookingId.startsWith("CLOSED-") &&
         approvalTool !== undefined &&
         toolResultMsg === undefined
       ) {

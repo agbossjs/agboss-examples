@@ -18,7 +18,8 @@
     "demo:pii": "tsx scenarios/pii.ts",
     "demo:policy": "tsx scenarios/policy.ts",
     "demo:memory-drift": "tsx scenarios/memory-drift.ts",
-    "demo:evals": "tsx scenarios/evals.ts"
+    "demo:evals": "tsx scenarios/evals.ts",
+    "demo:approval": "tsx scenarios/approval-escalation.ts"
   },
   "dependencies": {
     "@agboss/core": "^0.1.1",

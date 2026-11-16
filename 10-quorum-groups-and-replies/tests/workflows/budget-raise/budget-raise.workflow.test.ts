@@ -1,6 +1,7 @@
 import {
   ChannelOf,
   ExecutionStatus,
+  PauseAnswerer,
   PausedExecutionRepository,
   PauseKind,
   PauseStatus,
@@ -99,7 +100,7 @@ describe("AC4: a question role asks the budget owner and puts the typed answer o
       limitUsd: 2_000,
     });
     expect(done.record?.pauses).toMatchObject([
-      { role: "budget-owner-question", responder: "budget-owner-lee", decision: { limitUsd: 2_000 } },
+      { role: "budget-owner-question", answerer: PauseAnswerer.Channel, answeredBy: "budget-owner-lee", decision: { limitUsd: 2_000 } },
     ]);
   });
 

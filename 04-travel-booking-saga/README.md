@@ -1,11 +1,11 @@
-# `04-travel-booking-saga` — Saga Compensation, Recovery, Idempotency, Quorum, HITL Withdrawal & HTTP Server
+# `04-travel-booking-saga` — Saga Compensation, Recovery, Idempotency, Quorum, Closed Approval Messages & HTTP Server
 
 **Priority:** P0 — Release Readiness  
 **Primary Proofs:**
 - **Reverse-order Saga Compensation** (`@Action({ compensateWith, committedBy })`) on downstream action errors (`CompensationReason.SidePath`), budget exhaustion (`CompensationReason.ExecutionFailed`), and mid-flight cancellation (`CompensationReason.ExecutionCancelled`).
 - **Crash-Resistant Recovery & Idempotency:** Persistent external operation ledgers in `FakeAirlineService`, `FakeHotelService`, and `FakePaymentService` verify that retries and compensation replays keyed by `executionContext.step.idempotencyKey` never double-book, double-charge, or double-refund, and that SQLite-backed executions resume across process restarts.
 - **2-of-3 Parallel Quorum Approval:** `.toParallelAgents(...).acceptedBy(BookingQuorumArbiter).joinQuorum({ min: 2, max: 2 })` commits as soon as 2 qualified approvals arrive.
-- **HITL Pause Withdrawal (`onPauseClosed`):** When a paused branch is superseded by `app.cancel(threadId)` or a sibling `FailFast` failure, AGBoss calls `BookingApprovalChannel.onPauseClosed()` (`PauseClosedReason.Cancelled` / `PauseClosedReason.Withdrawn`, at least once, deduplicated by `deliveryId`) and rejects stale `app.resume()` calls with `PauseClosedError`.
+- **A closed pause closes its approval message (`onPauseClosed`):** `CorporateBookingApprovalChannel` is told, at least once and deduplicated by `event.deliveryId`, whenever a pause it sent closes — `app.cancel(threadId)` (`PauseClosedReason.Cancelled`), a decided quorum or a `FailFast` sibling (`PauseClosedReason.Withdrawn`), an answer, an expiry — so the message loses its buttons exactly once. A stale `app.resume()` is refused with `PauseClosedError` carrying the same `reason` (`scenarios/pause-closed.ts`). 0.1.0's `Channel.withdraw()` is gone ([Upgrading to 0.1.1](https://github.com/agbossjs/agboss/wiki/Upgrading-to-0.1.1)).
 - **Production HTTP Adapter (`src/http/server.ts`):** Demonstrates `POST /api/bookings/hold` returning `202 Accepted` `{ status: "paused", threadId, pauseId, pending }`, `POST /api/pauses/:pauseId/resume`, `POST /api/threads/:threadId/cancel`, `/health/live`, `/health/ready`, and graceful shutdown (`await app.close()`).
 
 ## Canonical `src/` & Symmetric `tests/` Layout
