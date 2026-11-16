@@ -1,8 +1,9 @@
 name: Nightly Full Suite (P0 + P1 + Live Model Opt-In)
 
 on:
-  schedule:
-    - cron: "0 4 * * *"
+  # CI OFF until the one pre-0.1.1 run (user, 2026-11-16); restore by uncommenting
+# schedule:
+#   - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       run_live_models:

@@ -4,22 +4,23 @@ name: Kubernetes blueprint (kind)
 # a killed worker, the dead and risen worker, scale-in — verified from state. About 15 minutes, so
 # not on every PR: nightly, by hand, and on PRs that touch the example or the packing.
 on:
-  schedule:
-    - cron: "40 4 * * *"
+  # CI OFF until the one pre-0.1.1 run (user, 2026-11-16); restore by uncommenting
+# schedule:
+#   - cron: "40 4 * * *"
   workflow_dispatch:
     inputs:
       framework_sha:
         description: "Exact agbossjs/agboss commit SHA (defaults to .agboss-version.json)"
         required: false
         type: string
-  pull_request:
-    branches: [main]
-    paths:
-      - "14-kubernetes-postgres-scaling/**"
-      - ".agboss-version.json"
-      - "scripts/pack-framework.mjs"
-      - "scripts/install-packed.mjs"
-      - ".github/workflows/kubernetes.yml"
+# pull_request:
+#   branches: [main]
+#   paths:
+#     - "14-kubernetes-postgres-scaling/**"
+#     - ".agboss-version.json"
+#     - "scripts/pack-framework.mjs"
+#     - "scripts/install-packed.mjs"
+#     - ".github/workflows/kubernetes.yml"
 
 permissions:
   contents: read
