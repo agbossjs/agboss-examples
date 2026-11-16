@@ -40,7 +40,7 @@ export const ps21: PaymentScenario = {
       level: StubLevel.Full,
       wrongOperations: NewKeyPerAttemptPaymentOperations,
       wrong: { charges: 2, confirms: 2 },
-      right: { charges: 1, confirms: 1, lost: 0, orderStatus: "paid", notes: ["run.not-paused"] },
+      right: { charges: 1, confirms: 1, lost: 0, orderStatus: "paid", notes: ["pause.closed"] },
       async run(context) {
         context.mockLlm(SecureCheckoutAgent).thenReturn(
           // the form submitted twice: two calls in one turn

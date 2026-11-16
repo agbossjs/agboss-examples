@@ -190,6 +190,9 @@ function attemptsOf(events: readonly ExecutionAuditEventRecord[]): WriteAttempt[
           ? { ...at, verdict: WriteVerdict.Inconsistent, detail: `replayed token ${String(event.writtenToken)}, which no Ran wrote` }
           : { ...at, verdict: WriteVerdict.Replayed, detail: `replayed what token ${String(written.token)} wrote` };
       }
+      case FencedEffectEventOutcome.Cancelled:
+        // its tree's cancel is durable (#909): the write did not run, nothing was written
+        return { ...at, verdict: WriteVerdict.Refused, detail: `refused at token ${String(event.token)}: the tree's cancel is durable` };
       case FencedEffectEventOutcome.Refused: {
         const newer = (event.observedToken ?? 0) > event.token;
         const takenOver = takeovers.some((takeover) => takeover.token > event.token);

@@ -44,8 +44,9 @@ export function getCustomA2aHeaders(): Record<string, string> {
   input: BillingInquiryDto,
   output: BillingResolutionDto,
   price: usd(0.002),
-  // the billing server's Agent Card does not declare the AGBoss mesh extension yet: call it without
-  mesh: A2AMesh.IfSupported,
+  // the mesh (call chain, budget, deadline, signed run report) rides as the extension
+  // https://agboss.dev/a2a/mesh/v1: Required is the default for an AGBoss peer, said here on purpose
+  mesh: A2AMesh.Required,
   deps: [ExecutionContext],
 })
 export class BillingA2AAgent extends A2AClient<BillingInquiryDto, BillingResolutionDto> {

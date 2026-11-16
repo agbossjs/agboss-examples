@@ -1,4 +1,9 @@
-import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
+import {
+  Action,
+  type ActionHandler,
+  type InputOf,
+  type OutputOf,
+} from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { TravelBookingOutcomeDto } from "../dto/travel-booking-outcome.dto.js";
@@ -6,7 +11,8 @@ import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 
 @Action({
   name: "format-rolled-back-booking-action",
-  description: "Formats a clean ROLLED_BACK outcome after LIFO compensations run on the error side-path",
+  description:
+    "Formats a clean ROLLED_BACK outcome after LIFO compensations run on the error side-path",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,
@@ -14,9 +20,7 @@ import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
   },
   output: TravelBookingOutcomeDto,
 })
-export class FormatRolledBackBookingAction
-  implements ActionHandler<FormatRolledBackBookingAction>
-{
+export class FormatRolledBackBookingAction implements ActionHandler<FormatRolledBackBookingAction> {
   async execute(
     input: InputOf<FormatRolledBackBookingAction>,
   ): Promise<OutputOf<FormatRolledBackBookingAction>> {

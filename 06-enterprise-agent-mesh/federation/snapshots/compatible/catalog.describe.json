@@ -66,6 +66,21 @@
           "reason": "listed"
         },
         {
+          "contract": "A2ATaskRepository",
+          "implementation": "InMemoryA2ATaskRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "A2AFileRepository",
+          "implementation": "InlineA2AFileRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "A2ADirectMessageRepository",
+          "implementation": "InMemoryA2ADirectMessageRepository",
+          "reason": "default"
+        },
+        {
           "contract": "ExecutionHistoryRepository",
           "implementation": "SqliteExecutionHistoryRepository",
           "reason": "listed"
@@ -73,6 +88,21 @@
         {
           "contract": "ChildExecutionQueueRepository",
           "implementation": "InMemoryChildExecutionQueueRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "FencedEffectRepository",
+          "implementation": "InMemoryFencedEffectRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "ExecutionAuditLogRepository",
+          "implementation": "InMemoryExecutionAuditLogRepository",
+          "reason": "default"
+        },
+        {
+          "contract": "OutboundCallRepository",
+          "implementation": "InMemoryOutboundCallRepository",
           "reason": "default"
         }
       ],

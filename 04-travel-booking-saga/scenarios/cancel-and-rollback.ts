@@ -1,14 +1,10 @@
-import {
-  createApp,
-  ExecutionStatus,
-  NotPausedError,
-} from "@agboss/core";
+import { createApp, ExecutionStatus, PauseClosedError } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import {
   getSentChannelAsks,
-  getWithdrawnChannelAsks,
   resetChannelRecords,
 } from "../src/channels/corporate-booking-approval.channel.js";
+import { waitForWithdrawnChannelAsks } from "./wait-for-withdrawn.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import {
   getOperationLedgerEntries,
@@ -24,7 +20,7 @@ export interface CancelAndRollbackScenarioResult {
   readonly pauseId: string;
   readonly withdrawnCount: number;
   readonly withdrawnResolution: string | undefined;
-  readonly lateResumeRejectedWithNotPaused: boolean;
+  readonly lateResumeRejectedWithPauseClosed: boolean;
   readonly flightState: string | undefined;
   readonly hotelState: string | undefined;
   readonly ledgerEntries: ReturnType<typeof getOperationLedgerEntries>;
@@ -35,9 +31,9 @@ export interface CancelAndRollbackScenarioResult {
  * 1. Flight and hotel reservations succeed.
  * 2. Workflow pauses waiting for manager approval (`CorporateBookingApprovalChannel`).
  * 3. Caller invokes `app.cancel(threadId)`.
- * 4. AGBoss withdraws the channel pause (`PauseResolution.Cancelled`) and runs open compensations
+ * 4. AGBoss closes the channel pause (`PauseClosedReason.Cancelled`, told to `onPauseClosed`) and runs open compensations
  *    (`CancelHotelCompensationAction` -> `CancelFlightCompensationAction`) in LIFO order.
- * 5. A late `app.resume({ pauseId, decision })` throws `NotPausedError`.
+ * 5. A late `app.resume({ pauseId, decision })` throws `PauseClosedError`.
  */
 export async function runCancelAndRollbackScenario(
   bookingId = "SCENARIO-C",
@@ -62,9 +58,9 @@ export async function runCancelAndRollbackScenario(
     const pauseId = asks[0]?.pauseId ?? "";
 
     const cancelRes = await app.cancel(pausedRun.threadId);
-    const withdrawn = getWithdrawnChannelAsks();
+    const withdrawn = await waitForWithdrawnChannelAsks();
 
-    let lateResumeRejectedWithNotPaused = false;
+    let lateResumeRejectedWithPauseClosed = false;
     try {
       await app.resume(
         {
@@ -77,7 +73,7 @@ export async function runCancelAndRollbackScenario(
         { answeredBy: "manager-42" },
       );
     } catch (error) {
-      lateResumeRejectedWithNotPaused = error instanceof NotPausedError;
+      lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError;
     }
 
     return {
@@ -86,7 +82,7 @@ export async function runCancelAndRollbackScenario(
       pauseId,
       withdrawnCount: withdrawn.length,
       withdrawnResolution: withdrawn[0]?.resolution,
-      lateResumeRejectedWithNotPaused,
+      lateResumeRejectedWithPauseClosed,
       flightState: getResourceState("airline", `FLIGHT-${bookingId}`),
       hotelState: getResourceState("hotel", `HOTEL-${bookingId}`),
       ledgerEntries: getOperationLedgerEntries(),

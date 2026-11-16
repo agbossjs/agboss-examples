@@ -1,4 +1,9 @@
-import { Budget, BudgetPeriod, BudgetScope, type BudgetHandler } from "@agboss/core";
+import {
+  Budget,
+  BudgetPeriod,
+  BudgetScope,
+  type BudgetHandler,
+} from "@agboss/core";
 import { usd, type Usd } from "@agboss/core/units";
 
 @Budget({

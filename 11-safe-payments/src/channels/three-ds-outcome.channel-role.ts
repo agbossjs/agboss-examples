@@ -10,6 +10,6 @@ import { ChargeToolInputDto } from "../dto/charge-tool-input.dto.js";
   name: "three-ds-outcome-channel",
   description: "The customer completes 3DS: the return page or the webhook says so",
   approves: ChargeToolInputDto,
-  answeredBy: PauseAnswerer.Channel,
+  answerer: PauseAnswerer.Channel,
 })
 export abstract class ThreeDsOutcomeChannel extends ChannelOf<ThreeDsOutcomeChannel> {}

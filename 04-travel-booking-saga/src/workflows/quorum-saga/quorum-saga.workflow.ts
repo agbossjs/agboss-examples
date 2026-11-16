@@ -40,10 +40,6 @@ import { QuorumSagaWorkflowStart } from "./quorum-saga.workflow-start.js";
       .returns(TravelBookingOutcomeDto)
       .toFinish(QuorumSagaWorkflowFinish),
   ],
-  providers: [
-    FakeAirlineService,
-    FakeHotelService,
-    RequestManagerApprovalTool,
-  ],
+  providers: [FakeAirlineService, FakeHotelService, RequestManagerApprovalTool],
 })
 export class QuorumSagaWorkflow {}

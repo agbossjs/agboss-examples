@@ -13,7 +13,7 @@ import { PurchaseReplyInterpreter } from "../reply-interpreters/purchase/purchas
   name: "purchase-approver-channel",
   description: "A purchasing approver approves a purchase order, in free text",
   approves: PlacePurchaseOrderDto,
-  answeredBy: PauseAnswerer.Channel,
+  answerer: PauseAnswerer.Channel,
   replyInterpreter: PurchaseReplyInterpreter,
 })
 export abstract class PurchaseApproverChannel extends ChannelOf<PurchaseApproverChannel> {}

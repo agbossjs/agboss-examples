@@ -14,7 +14,8 @@ import { RefundPaymentCompensationAction } from "./refund-payment-compensation.a
 
 @Action({
   name: "capture-payment-action",
-  description: "Authorizes and captures payment for the reserved flight and hotel",
+  description:
+    "Authorizes and captures payment for the reserved flight and hotel",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,
@@ -30,7 +31,9 @@ export class CapturePaymentAction implements ActionHandler<CapturePaymentAction>
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async execute(input: InputOf<CapturePaymentAction>): Promise<OutputOf<CapturePaymentAction>> {
+  async execute(
+    input: InputOf<CapturePaymentAction>,
+  ): Promise<OutputOf<CapturePaymentAction>> {
     void input.flight.value.flightReservationId;
     void input.hotel.value.hotelReservationId;
     const res = this.payments.authorizeAndCapture({

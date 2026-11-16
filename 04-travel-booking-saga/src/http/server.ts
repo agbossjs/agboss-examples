@@ -1,6 +1,15 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import type { AddressInfo } from "node:net";
-import { createApp, ExecutionStatus, HealthStatus, type App } from "@agboss/core";
+import {
+  createApp,
+  ExecutionStatus,
+  HealthStatus,
+  type App,
+} from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks } from "../channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
@@ -122,7 +131,8 @@ async function handleRequest(
 
     if (result.status === ExecutionStatus.Paused) {
       const asks = getSentChannelAsks();
-      const latestPauseId = asks[asks.length - 1]?.pauseId ?? result.pending[0]?.pauseId;
+      const latestPauseId =
+        asks[asks.length - 1]?.pauseId ?? result.pending[0]?.pauseId;
       sendJson(res, 202, {
         status: "paused",
         executionId: result.executionId,
@@ -197,7 +207,11 @@ async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
   return raw.length > 0 ? (JSON.parse(raw) as T) : ({} as T);
 }
 
-function sendJson(res: ServerResponse, statusCode: number, payload: unknown): void {
+function sendJson(
+  res: ServerResponse,
+  statusCode: number,
+  payload: unknown,
+): void {
   res.writeHead(statusCode, { "content-type": "application/json" });
   res.end(JSON.stringify(payload));
 }

@@ -30,10 +30,6 @@ import { HitlHoldSagaWorkflowStart } from "./hitl-hold-saga.workflow-start.js";
       .returns(TravelBookingOutcomeDto)
       .toFinish(HitlHoldSagaWorkflowFinish),
   ],
-  providers: [
-    FakeAirlineService,
-    FakeHotelService,
-    RequestManagerApprovalTool,
-  ],
+  providers: [FakeAirlineService, FakeHotelService, RequestManagerApprovalTool],
 })
 export class HitlHoldSagaWorkflow {}

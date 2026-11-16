@@ -9,6 +9,6 @@ import { ChargeToolInputDto } from "../dto/charge-tool-input.dto.js";
   name: "checkout-approval-channel",
   description: "The customer approves the charge of a large order",
   approves: ChargeToolInputDto,
-  answeredBy: PauseAnswerer.ThreadOwner,
+  answerer: PauseAnswerer.ThreadOwner,
 })
 export abstract class CheckoutApprovalChannel extends ChannelOf<CheckoutApprovalChannel> {}

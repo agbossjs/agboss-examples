@@ -44,6 +44,8 @@ message → [prompt-injection guardrail] → main-router (Jev) ─┬→ profile
 
 ## 3. Commands
 
+> **Node:** the company-notes knowledge base is `SqliteFtsConnector` (`@agboss/core/rag`), which creates an SQLite FTS5 table in `node:sqlite`. Run these on Node 22.16+ or 24: the SQLite bundled in Node 22.13-22.15 has no FTS5 (`no such module: fts5`). The other examples do not use FTS5.
+
 ```bash
 npm install
 npm run check      # agboss check + TypeScript + ESLint ($0)

@@ -89,8 +89,12 @@ describe("TravelHTTPServer (src/http/server.ts)", () => {
       expect(cancelRes.status).toBe(200);
       const cancelBody = (await cancelRes.json()) as { cancelled: boolean };
       expect(cancelBody.cancelled).toBe(true);
-      expect(getResourceState("hotel", "HOTEL-HTTP-HOLD-CANCEL")).toBe("RELEASED");
-      expect(getResourceState("airline", "FLIGHT-HTTP-HOLD-CANCEL")).toBe("RELEASED");
+      expect(getResourceState("hotel", "HOTEL-HTTP-HOLD-CANCEL")).toBe(
+        "RELEASED",
+      );
+      expect(getResourceState("airline", "FLIGHT-HTTP-HOLD-CANCEL")).toBe(
+        "RELEASED",
+      );
     } finally {
       await server.close();
     }

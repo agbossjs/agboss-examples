@@ -471,7 +471,7 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
     ]) {
       assert.equal(existsSync(join(dir, file)), true, `${JOB_SCOUT}/${file}`);
     }
@@ -553,7 +553,7 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
       "fixtures/missing-route/application.ts",
     ]) {
       assert.equal(existsSync(join(dir, file)), true, `${REVIEW_LOOP}/${file}`);
@@ -651,7 +651,7 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
     ]) {
       assert.equal(
         existsSync(join(dir, file)),
@@ -730,7 +730,7 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
     ]) {
       assert.equal(
         existsSync(join(dir, file)),
@@ -791,7 +791,7 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
     ])
       assert.equal(existsSync(join(dir, file)), true, `${GATEWAYS}/${file}`);
     const readme = readFileSync(join(dir, "README.md"), "utf8");
@@ -839,7 +839,7 @@ describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
       "eslint.config.js",
       "tsconfig.json",
       "vitest.config.ts",
-      ".claude/skills/agboss/SKILL.md",
+      ".agents/skills/agboss/SKILL.md",
     ])
       assert.equal(existsSync(join(dir, file)), true, `${RERANKING}/${file}`);
     const readme = readFileSync(join(dir, "README.md"), "utf8");

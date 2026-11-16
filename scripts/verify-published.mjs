@@ -1195,11 +1195,11 @@ function runMain() {
     }
     baseReport.checks.generatedTypesVerified = true;
 
-    const skillMdPath = join(appDir, ".claude", "skills", "agboss", "SKILL.md");
-    const skillRefsDir = join(appDir, ".claude", "skills", "agboss", "references");
+    const skillMdPath = join(appDir, ".agents", "skills", "agboss", "SKILL.md");
+    const skillRefsDir = join(appDir, ".agents", "skills", "agboss", "references");
     if (!existsSync(skillMdPath) || !existsSync(skillRefsDir)) {
       baseReport.checks.scaffoldCheck = "failed";
-      throw new Error("Missing .claude/skills/agboss/SKILL.md or references/ directory");
+      throw new Error("Missing .agents/skills/agboss/SKILL.md or references/ directory");
     }
     const syncedRefFiles = readdirSync(skillRefsDir)
       .filter((f) => f.endsWith(".md"))

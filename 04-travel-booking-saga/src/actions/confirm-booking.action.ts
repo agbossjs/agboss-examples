@@ -15,7 +15,8 @@ import { FakeHotelService } from "../services/fake-hotel.service.js";
 
 @Action({
   name: "confirm-booking-action",
-  description: "Finalizes confirmed flight, hotel, and payment into a TravelBookingOutcomeDto",
+  description:
+    "Finalizes confirmed flight, hotel, and payment into a TravelBookingOutcomeDto",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,
@@ -32,7 +33,9 @@ export class ConfirmBookingAction implements ActionHandler<ConfirmBookingAction>
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async execute(input: InputOf<ConfirmBookingAction>): Promise<OutputOf<ConfirmBookingAction>> {
+  async execute(
+    input: InputOf<ConfirmBookingAction>,
+  ): Promise<OutputOf<ConfirmBookingAction>> {
     this.airline.confirmSeat({
       flightReservationId: input.flight.value.flightReservationId,
       idempotencyKey: `${this.executionContext.step.idempotencyKey}:airline`,

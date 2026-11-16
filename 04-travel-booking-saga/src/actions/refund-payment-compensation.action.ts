@@ -13,15 +13,15 @@ import { FakePaymentService } from "../services/fake-payment.service.js";
   input: { payment: PaymentCaptureDto },
   deps: [FakePaymentService, ExecutionContext],
 })
-export class RefundPaymentCompensationAction
-  implements ActionHandler<RefundPaymentCompensationAction>
-{
+export class RefundPaymentCompensationAction implements ActionHandler<RefundPaymentCompensationAction> {
   constructor(
     private readonly payments: FakePaymentService,
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async execute(input: InputOf<RefundPaymentCompensationAction>): Promise<void> {
+  async execute(
+    input: InputOf<RefundPaymentCompensationAction>,
+  ): Promise<void> {
     this.payments.voidOrRefund({
       paymentTransactionId: input.payment.value.paymentTransactionId,
       idempotencyKey: this.executionContext.step.idempotencyKey,

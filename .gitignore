@@ -34,3 +34,6 @@ eval-report.html
 *.log
 .idea/
 .vscode/
+
+# The skills live in .agents/skills/agboss; .claude/skills/agboss is a local link `agboss check` makes
+**/.claude/skills/agboss

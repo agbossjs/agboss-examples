@@ -15,7 +15,7 @@ import { BudgetOwnerReplyInterpreter } from "../reply-interpreters/budget-owner/
   description: "Asks a budget line's owner how far the line may be raised",
   ask: BudgetRaiseRequestDto,
   answer: BudgetOwnerAnswerDto,
-  answeredBy: PauseAnswerer.Channel,
+  answerer: PauseAnswerer.Channel,
   replyInterpreter: BudgetOwnerReplyInterpreter,
   maxVisits: 2,
 })

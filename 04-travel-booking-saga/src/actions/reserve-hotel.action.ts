@@ -28,7 +28,9 @@ export class ReserveHotelAction implements ActionHandler<ReserveHotelAction> {
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async execute(input: InputOf<ReserveHotelAction>): Promise<OutputOf<ReserveHotelAction>> {
+  async execute(
+    input: InputOf<ReserveHotelAction>,
+  ): Promise<OutputOf<ReserveHotelAction>> {
     void input.flight.value.flightReservationId;
     const res = this.hotel.reserveRoom({
       bookingId: input.request.value.bookingId,

@@ -67,7 +67,7 @@ budget-raise-request-workflow-start
 
 ```bash
 npm install
-npm run check     # agboss check + tsc + eslint (also syncs .claude/skills/agboss)
+npm run check     # agboss check + tsc + eslint (also syncs .agents/skills/agboss)
 npm test          # every group, verdict, arbiter path and reply, models scripted, $0
 npm run demo      # offline: no network, no key
 npm run demo:live # real models through OpenRouter (OPENROUTER_API_KEY), a fraction of a cent

@@ -4,13 +4,13 @@ import type { AddressInfo } from "node:net";
 import {
   createApp,
   ExecutionStatus,
+  ToolCallStatus,
   MeshLoopDetectedError,
   type MeshEnvelope,
 } from "@agboss/core";
 import {
   A2ACallerRejectedError,
   A2AClient,
-  A2AMesh,
   a2aHttpListener,
   type A2AApp,
 } from "@agboss/core/a2a";
@@ -235,7 +235,6 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
           skill: "billing-workflow-start",
           input: BillingInquiryDto,
           output: BillingResolutionDto,
-          mesh: A2AMesh.IfSupported,
         },
       });
 
@@ -256,7 +255,6 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
           skill: "billing-workflow-start",
           input: BillingInquiryDto,
           output: BillingResolutionDto,
-          mesh: A2AMesh.IfSupported,
         },
         headers: {
           authorization: "Bearer key-acme",
@@ -280,7 +278,11 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
 
   triageTest(
     "executes TriageGatewayApplication across live loopback BillingApplication A2A and Catalog MCP",
-    async ({ app, mockLlm, mcpOf }) => {
+    async ({ app, mockLlm, mcpOf, clock }) => {
+      // the billing server below runs on the real time and checks the envelope's replay window
+      // against it; the gateway signs on the test's clock — so bring the test's clock to the real now
+      const behind = new Date().getTime() - clock.now().getTime();
+      await clock.advance(`${behind}ms`);
       const billingApp = await createApp(BillingApplication);
       const port = await listenedA2A(billingApp);
       configureTriageMeshTarget({
@@ -326,6 +328,16 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
         summary:
           "SKU-GPU-900 in stock (14 units) and INV-5001 credited $45.00 for tenant acme.",
         creditedUsd: 45,
+      });
+
+      // the mesh rode the call (the billing card declares the extension): billing's run report,
+      // verified with its key, names the remote execution in the tool call's record
+      const billingCall = execution.toolCalls.find(
+        (call) => call.step.component.name === "ask-billing-tool",
+      );
+      expect(billingCall?.status).toBe(ToolCallStatus.Succeeded);
+      expect(billingCall?.remote).toMatchObject({
+        application: "billing-application",
       });
 
       await billingApp.close();
