@@ -15,7 +15,7 @@
   "license": "Apache-2.0",
   "author": "Pavel Ravvich <hello@agboss.dev> (https://github.com/pavelravvich)",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.16.0"
   },
   "scripts": {
     "pin:framework-sha": "node scripts/pin-framework-sha.mjs",

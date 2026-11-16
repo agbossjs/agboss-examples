@@ -8,7 +8,7 @@
     "application": "src/support-refund-desk.application.ts"
   },
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.16.0"
   },
   "scripts": {
     "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
