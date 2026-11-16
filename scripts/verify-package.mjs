@@ -74,8 +74,8 @@ assert(cliFiles.has("NOTICE"), "agboss-cli missing NOTICE");
 // Node version check
 const [major, minor] = process.versions.node.split(".").map(Number);
 assert(
-  major > 22 || (major === 22 && minor >= 13),
-  `Node.js >= 22.13 required, running ${process.versions.node}`,
+  major > 22 || (major === 22 && minor >= 16),
+  `Node.js >= 22.16 required, running ${process.versions.node}`,
 );
 
 console.log("[verify-package] 2/4 Testing isolated installation outside both repositories...");
