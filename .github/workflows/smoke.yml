@@ -1,10 +1,11 @@
 name: Smoke CI (Release Candidate & Examples Gate)
 
 on:
-  push:
-    branches: [main, "chore/**"]
-  pull_request:
-    branches: [main]
+  # CI OFF until the one pre-0.1.1 run (user, 2026-11-16); restore by uncommenting
+# push:
+#   branches: [main, "chore/**"]
+# pull_request:
+#   branches: [main]
   workflow_dispatch:
     inputs:
       framework_sha:
