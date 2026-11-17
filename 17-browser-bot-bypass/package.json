@@ -1,0 +1,37 @@
+{
+  "name": "browser-bot-bypass",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P1 Proof: a real-Chrome stealth browser (playwright-bot-bypass's createStealthBrowser over rebrowser-playwright, vendored under MIT) plugged into an agent two ways — a @Tool with the shared browser injected and a tiny own MCP server behind @McpServer — one domain allowlist on both; the wiring tested against a fake browser factory, no Chrome in CI.",
+  "agboss": {
+    "application": "src/browser-bot-bypass.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx src/demo.ts --live"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "rebrowser-playwright": "1.64.102",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.1",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

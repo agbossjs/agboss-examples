@@ -37,6 +37,8 @@ const TARGET_DIRS = [
   "13-rag-reranking",
   "14-kubernetes-postgres-scaling",
   "15-mongo-redis",
+  "16-browser-playwright",
+  "17-browser-bot-bypass",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = PINNED_VERSION, cliVersion = PINNED_VERSION) {

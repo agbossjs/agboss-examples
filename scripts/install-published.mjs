@@ -42,6 +42,8 @@ export const TARGET_DIRS = [
   "13-rag-reranking",
   "14-kubernetes-postgres-scaling",
   "15-mongo-redis",
+  "16-browser-playwright",
+  "17-browser-bot-bypass",
 ];
 
 function restorePublicPkg(pkg, frameworkVersion = "0.1.0", cliVersion = "0.1.0") {

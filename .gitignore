@@ -37,3 +37,6 @@ eval-report.html
 
 # The skills live in .agents/skills/agboss; .claude/skills/agboss is a local link `agboss check` makes
 **/.claude/skills/agboss
+
+# @playwright/mcp writes its snapshots to the working directory (16-browser-playwright)
+**/.playwright-mcp/

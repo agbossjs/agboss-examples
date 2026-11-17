@@ -2,3 +2,7 @@ AGBoss Examples
 Copyright 2026 Pavel Ravvich
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+17-browser-bot-bypass vendors src/vendor/stealth-browser.ts from playwright-bot-bypass
+(https://github.com/greekr4/playwright-bot-bypass, Copyright (c) 2026 tae.virus, MIT License);
+see 17-browser-bot-bypass/NOTICE and its src/vendor/LICENSE.playwright-bot-bypass.

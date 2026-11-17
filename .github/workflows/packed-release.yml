@@ -126,6 +126,9 @@ jobs:
       - name: 6. Install packed tarballs into example projects (every example)
         run: npm run install:packed
 
+      - name: Install Playwright's headless Chromium (16-browser-playwright; 17 needs no Chrome)
+        run: node 16-browser-playwright/node_modules/.bin/playwright install --with-deps chromium
+
       - name: 7. Run static graph & TypeScript checks across P0 + P1 (every example)
         run: node scripts/run-all.mjs --provenance rc --include-p1 --reset --mode check
 

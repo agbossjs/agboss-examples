@@ -1,0 +1,19 @@
+17-browser-bot-bypass — third-party notices
+
+src/vendor/stealth-browser.ts is vendored, in TypeScript and with the changes listed in its header,
+from:
+
+  playwright-bot-bypass — https://github.com/greekr4/playwright-bot-bypass
+  skills/playwright-bot-bypass/scripts/stealth-template.mjs (package version 2.2.2,
+  commit 26efbdea7370814467a8bac296fec6b3a4cdef2a)
+  Copyright (c) 2026 tae.virus
+  MIT License — the full text is in src/vendor/LICENSE.playwright-bot-bypass and in the header
+  of the vendored file.
+
+The package is not published on npm, so it is vendored rather than installed.
+
+It drives rebrowser-playwright (https://github.com/rebrowser/rebrowser-playwright, Apache-2.0),
+installed from npm at an exact version.
+
+This example is independent: AGBoss is not affiliated with, endorsed by or sponsored by the authors
+of playwright-bot-bypass or rebrowser-playwright.
