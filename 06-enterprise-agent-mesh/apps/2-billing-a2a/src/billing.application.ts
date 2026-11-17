@@ -17,6 +17,8 @@ import { BillingAppDailyBudget } from "./budgets/billing-app-daily.budget.js";
 import { BillingExecutionBudget } from "./budgets/billing-execution.budget.js";
 import { BillingTenantDailyBudget } from "./budgets/billing-tenant-daily.budget.js";
 import { AppEnvironment } from "./environments/app.environment.js";
+import { InvoiceReviewerOfflineModelProvider } from "./model-providers/invoice-reviewer-offline.model-provider.js";
+import { InvoiceReviewWorkflow } from "./workflows/invoice-review/invoice-review.workflow.js";
 import { BillingOfflineModelProvider } from "./model-providers/billing-offline.model-provider.js";
 import { BillingA2aCallerResolver } from "./services/billing-a2a-caller-resolver.service.js";
 import { BillingApiKeyDirectory } from "./services/billing-api-key-directory.service.js";
@@ -38,13 +40,14 @@ export {
 export { BillingWorkflowFinish } from "./workflows/billing/billing.workflow-finish.js";
 export { BillingWorkflowStart } from "./workflows/billing/billing.workflow-start.js";
 export { BillingWorkflow } from "./workflows/billing/billing.workflow.js";
+export { InvoiceReviewWorkflowStart } from "./workflows/invoice-review/invoice-review.workflow-start.js";
 
 @Application({
   name: "billing-application",
   version: "1.0.0",
   environment: AppEnvironment,
   piiKeyField: "piiPseudonymKey",
-  workflows: [BillingWorkflow],
+  workflows: [BillingWorkflow, InvoiceReviewWorkflow],
   budgets: [BillingAppDailyBudget, BillingTenantDailyBudget, BillingExecutionBudget],
   exposes: [BillingA2AExpose],
   maxMeshHops: 3,
@@ -59,6 +62,7 @@ export { BillingWorkflow } from "./workflows/billing/billing.workflow.js";
   },
   providers: [
     BillingOfflineModelProvider,
+    InvoiceReviewerOfflineModelProvider,
     BillingApiKeyDirectory,
     BillingA2aCallerResolver,
     SqliteCheckpointSaver,

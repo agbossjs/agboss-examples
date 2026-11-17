@@ -2,6 +2,7 @@ import { PauseClosedReason } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
 import { runBudgetExceededScenario } from "../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../scenarios/cancel-and-rollback.js";
+import { runManagerAwayScenario } from "../scenarios/manager-away-reassign.js";
 import { runPauseClosedScenario } from "../scenarios/pause-closed.js";
 import { runPaymentFailureScenario } from "../scenarios/payment-failure.js";
 import { runQuorumApprovalScenario } from "../scenarios/quorum-approval.js";
@@ -16,12 +17,15 @@ async function main(): Promise<void> {
     const scenarioD = await runRollbackCrashScenario();
     const scenarioE = await runQuorumApprovalScenario();
     const scenarioF = await runPauseClosedScenario();
+    const scenarioG = await runManagerAwayScenario();
 
     if (
       !scenarioB.rejectedWithBudgetExceeded ||
       !scenarioC.cancelled ||
       !scenarioD.compensationFailedErrorSurfaced ||
-      scenarioF.lateResumeRejectedWithPauseClosed !== PauseClosedReason.Withdrawn
+      scenarioF.lateResumeRejectedWithPauseClosed !== PauseClosedReason.Withdrawn ||
+      scenarioG.oldPauseAnswerRejectedWith !== PauseClosedReason.Reassigned ||
+      scenarioG.outcomeStatus !== "CONFIRMED"
     ) {
       throw new Error("One or more Travel Booking Saga demo assertions failed.");
     }
@@ -63,6 +67,13 @@ async function main(): Promise<void> {
             outcomeStatus: scenarioF.outcomeStatus,
             closedReason: scenarioF.closedReason,
             lateResumeRejectedWithPauseClosed: scenarioF.lateResumeRejectedWithPauseClosed,
+          },
+          scenarioG_ManagerAwayReassign: {
+            sends: scenarioG.sends.length,
+            deputyAsk: scenarioG.sends[1]?.assignee,
+            closedReasons: scenarioG.closedNotices.map((notice) => notice.reason),
+            oldPauseAnswerRejectedWith: scenarioG.oldPauseAnswerRejectedWith,
+            outcomeStatus: scenarioG.outcomeStatus,
           },
         },
         null,

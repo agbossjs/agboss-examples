@@ -7,6 +7,8 @@ process.env.OPENROUTER_API_KEY ??=
 export class AppEnvironment {
   catalogCurrency!: string;
   openRouterApiKey!: Secret;
+  /** The company LLM gateway the `GatewayStreamModelProvider` calls (its `/stream`); demo and tests only. */
+  gatewayBaseUrl?: string;
   /**
    * OpenRouter's base URL (`baseUrlField`); unset → the provider's default. The offline demo points
    * it at its scripted stand-in on 127.0.0.1 (agbossjs/agboss#834).

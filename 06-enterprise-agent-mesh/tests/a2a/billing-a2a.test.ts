@@ -58,6 +58,10 @@ describe("Billing over A2A v1.0: its Agent Card", () => {
         card.skills.map((skill) => ({ id: skill.id, tags: skill.tags })),
       ).toEqual([
         { id: "billing-workflow-start", tags: ["billing", "invoices", "sla"] },
+        {
+          id: "invoice-review-workflow-start",
+          tags: ["billing", "invoices", "files"],
+        },
       ]);
       expect(card.capabilities.streaming).toBe(true);
       const extensions = card.capabilities.extensions ?? [];

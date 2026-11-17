@@ -6,6 +6,7 @@ import { HelloExecutionContext } from "./contexts/hello-execution.context.js";
 import { HelloTenantContext } from "./contexts/hello-tenant.context.js";
 import { AppEnvironment } from "./environments/app.environment.js";
 import { OpenRouterChatModelProvider } from "./model-providers/openrouter-chat.model-provider.js";
+import { StreamingAnswerWorkflow } from "./workflows/streaming-answer/streaming-answer.workflow.js";
 import { HelloAgbossWorkflow } from "./workflows/hello-agboss/hello-agboss.workflow.js";
 
 @Application({
@@ -15,7 +16,7 @@ import { HelloAgbossWorkflow } from "./workflows/hello-agboss/hello-agboss.workf
   tenantContext: HelloTenantContext,
   executionContext: HelloExecutionContext,
   piiKeyField: "piiPseudonymKey", // agbossjs/agboss#825: its own secret — never the provider's apiKey
-  workflows: [HelloAgbossWorkflow],
+  workflows: [HelloAgbossWorkflow, StreamingAnswerWorkflow],
   providers: [OpenRouterChatModelProvider, SqliteCostLedgerRepository],
   budgets: [HelloApplicationDailyBudget, HelloTenantDailyBudget, HelloExecutionBudget],
 })

@@ -19,7 +19,8 @@
     "demo:policy": "tsx scenarios/policy.ts",
     "demo:memory-drift": "tsx scenarios/memory-drift.ts",
     "demo:evals": "tsx scenarios/evals.ts",
-    "demo:approval": "tsx scenarios/approval-escalation.ts"
+    "demo:approval": "tsx scenarios/approval-escalation.ts",
+    "demo:files:live": "tsx scenarios/receipt-live.ts"
   },
   "dependencies": {
     "@agboss/core": "^0.1.1",
@@ -31,6 +32,7 @@
     "@types/node": "^22.13.0",
     "@agboss/cli": "^0.1.1",
     "eslint": "^9.39.0",
+    "sharp": "^0.35.5",
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.0.0",

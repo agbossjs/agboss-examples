@@ -108,3 +108,31 @@ an environment allowlist with no keys, the CLI's own tools off, one process at a
 tree killed on abort); the credential files of the vendors are never read. The Claude and Gemini
 fixtures in `tests/cli-providers/fixtures/` are written from the vendors' docs, not recorded.
 Full guide: the Wiki page "Try agboss on a subscription".
+
+## 5. Streaming the answer (#1005, #1011)
+
+A support chat widget wants the reply token by token, not after the last token. `StreamingAnswerWorkflow`
+(`src/workflows/streaming-answer/`) has one plain-text agent, `AnswerWriterAgent`: no `output` DTO, so
+its answer streams to `onStream` as `textDelta` events (an agent with an output DTO answers through a
+tool call and streams no text, #1004). Two providers stream it:
+
+- the default `OpenRouterChatModelProvider` (HTTP, server-sent events) in `HelloAgbossApplication`;
+- `GatewayStreamModelProvider` (`src/model-providers/gateway-stream.model-provider.ts`), a transport
+  provider for a company LLM gateway that is no OpenAI-compatible server: it implements `complete()` and
+  `stream()` and is listed in `HelloAgbossGatewayApplication` (`src/hello-agboss.gateway.app.ts`).
+
+| What it proves | Test |
+| --- | --- |
+| a transport's `stream()` chunks are `textDelta`s, heard before the answer is complete (the stub holds the rest until the widget has the first token) | `tests/model-providers/gateway-stream.model-provider.test.ts` |
+| the usage a transport reports is counted once, tokens times the price table | same |
+| a transport failure before the first chunk is retried; one after the first chunk is not (the text is out) | same |
+| an HTTP provider streams token by token from a server-sent stream on 127.0.0.1, heard before the answer is complete | `tests/model-providers/openrouter-chat.model-provider.test.ts` |
+| the call is `stream: true` with `include_usage`, and the cost of the usage chunk is the call's cost; a run without `onStream` is a plain call | same |
+| a cut stream (before or after the first token) or one that ends without `[DONE]` is a failed attempt, never a short answer, and a stream that already showed text is not retried | same |
+
+All of it runs against stubs on `127.0.0.1`: `npm test` needs no key and no network. A live look (needs
+`OPENROUTER_API_KEY`, skips with a message without it):
+
+```bash
+npm run demo:stream   # the reply streams from OpenRouter; prints the deltas count, first/last arrival, spend
+```

@@ -56,4 +56,26 @@
 npm run check   # Validates all 3 microservice applications + TypeScript + ESLint
 npm test        # Runs unit + multi-service A2A, MCP, loop, and federation tests
 npm run demo    # Runs live loopback A2A + federation blast-radius proof
+npm run demo:stream   # Live only (OPENROUTER_API_KEY, skips with a message without it): the invoice review streams over A2A
 ```
+
+## 5. Streaming and files over A2A (the invoice review)
+
+Billing has a second skill, `invoice-review-workflow-start` (`apps/2-billing-a2a/src/workflows/invoice-review/`):
+the caller sends a question as a data part and the invoice as a `text/csv` file part; `InvoiceReviewerAgent`
+reads the file (`ModelFiles`, `FileView.Original`: a CSV is text) and answers in plain text, which a judge
+(`InvoiceReplyJudge`, a second model of another vendor) checks before it is let through. A message that names
+no skill still runs the original `billing-workflow-start` (`defaultSkill`). The review's limits are on the
+expose: one CSV, 8 KB (`@A2AExpose({ skills: { ... files } })`). Offline, a stand-in model
+(`InvoiceReviewerOfflineModelProvider`, a transport with `stream()`) works the item count and total out of
+the CSV text the framework shows the model and answers word by word; `billing.live.app.ts` puts OpenRouter in its place.
+
+| What it proves | Test |
+| --- | --- |
+| over `message/stream` (SSE) the task is announced first, the answer arrives as chunks of the task's output artifact while it is still `WORKING`, and `COMPLETED` is last | `tests/a2a/billing-invoice-review.test.ts`, `tests/a2a/billing-invoice-stream.test.ts` |
+| the answer streams token by token (many chunks, the first `append: false`, the rest `append: true`), and the text shown is the answer once | `tests/a2a/billing-invoice-stream.test.ts` |
+| nothing but the answer is streamed (#1004): the judge's model ran, and its words are in no chunk and no status | `tests/a2a/billing-invoice-review.test.ts` |
+| the invoice sent as a file part reaches the agent's model as the CSV's own text; the answer follows the file (a second invoice, a second total) | both |
+| the gateway-side typed `A2AClient` sends the invoice with `A2AClientFile.fromBytes` and gets the text answer | `tests/a2a/billing-invoice-review.test.ts` |
+| the door refuses a PNG (`a2a.file-media-type`), a file over 8 KB (`a2a.file-too-large`), bytes that are no text called a CSV (`a2a.media-type-mismatch`) and a file descriptor in a data part (`a2a.file-field-in-data`), and the model is never called | same |
+

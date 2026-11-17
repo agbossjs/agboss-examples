@@ -14,6 +14,7 @@ import {
 } from "../../../../scripts/tooling/assertions/idempotency.js";
 import { runBudgetExceededScenario } from "../../../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../../../scenarios/cancel-and-rollback.js";
+import { runManagerAwayScenario } from "../../../scenarios/manager-away-reassign.js";
 import { runPauseClosedScenario } from "../../../scenarios/pause-closed.js";
 import { runPaymentFailureScenario } from "../../../scenarios/payment-failure.js";
 import { runQuorumApprovalScenario } from "../../../scenarios/quorum-approval.js";
@@ -131,6 +132,35 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     expect(resF.closedPauseId).toBe(resF.sentPauseId);
     expect(resF.closedReason).toBe(PauseClosedReason.Withdrawn);
     expect(resF.lateResumeRejectedWithPauseClosed).toBe(PauseClosedReason.Withdrawn);
+  });
+
+  it("Scenario G: reassigns the open manager approval to a deputy without re-running the agent or the reservations", async () => {
+    const res = await runManagerAwayScenario("AWAY-G1");
+
+    expect(res.initialStatus).toBe(ExecutionStatus.Paused);
+    expect(res.deadlineMovedForward).toBe(true);
+
+    // the channel is sent again: a new pause id, the deputy as assignee, the old message as `replaces`
+    expect(res.sends).toHaveLength(2);
+    const [first, second] = res.sends;
+    expect(first?.assignee).toBeUndefined();
+    expect(first?.replacesPauseId).toBeUndefined();
+    expect(second?.assignee).toBe("deputy");
+    expect(second?.replacesPauseId).toBe(first?.pauseId);
+    expect(second?.pauseId).not.toBe(first?.pauseId);
+
+    // the old message is told it was reassigned, once
+    expect(res.closedNotices).toEqual([{ pauseId: first?.pauseId, reason: PauseClosedReason.Reassigned }]);
+    expect(res.oldPauseAnswerRejectedWith).toBe(PauseClosedReason.Reassigned);
+
+    // the new id is a capability: the call returned the key only; the replacement keeps the extended deadline
+    expect(res.reassignmentExposesNewPauseId).toBe(false);
+    expect(res.pendingAfterReassign).toBe(1);
+    expect(res.pendingDeadlineIsTheExtendedOne).toBe(true);
+
+    expect(res.finalStatus).toBe(ExecutionStatus.Finished);
+    expect(res.outcomeStatus).toBe("CONFIRMED");
+    expect(res.reservations).toEqual({ flights: 1, hotels: 1 });
   });
 
   it("Idempotency: deduplicates repeated reserve, authorize, confirm, and release calls with identical idempotency keys", async () => {

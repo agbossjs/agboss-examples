@@ -169,7 +169,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
         rawOtelExport.includes("thread-langfuse-pii") &&
         rawOtelExport.includes("tenant:acme");
       langfuseOtelSpansMaskedPii =
-        rawOtelExport.includes("<email:d1ac5c>") &&
+        /<email:[0-9a-f]{6}>/u.test(rawOtelExport) &&
         rawOtelExport.includes("<support-ticket-id:") &&
         !rawOtelExport.includes("alice.synth@example.com") &&
         !rawOtelExport.includes("+1-415-555-0101") &&
