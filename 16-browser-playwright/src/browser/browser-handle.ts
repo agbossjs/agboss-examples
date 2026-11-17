@@ -50,7 +50,7 @@ export class BrowserHandle {
   /** A fresh, guarded context: only the listed origins can be requested through it. */
   async openContext(): Promise<BrowserContext> {
     const context = await (await this.browser()).newContext({ viewport: { width: 1024, height: 768 } });
-    await guardContext(context, this.options.allowedOrigins, this.options.onRefused);
+    await guardContext(context, this.options.allowedOrigins, this.options.onRefused, this.options.hostRules);
     return context;
   }
 

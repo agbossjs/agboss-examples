@@ -1,6 +1,6 @@
 import { Injectable } from "@agboss/core";
 import { BrowserFactory } from "../browser/browser-factory.js";
-import type { LaunchOptions, PortBrowser, PortContext, PortPage, PortRoute } from "../browser/browser-port.js";
+import type { LaunchOptions, PortBrowser, PortContext, PortPage, PortResponse, PortRoute } from "../browser/browser-port.js";
 
 /** The pages of the fake web: what a "real" site would answer. */
 export const FAKE_WEB: Readonly<Record<string, { readonly title: string; readonly text: string }>> = {
@@ -9,6 +9,18 @@ export const FAKE_WEB: Readonly<Record<string, { readonly title: string; readonl
     text: "Acme Desk pricing: Starter 12 USD per agent per month, Team 29 USD per agent per month.",
   },
   "https://docs.example.com/": { title: "Acme Docs", text: "Acme Desk documentation. Pricing. Contact." },
+};
+
+/**
+ * Redirects of the fake web (a `302` and its `Location`): a listed page that sends the browser elsewhere,
+ * and a chain. The fake's server answers them to `route.fetch`; the browser's own follow is not modelled
+ * — that is the point: only a guard that follows by hand sees the next hop.
+ */
+export const FAKE_REDIRECTS: Readonly<Record<string, string>> = {
+  "https://docs.example.com/go/loopback": "http://127.0.0.1:8080/admin",
+  "https://docs.example.com/go/metadata": "http://169.254.169.254/latest/meta-data/",
+  "https://docs.example.com/go/chain": "https://docs.example.com/go/loopback",
+  "https://docs.example.com/go/pricing": "https://docs.example.com/pricing",
 };
 
 /** A listed page that never answers: a call's timeout and a cancelled run are tested against it. */
@@ -24,6 +36,8 @@ export interface FakeRecord {
   routes: number;
   /** Every URL a page tried to open and whether the context's route let it through. */
   readonly navigations: { readonly url: string; readonly allowed: boolean }[];
+  /** Every URL the route actually requested of the (fake) network: a refused URL is never in it. */
+  readonly fetched: string[];
   closed: boolean;
 }
 
@@ -35,7 +49,7 @@ export interface FakeRecord {
  */
 @Injectable()
 export class FakeBrowserFactory extends BrowserFactory {
-  readonly record: FakeRecord = { launches: [], contextsOpened: 0, contextsClosed: 0, routes: 0, navigations: [], closed: false };
+  readonly record: FakeRecord = { launches: [], contextsOpened: 0, contextsClosed: 0, routes: 0, navigations: [], fetched: [], closed: false };
   /** The next launch fails with this (the browser could not start). */
   failLaunchWith: Error | undefined;
 
@@ -83,24 +97,45 @@ function pageOf(record: FakeRecord, handlers: readonly ((route: PortRoute) => Pr
   let current: { title: string; text: string } | undefined;
   return {
     goto: async (url) => {
-      const verdict = { allowed: true };
+      const verdict: { allowed: boolean; response: FakeResponse | undefined } = { allowed: true, response: undefined };
       const route: PortRoute = {
-        request: () => ({ url: () => url }),
-        continue: () => Promise.resolve(),
+        request: () => ({ url: () => url, headers: () => ({}) }),
+        fetch: (options) => Promise.resolve(answerOf(record, options?.url ?? url)),
+        fulfill: ({ response }) => {
+          verdict.response = response;
+          return Promise.resolve();
+        },
         abort: () => {
           verdict.allowed = false;
           return Promise.resolve();
         },
       };
+      if (url === SLOW_URL) {
+        record.navigations.push({ url, allowed: true });
+        return new Promise((_resolve, reject) => hung.push(reject));
+      }
       for (const handler of handlers) await handler(route);
       record.navigations.push({ url, allowed: verdict.allowed });
       if (!verdict.allowed) throw new Error(`page.goto: net::ERR_BLOCKED_BY_CLIENT at ${url}`);
-      if (url === SLOW_URL) return new Promise((_resolve, reject) => hung.push(reject));
-      current = FAKE_WEB[url];
-      if (current === undefined) throw new Error(`page.goto: net::ERR_NAME_NOT_RESOLVED at ${url}`);
+      const answered = verdict.response;
+      if (answered === undefined || answered.page === undefined) throw new Error(`page.goto: net::ERR_NAME_NOT_RESOLVED at ${url}`);
+      current = answered.page;
       return {};
     },
     title: () => Promise.resolve(current?.title ?? ""),
     locator: () => ({ innerText: () => Promise.resolve(current?.text ?? "") }),
   };
+}
+
+/** What the fake network answers: a page, a redirect, or nothing. */
+interface FakeResponse extends PortResponse {
+  readonly page?: { readonly title: string; readonly text: string };
+}
+
+function answerOf(record: FakeRecord, url: string): FakeResponse {
+  record.fetched.push(url);
+  const redirect = FAKE_REDIRECTS[url];
+  if (redirect !== undefined) return { status: () => 302, headers: () => ({ location: redirect }) };
+  const page = FAKE_WEB[url];
+  return page === undefined ? { status: () => 404, headers: () => ({}) } : { status: () => 200, headers: () => ({}), page };
 }

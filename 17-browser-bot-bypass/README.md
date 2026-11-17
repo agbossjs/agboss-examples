@@ -50,7 +50,7 @@ export class StealthBrowser implements OnDestroy {   // `deps: [StealthBrowser]`
 |---|---|---|---|
 | **CI needs no Chrome, no display, no internet** | — | the `BrowserFactory` role replaced by `FakeBrowserFactory` (`BROWSER_FACTORY=fake`; `override(BrowserFactory, …)` in a test); the MCP server's child follows with `--fake` | every test below; [`tests/demo.test.ts`](./tests/demo.test.ts) |
 | **The real launch is what the README says** | — | `rebrowser-playwright` replaced by a recorder: real Chrome (`channel: 'chrome'`), headed, the automation flag off, the allowlist's resolver rules, one init script that touches nothing on `navigator`, `--no-sandbox` opt-in | [`tests/vendor.test.ts`](./tests/vendor.test.ts) |
-| **The model cannot open 127.0.0.1, the metadata address, the LAN, a file, another host** | those URLs | the tool refuses before a browser is launched; the context's `route` refuses what the check does not see; the resolver rules (in the launch arguments) refuse a redirect's next hop | [`tests/allowlist.test.ts`](./tests/allowlist.test.ts), [`tests/wiring.test.ts`](./tests/wiring.test.ts) (the fake runs the installed route on every navigation) |
+| **The model cannot open 127.0.0.1, the metadata address, the LAN, a file, another host** | those URLs | the tool refuses before a browser is launched; the context's `route` checks every request by exact origin (another port or scheme of a listed host included) and follows redirects by hand, each `Location` checked before it is requested; the resolver rules (in the launch arguments) are defence in depth | [`tests/allowlist.test.ts`](./tests/allowlist.test.ts), [`tests/wiring.test.ts`](./tests/wiring.test.ts) (the fake runs the installed route on every navigation) |
 | **Way B has the same allowlist in the server's own browser** | the same URLs asked of the server directly | the server calls the same `readPage`/`BrowserHandle` | [`tests/mcp.test.ts`](./tests/mcp.test.ts) (the MCP SDK's client, no tool of ours in between) |
 | **One browser, a context per call, closed when the app stops** | many calls; `app.close()`; a launch that failed | `StealthBrowser.onDestroy`; a failed launch is not kept | [`tests/wiring.test.ts`](./tests/wiring.test.ts) |
 | **Timeouts and cancellation are honoured** | a page that never answers | the tool's `timeout` on the application's clock; the call's `AbortSignal` closes its context | [`tests/wiring.test.ts`](./tests/wiring.test.ts) |
@@ -99,10 +99,12 @@ src/mcp/stealth-browser.server.ts        @McpServer over stdio; open-page-stealt
 
 - **The allowlist checks the name in the URL, not the address behind it**; a listed name that resolves to a
   private address is not caught. For a browser that must not reach your network at all, add an egress
-  proxy or a network policy. The route is by exact origin but blind to a redirect's next hop; the resolver
-  rules are by host name (`16-browser-playwright` shows the redirect case against a real Chromium).
-  The resolver rules are tested here as the launch arguments, and as an effect in `16`; against real
-  Chrome they are the manual run's.
+  proxy or a network policy. The route is the check (exact origin, every hop of a redirect, followed by hand because
+  Playwright does not route the hops the browser follows itself — `16-browser-playwright` shows it
+  against a real Chromium, with a meta refresh and a script navigation too); the resolver rules are
+  defence in depth, by host name. Here the route is tested against the fake (which models a redirect as
+  a `302` the route fetches), the resolver rules as launch arguments; against real Chrome both are the
+  manual run's.
 - **What the tests do not prove**: that real Chrome with these patches passes a given detector. The helper
   measured that itself on 2026-06-10 and 2026-08-27 on macOS; detectors change.
 - **What stays yours**: which origins to list, the Chrome and display, the sites' terms, and the law.

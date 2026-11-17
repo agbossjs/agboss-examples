@@ -67,7 +67,7 @@ describe("the official server behind the guarded launcher", () => {
     const result = await navigate(`${running().origin}${path}`);
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("ERR_NAME_NOT_RESOLVED");
+    expect(textOf(result)).toContain("ERR_BLOCKED_BY_CLIENT");
     expect(secretRequests()).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import type { BrowserFactory } from "./browser-factory.js";
 import type { PortBrowser, PortContext } from "./browser-port.js";
-import { isAllowedUrl, resolverRulesOf } from "./origin-allowlist.js";
+import { guardContext, resolverRulesOf } from "./origin-allowlist.js";
 
 /** How the shared browser is launched: the allowlist, a test site's name → address rule. */
 export interface BrowserOptions {
@@ -48,15 +48,7 @@ export class BrowserHandle {
   /** A fresh context whose requests are limited to the listed origins. */
   private async guardedContext(): Promise<PortContext> {
     const context = await (await this.browser()).newContext();
-    await context.route("**/*", async (route) => {
-      const url = route.request().url();
-      if (isAllowedUrl(url, this.options.allowedOrigins)) {
-        await route.continue();
-        return;
-      }
-      this.options.onRefused?.(url);
-      await route.abort("blockedbyclient");
-    });
+    await guardContext(context, this.options.allowedOrigins, this.options.onRefused, this.options.hostRules);
     return context;
   }
 

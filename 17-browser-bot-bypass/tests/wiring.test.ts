@@ -100,6 +100,60 @@ describe("the allowlist", () => {
   });
 });
 
+describe("the route is the check: exact origin, and every hop of a redirect", () => {
+  const guarded = (app: Parameters<typeof fakeOf>[0], refused: string[] = []): BrowserHandle =>
+    new BrowserHandle(fakeOf(app), { allowedOrigins: ["https://docs.example.com"], onRefused: (url) => refused.push(url) });
+  const goto = (handle: BrowserHandle, url: string): Promise<string> =>
+    handle.use(new AbortController().signal, async (context) => {
+      const page = await context.newPage();
+      await page.goto(url);
+      return page.title();
+    });
+
+  test.for([
+    ["a listed host on another port", "https://docs.example.com:8443/pricing"],
+    ["a listed host on another scheme", "http://docs.example.com/pricing"],
+    ["127.0.0.1", "http://127.0.0.1:8080/admin"],
+  ] as const)("%s is refused by the route; the network is never asked", async ([, url], { app }) => {
+    await app.ready();
+    const refused: string[] = [];
+    const handle = guarded(app, refused);
+
+    await expect(goto(handle, url)).rejects.toThrow(/ERR_BLOCKED_BY_CLIENT/u);
+
+    expect(refused).toEqual([url]);
+    expect(fakeOf(app).record.fetched).toEqual([]);
+    await handle.close();
+  });
+
+  test.for([
+    ["a redirect to 127.0.0.1", "https://docs.example.com/go/loopback", ["https://docs.example.com/go/loopback"]],
+    ["a redirect to the cloud metadata address", "https://docs.example.com/go/metadata", ["https://docs.example.com/go/metadata"]],
+    ["a chain: a listed redirect, then 127.0.0.1", "https://docs.example.com/go/chain", ["https://docs.example.com/go/chain", "https://docs.example.com/go/loopback"]],
+  ] as const)("%s is refused at the hop: only the listed hops are ever requested", async ([, url, hops], { app }) => {
+    await app.ready();
+    const refused: string[] = [];
+    const handle = guarded(app, refused);
+
+    await expect(goto(handle, url)).rejects.toThrow(/ERR_BLOCKED_BY_CLIENT/u);
+
+    expect(fakeOf(app).record.fetched).toEqual(hops);
+    expect(refused).toHaveLength(1);
+    expect(refused[0]).toMatch(/^http:\/\/(127\.0\.0\.1|169\.254\.169\.254)/u);
+    await handle.close();
+  });
+
+  test("a redirect to a listed page is followed", async ({ app }) => {
+    await app.ready();
+    const handle = guarded(app);
+
+    expect(await goto(handle, "https://docs.example.com/go/pricing")).toBe("Pricing");
+
+    expect(fakeOf(app).record.fetched).toEqual(["https://docs.example.com/go/pricing", "https://docs.example.com/pricing"]);
+    await handle.close();
+  });
+});
+
 describe("the browser's life", () => {
   test("app.close() closes the browser; a call after it is refused, not relaunched", async ({ app }) => {
     await app.ready();

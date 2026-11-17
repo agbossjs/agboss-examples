@@ -111,6 +111,6 @@ describe("a listed page that redirects the browser elsewhere", () => {
   test("to the cloud metadata address: the hop is refused", async ({ app }) => {
     const result = await app.tool(OpenPage).invoke({ url: `${running().origin}/go/metadata` });
 
-    expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("ERR_NAME_NOT_RESOLVED") as string });
+    expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("ERR_BLOCKED_BY_CLIENT") as string });
   });
 });

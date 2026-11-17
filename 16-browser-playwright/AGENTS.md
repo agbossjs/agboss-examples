@@ -28,8 +28,9 @@ put this project's own rules below, never there.
 - `npm run check`, `npm test` and `npm run demo` run offline, $0, with no model and no key: a headless
   Chromium against the local site `src/site/contact-site.ts` on `127.0.0.1`, the models scripted.
   Never a real site, never a real key. `npm run browsers` installs the Chromium (CI does it too).
-- The allowlist is two layers (`src/browser/origin-allowlist.ts`): the context's route and the
-  browser's resolver rules. Change neither without `tests/allowlist.test.ts`, `tests/refusals.test.ts`,
+- The allowlist (`src/browser/origin-allowlist.ts`) is the context's route: exact origin on every request,
+  redirects followed by hand; the browser's resolver rules are defence in depth only. Change neither
+  without `tests/allowlist.test.ts`, `tests/route-only.test.ts`, `tests/refusals.test.ts`,
   `tests/redirects.test.ts` and `tests/mcp-launcher.test.ts` — they are the proof. Never list 127.0.0.1.
 - The form's submit goes through `ContactDesk.once`: an outbound call keyed by the request's reference.
   Never a bare click in a tool or an action — `tests/submit-once.test.ts` is red on one.

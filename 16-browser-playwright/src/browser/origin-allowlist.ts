@@ -1,11 +1,12 @@
 /**
  * The one network rule of a browser the model drives: it may request only the origins the
  * application lists. Everything else — 127.0.0.1, `localhost`, the cloud metadata address
- * 169.254.169.254, a LAN address, `file:` — is refused, by two layers that each stop what the other
- * misses: a route on the context (`guardContext`: the first request of every page and every
- * subresource, by exact origin) and the browser's resolver rules (`resolverRulesOf`: a redirect's
- * next hop, an IP literal). The same two guard Way A (the tool's browser) and Way B (the MCP
- * server's browser).
+ * 169.254.169.254, a LAN address, `file:` — is refused. The check is the context's route
+ * (`guardContext`): every request of every page, by EXACT origin (scheme, host and port), and every hop
+ * of a redirect, which the route follows by hand because the browser's own follow is not routed. The
+ * browser's resolver rules (`resolverRulesOf`) are defence in depth behind it — only the listed
+ * hostnames resolve — never the main check: they are by host name, not by origin. The same two guard
+ * Way A (the tool's browser) and Way B (the MCP server's browser).
  *
  * The boundary: both check the name in the URL, not the address it resolves to. List origins you
  * trust to resolve to the public internet; a hostile DNS record on a listed name is not covered —
@@ -56,12 +57,10 @@ export function isAllowedUrl(url: string, allowedOrigins: readonly string[]): bo
 }
 
 /**
- * Chromium's `--host-resolver-rules` for the listed origins: only their hostnames resolve, every
- * other name — and every IP literal: 127.0.0.1, 169.254.169.254, a LAN address — fails with
- * `ERR_NAME_NOT_RESOLVED`. This is the layer that catches a redirect: Playwright's `route` is not
- * called for the hops of a redirect that `route.continue()` lets through (shown by
- * `tests/redirects.test.ts`), the browser's own resolver is. `hostMap` is a test site's name →
- * address rule (`MAP shop.test 127.0.0.1`), first in the list.
+ * Chromium's `--host-resolver-rules`, DEFENCE IN DEPTH behind the route: only the listed hostnames resolve,
+ * every other name and every IP literal fails with `ERR_NAME_NOT_RESOLVED`. By host name, not by origin
+ * (another port of a listed host resolves); `hostMap` is a test site's name → address rule, first in the
+ * list (Chromium checks EXCLUDE rules first and then maps nothing, so a mapped name is not excluded).
  */
 export function resolverRulesOf(allowedOrigins: readonly string[], hostMap = ""): string {
   const mapped = new Set(
@@ -78,24 +77,55 @@ export function resolverRulesOf(allowedOrigins: readonly string[], hostMap = "")
 /** What a refusal leaves behind, for the audit and the test. */
 export type RefusedRequest = (url: string) => void;
 
+/** How many redirect hops a request may take. */
+const MAX_REDIRECTS = 10;
+
 /**
- * Makes `context` request listed origins only. `context.route` sees every request of every page of
- * the context (popups included), each redirect hop too: a listed page that redirects to
- * 127.0.0.1 is refused at the hop.
+ * Makes `context` request listed origins only, by exact origin (scheme, host and port), for EVERY
+ * request of every page of the context — navigations, subresources, popups — and for every hop of a
+ * redirect. A request the browser is allowed to follow by itself is not checked at its next hop:
+ * Playwright's route is not called for it, `continue()` or `fulfill()` of a 302 alike (shown by
+ * `tests/redirects.test.ts`). So no request is continued: it is fetched here with `maxRedirects: 0`,
+ * each `Location` is checked against the list BEFORE it is requested, and the final answer is handed
+ * to the browser as it is. The price: a redirected page is shown at the URL that was asked for. A meta
+ * refresh and a script's `location = …` are new navigations: they meet this route again.
+ *
+ * `hostMap` (`MAP name address`, tests and demos) is applied to the server-side fetch the way the
+ * browser applies it to its own: the request goes to the address with the name in `Host`.
  */
 export async function guardContext(
   context: BrowserContext,
   allowedOrigins: readonly string[],
   onRefused: RefusedRequest = () => undefined,
+  hostMap = "",
 ): Promise<void> {
+  const addresses = new Map(
+    [...hostMap.matchAll(/MAP\s+(\S+)\s+(\S+)/gu)].map((rule) => [rule[1] ?? "", rule[2] ?? ""] as const),
+  );
   await context.route("**/*", async (route) => {
-    const url = route.request().url();
-    if (isAllowedUrl(url, allowedOrigins)) {
-      await route.continue();
-      return;
+    const request = route.request();
+    let url = request.url();
+    for (let hop = 0; ; hop += 1) {
+      if (!isAllowedUrl(url, allowedOrigins) || hop > MAX_REDIRECTS) {
+        onRefused(url);
+        await route.abort("blockedbyclient");
+        return;
+      }
+      const target = new URL(url);
+      const address = addresses.get(target.hostname);
+      const response = await route.fetch({
+        maxRedirects: 0,
+        ...(address === undefined
+          ? { url }
+          : { url: Object.assign(new URL(url), { hostname: address }).href, headers: { ...request.headers(), host: target.host } }),
+      });
+      const location = response.headers().location;
+      if (response.status() < 300 || response.status() >= 400 || location === undefined) {
+        await route.fulfill({ response });
+        return;
+      }
+      url = new URL(location, url).href; // checked at the top of the loop, before it is requested
     }
-    onRefused(url);
-    await route.abort("blockedbyclient");
   });
 }
 

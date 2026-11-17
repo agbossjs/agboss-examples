@@ -132,6 +132,16 @@ export class ContactSite {
       // a listed page that sends the browser elsewhere: the allowlist must refuse the hop
       case "/go/loopback":
         return redirectTo(`${this.loopbackUrl}/secret`);
+      // a page that navigates itself, by meta refresh and by script, to the loopback: the browser asks anew
+      case "/meta":
+        return html(`<!doctype html><meta http-equiv="refresh" content="0;url=${this.loopbackUrl}/secret"><p>moving</p>`);
+      case "/js":
+        return html(`<!doctype html><script>location = ${JSON.stringify(`${this.loopbackUrl}/secret`)};</script><p>moving</p>`);
+      // a chain: the first hop is a listed page, the second goes to the loopback; and a redirect to a listed page
+      case "/go/chain":
+        return redirectTo(`${this.loopbackUrl.replace("127.0.0.1", "shop.test")}/go/loopback`);
+      case "/go/pricing":
+        return redirectTo("/pricing");
       case "/go/metadata":
         return redirectTo("http://169.254.169.254/latest/meta-data/");
       // a page that never answers: what a timeout and a cancelled run are tested against

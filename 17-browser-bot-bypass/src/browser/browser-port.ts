@@ -4,10 +4,18 @@
  * browser and the allowlist are written against these, so the wiring is tested with no Chrome.
  */
 
+/** An answer fetched by a route: the part the allowlist reads. */
+export interface PortResponse {
+  status(): number;
+  headers(): Record<string, string>;
+}
+
 /** A request a context's route sees. */
 export interface PortRoute {
-  request(): { url(): string };
-  continue(): Promise<void>;
+  request(): { url(): string; headers(): Record<string, string> };
+  /** Fetches the request server-side; `maxRedirects: 0` hands a redirect back instead of following it. */
+  fetch(options?: { url?: string; headers?: Record<string, string>; maxRedirects?: number }): Promise<PortResponse>;
+  fulfill(options: { response: PortResponse }): Promise<void>;
   abort(errorCode?: string): Promise<void>;
 }
 

@@ -45,8 +45,8 @@ export class OpenPage implements ToolHandler<PageRequestDto, PageTextDto> {
 
 | Promise | Threat / Failure Injected | AGBoss Mechanism | Executable Proof |
 |---|---|---|---|
-| **The model cannot open 127.0.0.1, the metadata address or the LAN** | A URL for `127.0.0.1`, `localhost`, `169.254.169.254`, `192.168.x`, `file:`, another host or port | the origin allowlist: the tool refuses before a browser is asked; the context's `route` refuses the first request and every subresource; the browser's resolver rules (`--host-resolver-rules`) refuse a redirect's next hop and every IP literal | [`tests/allowlist.test.ts`](./tests/allowlist.test.ts), [`tests/refusals.test.ts`](./tests/refusals.test.ts) (a real Chromium; the site never sees `/secret`) |
-| **A listed page cannot send the browser elsewhere** | A listed page answers `302` to `127.0.0.1` and to `169.254.169.254` | the resolver rules — **`route` alone does not see a redirect's next hop**, the test that shows it is [`tests/redirects.test.ts`](./tests/redirects.test.ts) | [`tests/refusals.test.ts`](./tests/refusals.test.ts) › "a listed page that redirects the browser elsewhere", [`tests/redirects.test.ts`](./tests/redirects.test.ts) |
+| **The model cannot open 127.0.0.1, the metadata address or the LAN** | A URL for `127.0.0.1`, `localhost`, `169.254.169.254`, `192.168.x`, `file:`, another host, **another port or another scheme of a listed host** | the origin allowlist: the tool refuses before a browser is asked; the context's `route` checks **every request by exact origin** (scheme, host, port) — the first one and every subresource; the browser's resolver rules are defence in depth behind it | [`tests/allowlist.test.ts`](./tests/allowlist.test.ts), [`tests/route-only.test.ts`](./tests/route-only.test.ts) (the route alone, no resolver rules, a real Chromium), [`tests/refusals.test.ts`](./tests/refusals.test.ts) |
+| **A listed page cannot send the browser elsewhere** | A redirect (and a chain of them) to `127.0.0.1` or `169.254.169.254`; a meta refresh and a script's `location = …` to `127.0.0.1` | the route follows redirects **by hand** (`route.fetch({ maxRedirects: 0 })`, each `Location` checked before it is requested) — **Playwright does not route a redirect's next hop** the browser follows itself, shown by [`tests/redirects.test.ts`](./tests/redirects.test.ts); a meta refresh and a script are new navigations and meet the route again | [`tests/route-only.test.ts`](./tests/route-only.test.ts) (the server never sees `/secret`) |
 | **Way B has the same allowlist, in the server's own browser** | The same URLs asked of the MCP server directly, with no tool of ours in between | the guarded launcher of `@playwright/mcp` (`src/mcp/guarded-playwright.server.ts`): its documented `createConnection(config, contextGetter)` with a context guarded like Way A's — the server's own `--allowed-origins` "does not serve as a security boundary and does not affect redirects" (its README) | [`tests/mcp-launcher.test.ts`](./tests/mcp-launcher.test.ts), [`tests/mcp.test.ts`](./tests/mcp.test.ts) |
 | **One browser per application, closed when it stops** | Many calls at once; `app.close()`; a call after it | `SharedBrowser` (`@Injectable`, `onDestroy`) owns a `BrowserHandle`; each call has a context of its own, closed in a `finally` | [`tests/browser-lifecycle.test.ts`](./tests/browser-lifecycle.test.ts) |
 | **Timeouts and cancellation are honoured** | A page that never answers | the tool's `timeout` on the application's clock (`clock.advance`) and the call's `AbortSignal` close the call's context at once | [`tests/browser-lifecycle.test.ts`](./tests/browser-lifecycle.test.ts) |
@@ -91,10 +91,11 @@ src/offline/offline-openrouter.ts        the demo's scripted OpenRouter wire
 - **The allowlist checks the name in the URL, not the address behind it.** A listed hostname whose
   DNS record points at `10.0.0.5` is not caught: list names you trust, and for a browser that must not
   be able to reach your network at all, put it behind an egress proxy or a network policy — the
-  allowlist is the application's layer, not a replacement for yours. Two layers, because each misses
-  what the other sees: the route is by exact origin (scheme, host and port) but blind to a redirect's
-  next hop; the resolver rules are by host name only (another port of a listed host is not refused
-  at a redirect hop). WebSocket and other non-HTTP traffic is covered by the resolver rules only.
+  allowlist is the application's layer, not a replacement for yours. The route is the check, by exact
+  origin and on every hop; the resolver rules are defence in depth behind it (by host name only: they
+  would let another port of a listed host resolve, the route does not). A redirected page is shown at
+  the URL that was asked for, because the route answers the request with the chain's final response.
+  WebSocket and other non-HTTP traffic is covered by the resolver rules only.
 - **The browser has its own network**, outside AGBoss's A2A SSRF guard (that guards the server's file
   fetches, not a browser). `BROWSER_ALLOWED_ORIGINS` is the only rule on it. Never list `127.0.0.1`.
   The tests and the demo reach their local site by a name (`shop.test`) mapped to the loopback for the
