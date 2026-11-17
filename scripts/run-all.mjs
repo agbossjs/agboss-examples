@@ -128,6 +128,20 @@ export const PROJECTS = [
     primaryProof:
       "MongoDB + Redis: Redis coordinates (leases, the child queue, rate limits) and MongoDB keeps everything durable, wired by the store bundles and provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository) with no new; the assembly refuses fenced effects and outbound calls on Redis leases (offline: the local twin and the wiring; live: npm run demo:live)",
   },
+  {
+    name: "16-browser-playwright",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "A browser an agent can use and cannot misuse: plain Playwright as a @Tool with one shared browser closed when the app stops, and the official @playwright/mcp behind @McpServer; one origin allowlist (route plus resolver rules, redirects included) refuses 127.0.0.1, the metadata address and the LAN; a screenshot reaches the model as a file part; a contact form is filed once through an outbound call, a retry, a repeat and a crash included (headless Chromium against a local site; npm run browsers installs it)",
+  },
+  {
+    name: "17-browser-bot-bypass",
+    priority: "P1",
+    mode: "offline-deterministic",
+    primaryProof:
+      "A real-Chrome stealth browser (playwright-bot-bypass's createStealthBrowser, vendored under MIT, over rebrowser-playwright) wired two ways, a @Tool with the browser injected and an own MCP server, behind one allowlist; tested on a fake browser factory so CI needs no Chrome (the live run is manual, README section 5)",
+  },
 ];
 
 export function parseRunAllArgs(args) {

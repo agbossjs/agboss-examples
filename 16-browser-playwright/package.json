@@ -1,0 +1,38 @@
+{
+  "name": "browser-playwright",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "P1 Proof: a browser plugged into an agent two ways — plain Playwright as a @Tool with the shared browser injected (closed when the app stops) and the official @playwright/mcp server behind @McpServer — one domain allowlist on both, and a form submitted once through a fenced outbound call.",
+  "agboss": {
+    "application": "src/browser-playwright.application.ts"
+  },
+  "scripts": {
+    "types": "agboss check",
+    "describe": "agboss describe",
+    "lint": "eslint .",
+    "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+    "test": "vitest run",
+    "browsers": "playwright install chromium",
+    "demo": "tsx src/demo.ts",
+    "demo:live": "tsx src/demo.ts --live"
+  },
+  "dependencies": {
+    "@agboss/core": "^0.1.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@playwright/mcp": "0.0.85",
+    "playwright": "1.66.0-alpha-2026-11-09"
+  },
+  "devDependencies": {
+    "@agboss/cli": "^0.1.1",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}
