@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
-  "description": "P1 Proof: a browser plugged into an agent two ways \u2014 plain Playwright as a @Tool with the shared browser injected (closed when the app stops) and the official @playwright/mcp server behind @McpServer \u2014 one domain allowlist on both, and a form submitted once through a fenced outbound call.",
+  "description": "P1 Proof: a browser plugged into an agent two ways — plain Playwright as a @Tool with the shared browser injected (closed when the app stops) and the official @playwright/mcp server behind @McpServer — one domain allowlist on both, and a form submitted once through a fenced outbound call.",
   "agboss": {
     "application": "src/browser-playwright.application.ts"
   },
