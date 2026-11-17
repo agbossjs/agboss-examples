@@ -104,6 +104,17 @@ export async function guardContext(
     [...hostMap.matchAll(/MAP\s+(\S+)\s+(\S+)/gu)].map((rule) => [rule[1] ?? "", rule[2] ?? ""] as const),
   );
   await context.route("**/*", async (route) => {
+    try {
+      await guardRoute(route);
+    } catch {
+      // the context closed while the request was in flight (a timeout, a cancelled run, app.close()), or the
+      // site could not be fetched: fail closed — the request is dropped, and nothing here may throw
+      // unhandled into the process
+      await route.abort("failed").catch(() => undefined);
+    }
+  });
+
+  async function guardRoute(route: Parameters<Parameters<typeof context.route>[1]>[0]): Promise<void> {
     const request = route.request();
     let url = request.url();
     for (let hop = 0; ; hop += 1) {
@@ -127,7 +138,7 @@ export async function guardContext(
       }
       url = new URL(location, url).href; // checked at the top of the loop, before it is requested
     }
-  });
+  }
 }
 
 /** The error a tool gives the model for a URL outside the list: it names the rule, not the list. */
