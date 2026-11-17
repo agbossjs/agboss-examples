@@ -1,7 +1,9 @@
+import { PauseClosedReason } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
 import { runBudgetExceededScenario } from "../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../scenarios/cancel-and-rollback.js";
-import { runPauseWithdrawalScenario } from "../scenarios/pause-withdrawal.js";
+import { runManagerAwayScenario } from "../scenarios/manager-away-reassign.js";
+import { runPauseClosedScenario } from "../scenarios/pause-closed.js";
 import { runPaymentFailureScenario } from "../scenarios/payment-failure.js";
 import { runQuorumApprovalScenario } from "../scenarios/quorum-approval.js";
 import { runRollbackCrashScenario } from "../scenarios/rollback-crash.js";
@@ -14,17 +16,18 @@ async function main(): Promise<void> {
     const scenarioC = await runCancelAndRollbackScenario();
     const scenarioD = await runRollbackCrashScenario();
     const scenarioE = await runQuorumApprovalScenario();
-    const scenarioF = await runPauseWithdrawalScenario();
+    const scenarioF = await runPauseClosedScenario();
+    const scenarioG = await runManagerAwayScenario();
 
     if (
       !scenarioB.rejectedWithBudgetExceeded ||
       !scenarioC.cancelled ||
       !scenarioD.compensationFailedErrorSurfaced ||
-      !scenarioF.lateResumeRejectedWithPauseClosed
+      scenarioF.lateResumeRejectedWithPauseClosed !== PauseClosedReason.Withdrawn ||
+      scenarioG.oldPauseAnswerRejectedWith !== PauseClosedReason.Reassigned ||
+      scenarioG.outcomeStatus !== "CONFIRMED"
     ) {
-      throw new Error(
-        "One or more Travel Booking Saga demo assertions failed.",
-      );
+      throw new Error("One or more Travel Booking Saga demo assertions failed.");
     }
 
     console.log(
@@ -43,19 +46,16 @@ async function main(): Promise<void> {
           },
           scenarioC_CancelAndRollback: {
             cancelled: scenarioC.cancelled,
-            withdrawnResolution: scenarioC.withdrawnResolution,
-            lateResumeRejectedWithPauseClosed:
-              scenarioC.lateResumeRejectedWithPauseClosed,
+            closedCount: scenarioC.closedCount,
+            closedReason: scenarioC.closedReason,
+            lateResumeRejectedWithPauseClosed: scenarioC.lateResumeRejectedWithPauseClosed,
             flightState: scenarioC.flightState,
             hotelState: scenarioC.hotelState,
           },
           scenarioD_RollbackCrashAndSqliteRecovery: {
-            compensationFailedErrorSurfaced:
-              scenarioD.compensationFailedErrorSurfaced,
-            flightStateAfterRecoveryReplay:
-              scenarioD.flightStateAfterRecoveryReplay,
-            sqliteResumedAcrossRestartStatus:
-              scenarioD.sqliteResumedAcrossRestartStatus,
+            compensationFailedErrorSurfaced: scenarioD.compensationFailedErrorSurfaced,
+            flightStateAfterRecoveryReplay: scenarioD.flightStateAfterRecoveryReplay,
+            sqliteResumedAcrossRestartStatus: scenarioD.sqliteResumedAcrossRestartStatus,
             sqliteResumedOutputStatus: scenarioD.sqliteResumedOutputStatus,
           },
           scenarioE_QuorumApproval: {
@@ -63,11 +63,17 @@ async function main(): Promise<void> {
             summary: scenarioE.summary,
             branches: scenarioE.branches,
           },
-          scenarioF_PauseWithdrawal: {
+          scenarioF_PauseClosed: {
             outcomeStatus: scenarioF.outcomeStatus,
-            withdrawnResolution: scenarioF.withdrawnResolution,
-            lateResumeRejectedWithPauseClosed:
-              scenarioF.lateResumeRejectedWithPauseClosed,
+            closedReason: scenarioF.closedReason,
+            lateResumeRejectedWithPauseClosed: scenarioF.lateResumeRejectedWithPauseClosed,
+          },
+          scenarioG_ManagerAwayReassign: {
+            sends: scenarioG.sends.length,
+            deputyAsk: scenarioG.sends[1]?.assignee,
+            closedReasons: scenarioG.closedNotices.map((notice) => notice.reason),
+            oldPauseAnswerRejectedWith: scenarioG.oldPauseAnswerRejectedWith,
+            outcomeStatus: scenarioG.outcomeStatus,
           },
         },
         null,

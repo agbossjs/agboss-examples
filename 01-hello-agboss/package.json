@@ -16,6 +16,7 @@
     "test": "vitest run",
     "demo": "tsx src/demo.ts",
     "demo:live": "tsx src/demo.ts --live",
+    "demo:stream": "tsx src/demo.stream.ts",
     "demo:codex-cli": "tsx src/demo.cli.ts codex",
     "demo:claude-cli": "tsx src/demo.cli.ts claude",
     "demo:gemini-cli": "tsx src/demo.cli.ts gemini"

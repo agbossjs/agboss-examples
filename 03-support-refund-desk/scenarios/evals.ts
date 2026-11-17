@@ -20,6 +20,9 @@ import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/supp
 const execFileAsync = promisify(execFile);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGBOSS_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", "agboss");
+/** What the PII policy writes for an email: the digest differs from one application key to the next, so only its shape is asserted. */
+const EMAIL_TOKEN = /<email:[0-9a-f]{6}>/u;
+const ESCAPED_EMAIL_TOKEN = /&lt;email:[0-9a-f]{6}&gt;/u;
 
 interface CliJsonEnvelope<T> {
   readonly schema: number;
@@ -334,15 +337,14 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
         containsDraftedCase: draftedCaseSnippet.length > 0,
         containsPastTurn: draftedCaseSnippet.includes("pastTurn("),
         containsToolCallExpectation: draftedCaseSnippet.includes("toolCall(LookupOrderTool"),
-        containsMaskedEmailToken: draftedCaseSnippet.includes("<email:d1ac5c>"),
+        containsMaskedEmailToken: EMAIL_TOKEN.test(draftedCaseSnippet),
         rawEmailLeakedInDraft: draftedCaseSnippet.includes(rawEmail),
       },
       htmlReport: {
         htmlLength: htmlContent.length,
         containsSuiteTitle: htmlContent.includes("refund-desk-eval-suite"),
         containsMaskedEmailToken:
-          htmlContent.includes("&lt;email:d1ac5c&gt;") ||
-          htmlContent.includes("<email:d1ac5c>"),
+          EMAIL_TOKEN.test(htmlContent) || ESCAPED_EMAIL_TOKEN.test(htmlContent),
         rawEmailLeakedInHtml:
           htmlContent.includes("alice.synth@example.com") ||
           htmlContent.includes("carol.synth@example.com"),

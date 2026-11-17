@@ -3,6 +3,7 @@ import type { AppEnvironment } from "./app.environment.js";
 
 export const environment: AppEnvironment = {
   catalogCurrency: env("CATALOG_CURRENCY", { default: "USD" }),
+  gatewayBaseUrl: env.optional("LLM_GATEWAY_BASE_URL"),
   openRouterApiKey: secret("OPENROUTER_API_KEY"),
   openRouterBaseUrl: env.optional("OPENROUTER_BASE_URL"),
   piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),

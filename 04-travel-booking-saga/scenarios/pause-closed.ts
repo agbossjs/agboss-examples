@@ -1,39 +1,46 @@
-import { createApp, ExecutionStatus, PauseClosedError } from "@agboss/core";
+import {
+  createApp,
+  ExecutionStatus,
+  PauseClosedError,
+  type PauseClosedReason,
+} from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import {
   getSentChannelAsks,
+  getClosedChannelAsks,
   resetChannelRecords,
+  waitForChannelClose,
 } from "../src/channels/corporate-booking-approval.channel.js";
-import { waitForWithdrawnChannelAsks } from "./wait-for-withdrawn.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
 import { QuorumSagaWorkflowStart } from "../src/workflows/quorum-saga/quorum-saga.workflow-start.js";
 
-export interface PauseWithdrawalScenarioResult {
+export interface PauseClosedScenarioResult {
   readonly status: ExecutionStatus;
   readonly outcomeStatus: string | undefined;
   readonly sentPauseId: string;
-  readonly withdrawnPauseId: string | undefined;
-  readonly withdrawnResolution: string | undefined;
-  readonly lateResumeRejectedWithPauseClosed: boolean;
+  readonly closedPauseId: string | undefined;
+  readonly closedReason: PauseClosedReason | undefined;
+  readonly lateResumeRejectedWithPauseClosed: PauseClosedReason | undefined;
 }
 
 /**
- * Scenario F — HITL Pause Withdrawal When Quorum Finishes First:
+ * Scenario F — The Approval Message Closes When the Quorum Finishes First:
  * 1. `FinanceReviewerAgent`, `ComplianceReviewerAgent`, and `RiskReviewerAgent` launch in parallel
  *    under a 2-of-3 quorum (`min: 2, max: 2`).
  * 2. `RiskReviewerAgent` calls `request-manager-approval-tool`, which sends an approval request
  *    to `CorporateBookingApprovalChannel` (`ChannelOutcome.awaitReply()`) and pauses Branch 3.
  * 3. `FinanceReviewerAgent` and `ComplianceReviewerAgent` both return approved votes, satisfying
  *    the 2-of-3 quorum (`max: 2`).
- * 4. AGBoss automatically cancels the superseded Branch 3 pause and invokes
- *    `CorporateBookingApprovalChannel.onPauseClosed()` with `PauseClosedReason.Withdrawn`.
- * 5. A late `app.resume({ pauseId, decision })` on the withdrawn pause is rejected with `PauseClosedError`.
+ * 4. AGBoss closes the superseded Branch 3 pause (`PauseResolution.Withdrawn`) and tells
+ *    `CorporateBookingApprovalChannel.onPauseClosed()` once, `PauseClosedReason.Withdrawn`.
+ * 5. A late `app.resume({ pauseId, decision })` on that pause is rejected with `PauseClosedError`
+ *    (`reason: withdrawn`).
  */
-export async function runPauseWithdrawalScenario(
-  bookingId = "WITHDRAW-F1",
-): Promise<PauseWithdrawalScenarioResult> {
+export async function runPauseClosedScenario(
+  bookingId = "CLOSED-F1",
+): Promise<PauseClosedScenarioResult> {
   resetOperationLedger();
   resetChannelRecords();
   const app = await createApp(TravelBookingSagaApplication);
@@ -51,10 +58,11 @@ export async function runPauseWithdrawalScenario(
     );
 
     const sent = getSentChannelAsks();
-    const withdrawn = await waitForWithdrawnChannelAsks();
+    await waitForChannelClose();
+    const closed = getClosedChannelAsks();
     const sentPauseId = sent[0]?.pauseId ?? "";
 
-    let lateResumeRejectedWithPauseClosed = false;
+    let lateResumeRejectedWithPauseClosed: PauseClosedReason | undefined;
     if (sentPauseId !== "") {
       try {
         await app.resume(
@@ -62,13 +70,13 @@ export async function runPauseWithdrawalScenario(
             pauseId: sentPauseId,
             decision: Object.assign(new ToolCallApprovalDecisionDto(), {
               approved: true,
-              reason: "Late click on already-withdrawn pause",
+              reason: "Late click on an already-closed pause",
             }),
           },
           { answeredBy: "risk-manager-7" },
         );
       } catch (error) {
-        lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError;
+        lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;
       }
     }
 
@@ -76,8 +84,8 @@ export async function runPauseWithdrawalScenario(
       status: result.status,
       outcomeStatus: result.output?.status,
       sentPauseId,
-      withdrawnPauseId: withdrawn[0]?.pauseId,
-      withdrawnResolution: withdrawn[0]?.resolution,
+      closedPauseId: closed[0]?.pauseId,
+      closedReason: closed[0]?.reason,
       lateResumeRejectedWithPauseClosed,
     };
   } finally {

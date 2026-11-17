@@ -5,7 +5,7 @@
 `03-support-refund-desk` proves that AGBoss enforces deterministic safety boundaries around LLM agents and provides a rigorous, statistically sound evaluation pipeline:
 
 1. **Reversible PII Token Roundtrip & Boundary Refusal (`@PiiPolicy`, `revealPii`):**
-   - Customer emails (`PiiKind.Email`) and custom ticket IDs (`support-ticket-id`) are replaced with HMAC-keyed tokens (`<email:d1ac5c>`) before any model call.
+   - Customer emails (`PiiKind.Email`) and custom ticket IDs (`support-ticket-id`) are replaced with HMAC-keyed tokens (`<email:…>`: a digest of the value under a key of its own, different from one application key to the next) before any model call.
    - Tools marked with `revealPii: true` (`IssueRefundTool`) receive the real de-tokenized email for external side effects while all traces, execution records, and eval artifacts remain masked.
    - Raw payment card numbers (`PiiKind.CardNumber`) are refused at the boundary with `PiiRefusedError`.
 2. **Pre-Execution Tool Interception & Guardrails (`@ToolInterceptor`, `@InputGuardrail`, `@OutputGuardrail`):**
@@ -23,6 +23,17 @@
    - `pass@k` vs `pass^k` (`isUnstable: true`) and baseline comparison (`CaseComparison.FlakyOnBaseline` quarantined vs `CaseComparison.Regressed`).
    - Judge calibration (`agboss eval calibrate`) computing pairwise Cohen's $\kappa$, confusion matrices, and rubric disagreements against `eval/human-labels/refund-desk-eval-suite.jsonl`.
 
+5. **A deadline for the answer, an escalation, a reminder, an extension and a pause listener (`@ChannelRole({ expiresIn, remindBefore })`, `.onError(PauseExpiredError, toQuestion(…))`, `app.extendPause`, `@PauseListener`):**
+   - A refund above the self-service cap (`refund-approval-workflow`) is put to the on-call support lead (`refund-approver-question`), who has `APPROVAL_EXPIRES_IN` (default `4h`) to answer. When nobody does, the pause closes `expired`, the question step fails with `PauseExpiredError` and the flow's side path asks the head of support (`senior-refund-approver-question`, a pause of its own); an approval there issues the refund once (`OrderBookService`, keyed by the step's idempotency key).
+   - The lead's channel hears `onPauseExpiring` once per deadline (`remindBefore` is a quarter of the window) and `onPauseExtended` after `app.extendPause`. The head's channel implements `PauseExpiryHandler`: when even the head does not answer, the desk **declines** on the channel's own answer (`PauseExpiration.decide`, recorded `PauseResolution.DecidedOnExpiry`) — never an approval nobody looked at.
+   - `RefundDeskPauseListener` (`@PauseListener`) writes "opened" and "closed: <reason>" for every pause of the application to the on-call log, once per `deliveryId` (notices are at least once). A late answer to the lead's pause is `PauseClosedError` with `reason: expired`.
+
+6. **Files in agents under PII policies (`ModelFiles`, `FileView.Redacted`, `PiiFileAction.RedactWithModel`):**
+   - A customer attaches a photo of a receipt (`ReceiptRefundRequestDto.receipt`, an `A2AFileDto`). `ReceiptReaderAgent` reads it only as a redacted copy: the built-in image redactor (a cheap vision model names the regions, `sharp` paints them black) hides the card number and email named by `ReceiptPhotoPiiPolicy` before the photo reaches the agent's model. The desk-wide `CustomerContactPiiPolicy` is excluded for this agent (it blocks a card number, which would conflict with blacking it out).
+   - `files: PiiFileAction.RedactWithModel` is the explicit opt-in to let the model decide: an IBAN it finds refuses the photo (`PiiRefusedError`), a malformed answer fails closed (`FileRedactionFailedError`). A model-checked image is a guardrail, not a guarantee.
+   - `StrictReceiptReaderAgent` keeps the desk-wide block rule: the image is refused whole (`PiiRefusedError`, `card-number`) before any model, the redactor included, is asked.
+   - Needs the optional peer dependency `sharp` (`npm i sharp`); `maxFileSize` stays within the 64 KB an execution keeps without a file store.
+
 ## 2. Quick start
 
 ```bash
@@ -38,6 +49,12 @@ npm run demo:pii
 npm run demo:policy
 npm run demo:memory-drift
 npm run demo:evals
+
+# Opt-in, real model, skips without OPENROUTER_API_KEY; RECEIPT_OUT_DIR=<dir> saves the images the models were sent
+npm run demo:files:live
+
+# Scenario E on the real clock: the lead has 30 s; the escalation, the late answer and the listener's four lines are printed
+APPROVAL_EXPIRES_IN=30s npm run demo:approval
 ```
 
 ## 3. Canonical `src/` & symmetric `tests/` layout
@@ -48,6 +65,8 @@ npm run demo:evals
 - `src/contexts/` — `support-tenant.context.ts`, `support-execution.context.ts`.
 - `src/dto/` — Narrow edge DTOs (`1 class = 1 file`).
 - `src/services/in-memory-knowledge-index.service.ts` & `src/retrievers/refund-policy.retriever.ts` — Real in-memory BM25/TF-IDF section indexer and retriever injected into `src/rag/refund-policy.rag.ts`.
+- `src/workflows/refund-approval/`, `src/channels/` (two question roles and their channels), `src/listeners/refund-desk.pause-listener.ts`, `src/actions/settle-refund.action.ts`, `src/config/approval-window.ts` — the approval with a deadline and its escalation (`scenarios/approval-escalation.ts`).
+- `src/agents/receipt-reader/`, `src/agents/strict-receipt-reader/`, `src/workflows/receipt-check/`, `src/workflows/strict-receipt-check/`, `src/dto/receipt-refund-request.dto.ts`, `fixtures/receipt-card-statement.png` — the receipt photo under PII policy (`scenarios/receipt-live.ts`).
 - `src/pii-policies/`, `src/guardrails/<name>/`, `src/interceptors/`, `src/compactions/<name>/`, `src/agents/<name>/`, `src/judges/<name>/`.
 - `src/eval-suites/refund-desk.eval-suite.ts` & `eval/baseline/main-baseline.json` — Quality-gate suite and compact git-tracked baseline snapshot.
 - `tests/` — Mirrors `src/` 1-to-1:
@@ -56,6 +75,8 @@ npm run demo:evals
   - `tests/judges/citation-code/citation-code.judge.test.ts`
   - `tests/retrievers/refund-policy.retriever.test.ts`
   - `tests/workflows/support-refund/support-refund.workflow.test.ts` (including end-to-end Langfuse OTel collector span verification)
+  - `tests/workflows/receipt-check/receipt-check.workflow.test.ts` and `tests/workflows/strict-receipt-check/strict-receipt-check.workflow.test.ts` (the redacted copy, the refusal, spend under `files:redactor`)
+  - `tests/workflows/refund-approval/refund-approval.workflow.test.ts` (the escalation, the reminder, the extension and the default on the test's virtual clock)
 
 ## 4. Failure / scenario matrix
 
@@ -65,6 +86,8 @@ npm run demo:evals
 | **B: Policy & Guardrails** (`scenarios/policy.ts`) | Over-cap `$1,450` tool call, cross-tenant lookup, prompt injection, and legal settlement promise | `@ToolInterceptor`, `@InputGuardrail`, `@OutputGuardrail` | Over-cap call gets `ToolCallStatus.Replied` and escalates; cross-tenant throws `ToolBlockedError`; guardrails throw `GuardrailBlockedError` |
 | **C: Memory vs. Policy Drift** (`scenarios/memory-drift.ts`) | Customer cites superseded v1.0 90-day policy across 5 turns for 45-day-old `ORD-1003` | `PolicyAwareCompaction` + `RefundPolicyRag` (`RagMode.Context`) | Compaction preserves `ORD-1003` fact, strips stale v1.0 claim, and agent denies refund (`refundedUsd === 0`) |
 | **D: 5-Layer Evaluation** (`scenarios/evals.ts`) | Flaky run (`1/2`), rubric ambiguity across human raters, chaos faults, and incident drafting | `agboss eval run --baseline`, `eval calibrate`, `--chaos`, `--metamorphic`, `generate eval-case` | `FlakyOnBaseline` quarantined; `Regressed` caught; $\kappa = 1.00$ (`anna`) / $0.57$ (`ben`); drafted case & HTML report contain zero raw PII |
+| **E: Approval Deadline & Escalation** (`scenarios/approval-escalation.ts`) | Nobody answers the on-call lead's approval of a $1,450 refund; later, nobody answers the head either | `expiresIn`, `.onError(PauseExpiredError, toQuestion(…))`, `remindBefore`, `app.extendPause`, `PauseExpiryHandler`, `@PauseListener` | The head is asked, approves, one refund is issued; the lead's late answer is `PauseClosedError` (`expired`); the listener logged opened and closed for both pauses; with no answer at all the desk declines and issues nothing |
+| **F: Receipt Photo under PII Policy** (`tests/workflows/receipt-check/receipt-check.workflow.test.ts`, `tests/workflows/strict-receipt-check/strict-receipt-check.workflow.test.ts`) | Card number, email and an IBAN on a photo of a receipt; a redaction model that answers prose instead of regions | `ModelFiles.of({ views: [FileView.Redacted] })`, `PiiFileAction.RedactWithModel`, block rule refusing an image whole, `mockLlm(FileRedactor)` | The reader's model gets one image part whose `sha256` differs from the original and no raw email; spend under `files:redactor`; an IBAN found throws `PiiRefusedError`, a prose answer `step.file-redaction-failed`, and under the desk's block rule the image is refused (`card-number`) with no model call |
 
 ## 5. How to reproduce each case
 

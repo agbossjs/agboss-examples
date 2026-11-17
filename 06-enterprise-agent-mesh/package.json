@@ -12,6 +12,7 @@
     "start": "node dist/apps/1-order-gateway/src/order-gateway.application.js",
     "dev": "tsx watch apps/1-order-gateway/src/order-gateway.application.ts",
     "demo": "tsx apps/1-order-gateway/src/demo.ts",
+    "demo:stream": "tsx apps/1-order-gateway/src/demo.stream.ts",
     "check": "agboss check --application apps/2-billing-a2a/src/billing.application.ts --strict --cassettes && agboss check --application apps/3-catalog-mcp/src/catalog.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "lint": "eslint .",
     "test": "vitest run"

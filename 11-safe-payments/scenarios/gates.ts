@@ -10,6 +10,7 @@ import {
   type FencedEffectOutcome,
   type FencedEffectWork,
 } from "@agboss/core";
+import { ExecutionCancelFencedError } from "@agboss/core/stores";
 import type { DatabaseSync } from "node:sqlite";
 import type { TestApp } from "@agboss/core/testing";
 import { StubGatewayService } from "../src/services/stub-gateway.service.js";
@@ -73,9 +74,33 @@ export function letGoOldest(): void {
   oldest?.letGo();
 }
 
+/** A write the cancel's fence refused: what the store threw, as the scenario saw it. */
+export interface FenceRefusal {
+  readonly store: "outbound-call" | "fenced-effect";
+  /** The write's name (`charge`, `book-charge`). */
+  readonly effect: string;
+  /** `execution.cancelled.fenced`. */
+  readonly code: string;
+  readonly tenantId: string;
+  readonly rootExecutionId: string;
+}
+
+const refusals: FenceRefusal[] = [];
+
+/** The writes the cancel's fence refused since the last reset, in order. */
+export const fenceRefusals = (): readonly FenceRefusal[] => [...refusals];
+
+/** Notes a store's error when it is the cancel's fence (`ExecutionCancelFencedError`); passes every error on. */
+function witnessed(store: FenceRefusal["store"], error: unknown): unknown {
+  if (error instanceof ExecutionCancelFencedError)
+    refusals.push({ store, effect: error.effect, code: error.code, tenantId: error.tenantId, rootExecutionId: error.rootExecutionId });
+  return error;
+}
+
 /** Forgets every hold and lets everything go: between scenarios. */
 export function resetGates(): void {
   state.holds = [];
+  refusals.length = 0;
   letGo();
 }
 
@@ -178,5 +203,32 @@ export class LostAfterCommitOutboundCallRepository extends SqliteOutboundCallRep
       throw new Error("the connection to the database was lost after the commit");
     }
     return committed;
+  }
+}
+
+/** The gated intent store that also notes the writes the cancel's fence refuses (`fenceRefusals`). */
+@Injectable({ deps: [SqliteConnection, StoreClock, ApplicationContext] })
+export class WitnessOutboundCallRepository extends GatedOutboundCallRepository {
+  override async saveIfAbsent(...args: Parameters<SqliteOutboundCallRepository["saveIfAbsent"]>): Promise<boolean> {
+    try {
+      return await super.saveIfAbsent(...args);
+    } catch (error) {
+      throw witnessed("outbound-call", error);
+    }
+  }
+}
+
+/** The gated fenced-effect store that also notes the writes the cancel's fence refuses (`fenceRefusals`). */
+@Injectable({ deps: [SqliteConnection, StoreClock, FencedEffectSettings, ApplicationContext] })
+export class WitnessFencedEffectRepository extends GatedFencedEffectRepository {
+  override async runOnce<TResult>(
+    key: EffectKey,
+    work: FencedEffectWork<DatabaseSync, TResult>,
+  ): Promise<FencedEffectOutcome<TResult>> {
+    try {
+      return await super.runOnce(key, work);
+    } catch (error) {
+      throw witnessed("fenced-effect", error);
+    }
   }
 }

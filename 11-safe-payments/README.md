@@ -42,6 +42,7 @@ src/your-step/your-payment-operations.ts  a copy of the right wiring for you to 
 | **One refund, one capture, one disposition**                              | A refund whose answer is lost and asked again by another path (PS19); an undo interrupted (PS10); shipment 2 captured twice (PS18); a void racing a capture (PS20) | `refund:<charge>:<n>`, `capture:<charge>:<n>`, `disposition:<charge>`; the undo marked done once (#607)                                                                                                                                                               | [`tests/scenarios/gateway-side.test.ts`](./tests/scenarios/gateway-side.test.ts)                                                                      |
 | **A webhook is applied once, by the gateway's current state**             | A duplicate delivery on two pods (PS15); events out of order (PS16); a 3DS outcome from three requests (PS21)                                                      | A fenced effect under `event:stub:<eventId>`; the pause answered once (`NotPausedError`); the charge's current status read                                                                                                                                            | › "ps15", › "ps16", › "ps21"                                                                                                                          |
 | **What stays the gateway's is named; an unknown outcome is never resent** | A gateway with no lookup or no keys (PS6, PS23); an error of unknown outcome, a key past its retention (PS17)                                                      | `unknown` → `OutboundCallUnreconciledError` (a person decides); an ambiguous error leaves the intent pending (#657); a `KeyReplay`'s `notSent()` past its declared `keyRetention` is never sent (#658); every call declares how far its `notSent()` is trusted (#795) | › "ps6 …", › "ps17 c: right — exactly once", › "ps17 d: right — exactly once"                                                                         |
+| **A cancel is a hard fence for effects** | A cancel requested on another instance while a payment step is in flight: before the charge's intent is recorded; after its send is claimed (#909, ADR-0030) | `app.cancel` writes a durable mark first; once it resolves, the fenced-effect and outbound-call stores refuse a new write in the lease's transaction (`ExecutionCancelFencedError`, `execution.cancelled.fenced`); a send already claimed may still be answered and recorded | [`tests/scenarios/cancel-fence.test.ts`](./tests/scenarios/cancel-fence.test.ts) › "cancel before the intent: right — exactly once", › "cancel after the send is claimed: right — today's known boundary …", › "the right assertion fails on the wrong version" |
 | **The tests bite**                                                        | The right version swapped for the wrong one                                                                                                                        | each right-version assertion run on its wrong version must fail                                                                                                                                                                                                       | [`tests/bites.test.ts`](./tests/bites.test.ts)                                                                                                        |
 | **Your own gateway call can be checked the same way**                     | A step that forgets the idempotency key on a refund                                                                                                                | every right-version assertion with your `PaymentOperations`                                                                                                                                                                                                           | [`tests/your-step.test.ts`](./tests/your-step.test.ts) › "a step that forgets the refund key turns ps19 red"                                          |
 
@@ -170,6 +171,24 @@ NotSentTrust.KeyReplay, keyRetention: hours(24) }`,
   reconciles (nothing processed yet) and sends again, the same key. The right wiring on `Full`:
   `409 in_progress`, then the retry replays — one charge; on `NoKeys`: two. The gateway's side:
   there is no wrong version of the application here.
+
+### Beyond the taxonomy: a cancel arrives mid-payment
+
+([`scenarios/cancel-fence.scenario.ts`](./scenarios/cancel-fence.scenario.ts), [ADR-0030](https://github.com/agbossjs/agboss/wiki/ADR-0030-A-cancel-is-a-fence), Guarantees P7.)
+Instance 1 runs an order and is held mid-step; the cancel is requested on instance 2 (the one a
+holder would read only at its next lease renewal); `app.cancel` resolves — the mark is durable —
+and instance 1 is let go. Read from the stub's own records and the stores' own refusals:
+
+- **Cancel before the charge's intent.** The intent write is refused with
+  `ExecutionCancelFencedError` (`execution.cancelled.fenced`): the stub received no charge request
+  and carried out no charge, and the tree has no recorded call. Wrong: a plain client call (no
+  intent, no fence) still charges the cancelled order — the right assertion fails on it.
+- **Cancel after the send is claimed, before the request leaves.** What the docs name as the
+  exception: the claimed send may still be answered and recorded — the stub carries out one charge
+  and the intent is `Completed`. Everything *new* is fenced: the booking that follows is refused
+  (`execution.cancelled.fenced` at the fenced effect), so the shop's books never show the order paid.
+  The tree's undo does not refund a step that never completed: the charge is visible to an operator
+  in `app.outboundCallsOf` and the row is asserted as a known boundary, not as a guarantee.
 
 ### What the on-call engineer sees
 
