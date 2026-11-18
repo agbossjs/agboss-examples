@@ -355,6 +355,42 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_RANGE = `^${JSON.parse(readFileSync(join(REPO_ROOT, ".agboss-version.json"), "utf8")).version}`;
 const JOB_SCOUT = "08-job-scout";
 
+describe("`--mode check` lints every example that has an ESLint config (agbossjs/agboss#1330)", () => {
+  // run-all runs `npm run check` per example, the one script the README names: an example whose
+  // check skips `eslint .` would stay green in CI while its own `npm run check` is red
+  const linted = PROJECTS.map((p) => p.name).filter((name) =>
+    existsSync(join(REPO_ROOT, name, "eslint.config.js")),
+  );
+
+  it("there are examples with an ESLint config", () => {
+    assert.ok(linted.length >= 10, linted.join(", "));
+  });
+
+  for (const name of linted) {
+    it(`${name}: its check script runs eslint . (directly or through npm run lint)`, () => {
+      const pkg = JSON.parse(readFileSync(join(REPO_ROOT, name, "package.json"), "utf8"));
+      const { check, lint } = pkg.scripts;
+      assert.ok(
+        /(^|&& )eslint \.($| &&)/.test(check) ||
+          (/npm run lint\b/.test(check) && lint === "eslint ."),
+        `${name}: scripts.check = ${check}`,
+      );
+    });
+  }
+
+  it("a strictTypeChecked config turns no-unsafe-class-instance-assignment off: a DTO literal is the documented call shape", () => {
+    for (const name of linted) {
+      const config = readFileSync(join(REPO_ROOT, name, "eslint.config.js"), "utf8");
+      if (!config.includes("strictTypeChecked")) continue;
+      assert.match(
+        config,
+        /"@typescript-eslint\/no-unsafe-class-instance-assignment": "off"/,
+        name,
+      );
+    }
+  });
+});
+
 describe("08-job-scout registration (agbossjs/agboss#489)", () => {
   it("08-job-scout is a P1 project, shaped like 05 and 06", () => {
     const meta = PROJECTS.find((p) => p.name === JOB_SCOUT);

@@ -13,6 +13,8 @@ export default tseslint.config(
     },
     rules: {
       "@typescript-eslint/no-extraneous-class": ["error", { allowWithDecorator: true }],
+      // an object literal where a DTO class is the parameter type is the documented call shape: execute(Start, { text })
+      "@typescript-eslint/no-unsafe-class-instance-assignment": "off",
     },
   },
   {
