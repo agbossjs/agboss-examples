@@ -13,7 +13,7 @@ import { SiteFault } from "../src/site/contact-site.js";
 import { SubmitContact } from "../src/tools/submit-contact.tool.js";
 import { AskWorkflowStart } from "../src/workflows/web/ask.workflow-start.js";
 import { ContactWorkflowStart } from "../src/workflows/web/contact.workflow-start.js";
-import { frozenPastLease, settled, until } from "./support/steps.js";
+import { frozenPastLease, settled, until, untilAsync } from "./support/steps.js";
 import { siteForFile } from "./support/site.js";
 
 const { site } = siteForFile();
@@ -101,7 +101,7 @@ describe("a crash in the middle of the submit", () => {
     await Promise.all(apps.map((each) => each.ready()));
     const [first, second] = apps;
     if (first === undefined || second === undefined) throw new Error("two instances");
-    const before = { tickets: site().tickets.length, posts: posts() };
+    const before = { tickets: site().tickets.length, posts: posts(), lookups: lookups() };
     site().inject(SiteFault.HoldAnswer);
 
     const zombie = settled(first.execute(ContactWorkflowStart, { ...REQUEST, reference: "crash-1" }));
@@ -109,11 +109,18 @@ describe("a crash in the middle of the submit", () => {
     expect(site().tickets).toHaveLength(before.tickets + 1);
     await frozenPastLease({ apps, clock, leases }, first);
     // instance 2 took the lease over and ran the step again: it found the pending intent, asked the site
-    await until(() => lookups() >= 1, "the recovery asked the site what happened");
+    await until(() => lookups() > before.lookups, "the recovery asked the site what happened");
     site().release();
     await zombie;
+    // the zombie's end is not the recovery's: the call stays pending until instance 2 settles it
+    // (completed or failed), so wait for that, then count
+    await untilAsync(
+      async () => (await second.pendingOutboundCallsOf({ tenantId: "default" })).calls.length === 0,
+      "instance 2 settled the outbound call",
+    );
 
     expect(site().tickets).toHaveLength(before.tickets + 1);
-    expect(posts()).toBe(before.posts + 1);
+    expect(posts()).toBe(before.posts + 1); // exactly one submit, ever
+    expect(lookups()).toBe(before.lookups + 1); // the recovery asked the site, and did not click again
   });
 });
