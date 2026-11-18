@@ -17,6 +17,15 @@ export async function until(condition: () => boolean, what: string, ms = 15_000)
   }
 }
 
+/** Until an async condition holds (the same short poll, for what only a read of the store answers). */
+export async function untilAsync(condition: () => Promise<boolean>, what: string, ms = 15_000): Promise<void> {
+  const deadline = Date.now() + ms;
+  while (!(await condition())) {
+    if (Date.now() > deadline) throw new Error(`did not happen in time: ${what}`);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
 /** A promise's end as a value: what a frozen instance's call turns out to be. */
 export const settled = (promise: Promise<unknown>): Promise<string> =>
   promise.then(
