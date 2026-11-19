@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, type InputOf } from "@agboss/core";
+import { Action, type ActionHandler } from "@agboss/core";
 import { SeatReservationDto } from "../dto/seat-reservation.dto.js";
 
 @Action({
@@ -9,7 +9,7 @@ import { SeatReservationDto } from "../dto/seat-reservation.dto.js";
 export class ReleaseSeatCompensationAction
   implements ActionHandler<ReleaseSeatCompensationAction>
 {
-  async execute(input: InputOf<ReleaseSeatCompensationAction>): Promise<void> {
-    void input.reservation.value.reservationCode;
+  async execute(): Promise<void> {
+    // the offline proof holds no airline: releasing the seat is the compensation's declared effect, not a call
   }
 }

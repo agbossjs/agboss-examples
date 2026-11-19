@@ -1,0 +1,49 @@
+import js from "@eslint/js";
+import stylistic from "@stylistic/eslint-plugin";
+import { FLOW_CHAIN_RULE, agbossPlugin } from "@agboss/core/eslint";
+import tseslint from "typescript-eslint";
+
+export default tseslint.config(
+  { ignores: ["node_modules", "dist", "coverage", ".agboss", "cases/**/agboss-broken"] },
+  js.configs.recommended,
+  ...tseslint.configs.strictTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+    rules: {
+      "@typescript-eslint/no-extraneous-class": ["error", { allowWithDecorator: true }],
+      // an object literal where a DTO class is the parameter type is the documented call shape: execute(Start, { text })
+      "@typescript-eslint/no-unsafe-class-instance-assignment": "off",
+    },
+  },
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["src/**/*.test.ts", "src/demo.ts"],
+    plugins: { agboss: agbossPlugin },
+    rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
+  },
+  {
+    // an action's execute returns a Promise by contract (ActionHandler); these proofs do no I/O in it
+    files: ["src/actions/**/*.ts"],
+    rules: { "@typescript-eslint/require-await": "off" },
+  },
+  {
+    // the LangGraph graphs are the "before" of each case: written the way the failure arises, nodes read state fields they never checked
+    files: ["cases/**/langgraph-broken/**/*.ts"],
+    rules: { "@typescript-eslint/no-non-null-assertion": "off" },
+  },
+  {
+    files: ["**/*.workflow.ts"],
+    plugins: { "@stylistic": stylistic },
+    rules: FLOW_CHAIN_RULE,
+  },
+  {
+    // @agboss/core/internal is the agboss CLI's, with no semver promise: every file imports the
+    // public entries only (agbossjs/agboss#818)
+    files: ["**/*.{ts,mts,cts,js,mjs,cjs}"],
+    plugins: { agboss: agbossPlugin },
+    rules: { "agboss/no-internal-import": "error" },
+  },
+  { files: ["**/*.js"], ...tseslint.configs.disableTypeChecked },
+);

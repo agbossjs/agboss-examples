@@ -9,7 +9,9 @@ Independent, runnable [**AGBoss**](https://github.com/agbossjs/agboss) applicati
 
 > **AGBoss is an open-source TypeScript framework with static verification for complex multi-agent workflows.**
 >
-> **Pre-release status (`v0.1.0-rc`):** `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are currently in release-candidate preparation (npm currently hosts the initial `0.0.1` placeholders). Each example's `package.json` declares standard public registry ranges (`"^0.1.0"`). Until `0.1.0` is published to npm, run `npm run pack:framework && npm run verify:package && npm run install:packed` from the repository root to pack and install the local release-candidate tarballs into each example's `node_modules` without dirtying git-tracked manifests.
+> **Pre-release status (`v0.1.1-rc`):** `@agboss/core@0.1.1` and `@agboss/cli@0.1.1` are in release preparation (npm currently hosts only the initial `0.0.1` placeholders). Each example's `package.json` declares standard public registry ranges (`"^0.1.1"`). Until `0.1.1` is published to npm, run `npm run pack:framework && npm run verify:package && npm run install:packed` from the repository root to pack and install the local release-candidate tarballs into each example's `node_modules` without dirtying git-tracked manifests.
+>
+> **Pinned sources** ([`.agboss-version.json`](./.agboss-version.json)): `@agboss/core` and `@agboss/cli` `0.1.1` at [`agbossjs/agboss@d9db427b`](https://github.com/agbossjs/agboss/commit/d9db427b383bbc31e9214a3cf6c2620d52bca9a9); the store packages `0.1.0` (packed with the core until they are on npm) at [`agbossjs/postgres@eda95960`](https://github.com/agbossjs/postgres/commit/eda95960dd0f36156934276cd3245f316ba51bcd), [`agbossjs/mongodb@7b1f8ac7`](https://github.com/agbossjs/mongodb/commit/7b1f8ac7e0feb1f0740a3a38233858ac61243b24) and [`agbossjs/redis@1befd106`](https://github.com/agbossjs/redis/commit/1befd10658e97d846995ccae66444218641cfd3b).
 
 ---
 
@@ -56,6 +58,23 @@ Every project in this repository answers six engineering questions with executab
 | [**`16-browser-playwright`**](./16-browser-playwright/) | **P1** | Deterministic offline (a headless Chromium against a local site; `npm run browsers`) | A browser plugged into an agent two ways: plain Playwright as a `@Tool` with one shared browser (`deps`, `onDestroy`) and the official `@playwright/mcp` behind `@McpServer`; one origin allowlist (the context route plus the resolver rules, redirects included) refuses `127.0.0.1`, `169.254.169.254` and the LAN on both ways; a screenshot reaches the model as a file part under the PII policy; a contact form is filed once through an outbound call keyed by the request's reference — a lost answer, a repeat and a crash on two instances included |
 | [**`17-browser-bot-bypass`**](./17-browser-bot-bypass/) | **P1** | Deterministic offline (a fake browser factory: no Chrome in CI); one manual live run on real Chrome | `playwright-bot-bypass`'s `createStealthBrowser` (vendored under MIT, over `rebrowser-playwright`; needs real headed Chrome, does not beat IP reputation, rate limits or CAPTCHA, authorized use only) wired as a `@Tool` with the browser injected and as an own MCP server, behind the same allowlist — the browser has its own network, outside the A2A SSRF guard
 
+### Live runs at the `0.1.1` pins (2026-11-19)
+
+The offline gate (`check`, `test`, `demo` of all 17 projects) passes on the packed `0.1.1` tarballs. The live modes were run once on top of it, against the pins above:
+
+| Project | Live run | Models / servers | Cost |
+| :--- | :--- | :--- | :--- |
+| `01-hello-agboss` | `npm run demo:live` | `openai/gpt-4o-mini` through OpenRouter | not reported by the demo (two calls) |
+| `03-support-refund-desk` | `npm run demo:files:live` | `google/gemini-2.5-flash-lite` reads a receipt photo | $0.000317 |
+| `08-job-scout` | `npm run demo:live` | `moonshotai/kimi-k2.6` agents, `typesafe/jev-1.13` router and guardrails | $0.019146 in 284 calls |
+| `09-review-loop-and-routing` | `npm run demo:live` | `google/gemini-2.5-flash-lite`, `typesafe/jev-1.13` router | $0.000634 and $0.000640 in the two runs it prints, plus the routing table's cents |
+| `10-quorum-groups-and-replies` | `npm run demo:live` | `openai/gpt-4.1-nano`, `openai/gpt-4o-mini`, `typesafe/jev-1.13` | not reported by the demo (a few nano calls) |
+| `14-kubernetes-postgres-scaling` | `npm run cluster:up && npm run cluster:scenario` | kind (3 CPU / 4 GB) with PostgreSQL 16, KEDA, Prometheus; no model | 18 checks passed in 303 s |
+| `15-mongo-redis` | `npm run demo:live` and the live test | a three-member MongoDB 7 replica set and Redis, no model | the recount: 12 shelves on 2 instances, each once |
+| `16-browser-playwright` | `npm run demo:live` | `openai/gpt-4.1-nano` through OpenRouter, headless Chromium | $0.001163 |
+
+`17-browser-bot-bypass` needs real headed Chrome (its README, section 5): a manual run, not made here. `02`, `04`-`07`, `11`-`13` have no live mode.
+
 ---
 
 ## 3. Repository Design Rules
@@ -73,21 +92,21 @@ Every project in this repository answers six engineering questions with executab
 
 ### Workflow A — Pre-Release / Release-Candidate Validation (Local Tarballs)
 
-Until `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to the public npm registry, build and pack the release candidate from the `agboss` repository and install the `.tgz` artifacts into the example projects:
+Until `@agboss/core@0.1.1` and `@agboss/cli@0.1.1` are published to the public npm registry, build and pack the release candidate from the `agboss` repository and install the `.tgz` artifacts into the example projects:
 
 ```bash
 # 1. Install root tooling dependencies & run tooling tests
 npm install
 npm run typecheck
 
-# 2. Pack @agboss/core & @agboss/cli from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
+# 2. Pack @agboss/core & @agboss/cli (and the postgres, mongodb and redis stores, each at its pinned SHA, from ../postgres, ../mongodb, ../redis or AGBOSS_*_DIR) from ../agboss (or set AGBOSS_REPO_DIR=/path/to/agboss)
 npm run pack:framework
 
 # 3. Verify tarball contents, isolated consumer imports, CLI bin & clean scaffold outside both repos
 npm run verify:package
-npm run verify:published -- --from-packed --version 0.1.0
+npm run verify:published -- --from-packed --version 0.1.1
 
-# 4. Install packed tarballs into every example's node_modules (restoring clean ^0.1.0 specs in package.json)
+# 4. Install packed tarballs into every example's node_modules (restoring clean ^0.1.1 specs in package.json)
 npm run install:packed
 
 # 5. Run P0 + P1 static checks, tests, and offline demos, then collect fail-closed RC proof report
@@ -100,14 +119,14 @@ npm run install:packed -- --restore
 
 ### Workflow B — Public Consumer & Post-Publication Registry Verification (Post-Publication on npm)
 
-Once `@agboss/core@0.1.0` and `@agboss/cli@0.1.0` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 14 example projects:
+Once `@agboss/core@0.1.1` and `@agboss/cli@0.1.1` are published to npm, verify the live registry packages across an isolated consumer, a freshly scaffolded app, and all 17 example projects:
 
 ```bash
 # 1. Verify live npm registry metadata, isolated consumer subpath exports, and `agboss create` scaffold:
-npm run verify:published -- --live-registry --version 0.1.0
+npm run verify:published -- --live-registry --version 0.1.1
 
-# 2. Install live registry packages across all 14 examples and collect published-package proof report:
-npm run install:published -- --live-registry --version 0.1.0
+# 2. Install live registry packages across all 17 examples and collect published-package proof report:
+npm run install:published -- --live-registry --version 0.1.1
 node scripts/run-all.mjs --provenance published --include-p1 --reset --mode check
 node scripts/run-all.mjs --provenance published --include-p1 --mode test
 AGBOSS_OFFLINE_VERIFY=1 node scripts/run-all.mjs --provenance published --include-p1 --mode demo
