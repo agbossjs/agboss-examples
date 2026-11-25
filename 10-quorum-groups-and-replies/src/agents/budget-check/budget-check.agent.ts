@@ -7,7 +7,7 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "budget-check-agent",
   description: "Checks the purchase against the team's budget",
-  promptUrls: ["./budget-check.prompt.md"],
+  prompt: "./budget-check.prompt.md",
   model: CHAT_MODEL,
   input: {
     request: PurchaseRequestDto,

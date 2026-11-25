@@ -7,7 +7,7 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "price-benchmark-agent",
   description: "Compares the price with the market",
-  promptUrls: ["./price-benchmark.prompt.md"],
+  prompt: "./price-benchmark.prompt.md",
   model: CHAT_MODEL,
   input: {
     request: PurchaseRequestDto,

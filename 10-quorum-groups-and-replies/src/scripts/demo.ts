@@ -4,30 +4,15 @@
  * executions' own state — `result.launches`, `result.pending`, `result.toolCalls`, the pause store —
  * never from a log; the demo checks what it prints and exits non-zero when a promise does not hold.
  */
-import {
-  createApp,
-  ExecutionStatus,
-  PausedExecutionRepository,
-  PauseKind,
-  PauseStatus,
-  ToolCallStatus,
-  UninterpretableReplyError,
-  type App,
-  type ExecutionOutput,
-} from "@agboss/core";
-import {
-  installOfflineNetworkGuard,
-  isLiveDemoRequested,
-  requireLiveApiKey,
-  serveFetch,
-} from "../../scripts/tooling/offline-transports.js";
-import { createOfflineOpenRouter, withUncitedCompliance } from "../fixtures/offline-openrouter.js";
-import type { PurchaseRequestDto } from "./dto/purchase-request.dto.js";
-import { ApproverInbox } from "./services/approver-inbox.service.js";
-import { BudgetOwnerInbox } from "./services/budget-owner-inbox.service.js";
-import { SupplierPurchaseApplication } from "./supplier-purchase.application.js";
-import { BudgetRaiseRequestWorkflowStart } from "./workflows/budget-raise/budget-raise-request.workflow-start.js";
-import { PurchaseRequestWorkflowStart } from "./workflows/supplier-purchase/purchase-request.workflow-start.js";
+import { createApp, ExecutionStatus, PausedExecutionRepository, PauseKind, PauseStatus, ToolCallStatus, UninterpretableReplyError, type App, type ExecutionOutput } from "@agboss/core";
+import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey, serveFetch } from "../../../scripts/tooling/offline-transports.js";
+import { createOfflineOpenRouter, withUncitedCompliance } from "../../fixtures/offline-openrouter.js";
+import type { PurchaseRequestDto } from "../dto/purchase-request.dto.js";
+import { ApproverInbox } from "../services/approver-inbox.service.js";
+import { BudgetOwnerInbox } from "../services/budget-owner-inbox.service.js";
+import { SupplierPurchaseApplication } from "../supplier-purchase.application.js";
+import { BudgetRaiseRequestWorkflowStart } from "../workflows/budget-raise/budget-raise-request.workflow-start.js";
+import { PurchaseRequestWorkflowStart } from "../workflows/supplier-purchase/purchase-request.workflow-start.js";
 
 const LAPTOPS: PurchaseRequestDto = {
   supplier: "Northwind Hardware",
@@ -38,7 +23,7 @@ const LAPTOPS: PurchaseRequestDto = {
   marketQuotes: "Three quotes for the same 12 laptops, 2026-10: $1,240, $1,250 and $1,260.",
   budgetLine: "OPEX-IT-2026, $10,000 left before this purchase.",
 };
-const APPROVER = { answeredBy: "approver-dana" };
+const APPROVER = { actor: { id: "approver-dana" } };
 
 function check(condition: boolean, what: string): void {
   if (!condition) throw new Error(`demo check failed: ${what}`);
@@ -60,7 +45,7 @@ function printVerdicts(result: ExecutionOutput): void {
   );
   const group = launch?.group;
   console.log(
-    `   winning group: ${group === undefined ? "none" : `${group.agents.join(" + ")} (priority ${String(group.priority)})`}`,
+    `   winning group: ${group === undefined ? "none" : `${group.targets.join(" + ")} (priority ${String(group.priority)})`}`,
   );
 }
 
@@ -123,7 +108,7 @@ async function main(): Promise<void> {
     printVerdicts(deferred);
     console.log(`   finish: ${deferred.finish?.name ?? deferred.status}\n`);
     const compliance = deferred.launches[0]?.branches.find((branch) => branch.nodeId === "compliance-review-agent");
-    check(compliance?.rejectedBy?.includes("well-formed-review-arbiter") === true, "the uncited review counted");
+    check(compliance?.rejectedBy?.includes("purchase-policy-arbiter") === true, "the uncited review counted");
     check(deferred.finish?.name === "purchase-deferred-workflow-finish", "group 2 did not go on");
 
     console.log("3. An unreadable reply, then a readable one");
@@ -148,9 +133,9 @@ async function main(): Promise<void> {
     const askedBefore = app.resolve(BudgetOwnerInbox).posted().count;
     const asked = await app.execute(BudgetRaiseRequestWorkflowStart, raise);
     const [question] = asked.pending;
-    check(question?.kind === PauseKind.Question, "the budget raise did not pause on its question");
+    check(question?.kind === PauseKind.ExternalTask, "the budget raise did not pause on its question");
     console.log(`   paused at ${question?.step ?? "?"} (${question?.kind ?? "?"})`);
-    const owner = { answeredBy: "budget-owner-lee" };
+    const owner = { actor: { id: "budget-owner-lee" } };
     const ownerPauseId = (): string => {
       const { latestPauseId } = app.resolve(BudgetOwnerInbox).posted();
       if (latestPauseId === undefined) throw new Error("demo check failed: the budget owner was never asked");

@@ -12,7 +12,7 @@ import { PurchaseRequestWorkflowStart } from "../../src/workflows/supplier-purch
 import { budget, compliance, LAPTOP_ORDER, LAPTOPS, legal, price } from "./reviews.js";
 
 /** The approver's identity on the channel's side: `app.resume(…, { answeredBy })`. */
-export const APPROVER = { answeredBy: "approver-dana" };
+export const APPROVER = { actor: { id: "approver-dana" } };
 
 /** How the order agent reports the end of the run once the tool has answered. */
 export const ordered = (amountUsd: number, note = "PO placed") =>

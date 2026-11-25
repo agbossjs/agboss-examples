@@ -21,10 +21,10 @@ import { PurchaseRequestDto } from "../dto/purchase-request.dto.js";
 export class DeferPurchaseAction implements ActionHandler<DeferPurchaseAction> {
   execute(input: InputOf<DeferPurchaseAction>): Promise<OutputOf<DeferPurchaseAction>> {
     return Promise.resolve({
-      supplier: input.request.value.supplier,
+      supplier: input.request.supplier,
       reason: "the legal and compliance reviews did not both count: the order waits for them",
-      benchmarkUsd: input.price.value.benchmarkUsd,
-      budgetLine: input.budget.value.budgetLine,
+      benchmarkUsd: input.price.benchmarkUsd,
+      budgetLine: input.budget.budgetLine,
     });
   }
 }

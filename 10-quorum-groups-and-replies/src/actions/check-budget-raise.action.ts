@@ -1,4 +1,4 @@
-import { Action, variant, oneOf, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
+import { Action, oneOf, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { BudgetOwnerAnswerDto } from "../dto/budget-owner-answer.dto.js";
 import { BudgetRaisedDto } from "../dto/budget-raised.dto.js";
 import { BudgetRaiseRequestDto } from "../dto/budget-raise-request.dto.js";
@@ -15,10 +15,10 @@ import { BudgetRaiseRequestDto } from "../dto/budget-raise-request.dto.js";
 })
 export class CheckBudgetRaiseAction implements ActionHandler<CheckBudgetRaiseAction> {
   execute({ request, answer }: InputOf<CheckBudgetRaiseAction>): Promise<OutputOf<CheckBudgetRaiseAction>> {
-    const { budgetLine, amountUsd } = request.value;
-    const { limitUsd } = answer.value;
+    const { budgetLine, amountUsd } = request;
+    const { limitUsd } = answer;
     if (limitUsd >= amountUsd)
-      return Promise.resolve(variant(BudgetRaisedDto, { budgetLine, amountUsd, limitUsd }));
-    return Promise.resolve(variant(BudgetRaiseRequestDto, request.value));
+      return Promise.resolve(Object.assign(new BudgetRaisedDto(), { budgetLine, amountUsd, limitUsd }));
+    return Promise.resolve(Object.assign(new BudgetRaiseRequestDto(), request));
   }
 }

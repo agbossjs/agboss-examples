@@ -1,10 +1,4 @@
-import {
-  DtoValidationError,
-  ExecutionStatus,
-  PausedExecutionRepository,
-  PauseStatus,
-  UninterpretableReplyError,
-} from "@agboss/core";
+import { DtoValidationError, ExecutionStatus, PausedExecutionRepository, PauseStatus, UninterpretableReplyError } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { replyWith, step, TestConcurrency, testWith } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
@@ -14,7 +8,7 @@ import { ComplianceReviewAgent } from "../../../src/agents/compliance-review/com
 import { LegalReviewAgent } from "../../../src/agents/legal-review/legal-review.agent.js";
 import { PriceBenchmarkAgent } from "../../../src/agents/price-benchmark/price-benchmark.agent.js";
 import { PurchaseOrderAgent } from "../../../src/agents/purchase-order/purchase-order.agent.js";
-import { PurchaseReplyInterpreter } from "../../../src/reply-interpreters/purchase/purchase.reply-interpreter.js";
+import { PurchaseReplyInterpreter } from "../../../src/channel-interpreters/purchase/purchase.channel-interpreter.js";
 import { SupplierPurchaseApplication } from "../../../src/supplier-purchase.application.js";
 import { PurchaseOrderedWorkflowFinish } from "../../../src/workflows/supplier-purchase/purchase-ordered.workflow-finish.js";
 import { APPROVER, notOrdered, ordered, pausedAtApproval } from "../../support/approval.js";
@@ -45,7 +39,7 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
       .thenReturn(
         replyWith(
           ToolCallApprovalDecisionDto,
-          { approved: true, reason: "only up to $500", overrideArguments: CAPPED },
+          { approved: true, reason: "only up to $500", overrideInput: CAPPED },
           { cost: usd(0.00003) },
         ),
       );
@@ -117,7 +111,7 @@ describe("AC3: an unreadable reply never resumes the run", () => {
     interpreter
       .when({ reply: "yes, up to $500" })
       .thenReturn(
-        replyWith(ToolCallApprovalDecisionDto, { approved: true, overrideArguments: CAPPED }),
+        replyWith(ToolCallApprovalDecisionDto, { approved: true, overrideInput: CAPPED }),
       );
     mockLlm(PurchaseOrderAgent).thenReturn(ordered(500));
 
@@ -141,7 +135,7 @@ describe("AC3: an unreadable reply never resumes the run", () => {
     mockLlm(PurchaseReplyInterpreter).thenReturn(
       replyWith(ToolCallApprovalDecisionDto, {
         approved: true,
-        overrideArguments: { ...LAPTOP_ORDER, amountUsd: -5 },
+        overrideInput: { ...LAPTOP_ORDER, amountUsd: -5 },
       }),
     );
 

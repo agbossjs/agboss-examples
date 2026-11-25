@@ -7,7 +7,7 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "legal-review-agent",
   description: "Reviews the supplier's contract",
-  promptUrls: ["./legal-review.prompt.md"],
+  prompt: "./legal-review.prompt.md",
   model: CHAT_MODEL,
   input: {
     request: PurchaseRequestDto,

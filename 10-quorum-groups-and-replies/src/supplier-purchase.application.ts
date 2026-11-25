@@ -1,17 +1,11 @@
-import {
-  Application,
-  SqliteCheckpointSaver,
-  SqliteCostLedgerRepository,
-  SqlitePausedExecutionRepository,
-} from "@agboss/core";
-import { DecisionsModelProvider } from "@agboss/core/models";
+import { Application, EmptyEnvironment } from "@agboss/core";
+import { SupplierPurchaseDatabaseStorage } from "./storages/supplier-purchase.database-storage.js";
 import { PurchaseApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { PurchaseExecutionBudget } from "./budgets/execution.budget.js";
 import { PurchaseTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
 import { ConsoleApproverChannel } from "./channels/console-approver.channel.js";
 import { InboxBudgetOwnerChannel } from "./channels/inbox-budget-owner.channel.js";
-import { AppEnvironment } from "./environments/app.environment.js";
-import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
+import { DecisionsModelProvider, OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { ApproverInbox } from "./services/approver-inbox.service.js";
 import { BudgetOwnerInbox } from "./services/budget-owner-inbox.service.js";
 import { BudgetRaiseWorkflow } from "./workflows/budget-raise/budget-raise.workflow.js";
@@ -28,19 +22,12 @@ import { SupplierPurchaseWorkflow } from "./workflows/supplier-purchase/supplier
 @Application({
   name: "supplier-purchase-application",
   version: "1.0.0",
-  environment: AppEnvironment,
+  environment: EmptyEnvironment,
+  storage: SupplierPurchaseDatabaseStorage,
+  modelProvider: OpenRouterModelProvider,
   workflows: [SupplierPurchaseWorkflow, BudgetRaiseWorkflow],
-  providers: [
-    OpenRouterModelProvider,
-    DecisionsModelProvider,
-    ConsoleApproverChannel,
-    ApproverInbox,
-    InboxBudgetOwnerChannel,
-    BudgetOwnerInbox,
-    SqliteCostLedgerRepository,
-    SqlitePausedExecutionRepository,
-    SqliteCheckpointSaver, // a paused execution resumes from its checkpoint
-  ],
+  providers: [OpenRouterModelProvider, DecisionsModelProvider, ApproverInbox, BudgetOwnerInbox],
+  channels: [ConsoleApproverChannel, InboxBudgetOwnerChannel],
   budgets: [PurchaseApplicationDailyBudget, PurchaseTenantDailyBudget, PurchaseExecutionBudget],
 })
 export class SupplierPurchaseApplication {}

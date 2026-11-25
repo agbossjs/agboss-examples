@@ -1,18 +1,8 @@
-import {
-  ChannelOf,
-  ExecutionStatus,
-  PauseAnswerer,
-  PausedExecutionRepository,
-  PauseKind,
-  PauseStatus,
-  QuestionFailedError,
-  UninterpretableReplyError,
-  VisitsLimitExceededError,
-  type ChannelOutcome,
-} from "@agboss/core";
-import { override, testWith, type WorkflowFixtures } from "@agboss/core/testing";
+import { Channel, ExecutionStatus, PauseRespondent, PausedExecutionRepository, PauseKind, PauseStatus, QuestionFailedError, UninterpretableReplyError, VisitsLimitExceededError, type ChannelOutcome } from "@agboss/core";
+import { testWith, type WorkflowFixtures } from "@agboss/core/testing";
 import { describe, expect } from "vitest";
-import { BudgetOwnerQuestion } from "../../../src/channels/budget-owner-question.channel-role.js";
+import { days } from "@agboss/core/units";
+import { BudgetOwnerExternalTask } from "../../../src/channels/budget-owner.external-task.js";
 import type { BudgetRaiseRequestDto } from "../../../src/dto/budget-raise-request.dto.js";
 import { BudgetOwnerInbox } from "../../../src/services/budget-owner-inbox.service.js";
 import { SupplierPurchaseApplication } from "../../../src/supplier-purchase.application.js";
@@ -22,7 +12,7 @@ import { BudgetRaiseUnaskedWorkflowFinish } from "../../../src/workflows/budget-
 import { BudgetRaiseUnresolvedWorkflowFinish } from "../../../src/workflows/budget-raise/budget-raise-unresolved.workflow-finish.js";
 
 /**
- * A question role as a flow step (agbossjs/agboss#659): the budget raise asks its owner a typed
+ * An external task as a flow step (agbossjs/agboss#659): the budget raise asks its owner a typed
  * question, waits for a free-text reply read into a typed answer by code, asks again when the limit
  * is below the request — at most `maxVisits` times — and fails over to a finish of its own when the
  * channel cannot ask. No model: $0, offline.
@@ -31,13 +21,19 @@ import { BudgetRaiseUnresolvedWorkflowFinish } from "../../../src/workflows/budg
 const test = testWith(SupplierPurchaseApplication);
 
 /** A channel whose inbox is down: every `send` throws. */
-class DownBudgetOwnerChannel extends ChannelOf<BudgetOwnerQuestion> {
-  send(): Promise<ChannelOutcome<BudgetOwnerQuestion>> {
+@Channel({
+  name: "down-budget-owner-channel",
+  description: "A budget owners' channel whose inbox is down",
+  target: BudgetOwnerExternalTask,
+  ttl: days(1),
+})
+class DownBudgetOwnerChannel {
+  send(): Promise<ChannelOutcome<BudgetOwnerExternalTask>> {
     return Promise.reject(new Error("budget owners' inbox unreachable"));
   }
 }
 const inboxDown = testWith(SupplierPurchaseApplication, {
-  overrides: [override(BudgetOwnerQuestion, DownBudgetOwnerChannel)],
+  services: [DownBudgetOwnerChannel],
 });
 
 const RAISE: BudgetRaiseRequestDto = {
@@ -45,7 +41,7 @@ const RAISE: BudgetRaiseRequestDto = {
   amountUsd: 1_800,
   requester: "Ana Silva",
 };
-const OWNER = { answeredBy: "budget-owner-lee" };
+const OWNER = { actor: { id: "budget-owner-lee" } };
 
 /**
  * The owners' inbox, replaced: what the channel posted — each ask with its pause id, the channel's
@@ -63,19 +59,19 @@ function inboxOf(mockOf: WorkflowFixtures["mockOf"]) {
   return { asked, newestPauseId };
 }
 
-describe("AC4: a question role asks the budget owner and puts the typed answer on the path", () => {
+describe("AC4: an external task asks the budget owner and puts the typed answer on the path", () => {
   test("the run pauses on the question: kind Question, its step, its ask; the owner asked once", async ({ app, mockOf }) => {
     const { asked, newestPauseId } = inboxOf(mockOf);
     const paused = await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
 
     expect(paused.status).toBe(ExecutionStatus.Paused);
-    expect(paused.path).toEqual(["budget-raise-request-workflow-start", "budget-owner-question"]);
+    expect(paused.path).toEqual(["budget-raise-request-workflow-start", "budget-owner-external-task"]);
     expect(paused.pending).toHaveLength(1);
     const [pending] = paused.pending;
-    if (pending?.kind !== PauseKind.Question) throw new Error("not paused on the question");
-    expect(pending.step).toBe("budget-owner-question");
+    if (pending?.kind !== PauseKind.ExternalTask) throw new Error("not paused on the question");
+    expect(pending.step).toBe("budget-owner-external-task");
     expect(pending.pauseId).toBeUndefined(); // a Channel pause: only the channel has its id
-    const ask: Readonly<Record<string, unknown>> = pending.ask; // opaque: read as the role's ask
+    const ask: Readonly<Record<string, unknown>> = pending.input; // opaque: read as the role's ask
     expect(ask).toEqual({
       budgetLine: "OPEX-IT-2026",
       amountUsd: 1_800,
@@ -84,7 +80,7 @@ describe("AC4: a question role asks the budget owner and puts the typed answer o
     const stored = await app
       .resolve(PausedExecutionRepository)
       .findByTenantIdAndPauseId("default", newestPauseId());
-    expect(stored).toMatchObject({ kind: PauseKind.Question, step: "budget-owner-question", status: PauseStatus.Pending });
+    expect(stored).toMatchObject({ kind: PauseKind.ExternalTask, step: "budget-owner-external-task", status: PauseStatus.Pending });
     expect(asked()).toHaveLength(1);
   });
 
@@ -92,7 +88,7 @@ describe("AC4: a question role asks the budget owner and puts the typed answer o
     const { newestPauseId } = inboxOf(mockOf);
     await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
 
-    const done = await app.resume({ pauseId: newestPauseId(), reply: "ok, up to $2,000" }, { ...OWNER, record: true });
+    const done = await app.resume({ pauseId: newestPauseId(), reply: "ok, up to $2,000" }, { ...OWNER, includeRecord: true });
 
     expect(done).toFinishWith(BudgetRaisedWorkflowFinish, {
       budgetLine: "OPEX-IT-2026",
@@ -100,7 +96,7 @@ describe("AC4: a question role asks the budget owner and puts the typed answer o
       limitUsd: 2_000,
     });
     expect(done.record?.pauses).toMatchObject([
-      { role: "budget-owner-question", answerer: PauseAnswerer.Channel, answeredBy: "budget-owner-lee", decision: { limitUsd: 2_000 } },
+      { target: "budget-owner-external-task", respondent: PauseRespondent.Delegate, actor: { id: "budget-owner-lee" }, decision: { limitUsd: 2_000 } },
     ]);
   });
 
@@ -149,7 +145,7 @@ describe("AC4 (failure injection): the owner never covers it, or cannot be asked
         error: expect.objectContaining({
           code: QuestionFailedError.code,
           message: expect.stringContaining("inbox unreachable") as unknown,
-          details: expect.objectContaining({ question: "budget-owner-question" }) as unknown,
+          details: expect.objectContaining({ question: "budget-owner-external-task" }) as unknown,
         }) as unknown,
       }),
     ]);

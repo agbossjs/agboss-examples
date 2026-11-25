@@ -1,12 +1,5 @@
 import { BranchStatus, BranchVerdict, PauseKind, QuorumNotReachedError } from "@agboss/core";
-import {
-  callTool,
-  decideWith,
-  step,
-  TestConcurrency,
-  testWith,
-  waitFor,
-} from "@agboss/core/testing";
+import { callTool, decideWith, step, TestConcurrency, testWith, waitFor } from "@agboss/core/testing";
 import { minutes, seconds, usd } from "@agboss/core/units";
 import { describe, expect, vi } from "vitest";
 import { DeferPurchaseAction } from "../../../src/actions/defer-purchase.action.js";
@@ -15,24 +8,13 @@ import { ComplianceReviewAgent } from "../../../src/agents/compliance-review/com
 import { LegalReviewAgent } from "../../../src/agents/legal-review/legal-review.agent.js";
 import { PriceBenchmarkAgent } from "../../../src/agents/price-benchmark/price-benchmark.agent.js";
 import { PurchaseOrderAgent } from "../../../src/agents/purchase-order/purchase-order.agent.js";
-import { PolicyJudgementArbiter } from "../../../src/arbiters/policy-judgement/policy-judgement.arbiter.js";
+import { PurchasePolicyArbiter } from "../../../src/arbiters/purchase-policy/purchase-policy.arbiter.js";
 import { SupplierPurchaseApplication } from "../../../src/supplier-purchase.application.js";
 import { PlacePurchaseOrderTool } from "../../../src/tools/place-purchase-order.tool.js";
 import { PurchaseDeferredWorkflowFinish } from "../../../src/workflows/supplier-purchase/purchase-deferred.workflow-finish.js";
 import { PurchaseRejectedWorkflowFinish } from "../../../src/workflows/supplier-purchase/purchase-rejected.workflow-finish.js";
 import { PurchaseRequestWorkflowStart } from "../../../src/workflows/supplier-purchase/purchase-request.workflow-start.js";
-import {
-  BUDGET_OK,
-  budget,
-  compliance,
-  COMPLIANCE_OK,
-  COMPLIANCE_UNCITED,
-  LAPTOP_ORDER, LAPTOPS,
-  legal,
-  LEGAL_CLEARED,
-  price,
-  PRICE_FAIR,
-} from "../../support/reviews.js";
+import { BUDGET_OK, budget, compliance, COMPLIANCE_OK, COMPLIANCE_UNCITED, LAPTOP_ORDER, LAPTOPS, legal, LEGAL_CLEARED, price, PRICE_FAIR } from "../../support/reviews.js";
 
 /**
  * The quorum groups (#279): four reviews at once, each answer through the arbiter chain, the first
@@ -81,7 +63,7 @@ describe("AC2: the first complete group by priority goes on", () => {
       const [launch] = result.launches;
       expect(launch?.isQuorumReached).toBe(true);
       expect(launch?.group).toEqual({
-        agents: ["legal-review-agent", "compliance-review-agent"],
+        targets: ["legal-review-agent", "compliance-review-agent"],
         priority: 1,
       });
       expect(verdictsOf(launch)).toEqual([
@@ -97,7 +79,8 @@ describe("AC2: the first complete group by priority goes on", () => {
       // narrow on the kind first: a question's ask is opaque, an approval's is the typed tool call
       if (approval?.kind !== PauseKind.Approval) throw new Error("not paused on the approval");
       expect(approval.step).toBe("purchase-order-agent");
-      expect(approval.ask.arguments).toEqual(LAPTOP_ORDER);
+      expect(approval.toolCall.tool).toBe("place-purchase-order-tool");
+      expect(approval.input).toEqual(LAPTOP_ORDER);
     },
   );
 
@@ -127,7 +110,7 @@ describe("AC2: the first complete group by priority goes on", () => {
 
 describe("AC2 (failure injection): the groups disagree", () => {
   legalFirst(
-    "AC2: a compliance answer without a clause is Rejected by well-formed-review-arbiter, and group 2 continues to purchase-deferred-workflow-finish",
+    "AC2: a compliance answer without a clause is Rejected by purchase-policy-arbiter, and group 2 continues to purchase-deferred-workflow-finish",
     async ({ app, mockLlm }) => {
       mockLlm(LegalReviewAgent).thenReturn(legal());
       mockLlm(ComplianceReviewAgent).thenReturn(compliance(COMPLIANCE_UNCITED));
@@ -139,7 +122,7 @@ describe("AC2 (failure injection): the groups disagree", () => {
       const [launch] = result.launches;
       expect(launch?.isQuorumReached).toBe(true);
       expect(launch?.group).toEqual({
-        agents: ["price-benchmark-agent", "budget-check-agent"],
+        targets: ["price-benchmark-agent", "budget-check-agent"],
         priority: 2,
       });
       expect(verdictsOf(launch)).toEqual([
@@ -148,7 +131,7 @@ describe("AC2 (failure injection): the groups disagree", () => {
           nodeId: "compliance-review-agent",
           status: BranchStatus.Finished,
           verdict: BranchVerdict.Rejected,
-          rejectedBy: ["well-formed-review-arbiter"],
+          rejectedBy: ["purchase-policy-arbiter"],
         },
         { nodeId: "price-benchmark-agent", status: BranchStatus.Finished, verdict: BranchVerdict.Counted },
         { nodeId: "budget-check-agent", status: BranchStatus.Finished, verdict: BranchVerdict.Counted },
@@ -169,7 +152,7 @@ describe("AC2 (failure injection): the groups disagree", () => {
         budgetLine: "OPEX-IT-2026",
       });
       // the well-formed arbiter rejects first: the policy arbiters are never asked about it
-      expect(mockLlm(PolicyJudgementArbiter).requests).toHaveLength(0);
+      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(0);
     },
   );
 
@@ -198,15 +181,15 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
       mockLlm(ComplianceReviewAgent).thenReturn(compliance());
       mockLlm(PriceBenchmarkAgent).thenReturn(price());
       mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PolicyJudgementArbiter).thenReturn(decideWith({ counts: 0.9 }, { cost: usd(0.00002) }));
+      mockLlm(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.9 }, { cost: usd(0.00002) }));
       mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
       // one decision: the legal review the thresholds rejected — never the three that cleared them
-      expect(mockLlm(PolicyJudgementArbiter).requests).toHaveLength(1);
+      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(1);
       expect(result.launches[0]?.group?.priority).toBe(1);
-      expect(result.spend.byCaller["arbiter:policy-judgement-arbiter"]).toBe(0.00002);
+      expect(result.spend.byCaller["arbiter:purchase-policy-arbiter"]).toBe(0.00002);
     },
   );
 
@@ -221,8 +204,8 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
-      expect(mockLlm(PolicyJudgementArbiter).requests).toHaveLength(0);
-      expect(result.spend.byCaller["arbiter:policy-judgement-arbiter"]).toBeUndefined();
+      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(0);
+      expect(result.spend.byCaller["arbiter:purchase-policy-arbiter"]).toBeUndefined();
     },
   );
 
@@ -233,7 +216,7 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
       mockLlm(ComplianceReviewAgent).thenReturn(compliance({ ...COMPLIANCE_OK, isCompliant: false, findings: "Sanctions hit on the parent company." }));
       mockLlm(PriceBenchmarkAgent).thenReturn(price());
       mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PolicyJudgementArbiter).thenReturn(decideWith({ counts: 0.05 }));
+      mockLlm(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.05 }));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
@@ -241,7 +224,7 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
         (branch) => branch.nodeId === "compliance-review-agent",
       );
       expect(compliant?.verdict).toBe(BranchVerdict.Rejected);
-      expect(compliant?.rejectedBy).toEqual(["policy-threshold-arbiter", "policy-judgement-arbiter"]);
+      expect(compliant?.rejectedBy).toEqual(["purchase-policy-arbiter"]);
       expect(result).toFinishWith(PurchaseDeferredWorkflowFinish, {
         supplier: "Northwind Hardware",
         reason: "the legal and compliance reviews did not both count: the order waits for them",

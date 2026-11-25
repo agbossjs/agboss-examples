@@ -121,7 +121,7 @@ function interpretation(message: string): Reply {
       itemDescription: textField(args, "itemDescription"),
       amountUsd: Number(cap.replace(/,/g, "")),
     };
-    return { tool, args: { approved: true, reason: reply, overrideArguments: asked } };
+    return { tool, args: { approved: true, reason: reply, overrideInput: asked } };
   }
   if (/^\s*(yes|ok|approved?)\b/i.test(reply)) return { tool, args: { approved: true, reason: reply } };
   if (/^\s*no\b/i.test(reply)) return { tool, args: { approved: false, reason: reply } };

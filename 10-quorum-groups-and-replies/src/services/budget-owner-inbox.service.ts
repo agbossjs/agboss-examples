@@ -1,8 +1,8 @@
 import { Injectable, type ChannelAsk } from "@agboss/core";
-import type { BudgetOwnerQuestion } from "../channels/budget-owner-question.channel-role.js";
+import type { BudgetOwnerExternalTask } from "../channels/budget-owner.external-task.js";
 
 /** One question as the budget owners' inbox holds it: the pause it answers and what is asked. */
-export type BudgetOwnerRequest = ChannelAsk<BudgetOwnerQuestion>;
+export type BudgetOwnerRequest = ChannelAsk<BudgetOwnerExternalTask>;
 
 /** The inbox's messages, in the order they were posted (a stand-in for a chat app's channel). */
 const posted: BudgetOwnerRequest[] = [];
@@ -17,7 +17,7 @@ const posted: BudgetOwnerRequest[] = [];
 export class BudgetOwnerInbox {
   post(request: BudgetOwnerRequest): Promise<void> {
     posted.push(request);
-    const { budgetLine, amountUsd, requester } = request.value;
+    const { budgetLine, amountUsd, requester } = request.input;
     console.log(
       `[budget owner] raise ${budgetLine} by $${String(amountUsd)} for ${requester}? — reply to ${request.pauseId}`,
     );

@@ -13,7 +13,7 @@ import { PlacePurchaseOrderTool } from "../../tools/place-purchase-order.tool.js
 @Agent({
   name: "purchase-order-agent",
   description: "Places the purchase order and reports how it ended",
-  promptUrls: ["./purchase-order.prompt.md"],
+  prompt: "./purchase-order.prompt.md",
   model: CAREFUL_CHAT_MODEL,
   input: {
     request: PurchaseRequestDto,
@@ -22,6 +22,6 @@ import { PlacePurchaseOrderTool } from "../../tools/place-purchase-order.tool.js
   },
   output: PurchaseOrderDto,
   tools: [PlacePurchaseOrderTool],
-  maxVisits: 1,
+  executionLimits: { maxVisits: 1 },
 })
 export class PurchaseOrderAgent {}

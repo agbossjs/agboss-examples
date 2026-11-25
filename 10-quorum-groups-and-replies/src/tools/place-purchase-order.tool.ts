@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
-import { PurchaseApproverChannel } from "../channels/purchase-approver.channel-role.js";
+import { PurchaseApproverToolApproval } from "../channels/purchase-approver.tool-approval.js";
 import { PlacePurchaseOrderDto } from "../dto/place-purchase-order.dto.js";
 import { PurchaseOrderPlacedDto } from "../dto/purchase-order-placed.dto.js";
 
@@ -10,7 +10,7 @@ const referenceOf = (key: string): string =>
 
 /**
  * Places the purchase order — only once an approver approves it: every call waits on
- * `PurchaseApproverChannel`. It runs with the arguments the approver approved (a capped amount
+ * `PurchaseApproverToolApproval`. It runs with the arguments the approver approved (a capped amount
  * replaces the asked one). Its reference is the call's idempotency key, the one a real supplier
  * portal would deduplicate on.
  */
@@ -19,7 +19,7 @@ const referenceOf = (key: string): string =>
   description: "Places a purchase order once an approver approves it",
   input: PlacePurchaseOrderDto,
   output: PurchaseOrderPlacedDto,
-  channel: PurchaseApproverChannel,
+  approval: PurchaseApproverToolApproval,
   deps: [ExecutionContext],
 })
 export class PlacePurchaseOrderTool
@@ -27,7 +27,7 @@ export class PlacePurchaseOrderTool
 {
   constructor(private readonly executionContext: ExecutionContext) {}
 
-  run({ amountUsd }: PlacePurchaseOrderDto): Promise<PurchaseOrderPlacedDto> {
+  execute({ amountUsd }: PlacePurchaseOrderDto): Promise<PurchaseOrderPlacedDto> {
     return Promise.resolve({
       reference: `PO-${referenceOf(this.executionContext.step.idempotencyKey)}`,
       amountUsd,
