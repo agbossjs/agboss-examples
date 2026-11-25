@@ -450,8 +450,8 @@ describe("08-job-scout registration (agbossjs/agboss#489)", () => {
       "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/scripts\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({
@@ -532,8 +532,8 @@ describe("09-review-loop-and-routing registration (agbossjs/agboss#490)", () => 
       "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/scripts\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({
@@ -630,8 +630,8 @@ describe("10-quorum-groups-and-replies registration (agbossjs/agboss#491)", () =
       "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
-    assert.match(pkg.scripts["demo:live"], /src\/demo\.ts --live$/);
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
+    assert.match(pkg.scripts["demo:live"], /src\/scripts\/demo\.ts --live$/);
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({
@@ -828,7 +828,7 @@ describe("13-rag-reranking registration (agbossjs/agboss#703)", () => {
       "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.dependencies["cohere-ai"], "8.1.0");
     for (const file of [
