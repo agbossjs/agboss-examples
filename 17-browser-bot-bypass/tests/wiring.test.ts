@@ -6,7 +6,7 @@
  * the browser is closed when the application stops; a launch that failed is tried again.
  */
 import { describe, expect, it } from "vitest";
-import { callTool, override, replyWith, testWith } from "@agboss/core/testing";
+import { callTool, replyWith, testWith } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { StealthWebAgent } from "../src/agents/stealth-web.agent.js";
 import { BrowserBotBypassApplication } from "../src/browser-bot-bypass.application.js";
@@ -16,9 +16,10 @@ import { StealthBrowser } from "../src/browser/stealth-browser.service.js";
 import { FAKE_WEB, FakeBrowserFactory, SLOW_URL } from "../src/fake/fake-browser.factory.js";
 import { OpenPageStealth } from "../src/tools/open-page-stealth.tool.js";
 import { AskWorkflowStart } from "../src/workflows/stealth/ask.workflow-start.js";
+import { invoked } from "./support/steps.js";
 
 const PRICING = "https://docs.example.com/pricing";
-const test = testWith(BrowserBotBypassApplication, { overrides: [override(BrowserFactory, FakeBrowserFactory)] });
+const test = testWith(BrowserBotBypassApplication, { services: [FakeBrowserFactory] });
 
 const fakeOf = (app: { resolve: <T>(token: abstract new (...args: never[]) => T) => T }): FakeBrowserFactory => {
   const factory = app.resolve(BrowserFactory);
@@ -30,7 +31,7 @@ describe("the tool reads a page through the shared browser", () => {
   test("the page's title and text; the browser launched once with the allowlist's resolver rules", async ({ app }) => {
     await app.ready();
 
-    const result = await app.tool(OpenPageStealth).invoke({ url: PRICING });
+    const result = await invoked(app, OpenPageStealth, { url: PRICING });
 
     expect(result).toEqual({ kind: "ok", value: FAKE_WEB[PRICING] });
     const { record } = fakeOf(app);
@@ -41,8 +42,8 @@ describe("the tool reads a page through the shared browser", () => {
   test("many calls, one browser; every call's context is closed and guarded by a route", async ({ app }) => {
     await app.ready();
 
-    await Promise.all([1, 2, 3].map(() => app.tool(OpenPageStealth).invoke({ url: PRICING })));
-    await app.tool(OpenPageStealth).invoke({ url: PRICING });
+    await Promise.all([1, 2, 3].map(() => invoked(app, OpenPageStealth, { url: PRICING })));
+    await invoked(app, OpenPageStealth, { url: PRICING });
 
     const { record } = fakeOf(app);
     expect(record.launches).toHaveLength(1);
@@ -74,7 +75,7 @@ describe("the allowlist", () => {
   ] as const)("the tool refuses %s before any browser is launched", async ([, url], { app }) => {
     await app.ready();
 
-    const result = await app.tool(OpenPageStealth).invoke({ url });
+    const result = await invoked(app, OpenPageStealth, { url });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("is not an allowed origin") as string });
     expect(fakeOf(app).record.launches).toHaveLength(0);
@@ -158,7 +159,7 @@ describe("the browser's life", () => {
   test("app.close() closes the browser; a call after it is refused, not relaunched", async ({ app }) => {
     await app.ready();
     const { handle } = app.resolve(StealthBrowser);
-    await app.tool(OpenPageStealth).invoke({ url: PRICING });
+    await invoked(app, OpenPageStealth, { url: PRICING });
     expect(await handle.isOpen).toBe(true);
 
     await app.close();
@@ -182,9 +183,9 @@ describe("the browser's life", () => {
     const factory = fakeOf(app);
     factory.failLaunchWith = new Error("Chrome is not installed");
 
-    const failed = await app.tool(OpenPageStealth).invoke({ url: PRICING });
+    const failed = await invoked(app, OpenPageStealth, { url: PRICING });
     factory.failLaunchWith = undefined;
-    const recovered = await app.tool(OpenPageStealth).invoke({ url: PRICING });
+    const recovered = await invoked(app, OpenPageStealth, { url: PRICING });
 
     expect(failed).toMatchObject({ kind: "error", message: "Chrome is not installed" });
     expect(recovered.kind).toBe("ok");

@@ -25,7 +25,7 @@ export class OpenPageStealth implements ToolHandler<PageRequestDto, PageTextDto>
     private readonly stealthBrowser: StealthBrowser,
   ) {}
 
-  run({ url }: PageRequestDto): Promise<PageTextDto> {
+  execute({ url }: PageRequestDto): Promise<PageTextDto> {
     return readPage(this.stealthBrowser.handle, this.stealthBrowser.allowedOrigins, url, this.executionContext.signal);
   }
 }

@@ -12,6 +12,7 @@ export default defineConfig({
     testTimeout: 120_000,
     // no test starts a Chrome: the fake browser factory, and the one fake site on the allowlist; the
     // MCP server's child (tests/mcp.test.ts) inherits both
-    env: { BROWSER_FACTORY: "fake", BROWSER_ALLOWED_ORIGINS: "https://docs.example.com" },
+    env: { BROWSER_FACTORY: "fake", BROWSER_ALLOWED_ORIGINS: "https://docs.example.com", PII_PSEUDONYM_KEY: "browser-bot-bypass-offline-pseudonym-key" },
+    // (a synthetic PII key for the tests only; the application fails closed without its own)
   }),
 });

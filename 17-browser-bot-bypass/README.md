@@ -92,7 +92,7 @@ src/browser/origin-allowlist.ts          isAllowedUrl, resolverRulesOf, parseAll
 src/browser/stealth-browser.service.ts   the @Injectable that owns the handle (onDestroy)
 src/tools/open-page-stealth.tool.ts      Way A
 src/mcp/stealth-browser.server-main.ts   Way B's server (the MCP SDK's McpServer, one tool)
-src/mcp/stealth-browser.server.ts        @McpServer over stdio; open-page-stealth.mcp.ts the @McpTool
+src/mcp/stealth-browser.server.ts        @McpServer over stdio; open-page-stealth.mcp.ts the tool that calls it
 ```
 
 ## 7. Guarantee Boundary

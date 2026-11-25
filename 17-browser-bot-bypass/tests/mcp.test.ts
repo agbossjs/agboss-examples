@@ -15,13 +15,14 @@ import { FAKE_WEB } from "../src/fake/fake-browser.factory.js";
 import { OpenPageStealthViaMcp } from "../src/mcp/open-page-stealth.mcp.js";
 import { StealthBrowserServer } from "../src/mcp/stealth-browser.server.js";
 import { McpAskWorkflowStart } from "../src/workflows/mcp-stealth/mcp-ask.workflow-start.js";
+import { invoked } from "./support/steps.js";
 
 const PRICING = "https://docs.example.com/pricing";
 const test = testWith(BrowserBotBypassApplication, { real: [StealthBrowserServer] });
 
 describe("way B: the typed tool calls the example's own MCP server", () => {
   test("open-page-stealth-mcp-tool: the title and the page", async ({ app }) => {
-    const result = await app.tool(OpenPageStealthViaMcp).invoke({ url: PRICING });
+    const result = await invoked(app, OpenPageStealthViaMcp, { url: PRICING });
 
     expect(result).toEqual({ kind: "ok", value: FAKE_WEB[PRICING] });
   });
@@ -40,7 +41,7 @@ describe("way B: the typed tool calls the example's own MCP server", () => {
     ["the cloud metadata address", "http://169.254.169.254/latest/meta-data/"],
     ["a LAN address", "http://192.168.0.1/admin"],
   ] as const)("the tool refuses %s before the server is asked", async ([, url], { app }) => {
-    const result = await app.tool(OpenPageStealthViaMcp).invoke({ url });
+    const result = await invoked(app, OpenPageStealthViaMcp, { url });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("is not an allowed origin") as string });
   });

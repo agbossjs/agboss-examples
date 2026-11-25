@@ -1,5 +1,4 @@
-import { Workflow, start } from "@agboss/core";
-import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { McpStealthWebAgent } from "../../agents/mcp-stealth-web.agent.js";
 import { StealthBrowserServer } from "../../mcp/stealth-browser.server.js";
 import { McpAnswerWorkflowFinish } from "./mcp-answer.workflow-finish.js";
@@ -9,11 +8,11 @@ import { McpAskWorkflowStart } from "./mcp-ask.workflow-start.js";
 @Workflow({
   name: "mcp-stealth-workflow",
   version: "1.0.0",
-  flow: [start(McpAskWorkflowStart)
-.returns(WorkflowStartTextDto)
+  historyTtl: Ttl.Forever,
+  flow: [onStart(McpAskWorkflowStart)
 .toAgent(McpStealthWebAgent)
 .toFinish(McpAnswerWorkflowFinish)],
   defaults: { models: { temperature: 0 } },
-  mcp: [StealthBrowserServer],
+  providers: [StealthBrowserServer],
 })
 export class McpStealthWorkflow {}

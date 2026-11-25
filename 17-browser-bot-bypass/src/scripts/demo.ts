@@ -9,24 +9,24 @@
  * Live, the demo checks nothing: a real site and a real model are not reproducible.
  */
 import { createApp, type ExecutionOutput } from "@agboss/core";
-import { isLiveDemoRequested, requireLiveApiKey, serveFetch, setProcessEnv } from "../../scripts/tooling/offline-transports.js";
-import { createOfflineOpenRouter } from "./offline/offline-openrouter.js";
+import { isLiveDemoRequested, requireLiveApiKey, serveFetch, setProcessEnv } from "../../../scripts/tooling/offline-transports.js";
+import "./offline-keys.js"; // a synthetic PII key, unless your own is set (R6)
+import { createOfflineOpenRouter } from "../offline/offline-openrouter.js";
 
 const isLive = isLiveDemoRequested();
 const restoreEnv = setProcessEnv({
   ...(isLive ? {} : { BROWSER_FACTORY: "fake" }),
-  PII_PSEUDONYM_KEY: process.env.PII_PSEUDONYM_KEY ?? "browser-bot-bypass-demo-synthetic-pseudonym-key", // synthetic unless set (R6)
   OPENROUTER_API_KEY: isLive ? requireLiveApiKey() : "offline",
   BROWSER_ALLOWED_ORIGINS: process.env.BROWSER_ALLOWED_ORIGINS ?? (isLive ? "https://example.org" : "https://docs.example.com"),
 });
 
 // the application lists its browser factory when it loads: the variables above come first
-const { BrowserBotBypassApplication } = await import("./browser-bot-bypass.application.js");
-const { StealthBrowser } = await import("./browser/stealth-browser.service.js");
-const { BrowserFactory } = await import("./browser/browser-factory.js");
-const { FakeBrowserFactory } = await import("./fake/fake-browser.factory.js");
-const { AskWorkflowStart } = await import("./workflows/stealth/ask.workflow-start.js");
-const { McpAskWorkflowStart } = await import("./workflows/mcp-stealth/mcp-ask.workflow-start.js");
+const { BrowserBotBypassApplication } = await import("../browser-bot-bypass.application.js");
+const { StealthBrowser } = await import("../browser/stealth-browser.service.js");
+const { BrowserFactory } = await import("../browser/browser-factory.js");
+const { FakeBrowserFactory } = await import("../fake/fake-browser.factory.js");
+const { AskWorkflowStart } = await import("../workflows/stealth/ask.workflow-start.js");
+const { McpAskWorkflowStart } = await import("../workflows/mcp-stealth/mcp-ask.workflow-start.js");
 
 function check(condition: boolean, what: string): void {
   if (!condition && !isLive) throw new Error(`demo check failed: ${what}`);
@@ -36,7 +36,7 @@ const answerOf = (result: ExecutionOutput): string => (result.output as { text: 
 const openRouter = createOfflineOpenRouter();
 const served = isLive ? undefined : await serveFetch(openRouter.fetch);
 if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
-const app = await createApp(BrowserBotBypassApplication, { env: isLive ? "dev" : "offline" });
+const app = await createApp(BrowserBotBypassApplication);
 const browser = app.resolve(StealthBrowser);
 const fake = app.resolve(BrowserFactory);
 const site = process.env.BROWSER_ALLOWED_ORIGINS?.split(";")[0] ?? "https://example.org";

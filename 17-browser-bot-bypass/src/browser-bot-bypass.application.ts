@@ -1,10 +1,11 @@
-import { Application, SqliteConnection, SqliteCostLedgerRepository } from "@agboss/core";
+import { Application, EmptyEnvironment } from "@agboss/core";
 import { browserFactoryClass } from "./browser/browser-choice.js";
 import { StealthBrowser } from "./browser/stealth-browser.service.js";
 import { BrowserApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { BrowserExecutionBudget } from "./budgets/execution.budget.js";
 import { BrowserTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
+import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
+import { BrowserBotBypassDatabaseStorage } from "./storages/browser-bot-bypass.database-storage.js";
 import { McpStealthWorkflow } from "./workflows/mcp-stealth/mcp-stealth.workflow.js";
 import { StealthWorkflow } from "./workflows/stealth/stealth.workflow.js";
 
@@ -18,12 +19,11 @@ import { StealthWorkflow } from "./workflows/stealth/stealth.workflow.js";
 @Application({
   name: "browser-bot-bypass-application",
   version: "1.0.0",
-  environment: AppEnvironment,
-  // one PII key for every instance and process: the same token for one value everywhere
-  piiKeyField: "piiPseudonymKey",
+  environment: EmptyEnvironment,
+  modelProvider: OpenRouterModelProvider,
+  storage: BrowserBotBypassDatabaseStorage, // every store on one SQLite file, with the PII key
   workflows: [StealthWorkflow, McpStealthWorkflow],
-  defaults: { router: { model: "typesafe/jev-1.13" } },
-  providers: [browserFactoryClass(), StealthBrowser, SqliteConnection, SqliteCostLedgerRepository],
+  providers: [OpenRouterModelProvider, browserFactoryClass(), StealthBrowser],
   budgets: [BrowserApplicationDailyBudget, BrowserTenantDailyBudget, BrowserExecutionBudget],
 })
 export class BrowserBotBypassApplication {}

@@ -17,7 +17,7 @@ it("runs offline without a key or a Chrome: both ways read the page, 127.0.0.1 i
   delete env.OPEN_ROUTER_KEY;
   delete env.AGBOSS_LIVE_DEMO;
   delete env.BROWSER_FACTORY;
-  const run = spawnSync(TSX, ["src/demo.ts"], { cwd: PROJECT, encoding: "utf8", env });
+  const run = spawnSync(TSX, ["src/scripts/demo.ts"], { cwd: PROJECT, encoding: "utf8", env });
 
   expect(run.stderr).not.toMatch(/demo check failed/u);
   expect(run.status).toBe(0);
