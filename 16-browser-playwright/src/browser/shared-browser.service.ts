@@ -1,4 +1,5 @@
-import { ApplicationContext, Injectable, type OnDestroy } from "@agboss/core";
+import { Injectable, type InferEnv, type OnDestroy } from "@agboss/core";
+import { siteEnv } from "../site/site.env.js";
 import { BrowserHandle } from "./browser-handle.js";
 import { parseAllowlist } from "./origin-allowlist.js";
 
@@ -8,16 +9,15 @@ import { parseAllowlist } from "./origin-allowlist.js";
  * lifecycle hook for "a connection, a pool, a browser" (Wiki → App → Lifecycle hooks). A tool never
  * launches or closes a browser.
  */
-@Injectable({ deps: [ApplicationContext] })
+@Injectable({ deps: [siteEnv] })
 export class SharedBrowser implements OnDestroy {
   /** The handle: a resource the hooks own; the service itself keeps nothing. */
   readonly handle: BrowserHandle;
   /** The origins the browser may request. */
   readonly allowedOrigins: readonly string[];
 
-  constructor(applicationContext: ApplicationContext) {
-    const environment = applicationContext.environment;
-    const { origins, hostMap } = parseAllowlist(environment.browserAllowedOrigins);
+  constructor(site: InferEnv<typeof siteEnv>) {
+    const { origins, hostMap } = parseAllowlist(site.allowedOrigins);
     this.allowedOrigins = origins;
     this.handle = new BrowserHandle({ allowedOrigins: origins, hostRules: hostMap });
   }

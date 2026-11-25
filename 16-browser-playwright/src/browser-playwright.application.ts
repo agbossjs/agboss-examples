@@ -1,27 +1,17 @@
 import {
   Application,
-  PiiAction,
+  EmptyEnvironment,
   PiiFileAction,
   PiiKind,
   PiiPolicy,
-  SqliteCheckpointSaver,
-  SqliteConnection,
-  SqliteCostLedgerRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionRecordRepository,
-  SqliteExecutionTreeRepository,
-  SqliteFencedEffectRepository,
-  SqliteOutboundCallRepository,
-  SqlitePausedExecutionRepository,
-  pii,
 } from "@agboss/core";
-import { InMemoryA2AFileRepository } from "@agboss/core/a2a";
 import { SharedBrowser } from "./browser/shared-browser.service.js";
 import { BrowserApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { BrowserExecutionBudget } from "./budgets/execution.budget.js";
 import { BrowserTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
+import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { ContactDesk } from "./services/contact-desk.service.js";
+import { BrowserPlaywrightDatabaseStorage } from "./storages/browser-playwright.database-storage.js";
 import { McpWebWorkflow } from "./workflows/mcp-web/mcp-web.workflow.js";
 import { WebWorkflow } from "./workflows/web/web.workflow.js";
 
@@ -35,7 +25,7 @@ import { WebWorkflow } from "./workflows/web/web.workflow.js";
 @PiiPolicy({
   name: "card-pii-policy",
   description: "Hides card numbers in the text a model reads; lets a screenshot through as it is",
-  rules: [pii(PiiKind.CardNumber, PiiAction.replaceWithKind())],
+  rules: [PiiKind.CardNumber.mask()],
   files: PiiFileAction.AllowOriginal,
 })
 export class CardPiiPolicy {}
@@ -50,26 +40,15 @@ export class CardPiiPolicy {}
 @Application({
   name: "browser-playwright-application",
   version: "1.0.0",
-  environment: AppEnvironment,
-  // one PII key for every instance and process: the same token for one value everywhere
-  piiKeyField: "piiPseudonymKey",
-  idempotencyKeyField: "idempotencyKey", // the business keys' fingerprints, a Secret of their own
+  environment: EmptyEnvironment,
+  modelProvider: OpenRouterModelProvider,
+  storage: BrowserPlaywrightDatabaseStorage, // every store on one SQLite file, with the PII key and the idempotency secret
   piiPolicies: [CardPiiPolicy],
   workflows: [WebWorkflow, McpWebWorkflow],
-  defaults: { router: { model: "typesafe/jev-1.13" } },
   providers: [
+    OpenRouterModelProvider,
     SharedBrowser,
     ContactDesk,
-    InMemoryA2AFileRepository, // where a screenshot's bytes are kept; S3A2AFileRepository / LocalDisk… in production
-    SqliteConnection,
-    SqliteCheckpointSaver,
-    SqliteExecutionRecordRepository,
-    SqlitePausedExecutionRepository,
-    SqliteCostLedgerRepository,
-    SqliteExecutionLeaseRepository,
-    SqliteExecutionTreeRepository,
-    SqliteFencedEffectRepository,
-    SqliteOutboundCallRepository, // an intent before the browser leaves for the form (#505)
   ],
   budgets: [BrowserApplicationDailyBudget, BrowserTenantDailyBudget, BrowserExecutionBudget],
 })

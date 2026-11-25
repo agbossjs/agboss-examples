@@ -1,5 +1,4 @@
-import { ExecutionContext, type ToolHandler } from "@agboss/core";
-import { McpTool } from "@agboss/core/mcp";
+import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
 import { OriginRefusedError, isAllowedUrl } from "../browser/origin-allowlist.js";
 import { SharedBrowser } from "../browser/shared-browser.service.js";
@@ -8,8 +7,7 @@ import { PlaywrightServer } from "./playwright.server.js";
 import { PLAYWRIGHT_SESSION } from "./serial.js";
 
 /** Way B: reads a page through @playwright/mcp — the same allowlist, checked here and in the server's browser. */
-@McpTool({
-  server: PlaywrightServer,
+@Tool({
   name: "open-page-mcp-tool",
   description: "Open a web page and read its title and what is on it. Only the allowed sites can be opened.",
   input: PageRequestDto,
@@ -25,13 +23,13 @@ export class OpenPageViaMcp implements ToolHandler<PageRequestDto, PageTextDto> 
     private readonly sharedBrowser: SharedBrowser,
   ) {}
 
-  async run({ url }: PageRequestDto): Promise<PageTextDto> {
+  async execute({ url }: PageRequestDto): Promise<PageTextDto> {
     if (!isAllowedUrl(url, this.sharedBrowser.allowedOrigins)) throw new OriginRefusedError(url);
     const { signal } = this.executionContext;
     // the server's one page: this call's navigate and snapshot are not interleaved with another's
     return PLAYWRIGHT_SESSION.run(async () => {
-      await this.server.call("browser_navigate", { url }, signal);
-      const { text } = await this.server.call("browser_snapshot", {}, signal);
+      await this.server.call("browser_navigate", { url }, { signal });
+      const { text } = await this.server.call("browser_snapshot", {}, { signal });
       return { title: /- Page Title: (.*)/u.exec(text)?.[1] ?? "", text: text.slice(0, 8_000) };
     });
   }

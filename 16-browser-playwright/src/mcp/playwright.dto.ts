@@ -1,4 +1,4 @@
-import { Decimal, Text } from "@agboss/core/dto";
+import { Float, Text } from "@agboss/core/dto";
 
 /** `browser_navigate` of @playwright/mcp: where to go. */
 export class NavigateArgumentsDto {
@@ -8,7 +8,7 @@ export class NavigateArgumentsDto {
 
 /** `browser_snapshot`: the current page's accessibility snapshot, optionally to a depth. */
 export class SnapshotArgumentsDto {
-  @Decimal({ prompt: "how deep to snapshot the page; all when left out", optional: true, min: 1 })
+  @Float({ prompt: "how deep to snapshot the page; all when left out", optional: true, min: 1 })
   depth?: number;
 }
 

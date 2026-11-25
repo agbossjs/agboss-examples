@@ -1,5 +1,5 @@
 import { seconds } from "@agboss/core/units";
-import type { TestApp } from "@agboss/core/testing";
+import type { TestApp, ToolClassOf } from "@agboss/core/testing";
 
 /** What a test of two instances is given: the instances, the clock, the leases. */
 export interface Instances {
@@ -33,4 +33,9 @@ export async function frozenPastLease(context: Instances, frozen: TestApp): Prom
   context.leases.freeze(frozen);
   await context.clock.advance(seconds(31));
   for (let left = 31; left > 0; left -= 10) await context.clock.advance(seconds(Math.min(left, 10)));
+}
+
+/** One tool of the app as the agents get it (validation, timeout, errors as results): what `app.runTool` gives, without its spend. */
+export async function invoked<TInput, TOutput>(app: TestApp, tool: ToolClassOf<TInput, TOutput>, input: TInput): Promise<{ readonly kind: "ok"; readonly value: TOutput } | { readonly kind: "error"; readonly message: string; readonly cause?: unknown }> {
+  return (await app.runTool(tool, input)).output;
 }

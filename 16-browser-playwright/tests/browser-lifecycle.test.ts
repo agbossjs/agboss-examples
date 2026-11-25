@@ -13,6 +13,8 @@ import { WebAgent } from "../src/agents/web.agent.js";
 import { AskWorkflowStart } from "../src/workflows/web/ask.workflow-start.js";
 import { OpenPage } from "../src/tools/open-page.tool.js";
 import { siteForFile } from "./support/site.js";
+import { invoked } from "./support/steps.js";
+
 
 const { site, running } = siteForFile();
 const HOST_MAP = "MAP shop.test 127.0.0.1";
@@ -24,8 +26,8 @@ describe("the shared browser", () => {
     const { handle } = app.resolve(SharedBrowser);
     const url = `${running().origin}/pricing`;
 
-    const results = await Promise.all([app.tool(OpenPage).invoke({ url }), app.tool(OpenPage).invoke({ url }), app.tool(OpenPage).invoke({ url })]);
-    await app.tool(OpenPage).invoke({ url });
+    const results = await Promise.all([invoked(app, OpenPage, { url }), invoked(app, OpenPage, { url }), invoked(app, OpenPage, { url })]);
+    await invoked(app, OpenPage, { url });
 
     expect(results.map((result) => result.kind)).toEqual(["ok", "ok", "ok"]);
     expect(handle.launches).toBe(1);
@@ -36,7 +38,7 @@ describe("the shared browser", () => {
   test("app.close() closes the browser; a call after it is refused, not relaunched", async ({ app }) => {
     await app.ready();
     const { handle } = app.resolve(SharedBrowser);
-    await app.tool(OpenPage).invoke({ url: `${running().origin}/pricing` });
+    await invoked(app, OpenPage, { url: `${running().origin}/pricing` });
     expect(await handle.isOpen).toBe(true);
 
     await app.close();

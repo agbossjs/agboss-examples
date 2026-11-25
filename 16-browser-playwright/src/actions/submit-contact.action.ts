@@ -1,6 +1,5 @@
 import {
   Action,
-  ExecutionContext,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -17,15 +16,12 @@ import { ContactDesk } from "../services/contact-desk.service.js";
   description: "Files a request with the support desk through its contact form, once per reference",
   input: { request: ContactRequestDto },
   output: ContactReceiptDto,
-  deps: [ExecutionContext, ContactDesk],
+  deps: [ContactDesk],
 })
 export class SubmitContactAction implements ActionHandler<SubmitContactAction> {
-  constructor(
-    private readonly executionContext: ExecutionContext,
-    private readonly contactDesk: ContactDesk,
-  ) {}
+  constructor(private readonly contactDesk: ContactDesk) {}
 
   execute(input: InputOf<SubmitContactAction>): Promise<OutputOf<SubmitContactAction>> {
-    return this.contactDesk.submit(this.executionContext, input.request.value);
+    return this.contactDesk.submit(input.request);
   }
 }

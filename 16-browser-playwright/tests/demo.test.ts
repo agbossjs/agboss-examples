@@ -17,7 +17,7 @@ it("runs offline without a key: both ways read, look and file; 127.0.0.1 is refu
   delete env.OPENROUTER_API_KEY;
   delete env.OPEN_ROUTER_KEY;
   delete env.AGBOSS_LIVE_DEMO;
-  const run = spawnSync(TSX, ["src/demo.ts"], { cwd: PROJECT, encoding: "utf8", env });
+  const run = spawnSync(TSX, ["src/scripts/demo.ts"], { cwd: PROJECT, encoding: "utf8", env });
 
   expect(run.stderr).not.toMatch(/demo check failed/u);
   expect(run.status).toBe(0);

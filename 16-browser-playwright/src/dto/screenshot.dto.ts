@@ -1,5 +1,4 @@
-import { A2AFileDto } from "@agboss/core/a2a";
-import { Nested, Text } from "@agboss/core/dto";
+import { File, Text, type FileDto } from "@agboss/core/dto";
 
 export class ScreenshotRequestDto {
   @Text({ prompt: "the page's full URL, e.g. https://docs.example.com/pricing", maxLength: 2048 })
@@ -11,6 +10,6 @@ export class ScreenshotRequestDto {
  * application's PII policies, and keeps only its digest in records, traces and cassettes.
  */
 export class ScreenshotResultDto {
-  @Nested(A2AFileDto, { prompt: "a PNG screenshot of the page" })
-  screenshot!: A2AFileDto;
+  @File({ prompt: "a PNG screenshot of the page" })
+  screenshot!: FileDto;
 }

@@ -1,14 +1,8 @@
-import {
-  ApplicationContext,
-  Injectable,
-  NotSentTrust,
-  OutboundCallReconciliation,
-  OutboundCalls,
-  effectKeyOf,
-  type ExecutionContext,
-} from "@agboss/core";
+import { Idempotency, Injectable, OutboundRecovery, Reconciliation, type InferEnv } from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
 import { SharedBrowser } from "../browser/shared-browser.service.js";
 import type { ContactReceiptDto, ContactRequestDto } from "../dto/contact.dto.js";
+import { siteEnv } from "../site/site.env.js";
 
 const TARGET = "acme-desk-contact-form";
 const FORM_TIMEOUT_MS = 10_000;
@@ -28,23 +22,23 @@ interface TicketRow {
  * reference, as a payment API does per idempotency key (Wiki → Payments, Payment scenarios PS1, PS5).
  * Way A (the tool, the action) and Way B (the MCP tool) both send through this one function.
  */
-@Injectable({ deps: [OutboundCalls, SharedBrowser, ApplicationContext] })
+@Injectable({ deps: [Idempotency, SharedBrowser, siteEnv] })
 export class ContactDesk {
   constructor(
-    private readonly outboundCalls: OutboundCalls,
+    private readonly idempotency: Idempotency,
     private readonly sharedBrowser: SharedBrowser,
-    private readonly applicationContext: ApplicationContext,
+    private readonly site: InferEnv<typeof siteEnv>,
   ) {}
 
   /** The form's address: from the environment, never from the model. */
   get formUrl(): string {
-    return this.applicationContext.environment.contactFormUrl;
+    return this.site.contactFormUrl;
   }
 
   /** Way A: the shared browser fills the form and clicks "Send". */
-  submit(executionContext: ExecutionContext, request: ContactRequestDto): Promise<ContactReceiptDto> {
-    return this.once(executionContext, request, (reference) =>
-      this.sharedBrowser.handle.use(executionContext.signal, async (context) => {
+  submit(request: ContactRequestDto): Promise<ContactReceiptDto> {
+    return this.once(request, (reference, signal) =>
+      this.sharedBrowser.handle.use(signal, async (context) => {
         const page = await context.newPage();
         await page.goto(this.formUrl, { timeout: FORM_TIMEOUT_MS, waitUntil: "load" });
         await page.fill("input[name=name]", request.name, { timeout: FORM_TIMEOUT_MS });
@@ -70,31 +64,32 @@ export class ContactDesk {
    * key to put in the form. Way B's MCP tool passes its own `send`.
    */
   async once(
-    executionContext: ExecutionContext,
     request: ContactRequestDto,
     send: (reference: string, signal: AbortSignal) => Promise<ContactReceiptDto>,
   ): Promise<ContactReceiptDto> {
     // the request's reference, not the step: a second tool call, a second execution, a retry — one ticket
-    const key = effectKeyOf(executionContext, "submit-contact", { businessKey: `contact:${request.reference}` });
-    const { result } = await this.outboundCalls.send(key, {
+    const { result } = await this.idempotency.sendOnce({
+      name: "submit-contact",
+      key: `contact:${request.reference}`,
       target: TARGET,
       operation: "submit-contact",
       // the fingerprint: the same reference with another message is a conflict, never a second ticket
       request: { reference: request.reference, name: request.name, email: request.email, message: request.message },
+      timeout: seconds(30),
+      ttl: hours(48),
       send: (call) => send(call.idempotencyKey, call.signal),
-      // asked only when an earlier attempt's outcome is unknown: look the ticket up, never click again blindly
-      reconcile: async (lookup) => {
+      // asked only when an earlier attempt's outcome is unknown: look the ticket up, never click again blindly;
+      // the site's own record by a reference that does not expire: its "no ticket" holds at any age
+      recovery: OutboundRecovery.permanentLookup(async (lookup) => {
         const response = await fetch(
-          `${this.applicationContext.environment.contactLookupUrl}/api/tickets?reference=${encodeURIComponent(lookup.idempotencyKey)}`,
+          `${this.site.contactLookupUrl}/api/tickets?reference=${encodeURIComponent(lookup.idempotencyKey)}`,
           { signal: lookup.signal },
         );
-        if (response.status === 404) return OutboundCallReconciliation.notSent();
-        if (!response.ok) return OutboundCallReconciliation.unknown({ reason: `the lookup answered ${String(response.status)}` });
+        if (response.status === 404) return Reconciliation.notExecuted();
+        if (!response.ok) return Reconciliation.unknown(`the lookup answered ${String(response.status)}`);
         const ticket = (await response.json()) as TicketRow;
-        return OutboundCallReconciliation.completed({ ticketId: ticket.id });
-      },
-      // the site's own record by a reference that does not expire: its "no ticket" holds at any age
-      notSent: { trust: NotSentTrust.Lookup },
+        return Reconciliation.completed({ ticketId: ticket.id });
+      }),
     });
     return result;
   }

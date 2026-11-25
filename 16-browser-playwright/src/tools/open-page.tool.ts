@@ -31,7 +31,7 @@ export class OpenPage implements ToolHandler<PageRequestDto, PageTextDto> {
     private readonly sharedBrowser: SharedBrowser,
   ) {}
 
-  run({ url }: PageRequestDto): Promise<PageTextDto> {
+  execute({ url }: PageRequestDto): Promise<PageTextDto> {
     if (!isAllowedUrl(url, this.sharedBrowser.allowedOrigins)) return Promise.reject(new OriginRefusedError(url));
     // the call's signal: the tool's timeout and a cancelled run both close the session's context
     return this.sharedBrowser.handle.use(this.executionContext.signal, async (context) => {

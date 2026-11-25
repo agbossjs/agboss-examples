@@ -51,7 +51,7 @@ export class OpenPage implements ToolHandler<PageRequestDto, PageTextDto> {
 | **One browser per application, closed when it stops** | Many calls at once; `app.close()`; a call after it | `SharedBrowser` (`@Injectable`, `onDestroy`) owns a `BrowserHandle`; each call has a context of its own, closed in a `finally` | [`tests/browser-lifecycle.test.ts`](./tests/browser-lifecycle.test.ts) |
 | **Timeouts and cancellation are honoured** | A page that never answers | the tool's `timeout` on the application's clock (`clock.advance`) and the call's `AbortSignal` close the call's context at once | [`tests/browser-lifecycle.test.ts`](./tests/browser-lifecycle.test.ts) |
 | **A screenshot reaches the model as an image, under the PII policy** | The model reading base64 text, a card number on a page | a file field on the tool's output + `files: ModelFiles.of({ sources: [FileSource.ToolResults] })` (#899); `PiiFileAction.AllowOriginal` on the policy is the visible decision; a page's text passes `card-pii-policy` | [`tests/model-view.test.ts`](./tests/model-view.test.ts) |
-| **The form is filed once** | The answer is lost (a proxy answers 502 after the ticket is filed); the model repeats the call; the customer submits again; a crash after the site filed the ticket | an outbound call keyed by `contact:<reference>` — an intent in a fenced write before the browser leaves, `reconcile` (a lookup by key) after an unknown outcome, the stored result replayed | [`tests/submit-once.test.ts`](./tests/submit-once.test.ts) (a crash on two instances: the second recovers the run and files nothing new), [`tests/mcp.test.ts`](./tests/mcp.test.ts) |
+| **The form is filed once** | The answer is lost (a proxy answers 502 after the ticket is filed); the model repeats the call; the customer submits again; a crash after the site filed the ticket | an outbound call keyed by `contact:<reference>` — an intent in a fenced write before the browser leaves, `recovery` (a lookup by key) after an unknown outcome, the stored result replayed | [`tests/submit-once.test.ts`](./tests/submit-once.test.ts) (a crash on two instances: the second recovers the run and files nothing new), [`tests/mcp.test.ts`](./tests/mcp.test.ts) |
 
 ## 2. Commands
 
@@ -77,11 +77,11 @@ src/browser/shared-browser.service.ts    the @Injectable that owns it (onDestroy
 src/tools/open-page.tool.ts              Way A: read a page
 src/tools/screenshot.tool.ts             Way A: a PNG as a file field
 src/tools/submit-contact.tool.ts         Way A: file the contact form — once per reference
-src/services/contact-desk.service.ts     the outbound call around the form (both ways), `reconcile` against the site's lookup
+src/services/contact-desk.service.ts     the outbound call around the form (both ways), `recovery` against the site's lookup
 src/actions/submit-contact.action.ts     the same submit as a workflow step, for the crash tests
 src/mcp/playwright.server.ts             Way B: @McpServer over stdio with the typed subset of @playwright/mcp's tools
 src/mcp/guarded-playwright.server.ts     the process it starts: @playwright/mcp's createConnection on a guarded context
-src/mcp/open-page.mcp.ts, submit-contact.mcp.ts   Way B: the @McpTools
+src/mcp/open-page.mcp.ts, submit-contact.mcp.ts   Way B: the tools that call the MCP server
 src/site/contact-site.ts                 the local test site: pages, a form, a ticket lookup, redirects, faults
 src/offline/offline-openrouter.ts        the demo's scripted OpenRouter wire
 ```

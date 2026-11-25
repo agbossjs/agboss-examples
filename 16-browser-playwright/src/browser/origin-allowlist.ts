@@ -14,6 +14,9 @@
  */
 import type { BrowserContext } from "playwright";
 
+/** What the browser may request until you list your own origins: nothing but `example.org`. */
+export const DEFAULT_ALLOWED_ORIGINS = "https://example.org";
+
 /** What `BROWSER_ALLOWED_ORIGINS` says: the origins, and a test site's name → address rule. */
 export interface Allowlist {
   readonly origins: readonly string[];

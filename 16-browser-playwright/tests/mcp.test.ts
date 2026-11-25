@@ -15,6 +15,8 @@ import { SubmitContactViaMcp } from "../src/mcp/submit-contact.mcp.js";
 import { SiteFault } from "../src/site/contact-site.js";
 import { McpAskWorkflowStart } from "../src/workflows/mcp-web/mcp-ask.workflow-start.js";
 import { siteForFile } from "./support/site.js";
+import { invoked } from "./support/steps.js";
+
 
 const { site, running } = siteForFile();
 const test = testWith(BrowserPlaywrightApplication, { real: [PlaywrightServer], allowNetwork: ["127.0.0.1"] });
@@ -25,15 +27,15 @@ const REQUEST = { reference: "mcp-callback-1", name: "Grace", email: "grace@exam
 
 describe("way B reads a page through @playwright/mcp", () => {
   test("open-page-mcp-tool: the title and the page", async ({ app }) => {
-    const result = await app.tool(OpenPageViaMcp).invoke({ url: `${running().origin}/pricing` });
+    const result = await invoked(app, OpenPageViaMcp, { url: `${running().origin}/pricing` });
 
     expect(result).toMatchObject({ kind: "ok", value: { title: "Pricing", text: expect.stringContaining("Starter 12 USD") as string } });
   });
 
   test("two calls at once (a model may issue several in one turn) take turns on the server's one page", async ({ app }) => {
     const [pricing, home] = await Promise.all([
-      app.tool(OpenPageViaMcp).invoke({ url: `${running().origin}/pricing` }),
-      app.tool(OpenPageViaMcp).invoke({ url: `${running().origin}/` }),
+      invoked(app, OpenPageViaMcp, { url: `${running().origin}/pricing` }),
+      invoked(app, OpenPageViaMcp, { url: `${running().origin}/` }),
     ]);
 
     expect(pricing).toMatchObject({ kind: "ok", value: { title: "Pricing" } });
@@ -56,7 +58,7 @@ describe("the same allowlist, checked before the server is asked", () => {
     ["the cloud metadata address", (): string => "http://169.254.169.254/latest/meta-data/"],
     ["a LAN address", (): string => "http://192.168.0.1/admin"],
   ] as const)("the tool refuses %s", async ([, url], { app }) => {
-    const result = await app.tool(OpenPageViaMcp).invoke({ url: url() });
+    const result = await invoked(app, OpenPageViaMcp, { url: url() });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("is not an allowed origin") as string });
     expect(secretRequests()).toEqual([]);

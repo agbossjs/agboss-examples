@@ -11,13 +11,14 @@
  * demo checks what it prints (offline) and exits non-zero when a promise does not hold.
  */
 import { createApp, type ExecutionOutput } from "@agboss/core";
-import { isLiveDemoRequested, requireLiveApiKey, serveFetch, setProcessEnv } from "../../scripts/tooling/offline-transports.js";
-import { BrowserPlaywrightApplication } from "./browser-playwright.application.js";
-import { SharedBrowser } from "./browser/shared-browser.service.js";
-import { createOfflineOpenRouter, hasImagePart } from "./offline/offline-openrouter.js";
-import { startRunningSite } from "./site/site-environment.js";
-import { AskWorkflowStart } from "./workflows/web/ask.workflow-start.js";
-import { McpAskWorkflowStart } from "./workflows/mcp-web/mcp-ask.workflow-start.js";
+import { isLiveDemoRequested, requireLiveApiKey, serveFetch, setProcessEnv } from "../../../scripts/tooling/offline-transports.js";
+import "./offline-keys.js"; // synthetic keys, unless your own are set (R6)
+import { BrowserPlaywrightApplication } from "../browser-playwright.application.js";
+import { SharedBrowser } from "../browser/shared-browser.service.js";
+import { createOfflineOpenRouter, hasImagePart } from "../offline/offline-openrouter.js";
+import { startRunningSite } from "../site/site-environment.js";
+import { AskWorkflowStart } from "../workflows/web/ask.workflow-start.js";
+import { McpAskWorkflowStart } from "../workflows/mcp-web/mcp-ask.workflow-start.js";
 
 const isLive = isLiveDemoRequested();
 
@@ -32,12 +33,10 @@ const openRouter = createOfflineOpenRouter();
 const served = isLive ? undefined : await serveFetch(openRouter.fetch);
 const restoreEnv = setProcessEnv({
   ...running.variables,
-  PII_PSEUDONYM_KEY: process.env.PII_PSEUDONYM_KEY ?? "browser-playwright-demo-synthetic-pseudonym-key", // synthetic unless set (R6)
-  IDEMPOTENCY_KEY: process.env.IDEMPOTENCY_KEY ?? "browser-playwright-demo-synthetic-idempotency-key", // synthetic unless set (R6)
   OPENROUTER_API_KEY: isLive ? requireLiveApiKey() : "offline",
   ...(served === undefined ? {} : { OPENROUTER_BASE_URL: served.baseUrl }),
 });
-const app = await createApp(BrowserPlaywrightApplication, { env: isLive ? "dev" : "offline" });
+const app = await createApp(BrowserPlaywrightApplication);
 const browser = app.resolve(SharedBrowser);
 
 try {

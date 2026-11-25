@@ -1,8 +1,7 @@
-import { Workflow, start } from "@agboss/core";
-import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { SubmitContactAction } from "../../actions/submit-contact.action.js";
 import { WebAgent } from "../../agents/web.agent.js";
-import { ContactReceiptDto, ContactRequestDto } from "../../dto/contact.dto.js";
+import { ScreenshotFilePolicy } from "../../file-policies/screenshot.file-policy.js";
 import { AnswerWorkflowFinish } from "./answer.workflow-finish.js";
 import { AskWorkflowStart } from "./ask.workflow-start.js";
 import { ContactWorkflowFinish } from "./contact.workflow-finish.js";
@@ -15,16 +14,15 @@ import { ContactWorkflowStart } from "./contact.workflow-start.js";
 @Workflow({
   name: "web-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
+  filePolicy: ScreenshotFilePolicy,
   flow: [
-    start(AskWorkflowStart)
-.returns(WorkflowStartTextDto)
+    onStart(AskWorkflowStart)
 .toAgent(WebAgent)
 .toFinish(AnswerWorkflowFinish),
-    start(ContactWorkflowStart)
-      .returns(ContactRequestDto)
-      .toAction(SubmitContactAction)
-      .returns(ContactReceiptDto)
-      .toFinish(ContactWorkflowFinish),
+    onStart(ContactWorkflowStart)
+.toAction(SubmitContactAction)
+.toFinish(ContactWorkflowFinish),
   ],
   defaults: { models: { temperature: 0 } },
 })

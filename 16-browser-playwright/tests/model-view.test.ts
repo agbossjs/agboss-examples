@@ -38,7 +38,7 @@ describe("a screenshot is a file part", () => {
   test("the model receives an image part; no base64 in its text, the records or the tool call", async ({ app, mockLlm }) => {
     const agent = mockLlm(WebAgent).thenReturn(callTool(Screenshot, { url: `${running().origin}/` }), replyWith("I see the home page"));
 
-    const result = await app.execute(AskWorkflowStart, { text: "screenshot the home page" }, { record: true });
+    const result = await app.execute(AskWorkflowStart, { text: "screenshot the home page" });
 
     const [asked, answered] = agent.requests;
     expect(asked?.kind === "chat" ? asked.parts : []).toEqual([]);

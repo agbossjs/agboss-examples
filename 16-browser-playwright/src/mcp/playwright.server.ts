@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { McpServer, McpServerClient } from "@agboss/core/mcp";
+import { McpServer, McpServerClient, McpTransport } from "@agboss/core/mcp";
+import { siteEnv } from "../site/site.env.js";
 import { EvaluateArgumentsDto, NavigateArgumentsDto, ServerTextDto, SnapshotArgumentsDto } from "./playwright.dto.js";
 
 /**
@@ -18,12 +19,12 @@ const LAUNCHER = fileURLToPath(new URL("./guarded-playwright.server.ts", import.
 
 @McpServer({
   name: "playwright",
-  transport: "stdio",
+  transport: McpTransport.Stdio,
   command: process.execPath,
   // `--import tsx` runs the TypeScript launcher; resolved from the project directory the app runs in
   args: ["--import", "tsx", LAUNCHER],
   // the child reads the variable Way A reads: the allowed origins (the list of `parseAllowlist`)
-  env: ["BROWSER_ALLOWED_ORIGINS"],
+  env: { BROWSER_ALLOWED_ORIGINS: siteEnv.allowedOrigins },
   tools,
 })
 export class PlaywrightServer extends McpServerClient<typeof tools> {}

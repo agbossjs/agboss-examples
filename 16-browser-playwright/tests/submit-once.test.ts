@@ -1,11 +1,14 @@
 /**
  * The form's submit is the side effect, and it is filed once (agbossjs/agboss#1261): an outbound
- * call (an intent recorded in a fenced write before the browser leaves, `reconcile` after an unknown
+ * call (an intent recorded in a fenced write before the browser leaves, `recovery` after an unknown
  * outcome) keyed by the request's own `reference` as a business key. A retry, a second call, a second
  * execution and the takeover after a crash file one ticket — read from the site's own records.
  * Red-first evidence: the same tests against a bare click (the PR's sabotage table) file two.
  */
-import { describe, expect } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, beforeAll, describe, expect } from "vitest";
 import { callTool, replyWith, testWith } from "@agboss/core/testing";
 import { WebAgent } from "../src/agents/web.agent.js";
 import { BrowserPlaywrightApplication } from "../src/browser-playwright.application.js";
@@ -26,13 +29,15 @@ describe("one ticket per reference", () => {
   const test = testWith(BrowserPlaywrightApplication, { allowNetwork: ["127.0.0.1"] });
 
   test("the same request twice (two executions): the second gets the first receipt and the browser is not opened", async ({ app }) => {
+    const tickets = site().tickets.length;
     const first = await app.execute(ContactWorkflowStart, { ...REQUEST, reference: "twice-1" });
     const formOpens = site().requests.filter((request) => request === "GET /contact").length;
     const second = await app.execute(ContactWorkflowStart, { ...REQUEST, reference: "twice-1" });
 
     expect(first.output).toEqual({ ticketId: expect.stringMatching(/^T-\d+$/u) as string });
     expect(second.output).toEqual(first.output);
-    expect(site().tickets.filter((ticket) => ticket.reference.includes("twice-1"))).toHaveLength(1);
+    // the site files the idempotency key (a keyed fingerprint), not the reference: count the tickets
+    expect(site().tickets).toHaveLength(tickets + 1);
     expect(site().requests.filter((request) => request === "GET /contact")).toHaveLength(formOpens);
   });
 
@@ -91,9 +96,17 @@ describe("one ticket per reference", () => {
 });
 
 describe("a crash in the middle of the submit", () => {
+  // the two instances share one SQLite file (`SQLITE_PATH`, what the storage reads in place of `:memory:`)
+  const folder = mkdtempSync(join(tmpdir(), "browser-playwright-"));
+  beforeAll(() => {
+    process.env.SQLITE_PATH = join(folder, "crash.sqlite");
+  });
+  afterAll(() => {
+    process.env.SQLITE_PATH = ":memory:";
+    rmSync(folder, { recursive: true, force: true });
+  });
   const test = testWith(BrowserPlaywrightApplication, {
     instances: 2,
-    env: "offline",
     allowNetwork: ["127.0.0.1"],
   });
 

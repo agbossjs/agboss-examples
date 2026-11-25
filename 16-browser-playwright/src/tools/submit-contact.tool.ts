@@ -1,4 +1,4 @@
-import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
+import { Tool, type ToolHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
 import { ContactReceiptDto, ContactRequestDto } from "../dto/contact.dto.js";
 import { ContactDesk } from "../services/contact-desk.service.js";
@@ -11,15 +11,12 @@ import { ContactDesk } from "../services/contact-desk.service.js";
   input: ContactRequestDto,
   output: ContactReceiptDto,
   timeout: seconds(60),
-  deps: [ExecutionContext, ContactDesk],
+  deps: [ContactDesk],
 })
 export class SubmitContact implements ToolHandler<ContactRequestDto, ContactReceiptDto> {
-  constructor(
-    private readonly executionContext: ExecutionContext,
-    private readonly contactDesk: ContactDesk,
-  ) {}
+  constructor(private readonly contactDesk: ContactDesk) {}
 
-  run(request: ContactRequestDto): Promise<ContactReceiptDto> {
-    return this.contactDesk.submit(this.executionContext, request);
+  execute(request: ContactRequestDto): Promise<ContactReceiptDto> {
+    return this.contactDesk.submit(request);
   }
 }

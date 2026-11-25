@@ -15,6 +15,8 @@ import { BrowserPlaywrightApplication } from "../src/browser-playwright.applicat
 import { OpenPage } from "../src/tools/open-page.tool.js";
 import { Screenshot } from "../src/tools/screenshot.tool.js";
 import { siteForFile } from "./support/site.js";
+import { invoked } from "./support/steps.js";
+
 
 const { site, running } = siteForFile();
 const test = testWith(BrowserPlaywrightApplication, { allowNetwork: ["127.0.0.1"] });
@@ -29,7 +31,7 @@ describe("the tool refuses a URL outside the list before the browser is asked", 
     ["a LAN address", (): string => "http://192.168.0.1/admin"],
     ["a file", (): string => "file:///etc/hosts"],
   ] as const)("open-page-tool: %s", async ([, url], { app }) => {
-    const result = await app.tool(OpenPage).invoke({ url: url() });
+    const result = await invoked(app, OpenPage, { url: url() });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("is not an allowed origin") as string });
     expect(secretRequests()).toEqual([]);
@@ -38,14 +40,14 @@ describe("the tool refuses a URL outside the list before the browser is asked", 
   });
 
   test("screenshot-tool refuses 127.0.0.1 the same way", async ({ app }) => {
-    const result = await app.tool(Screenshot).invoke({ url: `${site().loopbackUrl}/secret` });
+    const result = await invoked(app, Screenshot, { url: `${site().loopbackUrl}/secret` });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("is not an allowed origin") as string });
     expect(secretRequests()).toEqual([]);
   });
 
   test("a listed origin is opened", async ({ app }) => {
-    const result = await app.tool(OpenPage).invoke({ url: `${running().origin}/pricing` });
+    const result = await invoked(app, OpenPage, { url: `${running().origin}/pricing` });
 
     expect(result).toEqual({ kind: "ok", value: { title: "Pricing", text: expect.stringContaining("Starter 12 USD") as string } });
   });
@@ -101,7 +103,7 @@ describe("the browser itself refuses what the tool's check would miss", () => {
 
 describe("a listed page that redirects the browser elsewhere", () => {
   test("to 127.0.0.1: the hop is refused, the site never sees /secret", async ({ app }) => {
-    const result = await app.tool(OpenPage).invoke({ url: `${running().origin}/go/loopback` });
+    const result = await invoked(app, OpenPage, { url: `${running().origin}/go/loopback` });
 
     expect(result.kind).toBe("error");
     expect(secretRequests()).toEqual([]);
@@ -109,7 +111,7 @@ describe("a listed page that redirects the browser elsewhere", () => {
   });
 
   test("to the cloud metadata address: the hop is refused", async ({ app }) => {
-    const result = await app.tool(OpenPage).invoke({ url: `${running().origin}/go/metadata` });
+    const result = await invoked(app, OpenPage, { url: `${running().origin}/go/metadata` });
 
     expect(result).toMatchObject({ kind: "error", message: expect.stringContaining("ERR_BLOCKED_BY_CLIENT") as string });
   });
