@@ -1,7 +1,6 @@
 import {
   Action,
-  ExecutionContext,
-  BusinessKeyConflictError,
+  IdempotencyError,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -15,13 +14,13 @@ import { OrderBookService } from "../services/order-book.service.js";
 /** Whether an error, or one of its causes, is the business key's conflict. */
 function isConflict(error: unknown): boolean {
   for (let at: unknown = error; at instanceof Error; at = at.cause)
-    if (at instanceof BusinessKeyConflictError) return true;
+    if (at instanceof IdempotencyError.KeyConflict) return true;
   return false;
 }
 
 /**
  * The customer cancels: void the authorization. When fulfilment already settled it — the void is
- * the other fingerprint of `disposition:<charge>`, `BusinessKeyConflictError` — the order takes
+ * the other fingerprint of `disposition:<charge>`, `IdempotencyError.KeyConflict` — the order takes
  * the other route: refund what was captured (PS20).
  */
 @Action({
@@ -29,36 +28,36 @@ function isConflict(error: unknown): boolean {
   description: "Voids the order's authorization, or refunds it once it was captured",
   input: { disposition: DispositionRequestDto },
   output: MovementDto,
-  deps: [ExecutionContext, PaymentOperations, OrderBookService, OrderBookRepository],
+  deps: [PaymentOperations, OrderBookService, OrderBookRepository],
 })
 export class CancelOrderAction implements ActionHandler<CancelOrderAction> {
   constructor(
-    private readonly executionContext: ExecutionContext,
     private readonly paymentOperations: PaymentOperations,
     private readonly orderBookService: OrderBookService,
     private readonly orderBookRepository: OrderBookRepository,
   ) {}
 
   async execute(input: InputOf<CancelOrderAction>): Promise<OutputOf<CancelOrderAction>> {
-    const { orderId, chargeId, amountCents } = input.disposition.value;
+    const { orderId, chargeId, amountCents } = input.disposition;
     // the charge id is the caller's word: it moves only the order's own charge, by the shop's books
     this.orderBookService.assertOrdersCharge(orderId, chargeId);
     try {
-      const voided = await this.paymentOperations.void(this.executionContext, chargeId);
+      const voided = await this.paymentOperations.void(chargeId);
       // cancelled: the shop believes the gateway holds nothing for the order
       const identity = { businessKey: `void:${chargeId}`, fingerprint: { orderId } };
-      await this.orderBookService.once(this.executionContext, "book-void", identity, (database) =>
-        this.orderBookRepository.bookState(database, this.orderBookService.tenantId, orderId, "cancelled", 0) ?? { cancelled: orderId },
-      );
+      await this.orderBookService.once("book-void", identity, () => {
+        this.orderBookRepository.bookState(this.orderBookService.tenantId, orderId, "cancelled", 0);
+        return { cancelled: orderId };
+      });
       return { orderId, movementId: voided.id, kind: "void", amountCents: 0 };
     } catch (error) {
       if (!isConflict(error)) throw error;
-      const refunded = await this.paymentOperations.refund(this.executionContext, {
+      const refunded = await this.paymentOperations.refund({
         chargeId,
         amountCents,
         refundNumber: 1,
       });
-      await this.orderBookService.book(this.executionContext, "book-refund", `refund:${chargeId}:1`, orderId, {
+      await this.orderBookService.book("book-refund", `refund:${chargeId}:1`, orderId, {
         status: "refunded",
         heldDeltaCents: -amountCents,
       });

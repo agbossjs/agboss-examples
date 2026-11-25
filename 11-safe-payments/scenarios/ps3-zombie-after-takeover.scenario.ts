@@ -1,6 +1,4 @@
-import { override } from "@agboss/core/testing";
 import { PlainCallPaymentOperations } from "../src/payments/wrong/plain-call.payment-operations.js";
-import { StubGatewayService } from "../src/services/stub-gateway.service.js";
 import { StubLevel } from "../src/stub/stub-gateway.types.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
 import { orderOf } from "./checkout.js";
@@ -24,7 +22,7 @@ export const ps3: PaymentScenario = {
       row: "ps3",
       level: StubLevel.Full,
       wrongOperations: PlainCallPaymentOperations,
-      overrides: [override(StubGatewayService, GatedStubGatewayService)],
+      services: [GatedStubGatewayService],
       wrong: { charges: 2, lost: 2500 },
       right: { charges: 1, lost: 0, orderStatus: "paid" },
       async run(context) {

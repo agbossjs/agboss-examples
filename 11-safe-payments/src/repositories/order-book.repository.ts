@@ -1,9 +1,13 @@
 import { readFileSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
-import { Injectable, SqliteConnection } from "@agboss/core";
+import { Injectable } from "@agboss/core";
+import { SqliteConnection } from "@agboss/core/stores";
 
 /** The DDL of the shop's tables, applied once per connection. */
 const SCHEMA: string = readFileSync(new URL("../sql/orders.sql", import.meta.url), "utf8");
+
+/** What a read needs of a connection: the database itself, or the effect's guarded transaction. */
+type Readable = Pick<DatabaseSync, "prepare"> | ReturnType<SqliteConnection["requireTransaction"]>;
 
 /** What the shop believes about one order. */
 export interface OrderRow {
@@ -37,9 +41,9 @@ const ORDER_COLUMNS =
 
 /**
  * The shop's books, in the application's SQLite file — the one every instance shares. Every write
- * takes the `DatabaseSync` a fenced effect gives it (`SqliteFencedEffectRepository`, #500): it runs
- * inside the effect's transaction, synchronously, so the row and the effect's stored result commit
- * together, and a holder that lost its lease writes nothing. Every row is a tenant's: the tenant is
+ * goes through the connection's `requireTransaction()` (#1317c), inside the `runOnce` of an
+ * `Idempotency` effect (#500): the row and the effect's stored result commit together, and a
+ * holder that lost its lease writes nothing. Every row is a tenant's: the tenant is
  * given explicitly, part of the key, never defaulted.
  */
 @Injectable({ deps: [SqliteConnection] })
@@ -53,13 +57,14 @@ export class OrderBookRepository {
    * once per `businessKey`: the row's own record of what it booked, kept for as long as the order (a
    * lasting "paid" record per order beyond every retention window, Wiki → Payments → What stays yours).
    */
-  book(database: DatabaseSync, tenantId: string, businessKey: string, orderId: string, change: OrderChange): OrderRow {
-    const fresh = database
+  book(tenantId: string, businessKey: string, orderId: string, change: OrderChange): OrderRow {
+    const transaction = this.sqliteConnection.requireTransaction();
+    const fresh = transaction
       .prepare("INSERT OR IGNORE INTO order_bookings (tenant_id, business_key, order_id) VALUES (?, ?, ?)")
       .run(tenantId, businessKey, orderId);
-    const current = this.orderIn(database, tenantId, orderId);
+    const current = this.orderIn(transaction, tenantId, orderId);
     if (Number(fresh.changes) !== 1 && current !== undefined) return current;
-    database
+    transaction
       .prepare(
         "INSERT INTO orders (tenant_id, order_id, status, charge_id, held_cents) VALUES (?, ?, ?, ?, ?) " +
           "ON CONFLICT (tenant_id, order_id) DO UPDATE SET status = excluded.status, " +
@@ -67,7 +72,7 @@ export class OrderBookRepository {
           "held_cents = orders.held_cents + excluded.held_cents",
       )
       .run(tenantId, orderId, change.status, change.chargeId ?? null, change.heldDeltaCents);
-    const row = this.orderIn(database, tenantId, orderId);
+    const row = this.orderIn(transaction, tenantId, orderId);
     if (row === undefined) throw new Error(`orders: ${orderId} was not written`);
     return row;
   }
@@ -77,11 +82,12 @@ export class OrderBookRepository {
    * PS16, PS20) — only an order of this tenant that exists: an event never creates a row, and an
    * event for another tenant's order changes nothing (`undefined`).
    */
-  bookState(database: DatabaseSync, tenantId: string, orderId: string, status: string, heldCents: number): OrderRow | undefined {
-    database
+  bookState(tenantId: string, orderId: string, status: string, heldCents: number): OrderRow | undefined {
+    const transaction = this.sqliteConnection.requireTransaction();
+    transaction
       .prepare("UPDATE orders SET status = ?, held_cents = ? WHERE tenant_id = ? AND order_id = ?")
       .run(status, heldCents, tenantId, orderId);
-    return this.orderIn(database, tenantId, orderId);
+    return this.orderIn(transaction, tenantId, orderId);
   }
 
   /** Whether `chargeId` is the charge the shop booked for this tenant's order (a row with that tenant only). */
@@ -90,12 +96,13 @@ export class OrderBookRepository {
   }
 
   /** Draws on a wallet: the row's own constraint refuses a balance below zero (PS9). */
-  draw(database: DatabaseSync, walletId: string, amountCents: number): number {
-    const changed = database
+  draw(walletId: string, amountCents: number): number {
+    const transaction = this.sqliteConnection.requireTransaction();
+    const changed = transaction
       .prepare("UPDATE wallets SET balance_cents = balance_cents - ? WHERE wallet_id = ?")
       .run(amountCents, walletId);
     if (Number(changed.changes) !== 1) throw new Error(`wallets: no wallet ${walletId}`);
-    return this.balanceIn(database, walletId);
+    return this.balanceIn(transaction, walletId);
   }
 
   /** Opens a wallet (the scenario's setup, outside any execution). */
@@ -128,14 +135,14 @@ export class OrderBookRepository {
     return this.balanceIn(this.sqliteConnection.database, walletId);
   }
 
-  private orderIn(database: DatabaseSync, tenantId: string, orderId: string): OrderRow | undefined {
-    return rowOf(database.prepare(`SELECT ${ORDER_COLUMNS} FROM orders WHERE tenant_id = ? AND order_id = ?`).get(tenantId, orderId));
+  private orderIn(database: Readable, tenantId: string, orderId: string): OrderRow | undefined {
+    return rowOf(database.prepare(`SELECT ${ORDER_COLUMNS} FROM orders WHERE tenant_id = ? AND order_id = ?`).get(tenantId, orderId) as Record<string, unknown> | undefined);
   }
 
-  private balanceIn(database: DatabaseSync, walletId: string): number {
+  private balanceIn(database: Readable, walletId: string): number {
     const row = database
       .prepare("SELECT balance_cents AS balanceCents FROM wallets WHERE wallet_id = ?")
-      .get(walletId);
+      .get(walletId) as Record<string, unknown> | undefined;
     const balance = row?.["balanceCents"];
     if (typeof balance !== "number") throw new Error(`wallets: no wallet ${walletId}`);
     return balance;

@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import "../../src/scripts/offline-keys.js"; // synthetic keys for the pods (they inherit process.env)
 import type { StubGateway } from "../../src/stub/stub-gateway.js";
 import { StubFault, StubLevel } from "../../src/stub/stub-gateway.types.js";
 import { orderOf } from "../checkout.js";
@@ -63,11 +64,9 @@ export async function onRealProcesses(stub: StubGateway, kind: "ps2" | "ps5"): P
   const sqlitePath = join(mkdtempSync(join(tmpdir(), "safe-payments-pods-")), "stores.sqlite");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    SAFE_PAYMENTS_SQLITE_PATH: sqlitePath,
+    SQLITE_PATH: sqlitePath,
     STUB_GATEWAY_URL: stub.baseUrl,
     STUB_WEBHOOK_SECRET: stub.webhookSecret,
-    PII_PSEUDONYM_KEY: process.env.PII_PSEUDONYM_KEY ?? "safe-payments-offline-pseudonym-key-32b!",
-    IDEMPOTENCY_KEY: process.env.IDEMPOTENCY_KEY ?? "safe-payments-offline-idempotency-key",
   };
   const order = orderOf(`${kind}-process-order`, 2500);
   const first = podOf({ ...env, ...(kind === "ps2" ? { POD_HOLD_EFFECT: "book-charge" } : {}) });

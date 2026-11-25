@@ -11,7 +11,7 @@ import { SplitSummaryDto } from "../dto/split-summary.dto.js";
 })
 export class SummarizeSplitAction implements ActionHandler<SummarizeSplitAction> {
   execute(input: InputOf<SummarizeSplitAction>): Promise<OutputOf<SummarizeSplitAction>> {
-    const payments = input.payments.map((produced) => produced.value);
+    const payments = input.payments;
     return Promise.resolve({
       parts: payments.length,
       totalCents: payments.reduce((sum, payment) => sum + payment.amountCents, 0),

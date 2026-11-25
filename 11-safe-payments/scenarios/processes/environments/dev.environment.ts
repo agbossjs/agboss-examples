@@ -1,2 +1,2 @@
-// the pods run the application's own offline environment: one SQLite file, SAFE_PAYMENTS_SQLITE_PATH
-export { environment } from "../../../src/environments/offline.environment.js";
+// the pods run the application's own dev environment: one SQLite file, SQLITE_PATH
+export { environment } from "../../../src/environments/dev.environment.js";

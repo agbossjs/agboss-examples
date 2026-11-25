@@ -1,18 +1,9 @@
-import {
-  ExecutionContext,
-  Injectable,
-  FencedEffects,
-  TenantContext,
-  effectKeyOf,
-  type FingerprintedKeyOptions,
-  type JsonValue,
-  type UnfingerprintedKeyOptions,
-} from "@agboss/core";
-import type { DatabaseSync } from "node:sqlite";
+import { Idempotency, Injectable, TenantContext, type JsonValue } from "@agboss/core";
+import { hours } from "@agboss/core/units";
 import { OrderBookRepository, type OrderChange, type OrderRow } from "../repositories/order-book.repository.js";
 
 /**
- * The shop's bookings, each a fenced effect (#500) under a business key (#508): the row written once
+ * The shop's bookings, each an `Idempotency.runOnce` (#500) under a business key (#508): the row written once
  * per key, in the effect's transaction, refused for a holder that lost its lease. The same for the
  * right and the wrong versions — what differs between them is how the money moves, not the books.
  */
@@ -26,10 +17,15 @@ export class ChargeOwnershipError extends Error {
   }
 }
 
-@Injectable({ deps: [FencedEffects, OrderBookRepository, TenantContext] })
+/** What an effect under a business key says about itself: what it does (its fingerprint), or on purpose nothing. */
+export type BookingIdentity<F> =
+  | { readonly businessKey: string; readonly fingerprint: JsonValue<F>; readonly withoutFingerprint?: never }
+  | { readonly businessKey: string; readonly withoutFingerprint: true; readonly fingerprint?: never };
+
+@Injectable({ deps: [Idempotency, OrderBookRepository, TenantContext] })
 export class OrderBookService {
   constructor(
-    private readonly fencedEffects: FencedEffects,
+    private readonly idempotency: Idempotency,
     private readonly orderBookRepository: OrderBookRepository,
     private readonly tenantContext: TenantContext,
   ) {}
@@ -45,16 +41,10 @@ export class OrderBookService {
   }
 
   /** Books `change` for `orderId` once per `businessKey` (the second call gets the first row). */
-  async book(
-    executionContext: ExecutionContext,
-    name: string,
-    businessKey: string,
-    orderId: string,
-    change: OrderChange,
-  ): Promise<OrderRow> {
+  async book(name: string, businessKey: string, orderId: string, change: OrderChange): Promise<OrderRow> {
     // agbossjs/agboss#825: what the booking does is its fingerprint — another change under the key is a conflict
-    return this.once(executionContext, name, { businessKey, fingerprint: { orderId, change } }, (database) =>
-      this.orderBookRepository.book(database, this.tenantContext.tenantId, businessKey, orderId, change),
+    return this.once(name, { businessKey, fingerprint: { orderId, change } }, () =>
+      this.orderBookRepository.book(this.tenantContext.tenantId, businessKey, orderId, change),
     );
   }
 
@@ -69,17 +59,19 @@ export class OrderBookService {
   }
 
   /**
-   * Runs `work` once per business key, in a fenced effect's transaction — the key says what the work does
-   * (agbossjs/agboss#825): its `fingerprint`, or `FingerprintPolicy.None` on purpose.
+   * Runs `work` once per business key, in the `runOnce` transaction — the key says what the work does
+   * (agbossjs/agboss#825): its `fingerprint`, or `withoutFingerprint` on purpose. `work` writes only through
+   * the repository's `requireTransaction()`.
    */
-  async once<T, F>(
-    executionContext: ExecutionContext,
+  async once<T, F = never>(
     name: string,
-    identity: FingerprintedKeyOptions<F> | UnfingerprintedKeyOptions,
-    work: (database: DatabaseSync) => T & JsonValue<T>,
+    identity: BookingIdentity<F>,
+    work: () => (T & JsonValue<T>) | Promise<T & JsonValue<T>>,
   ): Promise<T> {
-    const key = effectKeyOf(executionContext, name, identity);
-    const { result } = await this.fencedEffects.runOnce(key, work);
+    const { result } =
+      identity.withoutFingerprint === true
+        ? await this.idempotency.runOnce({ name, key: identity.businessKey, withoutFingerprint: true, ttl: hours(48), execute: work })
+        : await this.idempotency.runOnce<T, F>({ name, key: identity.businessKey, fingerprint: identity.fingerprint, ttl: hours(48), execute: work });
     return result;
   }
 }

@@ -1,6 +1,5 @@
 import {
   Action,
-  ExecutionContext,
   type ActionHandler,
   type InputOf,
   type OutputOf,
@@ -22,26 +21,25 @@ import { RefundOrderAction } from "./refund-order.action.js";
   input: { order: CheckoutRequestDto },
   output: PaymentDto,
   compensateWith: RefundOrderAction,
-  deps: [ExecutionContext, PaymentOperations, OrderBookService],
+  deps: [PaymentOperations, OrderBookService],
 })
 export class ChargeOrderAction implements ActionHandler<ChargeOrderAction> {
   constructor(
-    private readonly executionContext: ExecutionContext,
     private readonly paymentOperations: PaymentOperations,
     private readonly orderBookService: OrderBookService,
   ) {}
 
   async execute(input: InputOf<ChargeOrderAction>): Promise<OutputOf<ChargeOrderAction>> {
-    const { orderId, amountCents, paymentMethod, capture, restockingFeeCents } = input.order.value;
+    const { orderId, amountCents, paymentMethod, capture, restockingFeeCents } = input.order;
     const charge = await this.paymentOperations
-      .charge(this.executionContext, { orderId, amountCents, paymentMethod, capture })
+      .charge({ orderId, amountCents, paymentMethod, capture })
       .catch((error: unknown) => {
         // a decline is the gateway's definite "no": a real failure, the saga undoes what it did
         if (error instanceof StubGatewayError && error.status === 402) throw new PaymentDeclinedError(orderId);
         throw error;
       });
     if (charge.status === "declined") throw new PaymentDeclinedError(orderId);
-    await this.orderBookService.book(this.executionContext, "book-charge", `order:${orderId}`, orderId, {
+    await this.orderBookService.book("book-charge", `order:${orderId}`, orderId, {
       status: capture ? "paid" : "authorized",
       chargeId: charge.chargeId,
       heldDeltaCents: capture ? amountCents : 0,

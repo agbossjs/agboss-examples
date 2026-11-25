@@ -1,4 +1,4 @@
-import { Agent } from "@agboss/core";
+import { Agent, inline } from "@agboss/core";
 import { CHAT_MODEL } from "../../model-providers/models.js";
 import { ApprovedChargeTool } from "../../tools/approved-charge.tool.js";
 
@@ -6,7 +6,7 @@ import { ApprovedChargeTool } from "../../tools/approved-charge.tool.js";
 @Agent({
   name: "approval-agent",
   description: "Charges a large order once the customer approves it",
-  prompt: "Charge the order with approved-charge-tool; it waits for the customer's approval.",
+  prompt: inline("Charge the order with approved-charge-tool; it waits for the customer's approval."),
   model: CHAT_MODEL,
   tools: [ApprovedChargeTool],
 })

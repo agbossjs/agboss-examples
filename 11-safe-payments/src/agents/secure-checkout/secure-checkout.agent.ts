@@ -1,4 +1,4 @@
-import { Agent } from "@agboss/core";
+import { Agent, inline } from "@agboss/core";
 import { CHAT_MODEL } from "../../model-providers/models.js";
 import { ConfirmSecurePaymentTool } from "../../tools/confirm-secure-payment.tool.js";
 import { CreateSecurePaymentTool } from "../../tools/create-secure-payment.tool.js";
@@ -7,7 +7,7 @@ import { CreateSecurePaymentTool } from "../../tools/create-secure-payment.tool.
 @Agent({
   name: "secure-checkout-agent",
   description: "Takes a 3DS payment",
-  prompt: "Create the payment, then confirm it once the customer completed 3DS.",
+  prompt: inline("Create the payment, then confirm it once the customer completed 3DS."),
   model: CHAT_MODEL,
   tools: [CreateSecurePaymentTool, ConfirmSecurePaymentTool],
 })

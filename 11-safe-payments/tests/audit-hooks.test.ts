@@ -39,8 +39,8 @@ describe("agbossjs/agboss#889 AC4: the audit log's four hooks", () => {
       // the thawed zombie stopped at its fence: no failure, no undo — a hand-over
       expect(linesOf("hand-over ")).not.toEqual([]);
       expect(linesOf("hand-over ")[0]).toMatch(/^hand-over (lease-lost|fenced) at \w+: /u);
-      // the booking: a fenced effect that ran once, under the new holder's lease
-      expect(linesOf("fenced effect ")).toEqual(expect.arrayContaining([expect.stringMatching(/ ran at token /u)]));
+      // the booking: an idempotent write that ran once, under the new holder's lease
+      expect(linesOf("idempotent write ")).toEqual(expect.arrayContaining([expect.stringMatching(/ ran at token /u)]));
       // the charge: its intent recorded before anything left, then sent and answered
       expect(linesOf("outbound call ")).toEqual(
         expect.arrayContaining([

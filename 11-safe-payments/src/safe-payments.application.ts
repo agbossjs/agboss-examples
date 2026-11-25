@@ -1,25 +1,12 @@
-import {
-  Application,
-  SqliteCheckpointSaver,
-  SqliteConnection,
-  SqliteCostLedgerRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionRecordRepository,
-  SqliteExecutionTreeRepository,
-  SqliteFencedEffectRepository,
-  SqliteOutboundCallRepository,
-  SqlitePausedExecutionRepository,
-} from "@agboss/core";
+import { Application } from "@agboss/core";
+import { AppEnvironment } from "./environments/app.environment.js";
 import { PaymentsApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { PaymentsExecutionBudget } from "./budgets/execution.budget.js";
 import { PaymentsTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { RightPaymentOperations } from "./payments/right-payment-operations.js";
-import { OrderBookRepository } from "./repositories/order-book.repository.js";
+import { SafePaymentsDatabaseStorage } from "./storages/safe-payments.database-storage.js";
 import { PaymentAuditObserver } from "./observers/payment-audit.observer.js";
 import { OnCallLogService } from "./services/on-call-log.service.js";
-import { OrderBookService } from "./services/order-book.service.js";
-import { StubGatewayService } from "./services/stub-gateway.service.js";
 import { ApprovalInboxChannel } from "./channels/approval-inbox.channel.js";
 import { AwaitedOutcomeChannel } from "./channels/awaited-outcome.channel.js";
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
@@ -50,38 +37,28 @@ export const SAFE_PAYMENTS_WORKFLOWS = [
 
 export const SAFE_PAYMENTS_BUDGETS = [PaymentsApplicationDailyBudget, PaymentsTenantDailyBudget, PaymentsExecutionBudget];
 
-/** What the instance is built from: the money's one service, the shop's books, every store on SQLite. */
+/** What the instance is built from: the money's one service, the shop's books (the stores are `SafePaymentsDatabaseStorage`'s). */
 export const SAFE_PAYMENTS_PROVIDERS = [
   OpenRouterModelProvider, // never called: every model turn is scripted
-  ApprovalInboxChannel,
-  AwaitedOutcomeChannel,
   RightPaymentOperations,
-  StubGatewayService,
-  OrderBookService,
-  OrderBookRepository,
   OnCallLogService, // where PaymentAuditObserver writes (agbossjs/agboss#889)
-  SqliteCheckpointSaver,
-  SqliteExecutionRecordRepository,
-  SqlitePausedExecutionRepository,
-  SqliteCostLedgerRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionTreeRepository,
-  SqliteFencedEffectRepository, // the order rows, once per business key (#500, #508)
-  SqliteOutboundCallRepository, // every money-moving call: an intent before it (#505)
-  SqliteConnection, // the file's one connection, for the order rows too
 ];
+
+/** The two ways a paused payment is answered (PS11, PS21): the customer's inbox, the 3DS outcome. */
+export const SAFE_PAYMENTS_CHANNELS = [ApprovalInboxChannel, AwaitedOutcomeChannel];
 
 /**
  * A shop that takes payments through the stub gateway, on SQLite — every store on one file, which
  * every instance (and every process of PS2 / PS5) shares. `RightPaymentOperations` moves the money;
- * a test swaps it for a wrong version (`override(PaymentOperations, …)`) or for yours.
+ * a test swaps it for a wrong version (`services: [Wrong…]`) or for yours.
  */
 @Application({
   name: "safe-payments-application",
   version: "1.0.0",
   environment: AppEnvironment,
-  piiKeyField: "piiPseudonymKey",
-  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
+  storage: SafePaymentsDatabaseStorage, // with the idempotency secret: agbossjs/agboss#825, business-key fingerprints
+  modelProvider: OpenRouterModelProvider,
+  channels: SAFE_PAYMENTS_CHANNELS,
   workflows: SAFE_PAYMENTS_WORKFLOWS,
   budgets: SAFE_PAYMENTS_BUDGETS,
   providers: SAFE_PAYMENTS_PROVIDERS,

@@ -94,7 +94,7 @@ as most clients do, so a frozen holder's request still goes out when it wakes.
 - **PS7 — the model calls the charge tool twice** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps7-the-model-calls-the-charge-tool-twice)).
   A scripted model calls the charge tool twice in one turn, once in the next, and once with
   another amount. Wrong: keyed by the step — four charges. Right: keyed by the order — one charge,
-  the rest `Joined` or `Replayed`, the other amount refused (`fenced-effect.business-key-conflict`).
+  the rest `Joined` or `Replayed`, the other amount refused (`idempotency.key-conflict`).
 - **PS8 — two executions for one order** ([Wiki](https://github.com/agbossjs/agboss/wiki/Payment-scenarios#ps8-two-executions-for-one-order)).
   The first's charge is still at the stub when a second execution for the same order starts on
   the other instance. Wrong: step keys — two charges. Right: the second finds the call in flight

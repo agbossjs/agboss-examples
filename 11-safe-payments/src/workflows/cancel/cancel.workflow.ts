@@ -1,7 +1,5 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { CancelOrderAction } from "../../actions/cancel-order.action.js";
-import { DispositionRequestDto } from "../../dto/disposition-request.dto.js";
-import { MovementDto } from "../../dto/movement.dto.js";
 import { CancelWorkflowFinish } from "./cancel.workflow-finish.js";
 import { CancelWorkflowStart } from "./cancel.workflow-start.js";
 
@@ -9,11 +7,10 @@ import { CancelWorkflowStart } from "./cancel.workflow-start.js";
 @Workflow({
   name: "cancel-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(CancelWorkflowStart)
-      .returns(DispositionRequestDto)
+    onStart(CancelWorkflowStart)
       .toAction(CancelOrderAction)
-      .returns(MovementDto)
       .toFinish(CancelWorkflowFinish),
   ],
 })

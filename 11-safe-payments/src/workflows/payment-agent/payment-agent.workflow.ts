@@ -1,5 +1,4 @@
-import { Workflow, start } from "@agboss/core";
-import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { PaymentAgent } from "../../agents/payment/payment.agent.js";
 import { PaymentAgentWorkflowFinish } from "./payment-agent.workflow-finish.js";
 import { PaymentAgentWorkflowStart } from "./payment-agent.workflow-start.js";
@@ -8,9 +7,9 @@ import { PaymentAgentWorkflowStart } from "./payment-agent.workflow-start.js";
 @Workflow({
   name: "payment-agent-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(PaymentAgentWorkflowStart)
-      .returns(WorkflowStartTextDto)
+    onStart(PaymentAgentWorkflowStart)
       .toAgent(PaymentAgent)
       .toFinish(PaymentAgentWorkflowFinish),
   ],

@@ -127,7 +127,7 @@ async function reconciledAfterADay(
  * reference — one charge. (d) A gateway whose only lookup is the replay (`NoLookup`): the call
  * declares its `notSent()` a replay with the key's retention (`NotSentTrust.KeyReplay`, #658, #795),
  * and a `notSent()` past it is never sent —
- * `OutboundCallUnreconciledError`, a person decides.
+ * `OutboundCallError.Unreconciled`, a person decides.
  */
 export const ps17: PaymentScenario = {
   id: "ps17",

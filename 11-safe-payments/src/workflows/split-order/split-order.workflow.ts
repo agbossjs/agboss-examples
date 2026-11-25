@@ -1,9 +1,7 @@
-import { Workflow, listOf, start, toFinish } from "@agboss/core";
+import { Workflow, onStart, toAction, Ttl } from "@agboss/core";
+import { RefuseSplitAction } from "../../actions/refuse-split.action.js";
 import { SummarizeSplitAction } from "../../actions/summarize-split.action.js";
 import { WalletChargeAction } from "../../actions/wallet-charge.action.js";
-import { PaymentDto } from "../../dto/payment.dto.js";
-import { SplitSummaryDto } from "../../dto/split-summary.dto.js";
-import { WalletDrawDto } from "../../dto/wallet-draw.dto.js";
 import { WalletInsufficientError } from "../../payments/payment-operations.js";
 import { SplitOrderRefusedWorkflowFinish } from "./split-order-refused.workflow-finish.js";
 import { SplitOrderWorkflowFinish } from "./split-order.workflow-finish.js";
@@ -17,15 +15,14 @@ import { SplitOrderWorkflowStart } from "./split-order.workflow-start.js";
 @Workflow({
   name: "split-order-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(SplitOrderWorkflowStart)
-      .returns(listOf(WalletDrawDto))
-      .toParallelActions(WalletChargeAction, { maxItems: 4 })
+    onStart(SplitOrderWorkflowStart)
+      .forEachItem(toAction(WalletChargeAction), { takeFirst: 4 })
       .join()
-      .onJoinError(WalletInsufficientError, toFinish(SplitOrderRefusedWorkflowFinish))
-      .returns(listOf(PaymentDto))
+      .onError(WalletInsufficientError, toAction(RefuseSplitAction)
+.toFinish(SplitOrderRefusedWorkflowFinish))
       .toAction(SummarizeSplitAction)
-      .returns(SplitSummaryDto)
       .toFinish(SplitOrderWorkflowFinish),
   ],
 })

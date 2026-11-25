@@ -9,6 +9,6 @@ import { StockReservationDto } from "../dto/stock-reservation.dto.js";
 })
 export class ReleaseStockAction implements ActionHandler<ReleaseStockAction> {
   async execute(input: InputOf<ReleaseStockAction>): Promise<void> {
-    await Promise.resolve(input.reservation.value.reservationId);
+    await Promise.resolve(input.reservation.reservationId);
   }
 }

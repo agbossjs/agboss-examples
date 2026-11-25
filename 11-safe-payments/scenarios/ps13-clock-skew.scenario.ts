@@ -12,7 +12,7 @@ import type { PaymentScenario } from "./scenario.types.js";
  * when the customer's retry reaches instance 2. Wrong: a homemade lock row per order, expiring by
  * each instance's own clock — instance 2 sees it expired and charges too. Right: the lease and the
  * intent are decided by the store's clock, not the caller's: instance 2 finds the call in flight
- * under a live lease (`OutboundCallInFlightError`).
+ * under a live lease (`OutboundCallError.InFlight`).
  */
 export const ps13: PaymentScenario = {
   id: "ps13",

@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import type { StubCharge } from "../../stub/stub-gateway.types.js";
 import type { WalletCharge } from "../payment-operations.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-payment-operations.js";
@@ -9,8 +9,8 @@ import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-paymen
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class WalletUncheckedPaymentOperations extends RightPaymentOperations {
-  override chargeWallet(executionContext: ExecutionContext, charge: WalletCharge): Promise<StubCharge> {
-    return this.charge(executionContext, {
+  override chargeWallet(charge: WalletCharge): Promise<StubCharge> {
+    return this.charge({
       orderId: charge.orderId,
       amountCents: charge.amountCents,
       paymentMethod: "card_ok",

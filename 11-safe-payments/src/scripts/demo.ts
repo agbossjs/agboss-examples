@@ -11,7 +11,7 @@ import { recordedRows, tableOf, verdictOf } from "./report.js";
  * expected. The two real-process runs (PS2, PS5 `SIGKILL`ed, about a minute each) run with
  * `--processes`; without it, their last recorded result is printed when there is one.
  */
-const root = join(import.meta.dirname, "..");
+const root = join(import.meta.dirname, "..", "..");
 const rowsDir = join(root, ".artifacts", "rows");
 const withProcesses = process.argv.includes("--processes");
 
@@ -25,6 +25,8 @@ if (withProcesses) files.push("tests/processes/");
 const vitest = await startVitest("test", files, {
   root,
   watch: false,
+  maxWorkers: 2,
+  fileParallelism: false,
   reporters: ["dot"],
   ...(withProcesses ? {} : { exclude: ["tests/processes/**", "node_modules/**"] }),
 });

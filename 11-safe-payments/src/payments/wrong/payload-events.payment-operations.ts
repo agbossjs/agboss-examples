@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import type { StubEvent } from "../../stub/stub-gateway.types.js";
 import type { AppliedEvent } from "../payment-operations.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations, firstShipmentOf } from "../right-payment-operations.js";
@@ -10,7 +10,7 @@ import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations, firstShipmentOf } from
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class PayloadEventsPaymentOperations extends RightPaymentOperations {
-  override async applyEvent(executionContext: ExecutionContext, event: StubEvent): Promise<AppliedEvent> {
+  override async applyEvent(event: StubEvent): Promise<AppliedEvent> {
     const client = this.stubGatewayService.client();
     const charge = await client.getCharge(event.chargeId);
     switch (event.type) {

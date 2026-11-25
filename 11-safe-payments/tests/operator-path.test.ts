@@ -8,7 +8,7 @@ import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workfl
 import { CaptureWorkflowStart } from "../src/workflows/capture/capture.workflow-start.js";
 
 /**
- * agbossjs/agboss#890 AC3 — the operator's path, `.onError(OutboundCallUnreconciledError, …)`: the
+ * agbossjs/agboss#890 AC3 — the operator's path, `.onError(OutboundCallError.Unreconciled, …)`: the
  * gateway captures a shipment and its answer is lost. The capture is never sent again — there is
  * no lookup by shipment, `reconcile` says `unknown` — and instead of failing, the retried capture
  * ends at its own finish (`capture-held-workflow-finish`), nothing booked, its intent pending for a
@@ -40,13 +40,13 @@ const row: ScenarioRow = {
 
 describe("AC3: an unreconciled capture goes to an operator, never sent again", () => {
   scenarioTest(row, Variant.Right)(
-    "AC3: .onError(OutboundCallUnreconciledError, …) ends the capture at the operator's finish; the gateway captured once, nothing booked",
+    "AC3: .onError(OutboundCallError.Unreconciled, …) ends the capture at the operator's finish; the gateway captured once, nothing booked",
     (outcome) => {
       expect([outcome.charges, outcome.captures]).toEqual([1, 1]);
       expect(outcome.orderStatus).not.toBe("captured");
       expect(outcome.notes.slice(1)).toEqual([
         "finish: capture-held-workflow-finish",
-        "handled: step.action ← outbound-call.unreconciled",
+        "handled: outbound-call.unreconciled",
         "pending: capture",
       ]);
     },

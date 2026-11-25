@@ -23,5 +23,5 @@ export function mismatchesOf(outcome: ScenarioOutcome, expected: Expectation): s
 export function assertShows(outcome: ScenarioOutcome, expected: Expectation): void {
   const mismatches = mismatchesOf(outcome, expected);
   if (mismatches.length > 0)
-    throw new Error(`${outcome.row} (${outcome.variant}) is NOT as expected:\n  ${mismatches.join("\n  ")}`);
+    throw new Error(`${outcome.row} (${outcome.variant}) is NOT as expected:\n  ${mismatches.join("\n  ")}\n  notes: ${outcome.notes.join("; ")}`);
 }

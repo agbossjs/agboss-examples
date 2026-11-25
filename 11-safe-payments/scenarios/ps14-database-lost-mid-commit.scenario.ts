@@ -1,5 +1,3 @@
-import { OutboundCallRepository } from "@agboss/core";
-import { override } from "@agboss/core/testing";
 import { RetryAfterStoreErrorPaymentOperations } from "../src/payments/wrong/retry-after-store-error.payment-operations.js";
 import { StubLevel } from "../src/stub/stub-gateway.types.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
@@ -22,7 +20,7 @@ export const ps14: PaymentScenario = {
       row: "ps14",
       level: StubLevel.Full,
       wrongOperations: RetryAfterStoreErrorPaymentOperations,
-      overrides: [override(OutboundCallRepository, LostAfterCommitOutboundCallRepository)],
+      services: [LostAfterCommitOutboundCallRepository],
       wrong: { charges: 2, lost: 2500 },
       right: { charges: 1, lost: 0, orderStatus: "paid" },
       async run(context) {

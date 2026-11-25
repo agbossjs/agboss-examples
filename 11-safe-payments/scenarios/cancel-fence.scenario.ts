@@ -1,7 +1,4 @@
-import { OutboundCallRepository, SqliteFencedEffectRepository } from "@agboss/core";
-import { override } from "@agboss/core/testing";
 import { PlainCallPaymentOperations } from "../src/payments/wrong/plain-call.payment-operations.js";
-import { StubGatewayService } from "../src/services/stub-gateway.service.js";
 import { StubLevel } from "../src/stub/stub-gateway.types.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
 import { orderOf } from "./checkout.js";
@@ -19,9 +16,9 @@ import { outcomeOf, settled, until } from "./outcome.js";
 import { Variant, type PaymentScenario, type ScenarioContext, type ScenarioOutcome } from "./scenario.types.js";
 
 const witnesses = [
-  override(OutboundCallRepository, WitnessOutboundCallRepository),
-  override(SqliteFencedEffectRepository, WitnessFencedEffectRepository),
-  override(StubGatewayService, GatedStubGatewayService),
+  WitnessOutboundCallRepository,
+  WitnessFencedEffectRepository,
+  GatedStubGatewayService,
 ];
 
 /** The calls the order's tree recorded, by the store's own intents (`app.outboundCallsOf`). */
@@ -81,7 +78,7 @@ export const cancelFence: PaymentScenario = {
       row: "cancel before the intent",
       level: StubLevel.Full,
       wrongOperations: PlainCallPaymentOperations,
-      overrides: witnesses,
+      services: witnesses,
       wrong: { charges: 1, lost: 2500 },
       right: {
         charges: 0,
@@ -99,7 +96,7 @@ export const cancelFence: PaymentScenario = {
     {
       row: "cancel after the send is claimed",
       level: StubLevel.Full,
-      overrides: witnesses,
+      services: witnesses,
       right: {
         charges: 1,
         refunds: 0,

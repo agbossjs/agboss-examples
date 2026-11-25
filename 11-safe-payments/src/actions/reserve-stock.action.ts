@@ -12,6 +12,6 @@ import { ReleaseStockAction } from "./release-stock.action.js";
 })
 export class ReserveStockAction implements ActionHandler<ReserveStockAction> {
   execute(input: InputOf<ReserveStockAction>): Promise<OutputOf<ReserveStockAction>> {
-    return Promise.resolve({ reservationId: `reservation-${input.order.value.orderId}` });
+    return Promise.resolve({ reservationId: `reservation-${input.order.orderId}` });
   }
 }

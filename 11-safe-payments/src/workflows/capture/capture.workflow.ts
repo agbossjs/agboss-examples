@@ -1,7 +1,5 @@
-import { OutboundCallUnreconciledError, Workflow, start, toFinish } from "@agboss/core";
+import { OutboundCallError, Workflow, onStart, Ttl, toFinish } from "@agboss/core";
 import { CaptureShipmentAction } from "../../actions/capture-shipment.action.js";
-import { CaptureRequestDto } from "../../dto/capture-request.dto.js";
-import { MovementDto } from "../../dto/movement.dto.js";
 import { CaptureHeldWorkflowFinish } from "./capture-held.workflow-finish.js";
 import { CaptureWorkflowFinish } from "./capture.workflow-finish.js";
 import { CaptureWorkflowStart } from "./capture.workflow-start.js";
@@ -15,12 +13,11 @@ import { CaptureWorkflowStart } from "./capture.workflow-start.js";
 @Workflow({
   name: "capture-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(CaptureWorkflowStart)
-      .returns(CaptureRequestDto)
+    onStart(CaptureWorkflowStart)
       .toAction(CaptureShipmentAction)
-      .onError(OutboundCallUnreconciledError, toFinish(CaptureHeldWorkflowFinish))
-      .returns(MovementDto)
+      .onError(OutboundCallError.Unreconciled, toFinish(CaptureHeldWorkflowFinish))
       .toFinish(CaptureWorkflowFinish),
   ],
 })

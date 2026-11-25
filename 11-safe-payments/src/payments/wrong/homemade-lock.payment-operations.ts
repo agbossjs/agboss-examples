@@ -2,11 +2,10 @@ import { randomUUID } from "node:crypto";
 import {
   ApplicationContext,
   Clock,
-  ExecutionContext,
   Injectable,
-  OutboundCalls,
-  SqliteConnection,
+  Idempotency,
 } from "@agboss/core";
+import { SqliteConnection } from "@agboss/core/stores";
 import { OrderBookRepository } from "../../repositories/order-book.repository.js";
 import { OrderBookService } from "../../services/order-book.service.js";
 import { StubGatewayService } from "../../services/stub-gateway.service.js";
@@ -22,11 +21,11 @@ const LOCK_FOR = 30_000;
  * whose clock runs 300 s ahead sees a live lock as expired, takes it, and charges too.
  */
 @Injectable({
-  deps: [OutboundCalls, StubGatewayService, OrderBookService, OrderBookRepository, Clock, SqliteConnection, ApplicationContext],
+  deps: [Idempotency, StubGatewayService, OrderBookService, OrderBookRepository, Clock, SqliteConnection, ApplicationContext],
 })
 export class HomemadeLockPaymentOperations extends RightPaymentOperations {
   constructor(
-    outboundCalls: OutboundCalls,
+    idempotency: Idempotency,
     stubGatewayService: StubGatewayService,
     orderBookService: OrderBookService,
     orderBookRepository: OrderBookRepository,
@@ -34,14 +33,14 @@ export class HomemadeLockPaymentOperations extends RightPaymentOperations {
     private readonly sqliteConnection: SqliteConnection,
     private readonly applicationContext: ApplicationContext,
   ) {
-    super(outboundCalls, stubGatewayService, orderBookService, orderBookRepository);
+    super(idempotency, stubGatewayService, orderBookService, orderBookRepository);
     sqliteConnection.ensureSchema(
       "homemade-locks",
       "CREATE TABLE IF NOT EXISTS homemade_locks (order_id TEXT PRIMARY KEY, holder TEXT NOT NULL, expires_at INTEGER NOT NULL);",
     );
   }
 
-  override charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
+  override charge(order: ChargeOrder): Promise<StubCharge> {
     const now = this.clock.now().getTime(); // this instance's own wall clock: the mistake
     const taken = this.sqliteConnection.database
       .prepare(

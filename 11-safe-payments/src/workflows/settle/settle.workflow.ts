@@ -1,7 +1,5 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { SettleAuthorizationAction } from "../../actions/settle-authorization.action.js";
-import { DispositionRequestDto } from "../../dto/disposition-request.dto.js";
-import { MovementDto } from "../../dto/movement.dto.js";
 import { SettleWorkflowFinish } from "./settle.workflow-finish.js";
 import { SettleWorkflowStart } from "./settle.workflow-start.js";
 
@@ -9,11 +7,10 @@ import { SettleWorkflowStart } from "./settle.workflow-start.js";
 @Workflow({
   name: "settle-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(SettleWorkflowStart)
-      .returns(DispositionRequestDto)
+    onStart(SettleWorkflowStart)
       .toAction(SettleAuthorizationAction)
-      .returns(MovementDto)
       .toFinish(SettleWorkflowFinish),
   ],
 })

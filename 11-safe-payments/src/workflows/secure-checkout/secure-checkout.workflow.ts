@@ -1,5 +1,4 @@
-import { Workflow, start } from "@agboss/core";
-import { WorkflowStartTextDto } from "@agboss/core/dto";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { SecureCheckoutAgent } from "../../agents/secure-checkout/secure-checkout.agent.js";
 import { SecureCheckoutWorkflowFinish } from "./secure-checkout.workflow-finish.js";
 import { SecureCheckoutWorkflowStart } from "./secure-checkout.workflow-start.js";
@@ -8,9 +7,9 @@ import { SecureCheckoutWorkflowStart } from "./secure-checkout.workflow-start.js
 @Workflow({
   name: "secure-checkout-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(SecureCheckoutWorkflowStart)
-      .returns(WorkflowStartTextDto)
+    onStart(SecureCheckoutWorkflowStart)
       .toAgent(SecureCheckoutAgent)
       .toFinish(SecureCheckoutWorkflowFinish),
   ],

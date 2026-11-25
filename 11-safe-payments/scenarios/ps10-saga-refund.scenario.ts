@@ -1,5 +1,3 @@
-import { override } from "@agboss/core/testing";
-import { SqliteFencedEffectRepository } from "@agboss/core";
 import { PlainRefundPaymentOperations } from "../src/payments/wrong/plain-refund.payment-operations.js";
 import { StubLevel } from "../src/stub/stub-gateway.types.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
@@ -25,7 +23,7 @@ export const ps10: PaymentScenario = {
       level: StubLevel.Full,
       refundRow: true,
       wrongOperations: PlainRefundPaymentOperations,
-      overrides: [override(SqliteFencedEffectRepository, GatedFencedEffectRepository)],
+      services: [GatedFencedEffectRepository],
       wrong: { charges: 1, refunds: 2, amountRefunded: 4000, lost: 2000 },
       right: { charges: 1, refunds: 1, amountRefunded: 2000, lost: 0, orderStatus: "refunded" },
       async run(context) {

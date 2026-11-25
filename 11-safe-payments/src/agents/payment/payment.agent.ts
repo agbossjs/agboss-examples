@@ -1,4 +1,4 @@
-import { Agent } from "@agboss/core";
+import { Agent, inline } from "@agboss/core";
 import { CHAT_MODEL } from "../../model-providers/models.js";
 import { ChargeOrderTool } from "../../tools/charge-order.tool.js";
 
@@ -6,7 +6,7 @@ import { ChargeOrderTool } from "../../tools/charge-order.tool.js";
 @Agent({
   name: "payment-agent",
   description: "Takes the customer's payment",
-  prompt: "Charge the customer's order with charge-order-tool, then say it is paid.",
+  prompt: inline("Charge the customer's order with charge-order-tool, then say it is paid."),
   model: CHAT_MODEL,
   tools: [ChargeOrderTool],
 })

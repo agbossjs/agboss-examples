@@ -1,4 +1,4 @@
-import { Injectable, type ExecutionContext } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import type { StubCharge, StubEvent, StubMovement } from "../stub/stub-gateway.types.js";
 
 /** An order to charge. */
@@ -69,54 +69,54 @@ export class PaymentDeclinedError extends Error {
 @Injectable()
 export class PaymentOperations {
   /** Charges (or authorizes) an order. */
-  charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
-    return notWired(executionContext, order);
+  charge(order: ChargeOrder): Promise<StubCharge> {
+    return notWired(order);
   }
 
   /** Draws one part of a split order on the customer's wallet and charges it (PS9). */
-  chargeWallet(executionContext: ExecutionContext, charge: WalletCharge): Promise<StubCharge> {
-    return notWired(executionContext, charge);
+  chargeWallet(charge: WalletCharge): Promise<StubCharge> {
+    return notWired(charge);
   }
 
   /** Confirms a charge that required an action (the 3DS step, PS21). */
-  confirm(executionContext: ExecutionContext, order: ChargeOrder, chargeId: string): Promise<StubCharge> {
-    return notWired(executionContext, { order, chargeId });
+  confirm(order: ChargeOrder, chargeId: string): Promise<StubCharge> {
+    return notWired({ order, chargeId });
   }
 
   /** Captures one shipment of an authorization (PS18). */
-  capture(executionContext: ExecutionContext, capture: PartialCapture): Promise<StubMovement> {
-    return notWired(executionContext, capture);
+  capture(capture: PartialCapture): Promise<StubMovement> {
+    return notWired(capture);
   }
 
   /** Captures a whole authorization: one of its two dispositions (PS20). */
-  settle(executionContext: ExecutionContext, chargeId: string, amountCents: number): Promise<StubMovement> {
-    return notWired(executionContext, { chargeId, amountCents });
+  settle(chargeId: string, amountCents: number): Promise<StubMovement> {
+    return notWired({ chargeId, amountCents });
   }
 
   /** Voids an authorization: its other disposition (PS20). */
-  void(executionContext: ExecutionContext, chargeId: string): Promise<StubMovement> {
-    return notWired(executionContext, chargeId);
+  void(chargeId: string): Promise<StubMovement> {
+    return notWired(chargeId);
   }
 
   /** Refunds a payment (PS10, PS19). */
-  refund(executionContext: ExecutionContext, refund: PaymentRefund): Promise<StubMovement> {
-    return notWired(executionContext, refund);
+  refund(refund: PaymentRefund): Promise<StubMovement> {
+    return notWired(refund);
   }
 
   /**
    * Applies a gateway event: captures on `charge.authorized` (the first shipment, PS15) and says
    * which status to book (PS16).
    */
-  applyEvent(executionContext: ExecutionContext, event: StubEvent): Promise<AppliedEvent> {
-    return notWired(executionContext, event);
+  applyEvent(event: StubEvent): Promise<AppliedEvent> {
+    return notWired(event);
   }
 }
 
-function notWired(executionContext: ExecutionContext, what: unknown): Promise<never> {
+function notWired(what: unknown): Promise<never> {
   return Promise.reject(
     new Error(
       `PaymentOperations is the contract: list RightPaymentOperations (or yours) in the application ` +
-        `(asked by ${executionContext.step.idempotencyKey} for ${JSON.stringify(what)})`,
+        `(asked for ${JSON.stringify(what)})`,
     ),
   );
 }

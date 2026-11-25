@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import { StubGatewayError } from "../../stub/stub-gateway.client.js";
 import type { StubMovement } from "../../stub/stub-gateway.types.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-payment-operations.js";
@@ -10,11 +10,11 @@ import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-paymen
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class BothDispositionsPaymentOperations extends RightPaymentOperations {
-  override settle(executionContext: ExecutionContext, chargeId: string, amountCents: number): Promise<StubMovement> {
+  override settle(chargeId: string, amountCents: number): Promise<StubMovement> {
     return this.stubGatewayService.client().capture(chargeId, amountCents);
   }
 
-  override async void(executionContext: ExecutionContext, chargeId: string): Promise<StubMovement> {
+  override async void(chargeId: string): Promise<StubMovement> {
     try {
       return await this.stubGatewayService.client().void(chargeId);
     } catch (error) {

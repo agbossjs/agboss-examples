@@ -1,6 +1,5 @@
-import type { Class } from "@agboss/core";
+import type { Class, ServiceEntry } from "@agboss/core";
 import type {
-  Override,
   TestApp,
   TestInstanceOptions,
   TestLeases,
@@ -86,12 +85,12 @@ export interface ScenarioRow {
   readonly right: Expectation;
   /** None when the scenario has no wrong version (the gateway's side, PS6, PS23). */
   readonly wrong?: Expectation;
-  /** The wrong version: one class overriding `PaymentOperations`. */
+  /** The wrong version: one class extending `PaymentOperations`. */
   readonly wrongOperations?: Class<PaymentOperations>;
   /** The row's two instances, each its own settings (agbossjs/agboss#831: a clock skew); default two plain ones. */
   readonly instances?: readonly TestInstanceOptions[];
   /** The scenario's own seams (its gates, a store that fails): never the application's code. */
-  readonly overrides?: readonly Override[];
+  readonly services?: readonly ServiceEntry[];
   /** The right version, when it is not `RightPaymentOperations` (PS17 d: a replay-only lookup). */
   readonly rightOperations?: Class<PaymentOperations>;
   /** Whether a refund moves in this row (the refund rows of "check your own gateway call"). */

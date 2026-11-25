@@ -1,7 +1,5 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { RefundPaymentAction } from "../../actions/refund-payment.action.js";
-import { RefundRequestDto } from "../../dto/refund-request.dto.js";
-import { MovementDto } from "../../dto/movement.dto.js";
 import { RefundWorkflowFinish } from "./refund.workflow-finish.js";
 import { RefundWorkflowStart } from "./refund.workflow-start.js";
 
@@ -9,11 +7,10 @@ import { RefundWorkflowStart } from "./refund.workflow-start.js";
 @Workflow({
   name: "refund-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(RefundWorkflowStart)
-      .returns(RefundRequestDto)
+    onStart(RefundWorkflowStart)
       .toAction(RefundPaymentAction)
-      .returns(MovementDto)
       .toFinish(RefundWorkflowFinish),
   ],
 })

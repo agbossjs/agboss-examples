@@ -22,7 +22,7 @@ async function outcomeArrived(context: ScenarioContext, chargeId: string, by: st
   if (context.variant === Variant.Wrong)
     await settled(new StubGatewayClient(context.stub.baseUrl).confirm(chargeId));
   const [pauseId] = context.app(1).resolve(OrderBookRepository).awaitedOutcomes("default", payment.orderId);
-  return settled(context.app(1).resume({ pauseId: pauseId ?? "", decision: { approved: true } }, { answeredBy: by }));
+  return settled(context.app(1).resume({ pauseId: pauseId ?? "", decision: { approved: true } }, { actor: { id: by } }));
 }
 
 /**

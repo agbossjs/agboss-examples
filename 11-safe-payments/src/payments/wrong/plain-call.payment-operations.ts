@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import type { StubCharge } from "../../stub/stub-gateway.types.js";
 import type { ChargeOrder } from "../payment-operations.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-payment-operations.js";
@@ -10,7 +10,7 @@ import { chargeRequestOf } from "./new-key-per-attempt.payment-operations.js";
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class PlainCallPaymentOperations extends RightPaymentOperations {
-  override charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
+  override charge(order: ChargeOrder): Promise<StubCharge> {
     return this.stubGatewayService.client().createCharge(chargeRequestOf(order));
   }
 }

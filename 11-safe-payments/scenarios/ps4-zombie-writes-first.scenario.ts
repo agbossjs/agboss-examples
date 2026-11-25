@@ -1,7 +1,4 @@
-import { override } from "@agboss/core/testing";
-import { OutboundCallRepository } from "@agboss/core";
 import { HomemadeFenceCheckPaymentOperations } from "../src/payments/wrong/homemade-fence-check.payment-operations.js";
-import { StubGatewayService } from "../src/services/stub-gateway.service.js";
 import { StubLevel } from "../src/stub/stub-gateway.types.js";
 import { CheckoutWorkflowStart } from "../src/workflows/checkout/checkout.workflow-start.js";
 import { orderOf } from "./checkout.js";
@@ -22,7 +19,7 @@ import { bookedAs, frozenPastLease, thawed } from "./steps.js";
 /**
  * PS4 — the zombie reaches the write first: instance 1 checked its lease and froze before its
  * write; instance 2 took the tree over and is itself held before its write; instance 1 wakes and
- * writes first. Wrong: a homemade check (`fence.assertHeld()`) and then the call — the check passed
+ * writes first. Wrong: a homemade check (`signal.throwIfAborted()`) and then the call — the check passed
  * before the freeze, two charges. Right: the outbound-call store checks the lease in the write's own
  * transaction (`LeaseCheck.Atomic`): the zombie's intent is refused (`ExecutionFencedError`) before
  * anything is sent, even though nobody wrote before it.
@@ -35,9 +32,9 @@ export const ps4: PaymentScenario = {
       row: "ps4",
       level: StubLevel.Full,
       wrongOperations: HomemadeFenceCheckPaymentOperations,
-      overrides: [
-        override(OutboundCallRepository, GatedOutboundCallRepository),
-        override(StubGatewayService, GatedStubGatewayService),
+      services: [
+        GatedOutboundCallRepository,
+        GatedStubGatewayService,
       ],
       wrong: { charges: 2, lost: 2500 },
       right: { charges: 1, lost: 0, orderStatus: "paid", notes: ["lease-lost"] },

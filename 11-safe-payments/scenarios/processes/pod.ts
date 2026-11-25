@@ -5,10 +5,10 @@ import { PodApplication } from "./pod.application.js";
 
 /**
  * One pod of the real-process scenarios (PS2, PS5): the application on the shared SQLite file
- * (`SAFE_PAYMENTS_SQLITE_PATH`), told over IPC what to execute. Its recovery sweep runs by itself,
+ * (`SQLITE_PATH`), told over IPC what to execute. Its recovery sweep runs by itself,
  * on real time — a lease of 30 s, a sweep every 30 s.
  */
-const app = await createApp(PodApplication, { env: "offline" });
+const app = await createApp(PodApplication, { env: "dev" });
 process.on("message", (message: { readonly execute?: CheckoutRequestDto }) => {
   const order = message.execute;
   if (order === undefined) return;

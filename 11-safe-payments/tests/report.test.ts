@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { ps1 } from "../scenarios/ps1-retry-after-timeout.scenario.js";
 import { stub, scenarioTest } from "../scenarios/run-scenario.js";
 import { Variant } from "../scenarios/scenario.types.js";
-import { tableOf, verdictOf } from "../src/report.js";
+import { tableOf, verdictOf } from "../src/scripts/report.js";
 
 /** AC1: the demo's table is the stub's own records, never the application's view. */
 describe("the report", () => {

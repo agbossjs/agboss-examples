@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ExecutionContext, Injectable } from "@agboss/core";
+import { Injectable } from "@agboss/core";
 import type { StubCharge } from "../../stub/stub-gateway.types.js";
 import type { ChargeOrder } from "../payment-operations.js";
 import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-payment-operations.js";
@@ -10,7 +10,7 @@ import { PAYMENT_OPERATIONS_DEPS, RightPaymentOperations } from "../right-paymen
  */
 @Injectable({ deps: PAYMENT_OPERATIONS_DEPS })
 export class NewKeyPerAttemptPaymentOperations extends RightPaymentOperations {
-  override charge(executionContext: ExecutionContext, order: ChargeOrder): Promise<StubCharge> {
+  override charge(order: ChargeOrder): Promise<StubCharge> {
     return this.stubGatewayService.client().createCharge(chargeRequestOf(order), {
       idempotencyKey: randomUUID(), // and no signal: a zombie's call still goes out
     });

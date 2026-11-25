@@ -1,19 +1,16 @@
 import {
   ApplicationContext,
-  FencedEffectSettings,
   Injectable,
-  SqliteConnection,
+  type InferEnv,
   SqliteFencedEffectRepository,
   SqliteOutboundCallRepository,
   StoreClock,
-  type EffectKey,
-  type FencedEffectOutcome,
   type FencedEffectWork,
+  type IdempotencyRunOutcome,
 } from "@agboss/core";
-import { ExecutionCancelFencedError } from "@agboss/core/stores";
-import type { DatabaseSync } from "node:sqlite";
+import { ExecutionCancelFencedError, SqliteConnection, type EffectKey } from "@agboss/core/stores";
 import type { TestApp } from "@agboss/core/testing";
-import { StubGatewayService } from "../src/services/stub-gateway.service.js";
+import { StubGatewayService, stubGatewayEnv } from "../src/services/stub-gateway.service.js";
 import { StubGatewayClient, type StubCallOptions } from "../src/stub/stub-gateway.client.js";
 import type { CreateChargeRequest, StubCharge, StubMovement } from "../src/stub/stub-gateway.types.js";
 
@@ -137,19 +134,22 @@ class GatedStubGatewayClient extends StubGatewayClient {
   }
 }
 
-/** `override(StubGatewayService, GatedStubGatewayService)`: the client behind its gates. */
-@Injectable({ deps: [ApplicationContext] })
+/** `services: [GatedStubGatewayService]`: the client behind its gates. */
+@Injectable({ deps: [stubGatewayEnv, ApplicationContext] })
 export class GatedStubGatewayService extends StubGatewayService {
-  constructor(private readonly context: ApplicationContext) {
-    super(context);
+  constructor(
+    stub: InferEnv<typeof stubGatewayEnv>,
+    private readonly context: ApplicationContext,
+  ) {
+    super(stub);
   }
 
   override client(): StubGatewayClient {
-    return new GatedStubGatewayClient(this.context.environment.stubGatewayUrl, this.context.instanceId);
+    return new GatedStubGatewayClient(this.stub.url, this.context.instanceId);
   }
 }
 
-/** `override(SqliteOutboundCallRepository, …)`: a gate before an intent is recorded (`record:<name>`). */
+/** `services: [GatedOutboundCallRepository]`: a gate before an intent is recorded (`record:<name>`). */
 @Injectable({ deps: [SqliteConnection, StoreClock, ApplicationContext] })
 export class GatedOutboundCallRepository extends SqliteOutboundCallRepository {
   constructor(
@@ -166,22 +166,21 @@ export class GatedOutboundCallRepository extends SqliteOutboundCallRepository {
   }
 }
 
-/** `override(SqliteFencedEffectRepository, …)`: a gate before a fenced effect (`effect:<name>`). */
-@Injectable({ deps: [SqliteConnection, StoreClock, FencedEffectSettings, ApplicationContext] })
+/** `services: [GatedFencedEffectRepository]`: a gate before a fenced effect (`effect:<name>`). */
+@Injectable({ deps: [SqliteConnection, StoreClock, ApplicationContext] })
 export class GatedFencedEffectRepository extends SqliteFencedEffectRepository {
   constructor(
     connection: SqliteConnection,
     clock: StoreClock,
-    settings: FencedEffectSettings,
     private readonly context: ApplicationContext,
   ) {
-    super(connection, clock, settings);
+    super(connection, clock);
   }
 
   override async runOnce<TResult>(
     key: EffectKey,
-    work: FencedEffectWork<DatabaseSync, TResult>,
-  ): Promise<FencedEffectOutcome<TResult>> {
+    work: FencedEffectWork<TResult>,
+  ): Promise<IdempotencyRunOutcome<TResult>> {
     await pass(`effect:${key.name}`, this.context.instanceId);
     return super.runOnce(key, work);
   }
@@ -193,7 +192,7 @@ export const instanceIdOf = (app: Pick<TestApp, "resolve">): string => app.resol
 /** PS14's fault: the next completion of an outbound call commits, then its connection is lost. */
 export const storeFaults = { lostAfterCommit: 0 };
 
-/** `override(SqliteOutboundCallRepository, …)`: a completion that commits and then throws (PS14). */
+/** `services: [GatedOutboundCallRepository]`: a completion that commits and then throws (PS14). */
 @Injectable({ deps: [SqliteConnection, StoreClock] })
 export class LostAfterCommitOutboundCallRepository extends SqliteOutboundCallRepository {
   override async markCompleted(...args: Parameters<SqliteOutboundCallRepository["markCompleted"]>): Promise<boolean> {
@@ -219,12 +218,12 @@ export class WitnessOutboundCallRepository extends GatedOutboundCallRepository {
 }
 
 /** The gated fenced-effect store that also notes the writes the cancel's fence refuses (`fenceRefusals`). */
-@Injectable({ deps: [SqliteConnection, StoreClock, FencedEffectSettings, ApplicationContext] })
+@Injectable({ deps: [SqliteConnection, StoreClock, ApplicationContext] })
 export class WitnessFencedEffectRepository extends GatedFencedEffectRepository {
   override async runOnce<TResult>(
     key: EffectKey,
-    work: FencedEffectWork<DatabaseSync, TResult>,
-  ): Promise<FencedEffectOutcome<TResult>> {
+    work: FencedEffectWork<TResult>,
+  ): Promise<IdempotencyRunOutcome<TResult>> {
     try {
       return await super.runOnce(key, work);
     } catch (error) {

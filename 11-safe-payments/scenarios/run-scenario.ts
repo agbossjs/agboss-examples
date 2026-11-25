@@ -1,10 +1,12 @@
+import "../src/scripts/offline-keys.js";
 import type { Class } from "@agboss/core";
-import { override, testWith } from "@agboss/core/testing";
+import { testWith } from "@agboss/core/testing";
 import { PaymentOperations } from "../src/payments/payment-operations.js";
 import { SafePaymentsApplication } from "../src/safe-payments.application.js";
 import { StubGateway } from "../src/stub/stub-gateway.js";
 import { mismatchesOf } from "./expect.js";
 import { resetGates } from "./gates.js";
+import { nextInstancesFile } from "./instances-file.js";
 import { recordRow } from "./report-rows.js";
 import {
   Variant,
@@ -14,17 +16,12 @@ import {
 
 /**
  * The shared harness: one stub gateway per test file (an ephemeral port on 127.0.0.1), the
- * application on two instances over one SQLite file (`env: "offline"`), the right wiring or a wrong
- * one (`override(PaymentOperations, …)`), and the outcome read from the stub's records.
+ * application on two instances over one SQLite file (`SQLITE_PATH`), the right wiring or a wrong
+ * one (`services: [Wrong…]`), and the outcome read from the stub's records.
  */
 export const stub = await StubGateway.start();
 process.env.STUB_GATEWAY_URL = stub.baseUrl;
 process.env.STUB_WEBHOOK_SECRET = stub.webhookSecret;
-// a synthetic key, the same on both instances (A8) — never a real one (R6)
-process.env.PII_PSEUDONYM_KEY ??= "safe-payments-offline-pseudonym-key-32b!";
-process.env.IDEMPOTENCY_KEY ??= "safe-payments-offline-idempotency-key";
-process.env.SAFE_PAYMENTS_UNUSED_MODEL_KEY ??=
-  "offline-no-model-is-ever-called";
 
 /** Which `PaymentOperations` a run uses: a row's version, or one given (yours). */
 export interface RunOptions {
@@ -44,13 +41,12 @@ export function scenarioTest(
   const test = testWith(SafePaymentsApplication, {
     // agbossjs/agboss#831: one entry per instance — a row's own (a clock skew), else two plain ones
     instances: row.instances ?? 2,
-    env: "offline",
     allowNetwork: ["localhost"], // the stub gateway on 127.0.0.1, nothing else
-    overrides: [
+    services: [
       ...(operations === undefined
         ? []
-        : [override(PaymentOperations, operations)]),
-      ...(row.overrides ?? []),
+        : [operations]),
+      ...(row.services ?? []),
     ],
   });
   return (name, check) => {
@@ -88,6 +84,7 @@ export function scenarioTest(
           });
         check(outcome);
       } finally {
+        nextInstancesFile();
         resetGates();
         stub.release();
         for (const each of apps) leases.thaw(each);

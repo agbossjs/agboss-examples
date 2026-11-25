@@ -1,5 +1,5 @@
-import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
-import { CheckoutApprovalChannel } from "../channels/checkout-approval.channel-role.js";
+import { Tool, type ToolHandler } from "@agboss/core";
+import { CheckoutApprovalToolApproval } from "../channels/checkout-approval.tool-approval.js";
 import { ChargeToolInputDto } from "../dto/charge-tool-input.dto.js";
 import { PaymentDto } from "../dto/payment.dto.js";
 import { PaymentOperations } from "../payments/payment-operations.js";
@@ -11,24 +11,23 @@ import { OrderBookService } from "../services/order-book.service.js";
   description: "Charges the order once the customer approves it",
   input: ChargeToolInputDto,
   output: PaymentDto,
-  channel: CheckoutApprovalChannel,
-  deps: [ExecutionContext, PaymentOperations, OrderBookService],
+  approval: CheckoutApprovalToolApproval,
+  deps: [PaymentOperations, OrderBookService],
 })
 export class ApprovedChargeTool implements ToolHandler<ChargeToolInputDto, PaymentDto> {
   constructor(
-    private readonly executionContext: ExecutionContext,
     private readonly paymentOperations: PaymentOperations,
     private readonly orderBookService: OrderBookService,
   ) {}
 
-  async run({ orderId, amountCents }: ChargeToolInputDto): Promise<PaymentDto> {
-    const charge = await this.paymentOperations.charge(this.executionContext, {
+  async execute({ orderId, amountCents }: ChargeToolInputDto): Promise<PaymentDto> {
+    const charge = await this.paymentOperations.charge({
       orderId,
       amountCents,
       paymentMethod: "card_ok",
       capture: true,
     });
-    await this.orderBookService.book(this.executionContext, "book-charge", `order:${orderId}`, orderId, {
+    await this.orderBookService.book("book-charge", `order:${orderId}`, orderId, {
       status: "paid",
       chargeId: charge.chargeId,
       heldDeltaCents: amountCents,

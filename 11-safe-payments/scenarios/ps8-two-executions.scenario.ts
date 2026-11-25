@@ -9,7 +9,7 @@ import type { PaymentScenario } from "./scenario.types.js";
  * PS8 — two executions for one order at once, on two instances (a double click, a retried HTTP
  * request): the first's charge is still at the stub when the second starts. Wrong: keyed by the
  * step, two keys, two charges. Right: the same business key — the second finds the first's intent
- * in flight under a live lease (`OutboundCallInFlightError`, "payment in progress") and sends nothing.
+ * in flight under a live lease (`OutboundCallError.InFlight`, "payment in progress") and sends nothing.
  */
 export const ps8: PaymentScenario = {
   id: "ps8",
