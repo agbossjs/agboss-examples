@@ -14,13 +14,13 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "risk-officer-agent",
   description: "Reviews the credit memo: requests changes or approves it",
-  promptUrls: ["./risk-officer.prompt.md"],
+  prompt: "./risk-officer.prompt.md",
   model: CHAT_MODEL,
   input: {
     application: CreditApplicationDto,
     memo: CreditMemoDto,
   },
   output: oneOf(MemoChangesRequestedDto, MemoApprovedDto),
-  maxVisits: 5,
+  executionLimits: { maxVisits: 5 },
 })
 export class RiskOfficerAgent {}

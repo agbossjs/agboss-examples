@@ -1,22 +1,8 @@
-import {
-  agent,
-  caseOf,
-  oneOf,
-  route,
-  start,
-  toAction,
-  VisitsLimitExceededError,
-  Workflow,
-} from "@agboss/core";
+import { toAction, VisitsLimitExceededError, Workflow, onStart, onAgent, toAgent, toFinish, Ttl } from "@agboss/core";
 import { EscalateToCommitteeAction } from "../../actions/escalate-to-committee.action.js";
 import { CreditAnalystAgent } from "../../agents/credit-analyst/credit-analyst.agent.js";
 import { MemoEditorAgent } from "../../agents/memo-editor/memo-editor.agent.js";
 import { RiskOfficerAgent } from "../../agents/risk-officer/risk-officer.agent.js";
-import { CommitteeEscalationDto } from "../../dto/committee-escalation.dto.js";
-import { CreditApplicationDto } from "../../dto/credit-application.dto.js";
-import { CreditMemoDto } from "../../dto/credit-memo.dto.js";
-import { MemoApprovedDto } from "../../dto/memo-approved.dto.js";
-import { MemoChangesRequestedDto } from "../../dto/memo-changes-requested.dto.js";
 import { CreditIntentModelRouter } from "../../routers/credit-intent-model/credit-intent-model.router.js";
 import { CreditLimitCodeRouter } from "../../routers/credit-limit-code/credit-limit-code.router.js";
 import { CodeRoutedCreditWorkflowStart } from "./code-routed-credit.workflow-start.js";
@@ -35,51 +21,37 @@ import { ModelRoutedCreditWorkflowStart } from "./model-routed-credit.workflow-s
 @Workflow({
   name: "credit-review-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(CodeRoutedCreditWorkflowStart)
-      .returns(CreditApplicationDto)
+    onStart(CodeRoutedCreditWorkflowStart)
       .toRouter(CreditLimitCodeRouter)
-      .chooseOne(
-        route(CreditAnalystAgent),
-        route(CreditDeclinedWorkflowFinish),
-      ),
+      .onRoute(toAgent(CreditAnalystAgent))
+      .onRoute(toFinish(CreditDeclinedWorkflowFinish)),
 
-    start(ModelRoutedCreditWorkflowStart)
-      .returns(CreditApplicationDto)
+    onStart(ModelRoutedCreditWorkflowStart)
       .toRouter(CreditIntentModelRouter)
-      .chooseOne(
-        route(CreditAnalystAgent),
-        route(CreditDeclinedWorkflowFinish),
-      ),
+      .onRoute(toAgent(CreditAnalystAgent))
+      .onRoute(toFinish(CreditDeclinedWorkflowFinish)),
 
     // reached from both routers: the analyst's path is its own
-    agent(CreditAnalystAgent)
-      .returns(CreditMemoDto)
+    onAgent(CreditAnalystAgent)
       .toAgent(RiskOfficerAgent),
 
     // reached from the analyst and from the editor: the officer's switch is its own path
-    agent(RiskOfficerAgent)
-      .returns(oneOf(MemoChangesRequestedDto, MemoApprovedDto))
-      .switch(
-        caseOf(MemoChangesRequestedDto, { about: CreditMemoDto }) // the notes are about this memo
-          .toAgent(MemoEditorAgent)
+    onAgent(RiskOfficerAgent)
+      .toOneOf([toAgent(MemoEditorAgent)
           .onError(
             VisitsLimitExceededError, // the editor's maxVisits spent: the committee decides
             toAction(EscalateToCommitteeAction)
-              .returns(CommitteeEscalationDto)
               .toFinish(CreditEscalatedWorkflowFinish),
           )
-          .returns(CreditMemoDto)
-          .toAgent(RiskOfficerAgent),
-        caseOf(MemoApprovedDto)
-          .toFinish(CreditApprovedWorkflowFinish),
-      ),
+          .toAgent(RiskOfficerAgent), toFinish(CreditApprovedWorkflowFinish)]),
   ],
   // the loop's worst case, in agent and router steps: the router, the analyst, the officer 5 times
-  // (its maxVisits), the editor 4 times (its) — 11. A lower maxSteps would stop the stubborn run
+  // (its maxVisits), the editor 4 times (its), the committee's action — 12 (an action counts as a step now). A lower maxSteps would stop the stubborn run
   // with StepsLimitExceededError before the editor's limit takes it to the committee: agboss check
   // warns then ([limits.max-steps-below-worst-case], agbossjs/agboss#643), and the AC3 test runs it.
-  maxSteps: 11,
   defaults: { models: { temperature: 0 } },
+  executionLimits: { maxSteps: 12 },
 })
 export class CreditReviewWorkflow {}

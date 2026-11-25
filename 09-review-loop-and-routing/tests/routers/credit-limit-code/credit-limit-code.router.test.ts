@@ -1,20 +1,19 @@
-import { testRouter } from "@agboss/core/testing";
+import { testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { CreditAnalystAgent } from "../../../src/agents/credit-analyst/credit-analyst.agent.js";
 import type { CreditApplicationDto } from "../../../src/dto/credit-application.dto.js";
 import { CreditLimitCodeRouter } from "../../../src/routers/credit-limit-code/credit-limit-code.router.js";
-import { CodeRoutedCreditWorkflowStart } from "../../../src/workflows/credit-review/code-routed-credit.workflow-start.js";
 import { CreditDeclinedWorkflowFinish } from "../../../src/workflows/credit-review/credit-declined.workflow-finish.js";
 import { applicationWith } from "../../support/applications.js";
 
 /**
- * The code router on its own (`testRouter`): its `route(input)` runs in its step's frame, no model
+ * The code router on its own (`testUnit`): its `route(input)` runs in its step's frame, no model
  * is called. Each threshold at its edge: the last value that passes and the first that does not.
  */
 
-const runRouter = testRouter(CreditLimitCodeRouter);
+const runRouter = testUnit(CreditLimitCodeRouter);
 const input = (application: CreditApplicationDto) => ({
-  application: { producer: CodeRoutedCreditWorkflowStart, value: application },
+  application: application,
 });
 const routeOf = async (changes: Partial<CreditApplicationDto>) =>
   (await runRouter(input(applicationWith(changes)))).output;

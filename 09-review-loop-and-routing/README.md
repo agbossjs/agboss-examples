@@ -19,7 +19,7 @@ model-routed-credit-workflow-start → credit-intent-model-router (Jev)     ─�
                                                                                   ↓ CreditMemoDto
                        ┌──────────────────────────────────────────────→ risk-officer-agent (maxVisits 5)
                        │                                        changes ↙              ↘ approved
-                       │   memo-editor-agent (maxVisits 4, historyOf(CreditMemoDto, { limit: 2 }))   credit-approved-workflow-finish
+                       │   memo-editor-agent (maxVisits 4, historyOf(CreditMemoDto, { maxPrevious: 2 }))   credit-approved-workflow-finish
                        └──── CreditMemoDto ─────┘
                                  └ VisitsLimitExceededError → escalate-to-committee-action → credit-escalated-workflow-finish
 ```
@@ -34,12 +34,12 @@ must be the router's routes.
 
 | Promise | Threat / Failure Injected | AGBoss Mechanism | Executable Proof |
 |---|---|---|---|
-| **A code router decides at $0, on the same routes a model router would** | Paying a model for a decision three `if`s make; a code path that drifts from the model path | `@Router({ decidedBy: DecidedBy.Code })` + `route(input)` returning `Route<Self>` (a target outside `routes` does not compile) beside `@Router({ decidedBy: DecidedBy.Model, model: "typesafe/jev-1.13" })`; two starts of one workflow onto the same `chooseOne` | [`tests/routers/credit-limit-code/credit-limit-code.router.test.ts`](./tests/routers/credit-limit-code/credit-limit-code.router.test.ts) › "AC2: …" (every threshold at its edge: 599/600, 0.45/0.46, 250 000/250 001; 0 calls, $0), [`tests/workflows/credit-review/credit-review.workflow.test.ts`](./tests/workflows/credit-review/credit-review.workflow.test.ts) › "AC2: both starts route the same application the same way; the code router's spend is $0", › "AC2: a declined application stops at the declined finish on both starts" |
+| **A code router decides at $0, on the same routes a model router would** | Paying a model for a decision three `if`s make; a code path that drifts from the model path | `@Router({ decidedBy: DecidedBy.Code })` (`routes: [A, B]`) + `route(input)` returning `Route<Self>` (a target outside `routes` does not compile) beside `@Router({ decidedBy: DecidedBy.Model, model: "typesafe/jev-1.13" })`; two starts of one workflow onto the same two `.onRoute(…)` paths | [`tests/routers/credit-limit-code/credit-limit-code.router.test.ts`](./tests/routers/credit-limit-code/credit-limit-code.router.test.ts) › "AC2: …" (every threshold at its edge: 599/600, 0.45/0.46, 250 000/250 001; 0 calls, $0), [`tests/workflows/credit-review/credit-review.workflow.test.ts`](./tests/workflows/credit-review/credit-review.workflow.test.ts) › "AC2: both starts route the same application the same way; the code router's spend is $0", › "AC2: a declined application stops at the declined finish on both starts" |
 | **The model router's decision is paid and accounted** | A routing cost nobody sees | `result.spend.byCaller["router:credit-intent-model-router"]`, `byCategory.routing`, the step's own `spend` in `result.record.steps` | [`tests/routers/credit-intent-model/credit-intent-model.router.test.ts`](./tests/routers/credit-intent-model/credit-intent-model.router.test.ts), the workflow test above, `npm run demo` (table 1) |
 | **A missing route is caught before anything runs** | A model router whose flow forgets a route: the model picks it, the run has no path | `agboss check` → `[router.routes-mismatch]`, a non-zero exit, naming the missing route | [`tests/fixtures/missing-route.test.ts`](./tests/fixtures/missing-route.test.ts) on [`fixtures/missing-route/`](./fixtures/missing-route/) (an isolated negative fixture, R5) |
-| **A review loop ends on a defined finish** | A critic that never accepts: the loop rewrites forever, the cost grows | `maxVisits` on the loop's agents; `.onError(VisitsLimitExceededError, toAction(EscalateToCommitteeAction).toFinish(CreditEscalatedWorkflowFinish))` — the editor's 5th visit is refused before its model call; `maxSteps: 11` holds the loop's worst case | [`tests/workflows/credit-review/credit-review.workflow.test.ts`](./tests/workflows/credit-review/credit-review.workflow.test.ts) › "AC3: a critic that never accepts ends at credit-escalated-workflow-finish after 4 editor visits", › "AC3: the stubborn critic escalates on the model-routed start too", `npm run demo` (part 2) |
-| **What the editor reads stays bounded** | The prompt grows with every round of the loop | `historyOf(CreditMemoDto, { limit: 2 })` → `{ current, previous }`: the newest memo and at most two earlier ones (the latest two, oldest first) | › "AC3: the editor reads the current memo and at most two earlier ones" (visit 1: none, visit 2: one, visit 3: two, visit 4: the latest two — the first memo dropped) |
-| **A rewrite outdates the request it answered** | The officer's old notes read as if they were about the new memo | `caseOf(MemoChangesRequestedDto, { about: CreditMemoDto })`: the editor's memo outdates the request (`result.record.outdatedValues`) | › "a request for changes is about the memo: a rewrite outdates it, the officer reads the new memo" |
+| **A review loop ends on a defined finish** | A critic that never accepts: the loop rewrites forever, the cost grows | `maxVisits` on the loop's agents; `.onError(VisitsLimitExceededError, toAction(EscalateToCommitteeAction).toFinish(CreditEscalatedWorkflowFinish))` — the editor's 5th visit is refused before its model call; `executionLimits: { maxSteps: 12 }` holds the loop's worst case | [`tests/workflows/credit-review/credit-review.workflow.test.ts`](./tests/workflows/credit-review/credit-review.workflow.test.ts) › "AC3: a critic that never accepts ends at credit-escalated-workflow-finish after 4 editor visits", › "AC3: the stubborn critic escalates on the model-routed start too", `npm run demo` (part 2) |
+| **What the editor reads stays bounded** | The prompt grows with every round of the loop | `historyOf(CreditMemoDto, { maxPrevious: 2 })` → `{ current, previous }`: the newest memo and at most two earlier ones (the latest two, oldest first) | › "AC3: the editor reads the current memo and at most two earlier ones" (visit 1: none, visit 2: one, visit 3: two, visit 4: the latest two — the first memo dropped) |
+| **A rewrite outdates the request it answered** | The officer's old notes read as if they were about the new memo | the officer's `.toOneOf([…])` branch of `MemoChangesRequestedDto` and the editor's memo built from it (nothing is declared: the analysis derives which values a new version outdates): the editor's memo outdates the request (`result.record.outdatedValues`) | › "a request for changes is about the memo: a rewrite outdates it, the officer reads the new memo" |
 | **Approval at any round, also the last** | An approval on the editor's last visit escalated by mistake | the officer's `switch` is its own path, reached from the analyst and the editor | › "approved at once", › "approved after one round", › "approved on the editor's last visit (visit 3): no escalation" |
 
 ## 2. Project Layout
@@ -50,7 +50,7 @@ must be the router's routes.
 - [`src/agents/`](./src/agents/) — `credit-analyst`, `risk-officer`, `memo-editor`, each `<name>.agent.ts` + `<name>.prompt.md`.
 - [`src/actions/escalate-to-committee.action.ts`](./src/actions/escalate-to-committee.action.ts) — the loop's defined way out (code, no model).
 - `src/dto/`, `src/budgets/`, `src/environments/`, `src/model-providers/` — one kind per folder.
-- [`src/demo.ts`](./src/demo.ts) — `npm run demo` / `npm run demo:live`.
+- [`src/scripts/demo.ts`](./src/scripts/demo.ts) — `npm run demo` / `npm run demo:live`.
 - [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's offline OpenRouter (chat completions and the Decisions API, scripted, behind served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`)) and the live demo's stubborn critic; tests never use it (they script models with `mockLlm`).
 - [`fixtures/missing-route/`](./fixtures/missing-route/) — the negative fixture.
 - `tests/` mirrors `src/`.
@@ -85,10 +85,19 @@ scripted even then (the failure injection), the rest of that run is real.
   exact; the model router is asked the same thresholds and usually agrees, but a decision model can
   misread a borderline application. When a rule can be written down, write it in code; the demo's
   live run shows the two agreeing on clear cases, not on every case.
-- **`maxSteps` is ours to set.** The loop's worst case is 11 agent and router steps; a lower
+- **`maxSteps` is ours to set.** The loop's worst case is 12 steps (agents, routers and the committee's action); a lower
   `maxSteps` would end the stubborn run with `StepsLimitExceededError` before the editor's limit
   takes it to the committee. `agboss check` warns then (`[limits.max-steps-below-worst-case]`, an
   error under `--strict`, agbossjs/agboss#643), and the AC3 test runs that stubborn review.
 - **What the memo says is the model's.** The framework bounds the loop, validates every answer
   against its DTO and routes on the officer's typed verdict; whether a memo is any good is the
   officer's (a model's) judgement.
+
+## The 0.1.1 shape of this example
+
+- Flows are `onStart(…).toRouter(…).onRoute(…)`, the shared loop is `onAgent(…)` paths, the officer's decision is `.toOneOf([…])`; no `.returns(…)`.
+- The providers are driver providers: `OpenRouterModelProvider` (`OpenRouterDriver`) is the application's `modelProvider` and
+  `DecisionsModelProvider` (`DecisionsDriver`) is named by the model router (`modelProvider:`); the key and the base URL are
+  `secret("OPENROUTER_API_KEY")` and `env("OPENROUTER_BASE_URL")`, read once at start, so the environment contract is `EmptyEnvironment`.
+- The cost ledger is `CreditReviewDatabaseStorage` (`@DatabaseStorage` on `SqliteDriver`); `maxSteps` counts the committee's action.
+- The demo lives in `src/scripts/`, which `agboss check` does not load.

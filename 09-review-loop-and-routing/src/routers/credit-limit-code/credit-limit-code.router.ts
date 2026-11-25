@@ -23,11 +23,11 @@ export const MAX_AMOUNT_USD = 250_000;
   input: {
     application: CreditApplicationDto,
   },
-  routes: [{ target: CreditAnalystAgent }, { target: CreditDeclinedWorkflowFinish }],
+  routes: [CreditAnalystAgent, CreditDeclinedWorkflowFinish],
 })
 export class CreditLimitCodeRouter implements RouterHandler<CreditLimitCodeRouter> {
   route(input: InputOf<CreditLimitCodeRouter>): Promise<Route<CreditLimitCodeRouter>> {
-    const { creditScore, debtToIncome, amountUsd } = input.application.value;
+    const { creditScore, debtToIncome, amountUsd } = input.application;
     const isDeclined =
       creditScore < MIN_CREDIT_SCORE ||
       debtToIncome > MAX_DEBT_TO_INCOME ||

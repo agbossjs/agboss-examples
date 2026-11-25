@@ -21,11 +21,11 @@ import { MemoChangesRequestedDto } from "../dto/memo-changes-requested.dto.js";
 })
 export class EscalateToCommitteeAction implements ActionHandler<EscalateToCommitteeAction> {
   execute(input: InputOf<EscalateToCommitteeAction>): Promise<OutputOf<EscalateToCommitteeAction>> {
-    const memo = input.memo.value;
+    const memo = input.memo;
     return Promise.resolve({
-      applicantName: input.application.value.applicantName,
+      applicantName: input.application.applicantName,
       lastMemo: memo.text,
-      openRequest: input.changes.value.notes,
+      openRequest: input.changes.notes,
       recommendedLimitUsd: memo.recommendedLimitUsd,
     });
   }

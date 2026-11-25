@@ -15,7 +15,7 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "memo-editor-agent",
   description: "Rewrites the credit memo by the risk officer's notes",
-  promptUrls: ["./memo-editor.prompt.md"],
+  prompt: "./memo-editor.prompt.md",
   model: CHAT_MODEL,
   input: {
     application: CreditApplicationDto,
@@ -23,6 +23,6 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
     changes: MemoChangesRequestedDto,
   },
   output: CreditMemoDto,
-  maxVisits: 4,
+  executionLimits: { maxVisits: 4 },
 })
 export class MemoEditorAgent {}

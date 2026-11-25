@@ -1,10 +1,9 @@
-import { routeTo, testRouter } from "@agboss/core/testing";
+import { routeTo, testUnit } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
 import { CreditAnalystAgent } from "../../../src/agents/credit-analyst/credit-analyst.agent.js";
 import { CreditIntentModelRouter } from "../../../src/routers/credit-intent-model/credit-intent-model.router.js";
 import { CreditDeclinedWorkflowFinish } from "../../../src/workflows/credit-review/credit-declined.workflow-finish.js";
-import { ModelRoutedCreditWorkflowStart } from "../../../src/workflows/credit-review/model-routed-credit.workflow-start.js";
 import { SOUND_APPLICATION, WEAK_APPLICATION } from "../../support/applications.js";
 
 /**
@@ -13,12 +12,12 @@ import { SOUND_APPLICATION, WEAK_APPLICATION } from "../../support/applications.
  */
 
 const input = (application: typeof SOUND_APPLICATION) => ({
-  application: { producer: ModelRoutedCreditWorkflowStart, value: application },
+  application: application,
 });
 
 describe("CreditIntentModelRouter — the same decision by a decision model", () => {
   it("AC2: a route to the analyst is one paid decision under router:credit-intent-model-router", async () => {
-    const runRouter = testRouter(CreditIntentModelRouter, {
+    const runRouter = testUnit(CreditIntentModelRouter, {
       model: routeTo(CreditAnalystAgent, { cost: usd(0.00004) }),
     });
 
@@ -31,7 +30,7 @@ describe("CreditIntentModelRouter — the same decision by a decision model", ()
   });
 
   it("AC2: it may stop at the declined finish, the other route the flow lists", async () => {
-    const runRouter = testRouter(CreditIntentModelRouter, {
+    const runRouter = testUnit(CreditIntentModelRouter, {
       model: routeTo(CreditDeclinedWorkflowFinish, { cost: usd(0.00004) }),
     });
 

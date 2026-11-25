@@ -7,12 +7,12 @@ import { CHAT_MODEL } from "../../model-providers/models.js";
 @Agent({
   name: "credit-analyst-agent",
   description: "Writes the credit memo on an application",
-  promptUrls: ["./credit-analyst.prompt.md"],
+  prompt: "./credit-analyst.prompt.md",
   model: CHAT_MODEL,
   input: {
     application: CreditApplicationDto,
   },
   output: CreditMemoDto,
-  maxVisits: 1,
+  executionLimits: { maxVisits: 1 },
 })
 export class CreditAnalystAgent {}

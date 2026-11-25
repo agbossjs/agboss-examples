@@ -1,10 +1,9 @@
-import { Application, SqliteCostLedgerRepository } from "@agboss/core";
-import { DecisionsModelProvider } from "@agboss/core/models";
+import { Application, EmptyEnvironment } from "@agboss/core";
+import { CreditReviewDatabaseStorage } from "./storages/credit-review.database-storage.js";
 import { CreditReviewApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { CreditReviewExecutionBudget } from "./budgets/execution.budget.js";
 import { CreditReviewTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
-import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
+import { DecisionsModelProvider, OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { CreditReviewWorkflow } from "./workflows/credit-review/credit-review.workflow.js";
 
 /**
@@ -16,10 +15,11 @@ import { CreditReviewWorkflow } from "./workflows/credit-review/credit-review.wo
 @Application({
   name: "credit-review-application",
   version: "1.0.0",
-  environment: AppEnvironment,
+  environment: EmptyEnvironment,
+  storage: CreditReviewDatabaseStorage,
+  modelProvider: OpenRouterModelProvider, // the agents' chat models; the model router names the decisions provider itself
   workflows: [CreditReviewWorkflow],
-  // the ledger the tenant and application budgets count in: SQLite on sqlitePath (":memory:" here)
-  providers: [OpenRouterModelProvider, DecisionsModelProvider, SqliteCostLedgerRepository],
+  providers: [OpenRouterModelProvider, DecisionsModelProvider],
   budgets: [
     CreditReviewApplicationDailyBudget,
     CreditReviewTenantDailyBudget,

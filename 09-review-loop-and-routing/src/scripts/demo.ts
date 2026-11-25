@@ -5,17 +5,12 @@
  * demo checks what it prints and exits non-zero when a promise does not hold.
  */
 import { createApp, ExecutionStatus, type ExecutionOutput } from "@agboss/core";
-import {
-  installOfflineNetworkGuard,
-  isLiveDemoRequested,
-  requireLiveApiKey,
-  serveFetch,
-} from "../../scripts/tooling/offline-transports.js";
-import { createOfflineOpenRouter, withStubbornCritic } from "../fixtures/offline-openrouter.js";
-import { CreditReviewApplication } from "./credit-review.application.js";
-import type { CreditApplicationDto } from "./dto/credit-application.dto.js";
-import { CodeRoutedCreditWorkflowStart } from "./workflows/credit-review/code-routed-credit.workflow-start.js";
-import { ModelRoutedCreditWorkflowStart } from "./workflows/credit-review/model-routed-credit.workflow-start.js";
+import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey, serveFetch } from "../../../scripts/tooling/offline-transports.js";
+import { createOfflineOpenRouter, withStubbornCritic } from "../../fixtures/offline-openrouter.js";
+import { CreditReviewApplication } from "../credit-review.application.js";
+import type { CreditApplicationDto } from "../dto/credit-application.dto.js";
+import { CodeRoutedCreditWorkflowStart } from "../workflows/credit-review/code-routed-credit.workflow-start.js";
+import { ModelRoutedCreditWorkflowStart } from "../workflows/credit-review/model-routed-credit.workflow-start.js";
 
 const DANA: CreditApplicationDto = {
   applicantName: "Dana Levi",
@@ -119,7 +114,7 @@ async function main(): Promise<void> {
     const rows: RoutingRow[] = [];
     for (const application of APPLICATIONS) {
       for (const start of [CodeRoutedCreditWorkflowStart, ModelRoutedCreditWorkflowStart]) {
-        const result = await app.execute(start, application, { record: true });
+        const result = await app.execute(start, application, { includeRecord: true });
         check(
           result.status === ExecutionStatus.Finished,
           `${application.applicantName}: ${result.status}`,
@@ -143,7 +138,7 @@ async function main(): Promise<void> {
     console.log("   → the same route either way; the code router: 0 calls, $0\n");
 
     const stubborn = await stubbornApp.execute(CodeRoutedCreditWorkflowStart, DANA, {
-      record: true,
+      includeRecord: true,
     });
     const editorVisits = stubborn.path.filter((node) => node === "memo-editor-agent").length;
     const editorCalls = stubborn.spend.trace.filter(

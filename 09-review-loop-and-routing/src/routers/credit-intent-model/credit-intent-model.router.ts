@@ -1,6 +1,7 @@
-import { DecidedBy, Router } from "@agboss/core";
+import { DecidedBy, Router, inline } from "@agboss/core";
 import { CreditAnalystAgent } from "../../agents/credit-analyst/credit-analyst.agent.js";
 import { CreditApplicationDto } from "../../dto/credit-application.dto.js";
+import { DecisionsModelProvider } from "../../model-providers/openrouter.model-provider.js";
 import { DECISION_MODEL } from "../../model-providers/models.js";
 import { CreditDeclinedWorkflowFinish } from "../../workflows/credit-review/credit-declined.workflow-finish.js";
 
@@ -15,10 +16,12 @@ import { CreditDeclinedWorkflowFinish } from "../../workflows/credit-review/cred
   description: "Declines an application below the bank's thresholds, sends the rest to the analyst",
   decidedBy: DecidedBy.Model,
   model: DECISION_MODEL,
-  prompt:
+  modelProvider: DecisionsModelProvider, // a decision model needs a decisions provider
+  prompt: inline(
     "Decide where a retail credit application goes. The bank declines at once when the credit " +
     "score is below 600, when the debt-to-income ratio is above 0.45, or when the amount is above " +
     "250000 US dollars; every other application goes to a credit analyst.",
+  ),
   input: {
     application: CreditApplicationDto,
   },

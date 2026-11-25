@@ -42,10 +42,10 @@ describe("AC2: the same application, routed by code and by a model", () => {
     mockLlm(RiskOfficerAgent).thenReturn(approved(), approved());
 
     const byCode = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
-      record: true,
+      includeRecord: true,
     });
     const byModel = await app.execute(ModelRoutedCreditWorkflowStart, SOUND_APPLICATION, {
-      record: true,
+      includeRecord: true,
     });
 
     expect(byCode).toFollowPath([
@@ -147,10 +147,10 @@ describe("the review loop ends on a defined finish", () => {
     });
     // the editor reads the officer's notes and the memo they are about
     const [editorInput] = mockLlm(MemoEditorAgent).inputs;
-    expect(editorInput?.changes).toMatchObject({ value: { notes: "name the main risk" } });
-    expect(editorInput?.memo).toMatchObject({ current: { value: { text: "v1" } }, previous: [] });
+    expect(editorInput?.changes).toMatchObject({ notes: "name the main risk" });
+    expect(editorInput?.memo).toMatchObject({ current: { text: "v1" }, previous: [] });
     // the officer reads the newest memo each time
-    const officerMemos = mockLlm(RiskOfficerAgent).inputs.map((input) => input.memo.value.text);
+    const officerMemos = mockLlm(RiskOfficerAgent).inputs.map((input) => input.memo.text);
     expect(officerMemos).toEqual(["v1", "v2: the main risk is the DTI"]);
   });
 
@@ -166,7 +166,7 @@ describe("the review loop ends on a defined finish", () => {
     mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
-      record: true,
+      includeRecord: true,
     });
 
     expect(result).toFinishWith(CreditApprovedWorkflowFinish, {
@@ -187,7 +187,7 @@ describe("the review loop ends on a defined finish", () => {
     mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5", 30_000));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
-      record: true,
+      includeRecord: true,
     });
 
     expect(result).toFollowPath([
@@ -234,8 +234,8 @@ describe("the review loop ends on a defined finish", () => {
     await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION);
 
     const seen = mockLlm(MemoEditorAgent).inputs.map((input) => ({
-      current: input.memo.current.value.text,
-      previous: input.memo.previous.map((earlier) => earlier.value.text),
+      current: input.memo.current.text,
+      previous: input.memo.previous.map((earlier) => earlier.text),
     }));
     // visit 1: nothing earlier; visit 2: one; visit 3: two; visit 4: still two — the latest two,
     // oldest first: the limit dropped v1, the analyst's memo, though the editor's visits allowed it
@@ -256,7 +256,7 @@ describe("the review loop ends on a defined finish", () => {
     mockLlm(MemoEditorAgent).thenReturn(memo("v2 shorter"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
-      record: true,
+      includeRecord: true,
     });
 
     expect(result).toFinishWith(CreditApprovedWorkflowFinish, {

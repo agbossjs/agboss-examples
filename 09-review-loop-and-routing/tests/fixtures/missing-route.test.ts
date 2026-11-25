@@ -39,7 +39,7 @@ describe("AC2 (failure injection): a model router's flow that misses a route", (
       expect.objectContaining({
         code: "router.routes-mismatch",
         message: expect.stringContaining(
-          "missing in .chooseOne(…): missing-route-declined-workflow-finish",
+          "missing in .onRoute(…): missing-route-declined-workflow-finish",
         ) as string,
       }),
     ]);
