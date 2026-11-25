@@ -10,9 +10,9 @@ import { TaxSummaryDto } from "../dto/tax-summary.dto.js";
 })
 export class ComputeTaxAction implements ActionHandler<ComputeTaxAction> {
   async execute(input: InputOf<ComputeTaxAction>): Promise<OutputOf<ComputeTaxAction>> {
-    const rate = input.draft.value.destinationCountry === "DE" ? 0.19 : 0.08;
+    const rate = input.draft.destinationCountry === "DE" ? 0.19 : 0.08;
     return Object.assign(new TaxSummaryDto(), {
-      taxCents: Math.round(input.draft.value.subtotalCents * rate),
+      taxCents: Math.round(input.draft.subtotalCents * rate),
     });
   }
 }

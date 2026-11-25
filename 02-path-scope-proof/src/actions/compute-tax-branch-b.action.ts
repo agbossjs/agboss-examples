@@ -11,7 +11,7 @@ import { TaxCalculationDto } from "../dto/tax-calculation.dto.js";
 export class ComputeTaxBranchBAction implements ActionHandler<ComputeTaxBranchBAction> {
   async execute(input: InputOf<ComputeTaxBranchBAction>): Promise<OutputOf<ComputeTaxBranchBAction>> {
     return Object.assign(new TaxCalculationDto(), {
-      taxCents: Math.round(input.quote.value.totalCents * 0.1),
+      taxCents: Math.round(input.quote.totalCents * 0.1),
     });
   }
 }

@@ -1,19 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  Application,
-  Budget,
-  BudgetPeriod,
-  BudgetScope,
-  type BudgetHandler,
-  EmptyEnvironment,
-  type InputOf,
-  type OutputOf,
-  Workflow,
-  WorkflowFinish,
-  WorkflowStart,
-  start,
-} from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, EmptyEnvironment, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, onStart, toAction, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -55,7 +40,7 @@ export class FinalInvoiceDto {
 export class InitialQuoteAction implements ActionHandler<InitialQuoteAction> {
   async execute(input: InputOf<InitialQuoteAction>): Promise<OutputOf<InitialQuoteAction>> {
     return Object.assign(new PricingQuoteDto(), {
-      totalCents: input.cart.value.baseCents,
+      totalCents: input.cart.baseCents,
       source: "initial-quote",
     });
   }
@@ -74,7 +59,7 @@ export class OverwriteQuoteInBranchAAction
     input: InputOf<OverwriteQuoteInBranchAAction>,
   ): Promise<OutputOf<OverwriteQuoteInBranchAAction>> {
     return Object.assign(new PricingQuoteDto(), {
-      totalCents: Math.round(input.quote.value.totalCents * 0.8),
+      totalCents: Math.round(input.quote.totalCents * 0.8),
       source: "branch-a-recomputed",
     });
   }
@@ -89,7 +74,7 @@ export class OverwriteQuoteInBranchAAction
 export class ComputeTaxBranchBAction implements ActionHandler<ComputeTaxBranchBAction> {
   async execute(input: InputOf<ComputeTaxBranchBAction>): Promise<OutputOf<ComputeTaxBranchBAction>> {
     return Object.assign(new TaxCalculationDto(), {
-      taxCents: Math.round(input.quote.value.totalCents * 0.1),
+      taxCents: Math.round(input.quote.totalCents * 0.1),
     });
   }
 }
@@ -106,8 +91,8 @@ export class ComputeTaxBranchBAction implements ActionHandler<ComputeTaxBranchBA
 export class MergeInvoiceAction implements ActionHandler<MergeInvoiceAction> {
   async execute(input: InputOf<MergeInvoiceAction>): Promise<OutputOf<MergeInvoiceAction>> {
     return Object.assign(new FinalInvoiceDto(), {
-      grandTotalCents: input.quote.value.totalCents + input.tax.value.taxCents,
-      pricingSource: input.quote.value.source,
+      grandTotalCents: input.quote.totalCents + input.tax.taxCents,
+      pricingSource: input.quote.source,
     });
   }
 }
@@ -129,17 +114,13 @@ export class ParallelInvalidationBrokenFinish {}
 @Workflow({
   name: "parallel-invalidation-broken-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(ParallelInvalidationBrokenStart)
-      .returns(CartRequestDto)
+    onStart(ParallelInvalidationBrokenStart)
       .toAction(InitialQuoteAction)
-      .returns(PricingQuoteDto)
-      .toParallelActions(OverwriteQuoteInBranchAAction, ComputeTaxBranchBAction)
+      .inParallel([toAction(OverwriteQuoteInBranchAAction), toAction(ComputeTaxBranchBAction)])
       .join()
-      .returns(PricingQuoteDto)
-      .returns(TaxCalculationDto)
       .toAction(MergeInvoiceAction)
-      .returns(FinalInvoiceDto)
       .toFinish(ParallelInvalidationBrokenFinish),
   ],
 })

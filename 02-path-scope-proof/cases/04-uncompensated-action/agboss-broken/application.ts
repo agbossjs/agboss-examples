@@ -1,20 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  Application,
-  Budget,
-  BudgetPeriod,
-  BudgetScope,
-  type BudgetHandler,
-  EmptyEnvironment,
-  type InputOf,
-  type OutputOf,
-  Workflow,
-  WorkflowFinish,
-  WorkflowStart,
-  start,
-  toAction,
-} from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, EmptyEnvironment, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, toAction, onStart, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -55,7 +39,7 @@ export class ReleaseSeatCompensationAction
   implements ActionHandler<ReleaseSeatCompensationAction>
 {
   async execute(input: InputOf<ReleaseSeatCompensationAction>): Promise<void> {
-    void input.reservation.value.reservationCode;
+    void input.reservation.reservationCode;
   }
 }
 
@@ -69,7 +53,7 @@ export class ReleaseSeatCompensationAction
 export class ReserveSeatAction implements ActionHandler<ReserveSeatAction> {
   async execute(input: InputOf<ReserveSeatAction>): Promise<OutputOf<ReserveSeatAction>> {
     return Object.assign(new SeatReservationDto(), {
-      reservationCode: `RES-${input.booking.value.bookingId}`,
+      reservationCode: `RES-${input.booking.bookingId}`,
     });
   }
 }
@@ -85,11 +69,11 @@ export class ReserveSeatAction implements ActionHandler<ReserveSeatAction> {
 })
 export class CapturePaymentAction implements ActionHandler<CapturePaymentAction> {
   async execute(input: InputOf<CapturePaymentAction>): Promise<OutputOf<CapturePaymentAction>> {
-    if (input.booking.value.amountCents > 50_000) {
+    if (input.booking.amountCents > 50_000) {
       throw new PaymentCaptureError("Card declined for amount > $500");
     }
     return Object.assign(new PaymentReceiptDto(), {
-      transactionId: `TX-${input.reservation.value.reservationCode}`,
+      transactionId: `TX-${input.reservation.reservationCode}`,
       status: "CAPTURED",
     });
   }
@@ -106,7 +90,7 @@ export class FormatDeclinedReceiptAction implements ActionHandler<FormatDeclined
     input: InputOf<FormatDeclinedReceiptAction>,
   ): Promise<OutputOf<FormatDeclinedReceiptAction>> {
     return Object.assign(new PaymentReceiptDto(), {
-      transactionId: `DECLINED-${input.reservation.value.reservationCode}`,
+      transactionId: `DECLINED-${input.reservation.reservationCode}`,
       status: "DECLINED_WITHOUT_COMPENSATION",
     });
   }
@@ -129,19 +113,16 @@ export class UncompensatedBrokenFinish {}
 @Workflow({
   name: "uncompensated-broken-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(UncompensatedBrokenStart)
-      .returns(BookingRequestDto)
+    onStart(UncompensatedBrokenStart)
       .toAction(ReserveSeatAction)
-      .returns(SeatReservationDto)
       .toAction(CapturePaymentAction)
       .onError(
         PaymentCaptureError,
         toAction(FormatDeclinedReceiptAction)
-          .returns(PaymentReceiptDto)
           .toFinish(UncompensatedBrokenFinish),
       )
-      .returns(PaymentReceiptDto)
       .toFinish(UncompensatedBrokenFinish),
   ],
 })

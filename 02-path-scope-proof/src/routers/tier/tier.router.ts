@@ -8,11 +8,11 @@ import { CheckoutRequestDto } from "../../dto/checkout-request.dto.js";
   description: "Routes VIP customers to coupon branch and standard customers to standard invoice branch",
   decidedBy: DecidedBy.Code,
   input: { request: CheckoutRequestDto },
-  routes: [{ target: ApplyVipCouponAction }, { target: RenderStandardInvoiceAction }],
+  routes: [ApplyVipCouponAction, RenderStandardInvoiceAction],
 })
 export class TierRouter implements RouterHandler<TierRouter> {
   route(input: InputOf<TierRouter>): Route<TierRouter> {
-    return input.request.value.tier === "vip"
+    return input.request.tier === "vip"
       ? ApplyVipCouponAction
       : RenderStandardInvoiceAction;
   }

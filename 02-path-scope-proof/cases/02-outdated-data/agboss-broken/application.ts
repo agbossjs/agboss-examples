@@ -1,25 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  Application,
-  Budget,
-  BudgetPeriod,
-  BudgetScope,
-  type BudgetHandler,
-  DecidedBy,
-  EmptyEnvironment,
-  type InputOf,
-  type OutputOf,
-  type Route,
-  Router,
-  type RouterHandler,
-  Workflow,
-  WorkflowFinish,
-  WorkflowStart,
-  action,
-  route,
-  start,
-} from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, DecidedBy, EmptyEnvironment, type InputOf, type OutputOf, type Route, Router, type RouterHandler, Workflow, WorkflowFinish, WorkflowStart, route, onStart, onAction, toAction, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -70,7 +49,7 @@ export class CalculateInitialShippingAction
   async execute(
     input: InputOf<CalculateInitialShippingAction>,
   ): Promise<OutputOf<CalculateInitialShippingAction>> {
-    const country = input.draft.value.destinationCountry;
+    const country = input.draft.destinationCountry;
     return Object.assign(new ShippingQuoteDto(), {
       shippingCents: country === "US" ? 1_500 : 4_500,
       quotedForCountry: country,
@@ -87,9 +66,9 @@ export class CalculateInitialShippingAction
 export class MutateDestinationAction implements ActionHandler<MutateDestinationAction> {
   async execute(input: InputOf<MutateDestinationAction>): Promise<OutputOf<MutateDestinationAction>> {
     return Object.assign(new OrderDraftDto(), {
-      orderId: input.draft.value.orderId,
-      subtotalCents: input.draft.value.subtotalCents,
-      destinationCountry: input.draft.value.requestedCountryChange,
+      orderId: input.draft.orderId,
+      subtotalCents: input.draft.subtotalCents,
+      destinationCountry: input.draft.requestedCountryChange,
       requestedCountryChange: "",
     });
   }
@@ -103,9 +82,9 @@ export class MutateDestinationAction implements ActionHandler<MutateDestinationA
 })
 export class ComputeTaxAction implements ActionHandler<ComputeTaxAction> {
   async execute(input: InputOf<ComputeTaxAction>): Promise<OutputOf<ComputeTaxAction>> {
-    const rate = input.draft.value.destinationCountry === "DE" ? 0.19 : 0.08;
+    const rate = input.draft.destinationCountry === "DE" ? 0.19 : 0.08;
     return Object.assign(new TaxSummaryDto(), {
-      taxCents: Math.round(input.draft.value.subtotalCents * rate),
+      taxCents: Math.round(input.draft.subtotalCents * rate),
     });
   }
 }
@@ -123,12 +102,12 @@ export class ComputeTaxAction implements ActionHandler<ComputeTaxAction> {
 export class BuildReceiptAction implements ActionHandler<BuildReceiptAction> {
   async execute(input: InputOf<BuildReceiptAction>): Promise<OutputOf<BuildReceiptAction>> {
     const grandTotalCents =
-      input.draft.value.subtotalCents +
-      input.shipping.value.shippingCents +
-      input.tax.value.taxCents;
+      input.draft.subtotalCents +
+      input.shipping.shippingCents +
+      input.tax.taxCents;
     return Object.assign(new FinalReceiptDto(), {
       grandTotalCents,
-      summary: `Order ${input.draft.value.orderId} [dest=${input.draft.value.destinationCountry}, shipFor=${input.shipping.value.quotedForCountry}]: $${(
+      summary: `Order ${input.draft.orderId} [dest=${input.draft.destinationCountry}, shipFor=${input.shipping.quotedForCountry}]: $${(
         grandTotalCents / 100
       ).toFixed(2)}`,
     });
@@ -140,11 +119,11 @@ export class BuildReceiptAction implements ActionHandler<BuildReceiptAction> {
   description: "Routes orders with a requested destination change to MutateDestinationAction",
   decidedBy: DecidedBy.Code,
   input: { draft: OrderDraftDto },
-  routes: [{ target: MutateDestinationAction }, { target: ComputeTaxAction }],
+  routes: [MutateDestinationAction, ComputeTaxAction],
 })
 export class AddressChangeRouter implements RouterHandler<AddressChangeRouter> {
   route(input: InputOf<AddressChangeRouter>): Route<AddressChangeRouter> {
-    return input.draft.value.requestedCountryChange !== ""
+    return input.draft.requestedCountryChange !== ""
       ? MutateDestinationAction
       : ComputeTaxAction;
   }
@@ -167,22 +146,16 @@ export class OutdatedDataBrokenFinish {}
 @Workflow({
   name: "outdated-data-broken-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(OutdatedDataBrokenStart)
-      .returns(OrderDraftDto)
+    onStart(OutdatedDataBrokenStart)
       .toAction(CalculateInitialShippingAction)
-      .returns(ShippingQuoteDto)
       .toRouter(AddressChangeRouter)
-      .chooseOne(
-        route(MutateDestinationAction)
-          .returns(OrderDraftDto)
-          .toAction(ComputeTaxAction),
-        route(ComputeTaxAction),
-      ),
-    action(ComputeTaxAction)
-      .returns(TaxSummaryDto)
+      .onRoute(toAction(MutateDestinationAction)
+          .toAction(ComputeTaxAction))
+      .onRoute(toAction(ComputeTaxAction)),
+    onAction(ComputeTaxAction)
       .toAction(BuildReceiptAction)
-      .returns(FinalReceiptDto)
       .toFinish(OutdatedDataBrokenFinish),
   ],
 })

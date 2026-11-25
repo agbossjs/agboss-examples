@@ -13,7 +13,7 @@ import { ReleaseSeatCompensationAction } from "./release-seat-compensation.actio
 export class ReserveSeatAction implements ActionHandler<ReserveSeatAction> {
   async execute(input: InputOf<ReserveSeatAction>): Promise<OutputOf<ReserveSeatAction>> {
     return Object.assign(new SeatReservationDto(), {
-      reservationCode: `RES-${input.booking.value.bookingId}`,
+      reservationCode: `RES-${input.booking.bookingId}`,
     });
   }
 }

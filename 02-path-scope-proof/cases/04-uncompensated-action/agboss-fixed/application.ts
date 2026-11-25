@@ -2,7 +2,7 @@ import { Application, EmptyEnvironment } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
-import { OfflineNoopModelProvider } from "../../../src/model-providers/offline-noop.model-provider.js";
+import { PathScopeProofDatabaseStorage } from "../../../src/storages/path-scope-proof.database-storage.js";
 import { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated-fixed/uncompensated-fixed.workflow.js";
 
 export { CapturePaymentAction } from "../../../src/actions/capture-payment.action.js";
@@ -22,7 +22,7 @@ export { UncompensatedFixedWorkflow } from "../../../src/workflows/uncompensated
   version: "0.1.0",
   environment: EmptyEnvironment,
   workflows: [UncompensatedFixedWorkflow],
-  providers: [OfflineNoopModelProvider],
+  storage: PathScopeProofDatabaseStorage,
   budgets: [SuiteAppBudget, SuiteTenantBudget, SuiteExecBudget],
 })
 export class UncompensatedFixedApplication {}

@@ -81,3 +81,18 @@ Not required — `path-scope-proof` proves static analyzer guarantees and determ
 ## 10. Guarantee boundary (what remains the user's responsibility)
 
 AGBoss statically guarantees DTO presence, freshness across `about` / `builtFrom` provenance chains, parallel join non-interference, and compensation coverage on error paths. Domain logic inside individual `@Action` handlers and accurate `{ about: TargetDto }` declarations remain the developer's responsibility.
+
+## 6. The 0.1.1 shape of this example
+
+- Flows are written `onStart(Start).toAction(A).toRouter(R).onRoute(toAction(B)…).onRoute(…)`, with parallel branches as
+  `.inParallel([toAction(A), toAction(B)]).join()`. There is no `.returns(…)`: what a step puts on the path is derived from
+  its declaration, and the analysis behind `[input.missing-on-path]`, `[input.outdated-on-path]`,
+  `[launch.branch-outdates-sibling]` and `[flow.uncompensated-action]` runs on exactly that.
+- A node reads a DTO as the DTO itself (`input.cart.baseCents`): tracked values have no `.value` wrapper. A code router lists
+  plain targets (`routes: [ApplyVipCouponAction, RenderStandardInvoiceAction]`).
+- Every `@Workflow` has `historyTtl`; `outdated-data-fixed-workflow` sets `executionLimits.maxSteps` because actions count as
+  steps now (`[limits.max-steps-above-0.1.0-default]` under `--strict`).
+- The suite uses no model, so it lists no model provider; its rows go to `PathScopeProofDatabaseStorage` (SQLite, in memory).
+- Units are tested with `testUnit(Action)` / `testUnit(Router)` on plain objects; the `agboss check` of the four broken cases
+  is run by `tests/workflows/missing-input-fixed/missing-input-fixed.workflow.test.ts` and its codes are asserted.
+- The demo lives in `src/scripts/` (`agboss check` loads every other module under `src/`).

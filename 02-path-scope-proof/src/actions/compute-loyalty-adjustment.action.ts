@@ -15,7 +15,7 @@ export class ComputeLoyaltyAdjustmentAction
     input: InputOf<ComputeLoyaltyAdjustmentAction>,
   ): Promise<OutputOf<ComputeLoyaltyAdjustmentAction>> {
     return Object.assign(new LoyaltyAdjustmentDto(), {
-      discountCents: Math.round(input.quote.value.totalCents * 0.2),
+      discountCents: Math.round(input.quote.totalCents * 0.2),
     });
   }
 }

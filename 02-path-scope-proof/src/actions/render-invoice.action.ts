@@ -15,11 +15,11 @@ import { InvoiceSummaryDto } from "../dto/invoice-summary.dto.js";
 export class RenderInvoiceAction implements ActionHandler<RenderInvoiceAction> {
   async execute(input: InputOf<RenderInvoiceAction>): Promise<OutputOf<RenderInvoiceAction>> {
     const finalTotalCents =
-      input.request.value.subtotalCents - input.coupon.value.discountCents;
+      input.request.subtotalCents - input.coupon.discountCents;
     return Object.assign(new InvoiceSummaryDto(), {
-      orderId: input.request.value.orderId,
+      orderId: input.request.orderId,
       finalTotalCents,
-      invoiceText: `Order ${input.request.value.orderId} (${input.coupon.value.code}): $${(
+      invoiceText: `Order ${input.request.orderId} (${input.coupon.code}): $${(
         finalTotalCents / 100
       ).toFixed(2)}`,
     });

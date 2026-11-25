@@ -10,7 +10,7 @@ import { ShippingQuoteDto } from "../dto/shipping-quote.dto.js";
 })
 export class RecomputeShippingAction implements ActionHandler<RecomputeShippingAction> {
   async execute(input: InputOf<RecomputeShippingAction>): Promise<OutputOf<RecomputeShippingAction>> {
-    const country = input.draft.value.destinationCountry;
+    const country = input.draft.destinationCountry;
     return Object.assign(new ShippingQuoteDto(), {
       shippingCents: country === "US" ? 1_500 : 4_500,
       quotedForCountry: country,

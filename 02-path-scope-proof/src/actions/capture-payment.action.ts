@@ -15,11 +15,11 @@ import { PaymentCaptureError } from "./payment-capture.error.js";
 })
 export class CapturePaymentAction implements ActionHandler<CapturePaymentAction> {
   async execute(input: InputOf<CapturePaymentAction>): Promise<OutputOf<CapturePaymentAction>> {
-    if (input.booking.value.amountCents > 50_000) {
+    if (input.booking.amountCents > 50_000) {
       throw new PaymentCaptureError("Card declined for amount > $500");
     }
     return Object.assign(new PaymentReceiptDto(), {
-      transactionId: `TX-${input.reservation.value.reservationCode}`,
+      transactionId: `TX-${input.reservation.reservationCode}`,
       status: "CAPTURED",
     });
   }

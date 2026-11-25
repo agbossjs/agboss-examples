@@ -1,4 +1,4 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, toAction, Ttl } from "@agboss/core";
 import { ComputeLoyaltyAdjustmentAction } from "../../actions/compute-loyalty-adjustment.action.js";
 import { ComputeTaxBranchBAction } from "../../actions/compute-tax-branch-b.action.js";
 import { InitialQuoteAction } from "../../actions/initial-quote.action.js";
@@ -14,17 +14,13 @@ import { ParallelInvalidationFixedStart } from "./parallel-invalidation-fixed.wo
 @Workflow({
   name: "parallel-invalidation-fixed-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(ParallelInvalidationFixedStart)
-      .returns(CartRequestDto)
+    onStart(ParallelInvalidationFixedStart)
       .toAction(InitialQuoteAction)
-      .returns(PricingQuoteDto)
-      .toParallelActions(ComputeLoyaltyAdjustmentAction, ComputeTaxBranchBAction)
+      .inParallel([toAction(ComputeLoyaltyAdjustmentAction), toAction(ComputeTaxBranchBAction)])
       .join()
-      .returns(LoyaltyAdjustmentDto)
-      .returns(TaxCalculationDto)
       .toAction(ReconcileInvoiceAction)
-      .returns(FinalInvoiceDto)
       .toFinish(ParallelInvalidationFixedFinish),
   ],
 })

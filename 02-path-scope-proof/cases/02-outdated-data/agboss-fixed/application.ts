@@ -2,7 +2,7 @@ import { Application, EmptyEnvironment } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
-import { OfflineNoopModelProvider } from "../../../src/model-providers/offline-noop.model-provider.js";
+import { PathScopeProofDatabaseStorage } from "../../../src/storages/path-scope-proof.database-storage.js";
 import { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-fixed/outdated-data-fixed.workflow.js";
 
 export { BuildReceiptAction } from "../../../src/actions/build-receipt.action.js";
@@ -24,7 +24,7 @@ export { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-
   version: "0.1.0",
   environment: EmptyEnvironment,
   workflows: [OutdatedDataFixedWorkflow],
-  providers: [OfflineNoopModelProvider],
+  storage: PathScopeProofDatabaseStorage,
   budgets: [SuiteAppBudget, SuiteTenantBudget, SuiteExecBudget],
 })
 export class OutdatedDataFixedApplication {}

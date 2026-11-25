@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "check": "agboss check --strict --cassettes && npm run typecheck",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/scripts/demo.ts"
   },
   "dependencies": {
     "@langchain/core": "^1.2.12",

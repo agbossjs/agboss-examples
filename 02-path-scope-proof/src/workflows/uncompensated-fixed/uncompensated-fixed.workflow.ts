@@ -1,4 +1,4 @@
-import { Workflow, start, toAction } from "@agboss/core";
+import { Workflow, toAction, onStart, Ttl } from "@agboss/core";
 import { CapturePaymentAction } from "../../actions/capture-payment.action.js";
 import { FormatDeclinedReceiptAction } from "../../actions/format-declined-receipt.action.js";
 import { PaymentCaptureError } from "../../actions/payment-capture.error.js";
@@ -13,20 +13,17 @@ import { UncompensatedFixedStart } from "./uncompensated-fixed.workflow-start.js
 @Workflow({
   name: "uncompensated-fixed-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(UncompensatedFixedStart)
-      .returns(BookingRequestDto)
+    onStart(UncompensatedFixedStart)
       .toAction(ReserveSeatAction)
-      .returns(SeatReservationDto)
       .toAction(CapturePaymentAction)
       .onError(
         PaymentCaptureError,
         toAction(ReleaseSeatCompensationAction)
           .toAction(FormatDeclinedReceiptAction)
-          .returns(PaymentReceiptDto)
           .toFinish(UncompensatedFixedFinish),
       )
-      .returns(PaymentReceiptDto)
       .toFinish(UncompensatedFixedFinish),
   ],
 })

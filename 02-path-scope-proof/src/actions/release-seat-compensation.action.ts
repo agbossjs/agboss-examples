@@ -10,6 +10,6 @@ export class ReleaseSeatCompensationAction
   implements ActionHandler<ReleaseSeatCompensationAction>
 {
   async execute(input: InputOf<ReleaseSeatCompensationAction>): Promise<void> {
-    void input.reservation.value.reservationCode;
+    void input.reservation.reservationCode;
   }
 }

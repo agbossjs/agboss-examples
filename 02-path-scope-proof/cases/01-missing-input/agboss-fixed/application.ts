@@ -2,7 +2,7 @@ import { Application, EmptyEnvironment } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
-import { OfflineNoopModelProvider } from "../../../src/model-providers/offline-noop.model-provider.js";
+import { PathScopeProofDatabaseStorage } from "../../../src/storages/path-scope-proof.database-storage.js";
 import { MissingInputFixedWorkflow } from "../../../src/workflows/missing-input-fixed/missing-input-fixed.workflow.js";
 
 export { ApplyVipCouponAction } from "../../../src/actions/apply-vip-coupon.action.js";
@@ -21,7 +21,7 @@ export { MissingInputFixedWorkflow } from "../../../src/workflows/missing-input-
   version: "0.1.0",
   environment: EmptyEnvironment,
   workflows: [MissingInputFixedWorkflow],
-  providers: [OfflineNoopModelProvider],
+  storage: PathScopeProofDatabaseStorage,
   budgets: [SuiteAppBudget, SuiteTenantBudget, SuiteExecBudget],
 })
 export class MissingInputFixedApplication {}

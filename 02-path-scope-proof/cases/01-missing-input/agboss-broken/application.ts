@@ -1,25 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  Application,
-  Budget,
-  BudgetPeriod,
-  BudgetScope,
-  type BudgetHandler,
-  DecidedBy,
-  EmptyEnvironment,
-  type InputOf,
-  type OutputOf,
-  type Route,
-  Router,
-  type RouterHandler,
-  Workflow,
-  WorkflowFinish,
-  WorkflowStart,
-  action,
-  route,
-  start,
-} from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, DecidedBy, EmptyEnvironment, type InputOf, type OutputOf, type Route, Router, type RouterHandler, Workflow, WorkflowFinish, WorkflowStart, route, onStart, onAction, toAction, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -63,7 +42,7 @@ export class ApplyVipCouponAction implements ActionHandler<ApplyVipCouponAction>
   async execute(input: InputOf<ApplyVipCouponAction>): Promise<OutputOf<ApplyVipCouponAction>> {
     return Object.assign(new CouponDiscountDto(), {
       code: "VIP20",
-      discountCents: Math.round(input.request.value.subtotalCents * 0.2),
+      discountCents: Math.round(input.request.subtotalCents * 0.2),
     });
   }
 }
@@ -80,11 +59,11 @@ export class ApplyVipCouponAction implements ActionHandler<ApplyVipCouponAction>
 export class RenderInvoiceAction implements ActionHandler<RenderInvoiceAction> {
   async execute(input: InputOf<RenderInvoiceAction>): Promise<OutputOf<RenderInvoiceAction>> {
     const finalTotalCents =
-      input.request.value.subtotalCents - input.coupon.value.discountCents;
+      input.request.subtotalCents - input.coupon.discountCents;
     return Object.assign(new InvoiceSummaryDto(), {
-      orderId: input.request.value.orderId,
+      orderId: input.request.orderId,
       finalTotalCents,
-      invoiceText: `Order ${input.request.value.orderId} (${input.coupon.value.code}): $${(
+      invoiceText: `Order ${input.request.orderId} (${input.coupon.code}): $${(
         finalTotalCents / 100
       ).toFixed(2)}`,
     });
@@ -96,11 +75,11 @@ export class RenderInvoiceAction implements ActionHandler<RenderInvoiceAction> {
   description: "Routes VIP customers to coupon calculation and standard customers straight to invoice",
   decidedBy: DecidedBy.Code,
   input: { request: CheckoutRequestDto },
-  routes: [{ target: ApplyVipCouponAction }, { target: RenderInvoiceAction }],
+  routes: [ApplyVipCouponAction, RenderInvoiceAction],
 })
 export class TierBrokenRouter implements RouterHandler<TierBrokenRouter> {
   route(input: InputOf<TierBrokenRouter>): Route<TierBrokenRouter> {
-    return input.request.value.tier === "vip"
+    return input.request.tier === "vip"
       ? ApplyVipCouponAction
       : RenderInvoiceAction;
   }
@@ -123,18 +102,14 @@ export class MissingInputBrokenFinish {}
 @Workflow({
   name: "missing-input-broken-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(MissingInputBrokenStart)
-      .returns(CheckoutRequestDto)
+    onStart(MissingInputBrokenStart)
       .toRouter(TierBrokenRouter)
-      .chooseOne(
-        route(ApplyVipCouponAction)
-          .returns(CouponDiscountDto)
-          .toAction(RenderInvoiceAction),
-        route(RenderInvoiceAction),
-      ),
-    action(RenderInvoiceAction)
-      .returns(InvoiceSummaryDto)
+      .onRoute(toAction(ApplyVipCouponAction)
+          .toAction(RenderInvoiceAction))
+      .onRoute(toAction(RenderInvoiceAction)),
+    onAction(RenderInvoiceAction)
       .toFinish(MissingInputBrokenFinish),
   ],
 })

@@ -13,7 +13,7 @@ export class FormatDeclinedReceiptAction implements ActionHandler<FormatDeclined
     input: InputOf<FormatDeclinedReceiptAction>,
   ): Promise<OutputOf<FormatDeclinedReceiptAction>> {
     return Object.assign(new PaymentReceiptDto(), {
-      transactionId: `COMPENSATED-${input.reservation.value.reservationCode}`,
+      transactionId: `COMPENSATED-${input.reservation.reservationCode}`,
       status: "COMPENSATED_AND_DECLINED",
     });
   }

@@ -14,7 +14,7 @@ export class CalculateInitialShippingAction
   async execute(
     input: InputOf<CalculateInitialShippingAction>,
   ): Promise<OutputOf<CalculateInitialShippingAction>> {
-    const country = input.draft.value.destinationCountry;
+    const country = input.draft.destinationCountry;
     return Object.assign(new ShippingQuoteDto(), {
       shippingCents: country === "US" ? 1_500 : 4_500,
       quotedForCountry: country,

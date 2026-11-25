@@ -10,9 +10,9 @@ import { OrderDraftDto } from "../dto/order-draft.dto.js";
 export class MutateDestinationAction implements ActionHandler<MutateDestinationAction> {
   async execute(input: InputOf<MutateDestinationAction>): Promise<OutputOf<MutateDestinationAction>> {
     return Object.assign(new OrderDraftDto(), {
-      orderId: input.draft.value.orderId,
-      subtotalCents: input.draft.value.subtotalCents,
-      destinationCountry: input.draft.value.requestedCountryChange,
+      orderId: input.draft.orderId,
+      subtotalCents: input.draft.subtotalCents,
+      destinationCountry: input.draft.requestedCountryChange,
       requestedCountryChange: "",
     });
   }

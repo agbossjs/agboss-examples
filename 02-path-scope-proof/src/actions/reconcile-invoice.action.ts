@@ -17,11 +17,11 @@ import { TaxCalculationDto } from "../dto/tax-calculation.dto.js";
 export class ReconcileInvoiceAction implements ActionHandler<ReconcileInvoiceAction> {
   async execute(input: InputOf<ReconcileInvoiceAction>): Promise<OutputOf<ReconcileInvoiceAction>> {
     const netSubtotal =
-      input.quote.value.totalCents - input.loyalty.value.discountCents;
+      input.quote.totalCents - input.loyalty.discountCents;
     const adjustedTax = Math.round(netSubtotal * 0.1);
     return Object.assign(new FinalInvoiceDto(), {
-      grandTotalCents: netSubtotal + adjustedTax + input.tax.value.taxCents * 0,
-      pricingSource: `${input.quote.value.source}+reconciled-after-join`,
+      grandTotalCents: netSubtotal + adjustedTax + input.tax.taxCents * 0,
+      pricingSource: `${input.quote.source}+reconciled-after-join`,
     });
   }
 }

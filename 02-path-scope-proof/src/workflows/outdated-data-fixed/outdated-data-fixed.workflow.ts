@@ -1,4 +1,4 @@
-import { Workflow, action, route, start } from "@agboss/core";
+import { Workflow, onStart, onAction, toAction, Ttl } from "@agboss/core";
 import { BuildReceiptAction } from "../../actions/build-receipt.action.js";
 import { CalculateInitialShippingAction } from "../../actions/calculate-initial-shipping.action.js";
 import { ComputeTaxAction } from "../../actions/compute-tax.action.js";
@@ -15,24 +15,18 @@ import { OutdatedDataFixedStart } from "./outdated-data-fixed.workflow-start.js"
 @Workflow({
   name: "outdated-data-fixed-workflow",
   version: "0.1.0",
+  historyTtl: Ttl.Forever,
+  executionLimits: { maxSteps: 8 },
   flow: [
-    start(OutdatedDataFixedStart)
-      .returns(OrderDraftDto)
+    onStart(OutdatedDataFixedStart)
       .toAction(CalculateInitialShippingAction)
-      .returns(ShippingQuoteDto)
       .toRouter(AddressChangeRouter)
-      .chooseOne(
-        route(MutateDestinationAction)
-          .returns(OrderDraftDto)
+      .onRoute(toAction(MutateDestinationAction)
           .toAction(RecomputeShippingAction)
-          .returns(ShippingQuoteDto)
-          .toAction(ComputeTaxAction),
-        route(ComputeTaxAction),
-      ),
-    action(ComputeTaxAction)
-      .returns(TaxSummaryDto)
+          .toAction(ComputeTaxAction))
+      .onRoute(toAction(ComputeTaxAction)),
+    onAction(ComputeTaxAction)
       .toAction(BuildReceiptAction)
-      .returns(FinalReceiptDto)
       .toFinish(OutdatedDataFixedFinish),
   ],
 })

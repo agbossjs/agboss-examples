@@ -14,11 +14,11 @@ import { OrderDraftDto } from "../../dto/order-draft.dto.js";
   description: "Routes orders with a requested destination change to MutateDestinationAction",
   decidedBy: DecidedBy.Code,
   input: { draft: OrderDraftDto },
-  routes: [{ target: MutateDestinationAction }, { target: ComputeTaxAction }],
+  routes: [MutateDestinationAction, ComputeTaxAction],
 })
 export class AddressChangeRouter implements RouterHandler<AddressChangeRouter> {
   route(input: InputOf<AddressChangeRouter>): Route<AddressChangeRouter> {
-    return input.draft.value.requestedCountryChange !== ""
+    return input.draft.requestedCountryChange !== ""
       ? MutateDestinationAction
       : ComputeTaxAction;
   }

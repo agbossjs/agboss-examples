@@ -1,28 +1,28 @@
 import { createApp, ExecutionStatus } from "@agboss/core";
-import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
+import { installOfflineNetworkGuard } from "../../../scripts/tooling/offline-transports.js";
 import {
   CheckoutRequestDto,
   MissingInputFixedApplication,
   MissingInputFixedStart,
-} from "../cases/01-missing-input/agboss-fixed/application.js";
-import { buildBrokenMissingInputLangGraph } from "../cases/01-missing-input/langgraph-broken/graph.js";
+} from "../../cases/01-missing-input/agboss-fixed/application.js";
+import { buildBrokenMissingInputLangGraph } from "../../cases/01-missing-input/langgraph-broken/graph.js";
 import {
   OrderDraftDto,
   OutdatedDataFixedApplication,
   OutdatedDataFixedStart,
-} from "../cases/02-outdated-data/agboss-fixed/application.js";
-import { buildBrokenOutdatedDataLangGraph } from "../cases/02-outdated-data/langgraph-broken/graph.js";
+} from "../../cases/02-outdated-data/agboss-fixed/application.js";
+import { buildBrokenOutdatedDataLangGraph } from "../../cases/02-outdated-data/langgraph-broken/graph.js";
 import {
   CartRequestDto,
   ParallelInvalidationFixedApplication,
   ParallelInvalidationFixedStart,
-} from "../cases/03-parallel-invalidation/agboss-fixed/application.js";
-import { buildBrokenParallelInvalidationLangGraph } from "../cases/03-parallel-invalidation/langgraph-broken/graph.js";
+} from "../../cases/03-parallel-invalidation/agboss-fixed/application.js";
+import { buildBrokenParallelInvalidationLangGraph } from "../../cases/03-parallel-invalidation/langgraph-broken/graph.js";
 import {
   BookingRequestDto,
   UncompensatedFixedApplication,
   UncompensatedFixedStart,
-} from "../cases/04-uncompensated-action/agboss-fixed/application.js";
+} from "../../cases/04-uncompensated-action/agboss-fixed/application.js";
 
 async function main(): Promise<void> {
   const restoreFetch = installOfflineNetworkGuard();

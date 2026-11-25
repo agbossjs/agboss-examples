@@ -16,11 +16,11 @@ export class RenderStandardInvoiceAction
   async execute(
     input: InputOf<RenderStandardInvoiceAction>,
   ): Promise<OutputOf<RenderStandardInvoiceAction>> {
-    const finalTotalCents = input.request.value.subtotalCents;
+    const finalTotalCents = input.request.subtotalCents;
     return Object.assign(new InvoiceSummaryDto(), {
-      orderId: input.request.value.orderId,
+      orderId: input.request.orderId,
       finalTotalCents,
-      invoiceText: `Order ${input.request.value.orderId} (NO-COUPON): $${(
+      invoiceText: `Order ${input.request.orderId} (NO-COUPON): $${(
         finalTotalCents / 100
       ).toFixed(2)}`,
     });

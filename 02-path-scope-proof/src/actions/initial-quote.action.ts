@@ -11,7 +11,7 @@ import { PricingQuoteDto } from "../dto/pricing-quote.dto.js";
 export class InitialQuoteAction implements ActionHandler<InitialQuoteAction> {
   async execute(input: InputOf<InitialQuoteAction>): Promise<OutputOf<InitialQuoteAction>> {
     return Object.assign(new PricingQuoteDto(), {
-      totalCents: input.cart.value.baseCents,
+      totalCents: input.cart.baseCents,
       source: "initial-quote",
     });
   }

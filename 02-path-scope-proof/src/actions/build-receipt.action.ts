@@ -17,12 +17,12 @@ import { TaxSummaryDto } from "../dto/tax-summary.dto.js";
 export class BuildReceiptAction implements ActionHandler<BuildReceiptAction> {
   async execute(input: InputOf<BuildReceiptAction>): Promise<OutputOf<BuildReceiptAction>> {
     const grandTotalCents =
-      input.draft.value.subtotalCents +
-      input.shipping.value.shippingCents +
-      input.tax.value.taxCents;
+      input.draft.subtotalCents +
+      input.shipping.shippingCents +
+      input.tax.taxCents;
     return Object.assign(new FinalReceiptDto(), {
       grandTotalCents,
-      summary: `Order ${input.draft.value.orderId} [dest=${input.draft.value.destinationCountry}, shipFor=${input.shipping.value.quotedForCountry}]: $${(
+      summary: `Order ${input.draft.orderId} [dest=${input.draft.destinationCountry}, shipFor=${input.shipping.quotedForCountry}]: $${(
         grandTotalCents / 100
       ).toFixed(2)}`,
     });

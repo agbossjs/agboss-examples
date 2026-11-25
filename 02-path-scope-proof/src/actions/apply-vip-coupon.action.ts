@@ -12,7 +12,7 @@ export class ApplyVipCouponAction implements ActionHandler<ApplyVipCouponAction>
   async execute(input: InputOf<ApplyVipCouponAction>): Promise<OutputOf<ApplyVipCouponAction>> {
     return Object.assign(new CouponDiscountDto(), {
       code: "VIP20",
-      discountCents: Math.round(input.request.value.subtotalCents * 0.2),
+      discountCents: Math.round(input.request.subtotalCents * 0.2),
     });
   }
 }
