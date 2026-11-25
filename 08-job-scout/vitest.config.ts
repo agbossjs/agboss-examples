@@ -13,7 +13,7 @@ export default defineConfig({
     // tests/demo.test.ts runs `npm run demo` as a child process
     testTimeout: 120_000,
     // the shortlist MCP server writes to a temp folder in tests, never to ~/job-scout
-    env: { JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests"), AGBOSS_SQLITE_PATH: ":memory:" },
+    env: { PII_PSEUDONYM_KEY: "job-scout-offline-pseudonym-key", JOB_SCOUT_DIR: join(tmpdir(), "job-scout-tests"), AGBOSS_SQLITE_PATH: ":memory:" },
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

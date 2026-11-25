@@ -1,8 +1,6 @@
 import { DatabaseStorage, SqliteDriver, defineEnv, env, secret } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 
-process.env.PII_PSEUDONYM_KEY ??= "handbook-demo-synthetic-pseudonym-key";
-
 const databaseEnv = defineEnv({
   /** The SQLite file (`:memory:` for the demo and the tests). */
   path: env("SQLITE_PATH", { default: ":memory:" }),

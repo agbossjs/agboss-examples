@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { CompensationReason, CompensationStatus, createApp, ExecutionStatus } from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { getOperationLedgerEntries, getResourceState, resetOperationLedger } from "../src/services/operation-ledger.service.js";

@@ -6,6 +6,8 @@ import { agbossVitest } from "@agboss/core/testing/vitest";
 export default defineConfig({
   test: agbossVitest({
     include: ["tests/**/*.test.ts"],
+    // synthetic keys for the tests only; the application fails closed without its own
+    env: { PII_PSEUDONYM_KEY: "handbook-demo-synthetic-pseudonym-key" },
     // a test that asserts nothing proves nothing
     expect: { requireAssertions: true },
     // tests/demo.test.ts runs the demo in a process

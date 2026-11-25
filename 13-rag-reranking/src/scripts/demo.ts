@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 /**
  * `npm run demo` — offline, $0: the Cohere SDK against the local stub of its rerank API, OpenRouter's
  * wire scripted. Everything printed is read from the executions (`result.output`, `result.spend`)

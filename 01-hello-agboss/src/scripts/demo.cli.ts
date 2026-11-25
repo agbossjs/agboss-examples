@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 import { createApp, ExecutionStatus } from "@agboss/core";
 import { installOfflineNetworkGuard } from "../../../scripts/tooling/offline-transports.js";
 import { startPricingApiStubServer } from "../services/pricing-catalog.service.js";

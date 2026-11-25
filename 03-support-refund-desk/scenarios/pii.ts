@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp, PiiKind, PiiRefusedError } from "@agboss/core";
 import { LangfuseTracer } from "@agboss/langfuse";
 import { createServer } from "node:http";

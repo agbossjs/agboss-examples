@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp, HealthComponentKind, HealthStatus, type HealthReport } from "@agboss/core";
 import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 

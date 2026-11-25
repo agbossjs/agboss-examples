@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 import { createApp } from "@agboss/core";
 import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey } from "../../../scripts/tooling/offline-transports.js";
 import { runEvalScenario } from "../../scenarios/evals.js";

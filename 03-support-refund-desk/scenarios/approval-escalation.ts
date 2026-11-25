@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason, type App } from "@agboss/core";
 import { seconds, type Milliseconds } from "@agboss/core/units";
 import { setTimeout as sleep } from "node:timers/promises";

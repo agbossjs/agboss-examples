@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 /**
  * `npm run demo` (offline, $0) and `npm run demo:live` (OpenRouter, `OPENROUTER_API_KEY` in `.env`):
  * one job seeker's conversation on one thread —

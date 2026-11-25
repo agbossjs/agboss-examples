@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp } from "@agboss/core";
 import { pathToFileURL } from "node:url";
 import { getRecordedModelRequests, resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";

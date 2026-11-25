@@ -1,10 +1,6 @@
 import { DatabaseStorage, SqliteDriver, defineEnv, env, secret } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 
-// Offline defaults, so `agboss check`, the demos and the scenarios need no setup; a deployment sets both variables.
-process.env.PII_PSEUDONYM_KEY ??= "cluster-work-stealing-pseudonym-key-32b!!";
-process.env.IDEMPOTENCY_KEY ??= "cluster-work-stealing-offline-idempotency-key";
-
 const databaseEnv = defineEnv({
   /** The SQLite file (`:memory:` for the demo and the tests). */
   path: env("SQLITE_PATH", { default: ":memory:" }),

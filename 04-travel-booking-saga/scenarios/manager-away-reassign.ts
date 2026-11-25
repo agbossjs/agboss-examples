@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { hours } from "@agboss/core/units";

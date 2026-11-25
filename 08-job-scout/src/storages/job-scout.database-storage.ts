@@ -1,8 +1,6 @@
 import { DatabaseStorage, SqliteDriver, defineEnv, env, secret } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 
-process.env.PII_PSEUDONYM_KEY ??= "job-scout-offline-pseudonym-key";
-
 const databaseEnv = defineEnv({
   /** The SQLite file (`:memory:` in the tests: vitest.config.ts). */
   path: env("AGBOSS_SQLITE_PATH", { default: ".agboss/job-scout.sqlite" }),

@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 import { createApp, ExecutionStatus } from "@agboss/core";
 import {
   createHelloOfflineFetch,

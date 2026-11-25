@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 import { createApp, ExecutionStatus, StreamEventKind } from "@agboss/core";
 import { HelloAgbossApplication } from "../hello-agboss.application.js";
 import { StreamingAnswerWorkflowStart } from "../workflows/streaming-answer/streaming-answer.workflow-start.js";

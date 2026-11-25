@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { BranchStatus, BranchVerdict, createApp, ExecutionStatus } from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";

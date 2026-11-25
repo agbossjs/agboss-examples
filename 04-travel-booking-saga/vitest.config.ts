@@ -6,6 +6,8 @@ import { agbossVitest } from "@agboss/core/testing/vitest";
 export default defineConfig({
   test: agbossVitest({
     include: ["tests/**/*.test.ts"],
+    // synthetic keys for the tests only; the application fails closed without its own
+    env: { PII_PSEUDONYM_KEY: "travel-booking-saga-offline-pseudonym-key" },
     testTimeout: 30_000,
   }),
 });

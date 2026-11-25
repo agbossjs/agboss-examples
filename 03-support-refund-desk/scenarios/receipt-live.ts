@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

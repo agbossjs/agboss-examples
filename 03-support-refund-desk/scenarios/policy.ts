@@ -1,3 +1,4 @@
+import "../src/scripts/offline-keys.js";
 import { createApp, GuardrailBlockedError, ToolBlockedError, ToolCallStatus } from "@agboss/core";
 import { pathToFileURL } from "node:url";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
