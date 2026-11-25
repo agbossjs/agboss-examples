@@ -1,22 +1,20 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeEach } from "vitest";
+
+const folder = mkdtempSync(join(tmpdir(), "payment-gateways-"));
+let count = 0;
+process.on("exit", () => { rmSync(folder, { recursive: true, force: true }); });
 
 /**
- * A SQLite file of its own (`SQLITE_PATH`, what the application's storage reads in place of `:memory:`) for
- * each test of the calling file: the two instances of one test share it, no other test sees it (a test's
- * ids start again at `thread-1` / `execution-1`).
+ * Points `SQLITE_PATH` (what the application's storage reads in place of `:memory:`) at a new file, the one
+ * the NEXT test's two instances share and no other test sees. The storage reads the path when the test's
+ * fixtures are set up, before its body: a test cannot choose its own file, so each test ends by choosing the
+ * next one's (and the file is chosen once at load, for the first).
  */
-export function instancesFilePerTest(): void {
-  const folder = mkdtempSync(join(tmpdir(), "payment-gateways-"));
-  let count = 0;
-  beforeEach(() => {
-    count += 1;
-    process.env.SQLITE_PATH = join(folder, `test-${String(count)}.sqlite`);
-  });
-  afterAll(() => {
-    process.env.SQLITE_PATH = ":memory:";
-    rmSync(folder, { recursive: true, force: true });
-  });
+export function nextInstancesFile(): void {
+  count += 1;
+  process.env.SQLITE_PATH = join(folder, `test-${String(count)}.sqlite`);
 }
+
+nextInstancesFile();

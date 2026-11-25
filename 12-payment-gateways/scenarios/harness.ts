@@ -11,7 +11,7 @@ import {
 } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import type { GatewayPayments } from "../src/gateway-payments.js";
-import { instancesFilePerTest } from "../tests/support/instances-file.js";
+import { nextInstancesFile } from "../tests/support/instances-file.js";
 import { PaymentGatewaysApplication } from "../src/payment-gateways.application.js";
 import type { StubKit } from "../src/stub-kit/stub-kit.js";
 
@@ -70,7 +70,6 @@ export function useGateway(
   gateway: GatewayUnderTest,
   certificate?: string,
 ): void {
-  instancesFilePerTest(); // a SQLite file of its own for each test of the file
   process.env.GATEWAY_STUB_URL = gateway.stub.baseUrl;
   if (certificate !== undefined) process.env.GATEWAY_STUB_CA = certificate;
 }
@@ -146,6 +145,7 @@ export function gatewayTest(gateway: GatewayUnderTest, row: GatewayRow): void {
       );
       expect(mismatches).toEqual([]);
     } finally {
+      nextInstancesFile(); // the next test's two instances share a file of their own
       gateway.stub.release();
       for (const each of apps) leases.thaw(each);
     }

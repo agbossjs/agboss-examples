@@ -12,7 +12,7 @@ const root = join(import.meta.dirname, "..", "..");
 const rowsDir = join(root, ".artifacts", "rows");
 rmSync(rowsDir, { recursive: true, force: true });
 
-const vitest = await startVitest("test", ["tests/gateways/"], { root, watch: false, reporters: ["dot"], exclude: ["tests/gateways/stubs.test.ts", "node_modules/**"] });
+const vitest = await startVitest("test", ["tests/gateways/"], { root, watch: false, maxWorkers: 2, fileParallelism: false, reporters: ["dot"], exclude: ["tests/gateways/stubs.test.ts", "node_modules/**"] });
 await vitest.close();
 
 interface Row {
