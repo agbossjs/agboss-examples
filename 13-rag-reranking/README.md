@@ -15,7 +15,7 @@
 A retriever, keyword or vector, often ranks the passage that answers below near-misses that repeat
 the question's words. Reranking fixes that: fetch more candidates (30 here), re-order them with a
 more precise model and give the agent the best few (3). In AGBoss a knowledge base opts in on its
-`@Rag` declaration. Cohere Rerank plugs in on its own SDK as a code `@Reranker`, with no AGBoss
+`@Rag` declaration. Cohere Rerank plugs in on its own SDK as a code `@RagReranker`, with no AGBoss
 wrapper. Swapping it for AGBoss's own LLM reranker changes one line of that declaration.
 Wiki: [Knowledge bases → Reranking](https://github.com/agbossjs/agboss/wiki/Knowledge-bases#reranking).
 
@@ -23,7 +23,8 @@ Wiki: [Knowledge bases → Reranking](https://github.com/agbossjs/agboss/wiki/Kn
 @Rag({
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
-  rerank: { by: CohereReranker, candidates: 30, topK: 3 }, // or: by: HandbookLlmReranker
+  topK: 3,
+  reranker: CohereReranker, // or: reranker: HandbookLlmReranker (each `@RagReranker` carries its `candidates: 30`)
 })
 export class HandbookRag extends HandbookSearch {}
 ```
@@ -32,12 +33,12 @@ export class HandbookRag extends HandbookSearch {}
 
 | Promise | Threat / Failure Injected | AGBoss Mechanism | Executable Proof |
 |---|---|---|---|
-| **The relevant passage reaches the agent first** | The retriever ranks the answer 27th of 30, behind near-misses that repeat "on-call" | `@Rag({ rerank })`: 30 candidates → `@Reranker` → the best 3, in tool and in context mode | [`tests/reranking.test.ts`](./tests/reranking.test.ts) |
+| **The relevant passage reaches the agent first** | The retriever ranks the answer 27th of 30, behind near-misses that repeat "on-call" | `@Rag({ topK, reranker })`: 30 candidates (the reranker's `candidates`) → `@RagReranker` → the best 3, in a tool (`SearchHandbookTool`) and in the context (`rag: [HandbookRag]`) | [`tests/reranking.test.ts`](./tests/reranking.test.ts) |
 | **A dedicated rerank API on its official SDK** | A thin wrapper drifting from the vendor's SDK | `CohereReranker implements RerankerHandler` calls `CohereClientV2.rerank` itself; ~25 lines | [`src/rerankers/cohere.reranker.ts`](./src/rerankers/cohere.reranker.ts) |
-| **The reranker's cost is a retrieval cost the budgets count** | A reranker billed outside the turn's financials | its `costUsd` (search units × your price) under `rag:handbook-rag`, category `retrieval` | › "tool mode …" (`result.spend`) |
-| **A failing rerank API does not fail the answer** | Cohere answers 503 (twice: the SDK's own retry too) | `RerankFailurePolicy.Fallback` (default): the retriever's own first 3, a `rerank:<name>:fallback` span | [`tests/failure.test.ts`](./tests/failure.test.ts) |
-| **Swapping the reranker is one line** | Coupling to a vendor | `by: HandbookLlmReranker` — the same retriever, candidates and topK | [`tests/swap.test.ts`](./tests/swap.test.ts) |
-| **The reranker sees only the tenant's own candidates** | A reranker that could reorder (or inject) another tenant's passages | the core passes the tenant (#700) and keeps only a subset of the tenant's candidates | [`tests/tenants.test.ts`](./tests/tenants.test.ts): `ragConnectorContract` through Cohere |
+| **The reranker's cost is a retrieval cost the budgets count** | A reranker billed outside the turn's financials | its `costUsd` (search units × your price) under `rag:handbook-rag`, category `rag` | › "tool mode …" (`result.spend`) |
+| **A failing rerank API does not fail the answer** | Cohere answers 503 (twice: the SDK's own retry too) | `onFailure: RerankFailurePolicy.Fallback` (the default is `FailStep`): the retriever's own first 3, a `rerank:<name>:fallback` span | [`tests/failure.test.ts`](./tests/failure.test.ts) |
+| **Swapping the reranker is one line** | Coupling to a vendor | `reranker: HandbookLlmReranker` — the same retriever, candidates and topK | [`tests/swap.test.ts`](./tests/swap.test.ts) |
+| **The reranker sees only the tenant's own candidates** | A reranker that could reorder (or inject) another tenant's passages | the core passes the tenant (#700) and keeps only a subset of the tenant's candidates | [`tests/tenants.test.ts`](./tests/tenants.test.ts): `ragSourceContract` through Cohere |
 
 ## 2. Commands
 
@@ -54,7 +55,7 @@ Offline and $0: no key, no network beyond `127.0.0.1`. The SDK is pinned exactly
 ## 3. Layout
 
 ```
-src/rag/handbook.rag.ts                  the knowledge base: retriever + rerank: { by, candidates, topK }
+src/rag/handbook.rag.ts                  the knowledge base: a `RagSource` retriever + `reranker`, `topK`, `scope`
 src/rag/handbook-search.ts               the retriever (the tenant's passages, near-misses first)
 src/rerankers/cohere.reranker.ts         Cohere Rerank on cohere-ai: the wiring to copy
 src/rerankers/handbook-llm.reranker.ts   AGBoss's LLM reranker on a cheap model: the swap
@@ -79,3 +80,11 @@ src/offline/offline-openrouter.ts        the demo's scripted OpenRouter wire
   mask a code reranker's own API call.
 - **A live run** (optional, your keys): `COHERE_API_KEY=… OPENROUTER_API_KEY=… PII_PSEUDONYM_KEY=… npx agboss run --start
   briefing-workflow-start "When does a new engineer join on-call?"` on the `dev` environment.
+
+## The 0.1.1 shape of this example
+
+- The knowledge base is a `RagSource` (`HandbookSearch`: `protected override retrieve`) declared `@Rag({ scope: RagScope.Tenant, topK, reranker })`;
+  the rerankers are `@RagReranker` classes carrying their `candidates` and `onFailure`; the agent that searched in "tool mode" now has an ordinary
+  `@Tool` (`SearchHandbookTool`) over `HandbookRag.search`, and the briefing agent reads it as its context (`rag: [HandbookRag]`).
+- Cohere's key and address are `defineEnv` references (`cohereEnv`); OpenRouter is a driver provider and the application's `modelProvider`;
+  the rows are `HandbookDatabaseStorage`; the environment contract is `EmptyEnvironment`.

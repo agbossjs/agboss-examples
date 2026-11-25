@@ -1,15 +1,9 @@
 // Independent example, not affiliated with Cohere; "Cohere" names only its public API. Read on
 // 2026-11-02: https://docs.cohere.com/reference/rerank, https://docs.cohere.com/docs/rerank-overview,
 // pricing https://cohere.com/pricing — check them before relying on this code.
-// one entry for a reranker's author (agbossjs/agboss#818): DecidedBy and RagSearchResultDto too
-import {
-  DecidedBy,
-  Reranker,
-  type RagSearchResultDto,
-  type RerankerHandler,
-  type RerankOptions,
-  type RerankResult,
-} from "@agboss/core/rag";
+// one entry for a reranker's author (agbossjs/agboss#818): RagSearchResultDto too
+import { RagReranker, RerankFailurePolicy, type RagSearchResultDto, type RerankOptions, type RerankResult } from "@agboss/core/rag";
+import { usd } from "@agboss/core/units";
 import { CohereClientService } from "../services/cohere-client.service.js";
 
 /** The rerank model (the SDK's own reference example). */
@@ -21,14 +15,15 @@ export const COHERE_RERANK_MODEL = "rerank-v4.0-pro";
  */
 export const USD_PER_SEARCH_UNIT = 0.002;
 
-/** Cohere Rerank on its official SDK, as a code `@Reranker`: the candidates in, their indexes out. */
-@Reranker({
+/** Cohere Rerank on its official SDK, as a code `@RagReranker`: the candidates in, their indexes out. */
+@RagReranker({
   name: "cohere-reranker",
   description: "Cohere Rerank (cohere-ai)",
-  decidedBy: DecidedBy.Code,
+  candidates: 30,
+  onFailure: RerankFailurePolicy.Fallback, // a 503 gives the agent the retriever's own first topK
   deps: [CohereClientService],
 })
-export class CohereReranker implements RerankerHandler {
+export class CohereReranker {
   constructor(private readonly cohereClientService: CohereClientService) {}
 
   async rerank(
@@ -53,6 +48,6 @@ export class CohereReranker implements RerankerHandler {
         : [{ source: candidate.source, text: candidate.text, score: relevanceScore }];
     });
     const searchUnits = response.meta?.billedUnits?.searchUnits ?? 1;
-    return { results, costUsd: searchUnits * USD_PER_SEARCH_UNIT };
+    return { results, costUsd: usd(searchUnits * USD_PER_SEARCH_UNIT) };
   }
 }

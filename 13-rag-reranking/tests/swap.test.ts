@@ -1,11 +1,11 @@
 /**
  * Swapping the reranker (agbossjs/agboss#703 AC4): AGBoss's LLM reranker in place of Cohere is the
- * `by` of the `@Rag` — the same retriever, candidates and topK; nothing else changes. The swapped
- * declaration below is `handbook.rag.ts` with that one line changed, run with `testRag`.
+ * `reranker` of the `@Rag` — the same retriever, candidates and topK; nothing else changes. The swapped
+ * declaration below is `handbook.rag.ts` with that one line changed, run with `testUnit`.
  */
 import { expect } from "vitest";
-import { Rag, RagTenancy } from "@agboss/core/rag";
-import { replyWith, testRag, testWith } from "@agboss/core/testing";
+import { Rag, RagScope } from "@agboss/core/rag";
+import { replyWith, testUnit, testWith } from "@agboss/core/testing";
 import { HandbookApplication } from "../src/handbook.application.js";
 import { ANSWER } from "../src/rag/handbook.data.js";
 import { HandbookSearch } from "../src/rag/handbook-search.js";
@@ -20,16 +20,16 @@ const test = testWith(HandbookApplication, { allowNetwork: ["127.0.0.1"] });
 @Rag({
   name: "handbook-rag",
   description: "The engineering handbook: onboarding, on-call, tooling",
-  tenancy: RagTenancy.PerTenant,
-  rerank: { by: HandbookLlmReranker, candidates: 30, topK: 3 },
+  scope: RagScope.Tenant,
+  topK: 3,
+  reranker: HandbookLlmReranker,
 })
 class HandbookRagOnTheLlmReranker extends HandbookSearch {}
 
 test("the same handbook, reranked by Cohere or by the LLM reranker: the answer first either way", async () => {
-  const environment = { cohereBaseUrl: process.env.COHERE_BASE_URL };
-  const cohere = await testRag(HandbookRag, { environment })("When does a new engineer join on-call?");
+  const cohere = await testUnit(HandbookRag)("When does a new engineer join on-call?");
   // the LLM reranker's model names candidate 27 first (scripted: no model is called)
-  const llm = await testRag(HandbookRagOnTheLlmReranker, { model: replyWith('{"ranking":[27]}') })(
+  const llm = await testUnit(HandbookRagOnTheLlmReranker, { model: replyWith('{"ranking":[27]}') })(
     "When does a new engineer join on-call?",
   );
 

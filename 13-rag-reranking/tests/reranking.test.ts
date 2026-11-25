@@ -9,7 +9,7 @@ import { BriefingAgent } from "../src/agents/briefing.agent.js";
 import { HandbookAgent } from "../src/agents/handbook.agent.js";
 import { HandbookApplication } from "../src/handbook.application.js";
 import { ANSWER } from "../src/rag/handbook.data.js";
-import { HandbookRag } from "../src/rag/handbook.rag.js";
+import { SearchHandbookTool } from "../src/tools/search-handbook.tool.js";
 import { COHERE_RERANK_MODEL, USD_PER_SEARCH_UNIT } from "../src/rerankers/cohere.reranker.js";
 import { BriefingWorkflowStart } from "../src/workflows/handbook/briefing.workflow-start.js";
 import { HandbookWorkflowStart } from "../src/workflows/handbook/handbook.workflow-start.js";
@@ -22,7 +22,7 @@ const QUESTION = "When does a new engineer join on-call?";
 
 test("tool mode: the 27th candidate, first after Cohere's reranking, is the first result the agent reads", async ({ app, mockLlm }) => {
   mockLlm(HandbookAgent).thenReturn(
-    callTool(HandbookRag, { query: QUESTION }),
+    callTool(SearchHandbookTool, { query: QUESTION }),
     replyWith(`After the third month [${ANSWER.source}].`),
   );
 
@@ -35,7 +35,7 @@ test("tool mode: the 27th candidate, first after Cohere's reranking, is the firs
   // the SDK sent all 30 candidates, asked for the best 3, on the documented model
   expect(stub.calls.at(-1)).toMatchObject({ model: COHERE_RERANK_MODEL, topN: 3 });
   expect(stub.calls.at(-1)?.documents).toHaveLength(30);
-  expect(result.spend.byCategory.retrieval).toBeCloseTo(USD_PER_SEARCH_UNIT, 10);
+  expect(result.spend.byCategory.rag).toBeCloseTo(USD_PER_SEARCH_UNIT, 10);
 });
 
 test("context mode: the knowledge block given with the question starts with the answer", async ({ app, mockLlm }) => {

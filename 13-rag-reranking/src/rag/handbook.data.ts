@@ -1,4 +1,4 @@
-import type { RagSearchResultDto } from "@agboss/core/dto";
+import type { RagSearchResultDto } from "@agboss/core/rag";
 
 /**
  * Each tenant's handbook as the retriever ranks it for "When does a new engineer join on-call?":

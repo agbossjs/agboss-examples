@@ -13,6 +13,9 @@ export default tseslint.config(
     },
     rules: {
       "@typescript-eslint/no-extraneous-class": ["error", { allowWithDecorator: true }],
+      // typescript-eslint 8.73 added it to strictTypeChecked: an object literal where a DTO class (or a class the framework types) is the
+      // parameter type is the documented call shape
+      "@typescript-eslint/no-unsafe-class-instance-assignment": "off",
     },
   },
   {

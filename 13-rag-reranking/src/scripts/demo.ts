@@ -5,12 +5,12 @@
  * does not hold.
  */
 import { createApp } from "@agboss/core";
-import { serveFetch } from "../../scripts/tooling/offline-transports.js";
-import { HandbookApplication } from "./handbook.application.js";
-import { createOfflineOpenRouter } from "./offline/offline-openrouter.js";
-import { ANSWER, HANDBOOK } from "./rag/handbook.data.js";
-import { CohereRerankStub } from "./stub/cohere-rerank.stub.js";
-import { BriefingWorkflowStart } from "./workflows/handbook/briefing.workflow-start.js";
+import { serveFetch } from "../../../scripts/tooling/offline-transports.js";
+import { HandbookApplication } from "../handbook.application.js";
+import { createOfflineOpenRouter } from "../offline/offline-openrouter.js";
+import { ANSWER, HANDBOOK } from "../rag/handbook.data.js";
+import { CohereRerankStub } from "../stub/cohere-rerank.stub.js";
+import { BriefingWorkflowStart } from "../workflows/handbook/briefing.workflow-start.js";
 
 const QUESTION = "When does a new engineer join on-call?";
 
@@ -27,7 +27,7 @@ const served = await serveFetch(openRouter.fetch);
 process.env.PII_PSEUDONYM_KEY ??= "handbook-demo-synthetic-pseudonym-key"; // a synthetic PII key unless one is set (R6)
 process.env.OPENROUTER_API_KEY = "offline";
 process.env.OPENROUTER_BASE_URL = served.baseUrl;
-const app = await createApp(HandbookApplication, { env: "offline" });
+const app = await createApp(HandbookApplication);
 
 try {
   console.log(`Question: ${QUESTION}`);
@@ -41,7 +41,7 @@ try {
   for (const line of reranked.spend.trace)
     console.log(`  spend: ${line.caller} ${line.model} $${line.costUsd.toFixed(6)} (${line.category})`);
   check(answer.includes(ANSWER.source), "the reranked answer cites the 27th candidate");
-  check(reranked.spend.byCategory.retrieval > 0, "Cohere's search unit is in the retrieval spend");
+  check(reranked.spend.byCategory.rag > 0, "Cohere's search unit is in the retrieval spend");
 
   stub.failNext(503, 2);
   const fallback = await app.execute(BriefingWorkflowStart, { text: QUESTION });
