@@ -1,10 +1,4 @@
-import {
-  Action,
-  listOf,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, listOf, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { BatchJobRequestDto } from "../dto/batch-job-request.dto.js";
 import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
 
@@ -20,7 +14,7 @@ export class PartitionBatchAction
   execute(
     input: InputOf<PartitionBatchAction>,
   ): Promise<OutputOf<PartitionBatchAction>> {
-    const { batchId, chunkCount } = input.request.value;
+    const { batchId, chunkCount } = input.request;
     const chunks: ChunkTaskDto[] = [];
     for (let i = 1; i <= chunkCount; i += 1) {
       chunks.push({

@@ -1,9 +1,4 @@
-import {
-  createApp,
-  HealthComponentKind,
-  HealthStatus,
-  type HealthReport,
-} from "@agboss/core";
+import { createApp, HealthComponentKind, HealthStatus, type HealthReport } from "@agboss/core";
 import { ClusterWorkStealingApplication } from "../src/cluster-work-stealing.application.js";
 
 export interface BackpressureHealthSummary {
@@ -20,12 +15,10 @@ export function summarizeHealthReport(
   return {
     livenessStatus: liveness.status,
     readinessStatus: readiness.status,
-    hasStepSlotsComponent: readiness.components.some(
-      (c) => c.kind === HealthComponentKind.StepSlots,
-    ),
+    hasStepSlotsComponent: typeof readiness.isBusy === "boolean", // the step slots' state is `isBusy`, no component of its own
     hasProjectHealthCheckComponent: readiness.components.some(
       (c) =>
-        c.kind === HealthComponentKind.Project &&
+        c.kind === HealthComponentKind.HealthCheck &&
         c.name === "storage-cluster-health-check",
     ),
   };

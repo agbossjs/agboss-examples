@@ -1,4 +1,4 @@
-import { HealthComponentKind, HealthStatus } from "@agboss/core";
+import { HealthStatus } from "@agboss/core";
 import { replyWith, testWith, waitFor } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
@@ -73,11 +73,8 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
       await clock.advance(seconds(1));
 
       const saturatedReadiness = await app.checkReadiness();
-      const stepSlotsComponent = saturatedReadiness.components.find(
-        (c) => c.kind === HealthComponentKind.StepSlots,
-      );
-      expect(stepSlotsComponent?.status).toBe(HealthStatus.Degraded);
-      expect(saturatedReadiness.status).toBe(HealthStatus.Degraded);
+      // a full instance reports `isBusy` (the step slots are no component of their own), orthogonal to its status
+      expect(saturatedReadiness.isBusy).toBe(true);
 
       await clock.advance(seconds(5));
       await Promise.all([run1, run2]);

@@ -1,5 +1,6 @@
-import { FencedEffectRepository, SqliteFencedEffectRepository, ThisWorkflow } from "@agboss/core";
-import { override, testAction, testTool } from "@agboss/core/testing";
+import { SqliteFencedEffectRepository, provide } from "@agboss/core";
+import { DATABASE_SETTINGS } from "@agboss/core/stores";
+import { testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { AggregateBatchResultsAction } from "../../src/actions/aggregate-batch-results.action.js";
 import { CommitChunkEffectAction } from "../../src/actions/commit-chunk-effect.action.js";
@@ -8,7 +9,6 @@ import { MarkShardFailedAction } from "../../src/actions/mark-shard-failed.actio
 import { MergeShardsAction } from "../../src/actions/merge-shards.action.js";
 import { PartitionBatchAction } from "../../src/actions/partition-batch.action.js";
 import { SplitShardAction } from "../../src/actions/split-shard.action.js";
-import { ChunkWorkerAgent } from "../../src/agents/chunk-worker/chunk-worker.agent.js";
 import { BatchJobRequestDto } from "../../src/dto/batch-job-request.dto.js";
 import { ChunkDraftDto } from "../../src/dto/chunk-draft.dto.js";
 import { ChunkFailedDto } from "../../src/dto/chunk-failed.dto.js";
@@ -18,22 +18,15 @@ import { DecomposeFailedDto } from "../../src/dto/decompose-failed.dto.js";
 import { DecomposeNodeDto } from "../../src/dto/decompose-node.dto.js";
 import { DecomposedLeafDto } from "../../src/dto/decomposed-leaf.dto.js";
 import { RequestChunkSignOffTool } from "../../src/tools/request-chunk-sign-off.tool.js";
-import { ChunkWorkerWorkflowStart } from "../../src/workflows/chunk-worker/chunk-worker.workflow-start.js";
-import { ChunkWorkerWorkflow } from "../../src/workflows/chunk-worker/chunk-worker.workflow.js";
-import { CoordinatorWorkflowStart } from "../../src/workflows/coordinator/coordinator.workflow-start.js";
-import { RecursiveDecomposerWorkflowStart } from "../../src/workflows/recursive-decomposer/recursive-decomposer.workflow-start.js";
 
 describe("05-cluster-work-stealing — Isolated Action & Tool Unit Tests", () => {
-  it("tests PartitionBatchAction, CommitChunkEffectAction, MarkChunkFailedAction, and AggregateBatchResultsAction via testAction()", async () => {
-    const runPartition = testAction(PartitionBatchAction);
+  it("tests PartitionBatchAction, CommitChunkEffectAction, MarkChunkFailedAction, and AggregateBatchResultsAction via testUnit()", async () => {
+    const runPartition = testUnit(PartitionBatchAction);
     const partitioned = await runPartition({
-      request: {
-        producer: CoordinatorWorkflowStart,
-        value: Object.assign(new BatchJobRequestDto(), {
+      request: Object.assign(new BatchJobRequestDto(), {
           batchId: "batch-1",
           chunkCount: 3,
         }),
-      },
     });
     expect(partitioned.output).toHaveLength(3);
     expect(partitioned.output[0]).toEqual({
@@ -42,55 +35,42 @@ describe("05-cluster-work-stealing — Isolated Action & Tool Unit Tests", () =>
     });
 
     // the commit is a fenced effect on the SQLite file (#500): the runner needs the file, and the
-    // application's store (the action injects FencedEffects, agbossjs/agboss#890)
-    const runCommit = testAction(CommitChunkEffectAction, {
-      environment: { sqlitePath: ":memory:" },
-      overrides: [override(FencedEffectRepository, SqliteFencedEffectRepository)],
+    // application's store (the action injects Idempotency, agbossjs/agboss#890)
+    const runCommit = testUnit(CommitChunkEffectAction, {
+      services: [
+        SqliteFencedEffectRepository,
+        provide(DATABASE_SETTINGS, { kind: "sqlite", path: ":memory:" }),
+      ],
     });
     const committed = await runCommit({
-      draft: {
-        producer: ChunkWorkerAgent,
-        value: Object.assign(new ChunkDraftDto(), {
+      draft: Object.assign(new ChunkDraftDto(), {
           chunkId: "batch-1-chunk-1",
           summary: "Processed #1",
         }),
-      },
     });
     expect(committed.output.chunkId).toBe("batch-1-chunk-1");
     expect(committed.output.summary).toBe("Processed #1");
     expect(committed.output.idempotencyKey).toBeTruthy();
 
-    const runMarkFailed = testAction(MarkChunkFailedAction);
+    const runMarkFailed = testUnit(MarkChunkFailedAction);
     const failedChunk = await runMarkFailed({
-      task: {
-        producer: ChunkWorkerWorkflowStart,
-        value: Object.assign(new ChunkTaskDto(), {
+      task: Object.assign(new ChunkTaskDto(), {
           chunkId: "batch-1-chunk-2",
           payload: "Segment #2 of batch-1",
         }),
-      },
     });
     expect(failedChunk.output.chunkId).toBe("batch-1-chunk-2");
     expect(failedChunk.output.reason).toContain("failed softly on worker");
 
-    const runAggregate = testAction(AggregateBatchResultsAction);
+    const runAggregate = testUnit(AggregateBatchResultsAction);
     const aggregated = await runAggregate({
-      request: {
-        producer: CoordinatorWorkflowStart,
-        value: Object.assign(new BatchJobRequestDto(), {
+      request: Object.assign(new BatchJobRequestDto(), {
           batchId: "batch-1",
           chunkCount: 2,
         }),
-      },
       outcomes: [
-        {
-          producer: ChunkWorkerWorkflow,
-          value: Object.assign(new ChunkResultDto(), committed.output),
-        },
-        {
-          producer: ChunkWorkerWorkflow,
-          value: Object.assign(new ChunkFailedDto(), failedChunk.output),
-        },
+        Object.assign(new ChunkResultDto(), committed.output),
+        Object.assign(new ChunkFailedDto(), failedChunk.output),
       ],
     });
     expect(aggregated.output.batchId).toBe("batch-1");
@@ -101,58 +81,43 @@ describe("05-cluster-work-stealing — Isolated Action & Tool Unit Tests", () =>
   });
 
   it("tests SplitShardAction, MarkShardFailedAction, MergeShardsAction, and RequestChunkSignOffTool", async () => {
-    const runSplit = testAction(SplitShardAction);
+    const runSplit = testUnit(SplitShardAction);
     const splitRes = await runSplit({
-      node: {
-        producer: RecursiveDecomposerWorkflowStart,
-        value: Object.assign(new DecomposeNodeDto(), {
+      node: Object.assign(new DecomposeNodeDto(), {
           nodeLabel: "ROOT",
           level: 0,
         }),
-      },
     });
     expect(splitRes.output).toEqual([
       { nodeLabel: "ROOT/L", level: 1 },
       { nodeLabel: "ROOT/R", level: 1 },
     ]);
 
-    const runMarkShardFailed = testAction(MarkShardFailedAction);
+    const runMarkShardFailed = testUnit(MarkShardFailedAction);
     const failedShard = await runMarkShardFailed({
-      node: {
-        producer: RecursiveDecomposerWorkflowStart,
-        value: Object.assign(new DecomposeNodeDto(), {
+      node: Object.assign(new DecomposeNodeDto(), {
           nodeLabel: "ROOT/R",
           level: 1,
         }),
-      },
     });
     expect(failedShard.output).toEqual({ nodeLabel: "ROOT/R" });
 
-    const runMerge = testAction(MergeShardsAction);
+    const runMerge = testUnit(MergeShardsAction);
     const merged = await runMerge({
-      node: {
-        producer: RecursiveDecomposerWorkflowStart,
-        value: Object.assign(new DecomposeNodeDto(), {
+      node: Object.assign(new DecomposeNodeDto(), {
           nodeLabel: "ROOT",
           level: 0,
         }),
-      },
       children: [
-        {
-          producer: ThisWorkflow,
-          value: Object.assign(new DecomposedLeafDto(), {
+        Object.assign(new DecomposedLeafDto(), {
             report: "ROOT/L=ok",
           }),
-        },
-        {
-          producer: ThisWorkflow,
-          value: Object.assign(new DecomposeFailedDto(), failedShard.output),
-        },
+        Object.assign(new DecomposeFailedDto(), failedShard.output),
       ],
     });
     expect(merged.output.report).toBe("ROOT: [ROOT/L=ok, FAILED(ROOT/R)]");
 
-    const runSignOff = testTool(RequestChunkSignOffTool);
+    const runSignOff = testUnit(RequestChunkSignOffTool);
     const approved = await runSignOff(
       Object.assign(new ChunkTaskDto(), {
         chunkId: "batch-1-chunk-3",

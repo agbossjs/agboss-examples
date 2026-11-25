@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/cluster-work-stealing.application.js",
     "dev": "tsx watch src/cluster-work-stealing.application.ts",
-    "demo": "tsx src/demo.ts",
+    "demo": "tsx src/scripts/demo.ts",
     "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "lint": "eslint .",
     "test": "vitest run"

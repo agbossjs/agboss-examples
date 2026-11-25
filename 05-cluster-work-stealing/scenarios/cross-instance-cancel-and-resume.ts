@@ -1,8 +1,4 @@
-import {
-  IncompatibleResumeError,
-  PausedExecutionRepository,
-  type App,
-} from "@agboss/core";
+import { IncompatibleResumeError, PausedExecutionRepository, type App } from "@agboss/core";
 import { setAllowIncompatibleResume } from "../src/workflows/chunk-worker/chunk-worker.workflow.js";
 
 export async function simulateVersionDriftOnPausedThread(

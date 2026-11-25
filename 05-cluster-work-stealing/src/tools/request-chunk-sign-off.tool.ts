@@ -1,6 +1,6 @@
 import { Tool, type ToolHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
-import { ChunkSignOffChannel } from "../channels/chunk-sign-off.channel-role.js";
+import { ChunkSignOffToolApproval } from "../channels/chunk-sign-off.tool-approval.js";
 import { ChunkDraftDto } from "../dto/chunk-draft.dto.js";
 import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
 
@@ -10,12 +10,12 @@ import { ChunkTaskDto } from "../dto/chunk-task.dto.js";
   input: ChunkTaskDto,
   output: ChunkDraftDto,
   timeout: seconds(15),
-  channel: ChunkSignOffChannel,
+  approval: ChunkSignOffToolApproval,
 })
 export class RequestChunkSignOffTool
   implements ToolHandler<ChunkTaskDto, ChunkDraftDto>
 {
-  run({ chunkId, payload }: ChunkTaskDto): Promise<ChunkDraftDto> {
+  execute({ chunkId, payload }: ChunkTaskDto): Promise<ChunkDraftDto> {
     return Promise.resolve({
       chunkId,
       summary: `Approved high-risk chunk ${chunkId}: ${payload}`,

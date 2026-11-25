@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import type { DatabaseSync } from "node:sqlite";
-import { Injectable, SqliteConnection } from "@agboss/core";
+import { Injectable } from "@agboss/core";
+import { SqliteConnection } from "@agboss/core/stores";
 
 /** The DDL of the ledger's table, applied once per connection. */
 const SCHEMA: string = readFileSync(new URL("../sql/chunk-commits.sql", import.meta.url), "utf8");
@@ -32,8 +32,8 @@ function commitRowOf(row: Record<string, unknown> | undefined): ChunkCommitRow {
 
 /**
  * The cluster's books of committed chunks, in the application's SQLite file — the file every
- * instance shares. `recordCommit` writes one row on the database a fenced effect gives it
- * (`SqliteFencedEffectRepository`, #500): synchronously, inside the effect's transaction, so the
+ * instance shares. `recordCommit` writes one row through the connection's `requireTransaction()`
+ * (#1317c), inside the `runOnce` of a fenced effect (#500): synchronously, inside the effect's transaction, so the
  * row and the effect's stored result commit together. A worker that lost its lease is refused
  * before it writes; a chunk committed again replays the first commit. The ledger keeps no
  * idempotency key and no fencing table of its own.
@@ -45,8 +45,9 @@ export class ChunkLedgerRepository {
   }
 
   /** One commit, written in the effect's transaction. */
-  recordCommit(database: DatabaseSync, commit: ChunkCommit): ChunkCommitRow {
-    const { lastInsertRowid } = database
+  recordCommit(commit: ChunkCommit): ChunkCommitRow {
+    const { lastInsertRowid } = this.sqliteConnection
+      .requireTransaction()
       .prepare("INSERT INTO chunk_commits (chunk_id, summary, step_key) VALUES (?, ?, ?)")
       .run(commit.chunkId, commit.summary, commit.stepKey);
     return { ...commit, commitNumber: Number(lastInsertRowid) };

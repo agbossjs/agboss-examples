@@ -7,7 +7,7 @@ import { DecomposedLeafDto } from "../../dto/decomposed-leaf.dto.js";
   name: "shard-analyzer-agent",
   description:
     "Completes a shard directly as DecomposedLeafDto or requests a recursive split via DecomposeSplitDecisionDto",
-  promptUrls: ["./shard-analyzer.prompt.md"],
+  prompt: "./shard-analyzer.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { node: DecomposeNodeDto },
   output: oneOf(DecomposedLeafDto, DecomposeSplitDecisionDto),

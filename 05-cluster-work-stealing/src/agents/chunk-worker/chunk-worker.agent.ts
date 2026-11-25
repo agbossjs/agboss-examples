@@ -6,11 +6,11 @@ import { RequestChunkSignOffTool } from "../../tools/request-chunk-sign-off.tool
 @Agent({
   name: "chunk-worker-agent",
   description: "Processes one work chunk on a cluster worker instance",
-  promptUrls: ["./chunk-worker.prompt.md"],
+  prompt: "./chunk-worker.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { task: ChunkTaskDto },
   output: ChunkDraftDto,
   tools: [RequestChunkSignOffTool],
-  maxToolCalls: 2,
+  executionLimits: { maxToolCalls: 2 },
 })
 export class ChunkWorkerAgent {}

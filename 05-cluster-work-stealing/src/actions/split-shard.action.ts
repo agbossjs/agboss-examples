@@ -1,10 +1,4 @@
-import {
-  Action,
-  listOf,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, listOf, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { DecomposeNodeDto } from "../dto/decompose-node.dto.js";
 
 @Action({
@@ -15,7 +9,7 @@ import { DecomposeNodeDto } from "../dto/decompose-node.dto.js";
 })
 export class SplitShardAction implements ActionHandler<SplitShardAction> {
   execute(input: InputOf<SplitShardAction>): Promise<OutputOf<SplitShardAction>> {
-    const { nodeLabel, level } = input.node.value;
+    const { nodeLabel, level } = input.node;
     return Promise.resolve([
       { nodeLabel: `${nodeLabel}/L`, level: level + 1 },
       { nodeLabel: `${nodeLabel}/R`, level: level + 1 },

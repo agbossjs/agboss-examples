@@ -1,14 +1,6 @@
-import {
-  ExecutionLeaseLostError,
-  ExecutionLeaseRepository,
-  ExecutionStatus,
-  SqliteConnection,
-  type App,
-} from "@agboss/core";
-import {
-  ChunkLedgerRepository,
-  type ChunkCommitRow,
-} from "../src/repositories/chunk-ledger.repository.js";
+import { ExecutionLeaseLostError, ExecutionLeaseRepository, ExecutionStatus, type App } from "@agboss/core";
+import { SqliteConnection } from "@agboss/core/stores";
+import { ChunkLedgerRepository, type ChunkCommitRow } from "../src/repositories/chunk-ledger.repository.js";
 import { ChunkWorkerWorkflowStart } from "../src/workflows/chunk-worker/chunk-worker.workflow-start.js";
 
 export interface LeaseFencingSummary {

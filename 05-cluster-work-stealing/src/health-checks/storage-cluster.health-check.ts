@@ -1,8 +1,4 @@
-import {
-  HealthCheck,
-  HealthCheckResult,
-  type HealthCheckHandler,
-} from "@agboss/core";
+import { HealthCheck, HealthCheckResult, type HealthCheckHandler } from "@agboss/core";
 import { seconds } from "@agboss/core/units";
 import { StorageBackendProbeService } from "../services/storage-backend-probe.service.js";
 
@@ -22,12 +18,8 @@ export class StorageClusterHealthCheck implements HealthCheckHandler {
       return HealthCheckResult.healthy();
     }
     if (state === "degraded") {
-      return HealthCheckResult.degraded({
-        reason: "SQLite WAL checkpoint latency above threshold",
-      });
+      return HealthCheckResult.degraded("SQLite WAL checkpoint latency above threshold");
     }
-    return HealthCheckResult.unhealthy({
-      reason: "Shared cluster storage volume unreachable",
-    });
+    return HealthCheckResult.unhealthy("Shared cluster storage volume unreachable");
   }
 }

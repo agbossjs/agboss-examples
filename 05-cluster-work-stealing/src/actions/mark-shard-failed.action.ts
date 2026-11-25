@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { DecomposeFailedDto } from "../dto/decompose-failed.dto.js";
 import { DecomposeNodeDto } from "../dto/decompose-node.dto.js";
 
@@ -20,7 +15,7 @@ export class MarkShardFailedAction
     input: InputOf<MarkShardFailedAction>,
   ): Promise<OutputOf<MarkShardFailedAction>> {
     return Promise.resolve({
-      nodeLabel: input.node.value.nodeLabel,
+      nodeLabel: input.node.nodeLabel,
     });
   }
 }

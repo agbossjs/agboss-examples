@@ -1,11 +1,4 @@
-import {
-  Action,
-  listOf,
-  oneOf,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, listOf, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { BatchJobRequestDto } from "../dto/batch-job-request.dto.js";
 import { BatchJobSummaryDto } from "../dto/batch-job-summary.dto.js";
 import { ChunkFailedDto } from "../dto/chunk-failed.dto.js";
@@ -16,7 +9,7 @@ import { ChunkResultDto } from "../dto/chunk-result.dto.js";
   description: "Aggregates the results from all distributed child chunk executions",
   input: {
     request: BatchJobRequestDto,
-    outcomes: listOf(oneOf(ChunkResultDto, ChunkFailedDto)),
+    outcomes: listOf(ChunkResultDto, ChunkFailedDto),
   },
   output: BatchJobSummaryDto,
 })
@@ -31,17 +24,17 @@ export class AggregateBatchResultsAction
     const summaries: string[] = [];
 
     for (const outcome of input.outcomes) {
-      if ("summary" in outcome.value) {
+      if ("summary" in outcome) {
         succeededCount += 1;
-        summaries.push(`${outcome.value.chunkId}:${outcome.value.summary}`);
+        summaries.push(`${outcome.chunkId}:${outcome.summary}`);
       } else {
         failedCount += 1;
-        summaries.push(`${outcome.value.chunkId}:FAILED(${outcome.value.reason})`);
+        summaries.push(`${outcome.chunkId}:FAILED(${outcome.reason})`);
       }
     }
 
     return Promise.resolve({
-      batchId: input.request.value.batchId,
+      batchId: input.request.batchId,
       succeededCount,
       failedCount,
       combinedSummary: summaries.join(" | "),
