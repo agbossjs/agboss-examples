@@ -5,8 +5,8 @@ import { createApp, type App } from "@agboss/core";
 import { a2aHttpListener } from "@agboss/core/a2a";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  BillingA2AExpose,
-  BillingA2aCallerResolver,
+  BillingA2AEndpoint,
+  BillingHttpAuthenticator,
   BillingApplication,
 } from "../../apps/2-billing-a2a/src/billing.application.js";
 import { chunkOf, INVOICE_CSV, INVOICE_TOTAL, reviewRequest, sdkClientOf, shownAfter } from "./billing-wire.js";
@@ -22,7 +22,10 @@ let server: Server | undefined;
 
 afterEach(async () => {
   await new Promise<void>((resolve) => {
-    if (server === undefined) return resolve();
+    if (server === undefined) {
+      resolve();
+      return;
+    }
     server.close(() => {
       resolve();
     });
@@ -45,8 +48,8 @@ async function serveBilling(): Promise<string> {
   await new Promise<void>((resolve) => live.listen(0, "127.0.0.1", resolve));
   const { port } = live.address() as AddressInfo;
   listener = a2aHttpListener(app, {
-    expose: BillingA2AExpose,
-    callerResolver: BillingA2aCallerResolver,
+    endpoint: BillingA2AEndpoint,
+    authenticator: BillingHttpAuthenticator,
     publicUrl: `http://127.0.0.1:${String(port)}`,
   });
   return `http://127.0.0.1:${String(port)}`;

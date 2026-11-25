@@ -16,6 +16,7 @@
     "apps/**/*.ts",
     "federation/**/*.ts",
     "tests/**/*.ts",
+    "vitest.config.ts",
     ".agboss/**/*.d.ts"
   ]
 }

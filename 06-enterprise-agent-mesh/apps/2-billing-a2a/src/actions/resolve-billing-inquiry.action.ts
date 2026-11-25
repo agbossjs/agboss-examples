@@ -23,7 +23,7 @@ export class ResolveBillingInquiryAction
   execute(
     input: InputOf<ResolveBillingInquiryAction>,
   ): Promise<OutputOf<ResolveBillingInquiryAction>> {
-    const { invoiceId } = input.inquiry.value;
+    const { invoiceId } = input.inquiry;
     const tenantId = this.executionContext.tenant.tenantId;
     return Promise.resolve({
       invoiceId,

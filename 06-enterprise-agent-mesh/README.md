@@ -18,7 +18,7 @@
 ┌──────────────────────────────────────────┐   ┌──────────────────────────────────────────┐
 │  apps/3-catalog-mcp/src/                 │   │  apps/2-billing-a2a/src/                 │
 │  CatalogApplication                      │   │  BillingApplication                      │
-│  mcp/catalog.mcp-expose.ts (@McpExpose)  │   │  a2a/billing.a2a-expose.ts (@A2AExpose)  │
+│  mcp/catalog.mcp-endpoint.ts (@McpEndpoint)│   │  a2a/billing.a2a-endpoint.ts (@A2AEndpoint)│
 │    ├── LookupSkuTool                     │   │    └── workflows/billing/                │
 │    └── workflows/catalog/                │   │          └── ResolveBillingInquiryAction │
 └──────────────────────────────────────────┘   └──────────────────────────────────────────┘
@@ -27,7 +27,7 @@
 ## 2. Three Core Engineering Guarantees Proven
 
 1. **Ed25519 Mesh Envelope + Infinite Loop / Hop Protection (`MeshLoopDetectedError`, `HopsLimitExceededError`):**
-   - A call to the catalog over MCP carries a signed Ed25519 JWS envelope (`_meta["agboss.dev/mesh"]`) recording `origin`, `callChain`, and `bodyHash`; the catalog refuses a forged signature before anything runs (`mesh.signature-invalid`), a chain that already passed through its tool (`limit.mesh-loop`) and one of `maxMeshHops: 3` hops (`limit.hops`).
+   - A call to the catalog over MCP carries a signed Ed25519 JWS envelope (`_meta["agboss.dev/mesh"]`) recording `origin`, `callChain`, and `bodyHash`; the catalog refuses a forged signature before anything runs (`mesh.signature-invalid`), a chain that already passed through its tool (`limit.mesh-loop`) and one of `@Mesh({ maxHops: 3 })` hops (`limit.hops`).
    - The billing call goes over A2A v1.0 (the billing server's Agent Card and its JSON-RPC binding; the client discovers the card and calls the `billing-workflow-start` skill). The card declares the AGBoss mesh extension (`https://agboss.dev/a2a/mesh/v1`) and the skills extension, so the call carries the envelope in `message.metadata` (`A2AMesh.Required`) and gets back billing's signed run report. `tests/a2a/billing-a2a.test.ts` fetches the card, calls billing with the official SDK client (`ClientFactory`), and shows billing's receiver refusing a forged signature (`401 mesh.signature-invalid`), a loop (`limit.mesh-loop`) and the hop limit (`limit.hops`) as `REJECTED` tasks.
    - A billing call refused as a loop (`MeshLoopDetectedError`) is caught by `TriageWorkflow` deterministically via `.onError(...)` and routed to `MeshLoopFallbackWorkflowFinish`.
 2. **Idempotent Deduplication of MCP Tool Calls (`_meta.callId`):**
@@ -42,8 +42,8 @@
 06-enterprise-agent-mesh/
   ├── apps/
   │   ├── 1-order-gateway/src/          # Gateway service calling service 2 via A2A and service 3 via MCP
-  │   ├── 2-billing-a2a/src/            # Remote billing microservice (@A2AExpose)
-  │   └── 3-catalog-mcp/src/            # Remote product catalog microservice (@McpExpose)
+  │   ├── 2-billing-a2a/src/            # Remote billing microservice (@A2AEndpoint, @HttpAuthenticator)
+  │   └── 3-catalog-mcp/src/            # Remote product catalog microservice (@McpEndpoint, served by `mcpHttpListener`)
   ├── federation/                       # Contract snapshots for `agboss check --federation` & `agboss hub show`
   └── tests/                            # Symmetric unit and multi-service mesh integration tests
       ├── actions/resolve-billing-inquiry.action.test.ts
@@ -66,7 +66,7 @@ the caller sends a question as a data part and the invoice as a `text/csv` file 
 reads the file (`ModelFiles`, `FileView.Original`: a CSV is text) and answers in plain text, which a judge
 (`InvoiceReplyJudge`, a second model of another vendor) checks before it is let through. A message that names
 no skill still runs the original `billing-workflow-start` (`defaultSkill`). The review's limits are on the
-expose: one CSV, 8 KB (`@A2AExpose({ skills: { ... files } })`). Offline, a stand-in model
+workflow's `@FilePolicy`: one CSV, 8 KB (`InvoiceReviewFilePolicy`). Offline, a stand-in model
 (`InvoiceReviewerOfflineModelProvider`, a transport with `stream()`) works the item count and total out of
 the CSV text the framework shows the model and answers word by word; `billing.live.app.ts` puts OpenRouter in its place.
 

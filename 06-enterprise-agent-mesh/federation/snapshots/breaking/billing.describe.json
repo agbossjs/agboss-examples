@@ -7,7 +7,8 @@
       "name": "billing-application",
       "version": "1.0.0",
       "workflows": [
-        "billing-workflow"
+        "billing-workflow",
+        "invoice-review-workflow"
       ],
       "implementations": [
         {
@@ -28,93 +29,109 @@
         {
           "contract": "BaseCheckpointSaver",
           "implementation": "SqliteCheckpointSaver",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionRecordRepository",
           "implementation": "SqliteExecutionRecordRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "CostLedgerRepository",
           "implementation": "SqliteCostLedgerRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "PausedExecutionRepository",
           "implementation": "SqlitePausedExecutionRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionLeaseRepository",
           "implementation": "SqliteExecutionLeaseRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionTreeRepository",
           "implementation": "SqliteExecutionTreeRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "RateLimitRepository",
           "implementation": "SqliteRateLimitRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "MeshRequestRepository",
           "implementation": "SqliteMeshRequestRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "A2ATaskRepository",
           "implementation": "SqliteA2ATaskRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
-          "contract": "A2AFileRepository",
-          "implementation": "InlineA2AFileRepository",
+          "contract": "FileRepository",
+          "implementation": "InlineFileRepository",
           "reason": "default"
         },
         {
           "contract": "A2ADirectMessageRepository",
-          "implementation": "InMemoryA2ADirectMessageRepository",
-          "reason": "default"
+          "implementation": "SqliteA2ADirectMessageRepository",
+          "reason": "storage"
         },
         {
           "contract": "ExecutionHistoryRepository",
           "implementation": "SqliteExecutionHistoryRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ChildExecutionQueueRepository",
-          "implementation": "InMemoryChildExecutionQueueRepository",
-          "reason": "default"
+          "implementation": "SqliteChildExecutionQueueRepository",
+          "reason": "storage"
         },
         {
           "contract": "FencedEffectRepository",
-          "implementation": "InMemoryFencedEffectRepository",
-          "reason": "default"
+          "implementation": "SqliteFencedEffectRepository",
+          "reason": "storage"
         },
         {
           "contract": "ExecutionAuditLogRepository",
-          "implementation": "InMemoryExecutionAuditLogRepository",
-          "reason": "default"
+          "implementation": "SqliteExecutionAuditLogRepository",
+          "reason": "storage"
         },
         {
           "contract": "OutboundCallRepository",
-          "implementation": "InMemoryOutboundCallRepository",
+          "implementation": "SqliteOutboundCallRepository",
+          "reason": "storage"
+        },
+        {
+          "contract": "FileTranscriber",
+          "implementation": "ModelFileTranscriber",
           "reason": "default"
+        },
+        {
+          "contract": "FileRedactor",
+          "implementation": "ModelImageRedactor",
+          "reason": "default"
+        }
+      ],
+      "storage": [
+        {
+          "role": "database",
+          "name": "billing-database-storage",
+          "backend": "sqlite",
+          "describes": "sqlite (SQLITE_PATH)"
         }
       ],
       "modelProviders": [
         {
-          "name": "billing-offline-model-provider",
-          "className": "BillingOfflineModelProvider",
+          "name": "invoice-reviewer-offline-model-provider",
+          "className": "InvoiceReviewerOfflineModelProvider",
           "reason": "listed",
-          "serves": [
-            "/^offline\\//u"
-          ],
-          "isTransport": true
+          "isTransport": true,
+          "isNamed": false
         }
       ],
       "budgets": [
@@ -138,9 +155,15 @@
           "workflow": "billing-workflow",
           "name": "billing-execution-budget",
           "isOwn": false
+        },
+        {
+          "workflow": "invoice-review-workflow",
+          "name": "billing-execution-budget",
+          "isOwn": false
         }
       ],
       "observers": [],
+      "pauseListeners": [],
       "warnings": [],
       "maxConcurrentSteps": null,
       "tree": [
@@ -151,6 +174,14 @@
             "billing-workflow-start (BillingInquiryDto)"
           ],
           "children": []
+        },
+        {
+          "name": "invoice-review-workflow",
+          "version": "1.0.0",
+          "starts": [
+            "invoice-review-workflow-start (InvoiceReviewRequestDto)"
+          ],
+          "children": []
         }
       ],
       "channels": [],
@@ -158,7 +189,7 @@
         "exports": [
           {
             "kind": "a2a",
-            "expose": "billing-a2a-expose",
+            "expose": "billing",
             "version": "1.0.0",
             "skill": "billing-workflow-start",
             "workflow": "billing-workflow",
@@ -171,6 +202,26 @@
                 "finish": "billing-workflow-finish",
                 "dto": "BillingResolutionDto",
                 "schemaHash": "3dbcb4b44d483b41fd2670a64bfd4370f7ded1d07d158c1334567b63016f15cc"
+              }
+            ],
+            "reply": "task",
+            "cardFileFields": "extension"
+          },
+          {
+            "kind": "a2a",
+            "expose": "billing",
+            "version": "1.0.0",
+            "skill": "invoice-review-workflow-start",
+            "workflow": "invoice-review-workflow",
+            "input": {
+              "dto": "InvoiceReviewRequestDto",
+              "schemaHash": "f35ec8a0775d17e7d30b0f4be27cf1badacfa27ce462476150853a0e8a60e2af"
+            },
+            "outputs": [
+              {
+                "finish": "invoice-review-workflow-finish",
+                "dto": "WorkflowFinishTextDto",
+                "schemaHash": "e12b4532bfe77e787b44f743446d7f2a97e53fb3aac1dc06ce19147c9644bb16"
               }
             ],
             "reply": "task",
@@ -234,19 +285,87 @@
                 "resolvedTenantId"
               ]
             }
+          },
+          "InvoiceReviewRequestDto": {
+            "schemaHash": "f35ec8a0775d17e7d30b0f4be27cf1badacfa27ce462476150853a0e8a60e2af",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "Customer question about the invoice"
+                },
+                "invoice": {
+                  "type": "object",
+                  "properties": {
+                    "mediaType": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*\\/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+                      "description": "the file's media type, e.g. application/pdf"
+                    },
+                    "filename": {
+                      "description": "the file's name, e.g. report.pdf",
+                      "type": "string",
+                      "maxLength": 255
+                    },
+                    "fileId": {
+                      "description": "the file's id in the application's file store",
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "description": "the SHA-256 of the file's bytes, in hex",
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "sizeBytes": {
+                      "description": "the file's size in bytes",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "url": {
+                      "description": "where the file is, for a file given by reference",
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "inline": {
+                      "description": "the file's bytes, base64",
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    }
+                  },
+                  "required": [
+                    "mediaType"
+                  ],
+                  "description": "The invoice's line items, a CSV: sku,qty,unit_usd"
+                }
+              },
+              "required": [
+                "question",
+                "invoice"
+              ]
+            }
+          },
+          "WorkflowFinishTextDto": {
+            "schemaHash": "e12b4532bfe77e787b44f743446d7f2a97e53fb3aac1dc06ce19147c9644bb16",
+            "jsonSchema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "the text the run finishes with, in plain words"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
           }
         }
       },
       "environment": {
         "name": "dev",
-        "fields": {
-          "sqlitePath": "\":memory:\"",
-          "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
-          "meshSigningKey": "*** (MESH_SIGNING_KEY)",
-          "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "openRouterApiKey": "*** (OPENROUTER_API_KEY)"
-        }
+        "fields": {}
       }
     },
     "workflows": [
@@ -254,13 +373,11 @@
         "name": "billing-workflow",
         "version": "1.0.0",
         "profile": "base",
-        "config": "d52cb71e",
+        "config": "c87a2b6f",
         "piiPolicies": [],
         "flow": [
-          "start(BillingWorkflowStart)",
-          "  .returns(BillingInquiryDto)",
+          "onStart(BillingWorkflowStart)",
           "  .toAction(ResolveBillingInquiryAction)",
-          "  .returns(BillingResolutionDto)",
           "  .toFinish(BillingWorkflowFinish)"
         ],
         "inputs": [
@@ -273,11 +390,11 @@
         "tools": [],
         "unassignedTools": [],
         "limits": {
-          "maxSteps": 0,
+          "maxSteps": 3,
           "isMaxStepsSet": false,
           "steps": {
-            "least": 0,
-            "most": 0
+            "least": 1,
+            "most": 1
           },
           "maxVisits": {},
           "worstCases": [
@@ -286,22 +403,22 @@
               "workflow": "billing-workflow",
               "executions": 1,
               "concurrentExecutions": 1,
-              "steps": 0,
+              "steps": 1,
               "isStepsCapped": false,
-              "treeSteps": 0,
+              "treeSteps": 1,
               "depth": 0,
               "parts": [],
               "children": []
             }
           ],
-          "maxConcurrentExecutions": 10,
-          "isMaxConcurrentExecutionsSet": false
+          "maxConcurrency": 10,
+          "isMaxConcurrencySet": false
         },
         "steps": {
-          "least": 0,
-          "most": 0
+          "least": 1,
+          "most": 1
         },
-        "configHash": "d52cb71e2d8d5224aa934555797e0c5c46d1bb37a49d537439474e72641229da",
+        "configHash": "c87a2b6fe15c2dbf614412352707d760ab0756bef220a0969b2f8e5bcfcad59e",
         "starts": [
           "billing-workflow-start"
         ],
@@ -423,6 +540,268 @@
                   "resolution",
                   "creditedUsd",
                   "resolvedTenantId"
+                ]
+              }
+            }
+          },
+          "tools": {}
+        }
+      },
+      {
+        "name": "invoice-review-workflow",
+        "version": "1.0.0",
+        "profile": "base",
+        "config": "e60e858f",
+        "piiPolicies": [],
+        "flow": [
+          "onStart(InvoiceReviewWorkflowStart)",
+          "  .toAgent(InvoiceReviewerAgent)",
+          "  .toFinish(InvoiceReviewWorkflowFinish)"
+        ],
+        "inputs": [
+          "invoice-reviewer-agent ← request: invoice-review-workflow-start"
+        ],
+        "children": [],
+        "routers": [],
+        "agents": [
+          {
+            "name": "invoice-reviewer-agent",
+            "model": "openai/gpt-4o-mini",
+            "description": "Reads an invoice CSV and answers the customer's question about it",
+            "tools": [],
+            "rag": []
+          }
+        ],
+        "models": [
+          {
+            "key": "agents.invoice-reviewer-agent",
+            "model": "openai/gpt-4o-mini",
+            "provider": "invoice-reviewer-offline-model-provider"
+          },
+          {
+            "key": "judges.invoice-reply-judge",
+            "model": "google/gemini-2.5-flash-lite",
+            "provider": "invoice-reviewer-offline-model-provider"
+          }
+        ],
+        "tools": [],
+        "unassignedTools": [],
+        "limits": {
+          "maxSteps": 3,
+          "isMaxStepsSet": false,
+          "steps": {
+            "least": 1,
+            "most": 1
+          },
+          "maxVisits": {},
+          "worstCases": [
+            {
+              "start": "invoice-review-workflow-start",
+              "workflow": "invoice-review-workflow",
+              "executions": 1,
+              "concurrentExecutions": 1,
+              "steps": 1,
+              "isStepsCapped": false,
+              "treeSteps": 1,
+              "depth": 0,
+              "parts": [],
+              "children": []
+            }
+          ],
+          "maxConcurrency": 10,
+          "isMaxConcurrencySet": false
+        },
+        "steps": {
+          "least": 1,
+          "most": 1
+        },
+        "configHash": "e60e858fa2b24b9dd72fcd06753cf2091413305a2e65843ad5d61e081be651dd",
+        "starts": [
+          "invoice-review-workflow-start"
+        ],
+        "finishes": [
+          "invoice-review-workflow-finish"
+        ],
+        "nodes": [
+          {
+            "name": "invoice-review-workflow-finish",
+            "kind": "workflow-finish",
+            "description": "The reviewer's answer, as text",
+            "schemaHash": "1e970f28c91e614ce73440da085cd88984ea2a616ec6466748a14884a7de2c36",
+            "output": {
+              "dto": "WorkflowFinishTextDto",
+              "schemaHash": "e12b4532bfe77e787b44f743446d7f2a97e53fb3aac1dc06ce19147c9644bb16"
+            }
+          },
+          {
+            "name": "invoice-review-workflow-start",
+            "kind": "workflow-start",
+            "description": "Reviews an invoice sent as a CSV file and answers a question about it",
+            "schemaHash": "af6a1a5438787b3260fc9411891f38ad7a37ac44a2d9a9b0d9ffe41ac1aec3bc",
+            "input": {
+              "dto": "InvoiceReviewRequestDto",
+              "schemaHash": "f35ec8a0775d17e7d30b0f4be27cf1badacfa27ce462476150853a0e8a60e2af"
+            }
+          },
+          {
+            "name": "invoice-reviewer-agent",
+            "kind": "agent",
+            "description": "Reads an invoice CSV and answers the customer's question about it",
+            "promptHash": "2d11b8d5fac73baedf10088a3af29bf420eed9c8e9320e1f1e449f47305c2922",
+            "schemaHash": "9b38c1ba84fa1b960c15a67644398d8f5a4c3ed40750513690811ce746c62ad3",
+            "input": {
+              "fields": {
+                "request": {
+                  "dto": "InvoiceReviewRequestDto",
+                  "schemaHash": "f35ec8a0775d17e7d30b0f4be27cf1badacfa27ce462476150853a0e8a60e2af"
+                }
+              }
+            },
+            "agent": {
+              "model": "openai/gpt-4o-mini",
+              "provider": "invoice-reviewer-offline-model-provider",
+              "reasoning": "provider",
+              "maxTokens": 300,
+              "maxModelCalls": 12,
+              "maxToolCalls": 20,
+              "maxResultSize": 131072,
+              "uncompactedTurns": 0,
+              "tools": [],
+              "rag": [],
+              "guardrails": {
+                "input": [],
+                "output": []
+              },
+              "piiPolicies": [],
+              "files": {
+                "sources": [
+                  "input"
+                ],
+                "views": [
+                  "original"
+                ],
+                "maxFileSize": 16384,
+                "maxTotalFileSize": 16384,
+                "maxFiles": 1,
+                "allowedMediaTypes": [
+                  "text/csv"
+                ],
+                "answerFiles": "seen-in-visit",
+                "guardToolResultFiles": true
+              },
+              "judges": [
+                "invoice-reply-judge"
+              ],
+              "maxRetries": 1,
+              "instructions": "You review an invoice for the billing desk. The invoice's line items arrive as a CSV file (sku,qty,unit_usd) with the customer's question.\nAnswer in one plain sentence: how many line items the invoice has and what they total in USD, then what to do about the question. No markdown."
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "invoice-review-workflow-start",
+            "to": "invoice-reviewer-agent",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "InvoiceReviewRequestDto"
+              }
+            ]
+          },
+          {
+            "from": "invoice-reviewer-agent",
+            "to": "invoice-review-workflow-finish",
+            "kind": "next",
+            "writes": [
+              {
+                "value": "WorkflowFinishTextDto"
+              }
+            ]
+          }
+        ],
+        "onError": [],
+        "launches": [],
+        "modelComponents": [
+          {
+            "name": "invoice-reply-judge",
+            "kind": "judge",
+            "schemaHash": "acb5b14a0c8dd9c84fc6a83927aae7eb8ea5047b34517e97bb09cec3bb7cb816"
+          }
+        ],
+        "schemas": {
+          "dtos": {
+            "InvoiceReviewRequestDto": {
+              "schemaHash": "f35ec8a0775d17e7d30b0f4be27cf1badacfa27ce462476150853a0e8a60e2af",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "description": "Customer question about the invoice"
+                  },
+                  "invoice": {
+                    "type": "object",
+                    "properties": {
+                      "mediaType": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*\\/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+                        "description": "the file's media type, e.g. application/pdf"
+                      },
+                      "filename": {
+                        "description": "the file's name, e.g. report.pdf",
+                        "type": "string",
+                        "maxLength": 255
+                      },
+                      "fileId": {
+                        "description": "the file's id in the application's file store",
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "description": "the SHA-256 of the file's bytes, in hex",
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "sizeBytes": {
+                        "description": "the file's size in bytes",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "url": {
+                        "description": "where the file is, for a file given by reference",
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "inline": {
+                        "description": "the file's bytes, base64",
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                      }
+                    },
+                    "required": [
+                      "mediaType"
+                    ],
+                    "description": "The invoice's line items, a CSV: sku,qty,unit_usd"
+                  }
+                },
+                "required": [
+                  "question",
+                  "invoice"
+                ]
+              }
+            },
+            "WorkflowFinishTextDto": {
+              "schemaHash": "e12b4532bfe77e787b44f743446d7f2a97e53fb3aac1dc06ce19147c9644bb16",
+              "jsonSchema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "the text the run finishes with, in plain words"
+                  }
+                },
+                "required": [
+                  "text"
                 ]
               }
             }

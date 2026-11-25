@@ -74,7 +74,7 @@ export function reviewRequest(messageId: string, csv: string = INVOICE_CSV) {
 
 /** The text of a part list, the text parts joined. */
 const textOf = (parts: readonly Part[]): string =>
-  parts.map((part) => (part.content?.$case === "text" ? String(part.content.value) : "")).join("");
+  parts.map((part) => (part.content?.$case === "text" ? part.content.value : "")).join("");
 
 /** One chunk of the task's output artifact as the stream delivered it. */
 export interface Chunk {

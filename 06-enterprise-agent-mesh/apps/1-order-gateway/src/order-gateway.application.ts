@@ -1,21 +1,11 @@
-import {
-  Application,
-  SqliteCheckpointSaver,
-  SqliteCostLedgerRepository,
-  SqliteExecutionHistoryRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionRecordRepository,
-  SqliteExecutionTreeRepository,
-  SqliteMeshRequestRepository,
-  SqliteOutboundCallRepository,
-  SqlitePausedExecutionRepository,
-  SqliteRateLimitRepository,
-} from "@agboss/core";
+import { Application, EmptyEnvironment } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { TriageAppDailyBudget } from "./budgets/triage-app-daily.budget.js";
 import { TriageExecutionBudget } from "./budgets/triage-execution.budget.js";
 import { TriageTenantDailyBudget } from "./budgets/triage-tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
+import { TriageMesh } from "./config/triage.mesh.js";
+import { TriageOfflineModelProvider } from "./model-providers/triage-offline.model-provider.js";
+import { TriageDatabaseStorage } from "./storages/triage.database-storage.js";
 import { TriageWorkflow } from "./workflows/triage/triage.workflow.js";
 
 export {
@@ -29,7 +19,7 @@ export { TriageTenantDailyBudget } from "./budgets/triage-tenant-daily.budget.js
 export { TriageRequestDto } from "./dto/triage-request.dto.js";
 export { TriageResponseDto } from "./dto/triage-response.dto.js";
 export { CatalogMcpServer } from "./mcp/catalog.mcp-server.js";
-export { SearchCatalogTool } from "./mcp/search-catalog.mcp-tool.js";
+export { SearchCatalogTool } from "./tools/search-catalog.tool.js";
 export { TriageOfflineModelProvider } from "./model-providers/triage-offline.model-provider.js";
 export { AskBillingTool } from "./tools/ask-billing.tool.js";
 export { BillingWorkflow } from "../../2-billing-a2a/src/billing.application.js";
@@ -39,33 +29,21 @@ export { TriageWorkflowFinish } from "./workflows/triage/triage.workflow-finish.
 export { TriageWorkflowStart } from "./workflows/triage/triage.workflow-start.js";
 export { TriageWorkflow } from "./workflows/triage/triage.workflow.js";
 
+/**
+ * The triage gateway: one workflow whose agent calls the catalog over MCP and billing over A2A v1.0. It signs
+ * its mesh envelopes and trusts billing's signed run reports; it serves no endpoint itself.
+ */
 @Application({
   name: "triage-gateway-application",
   version: "1.0.0",
-  environment: AppEnvironment,
-  piiKeyField: "piiPseudonymKey",
+  environment: EmptyEnvironment,
+  storage: TriageDatabaseStorage,
+  modelProvider: TriageOfflineModelProvider,
   workflows: [TriageWorkflow],
   budgets: [TriageAppDailyBudget, TriageTenantDailyBudget, TriageExecutionBudget],
-  mesh: {
-    signingKey: "meshSigningKey",
-    peers: [
-      { application: "billing-application", verifyKey: "billingVerifyKey" },
-    ],
-  },
-  providers: [
-    SqliteCheckpointSaver,
-    SqlitePausedExecutionRepository,
-    SqliteCostLedgerRepository,
-    SqliteExecutionRecordRepository,
-    SqliteExecutionLeaseRepository,
-    SqliteExecutionTreeRepository,
-    SqliteRateLimitRepository,
-    SqliteExecutionHistoryRepository,
-    SqliteMeshRequestRepository,
-    // the A2A accept round trip is an outbound call: its intent is kept beside the leases
-    SqliteOutboundCallRepository,
-  ],
+  mesh: TriageMesh,
+  providers: [TriageOfflineModelProvider],
   retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
-  shutdownTimeout: seconds(15),
+  executionLimits: { shutdownTimeout: seconds(15) },
 })
 export class TriageGatewayApplication {}

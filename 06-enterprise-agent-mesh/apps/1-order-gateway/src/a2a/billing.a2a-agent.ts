@@ -1,11 +1,11 @@
-import { ExecutionContext } from "@agboss/core";
+import { bearer, secret } from "@agboss/core";
 import { A2AAgent, A2AClient, A2AMesh } from "@agboss/core/a2a";
 import { usd } from "@agboss/core/units";
 import { BillingInquiryDto } from "../dto/billing-inquiry.dto.js";
 import { BillingResolutionDto } from "../dto/billing-resolution.dto.js";
 
 let activeBillingBaseUrl = "http://127.0.0.1:8081/a2a";
-let activeBillingApiKey = "key-acme";
+let activeBillingApiKey: string | undefined;
 let customA2aHeaders: Record<string, string> = {};
 
 export function configureTriageMeshTarget(options: {
@@ -22,12 +22,12 @@ export function configureTriageMeshTarget(options: {
   customA2aHeaders = { ...(options.extraHeaders ?? {}) };
 }
 
-export function getActiveBillingBaseUrl(): string {
-  return activeBillingBaseUrl;
+export function getActiveBillingApiKey(): string | undefined {
+  return activeBillingApiKey;
 }
 
-export function getActiveBillingApiKey(): string {
-  return activeBillingApiKey;
+export function getActiveBillingBaseUrl(): string {
+  return activeBillingBaseUrl;
 }
 
 export function getCustomA2aHeaders(): Record<string, string> {
@@ -43,21 +43,18 @@ export function getCustomA2aHeaders(): Record<string, string> {
   },
   input: BillingInquiryDto,
   output: BillingResolutionDto,
-  price: usd(0.002),
+  costPerCall: usd(0.002),
   // the mesh (call chain, budget, deadline, signed run report) rides as the extension
   // https://agboss.dev/a2a/mesh/v1: Required is the default for an AGBoss peer, said here on purpose
   mesh: A2AMesh.Required,
-  deps: [ExecutionContext],
+  // what the gateway presents to billing: a secret reference, read once when the application starts
+  headers: { authorization: bearer(secret("BILLING_API_KEY")) },
 })
 export class BillingA2AAgent extends A2AClient<BillingInquiryDto, BillingResolutionDto> {
-  constructor(private readonly executionContext: ExecutionContext) {
-    super();
-  }
-
+  /** A test points the gateway at its own billing server and key; with none set, the declared header is the key. */
   protected override getHeaders(): Promise<Record<string, string>> {
-    void this.executionContext.tenant.tenantId;
     return Promise.resolve({
-      authorization: `Bearer ${activeBillingApiKey}`,
+      ...(activeBillingApiKey === undefined ? {} : { authorization: `Bearer ${activeBillingApiKey}` }),
       ...customA2aHeaders,
     });
   }

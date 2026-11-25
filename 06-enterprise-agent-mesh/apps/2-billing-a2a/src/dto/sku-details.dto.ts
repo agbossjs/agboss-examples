@@ -1,4 +1,4 @@
-import { Decimal, Integer, Text } from "@agboss/core/dto";
+import { Float, Integer, Text } from "@agboss/core/dto";
 
 export class SkuDetailsDto {
   @Text({ prompt: "Product SKU code" })
@@ -7,7 +7,7 @@ export class SkuDetailsDto {
   @Text({ prompt: "Product title" })
   title!: string;
 
-  @Decimal({ prompt: "Unit price in USD", min: 0 })
+  @Float({ prompt: "Unit price in USD", min: 0 })
   unitPriceUsd!: number;
 
   @Integer({ prompt: "Units currently in stock", min: 0 })

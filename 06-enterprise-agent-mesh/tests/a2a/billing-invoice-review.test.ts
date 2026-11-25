@@ -1,11 +1,11 @@
 import { TaskState, type StreamResponse } from "@a2a-js/sdk";
-import { A2A_SKILLS_EXTENSION, A2AClient, A2AClientFile } from "@agboss/core/a2a";
-import { WorkflowFinishTextDto } from "@agboss/core/dto";
+import { A2A_SKILLS_EXTENSION, A2AClient } from "@agboss/core/a2a";
+import { FileDto, WorkflowFinishTextDto } from "@agboss/core/dto";
 import { replyWith, testWith } from "@agboss/core/testing";
 import { describe, expect } from "vitest";
 import {
-  BillingA2AExpose,
-  BillingA2aCallerResolver,
+  BillingA2AEndpoint,
+  BillingHttpAuthenticator,
   BillingApplication,
 } from "../../apps/2-billing-a2a/src/billing.application.js";
 import { InvoiceReviewRequestDto } from "../../apps/2-billing-a2a/src/dto/invoice-review-request.dto.js";
@@ -25,7 +25,7 @@ import {
 } from "./billing-wire.js";
 
 const test = testWith(BillingApplication);
-const billing = { expose: BillingA2AExpose, callerResolver: BillingA2aCallerResolver };
+const billing = { endpoint: BillingA2AEndpoint, authenticator: BillingHttpAuthenticator };
 const ANSWER = "INV-5001 has 3 line items totalling 43500.00 USD.";
 const JUDGE_NOTE = "PASS: internal audit note, total checked";
 
@@ -88,7 +88,7 @@ describe("The invoice review over A2A message/stream (SSE)", () => {
     const { url } = await a2aServer(billing);
     const client = await sdkClientOf(url);
 
-    for await (const event of client.sendMessageStream(reviewRequest("review-file-1"))) void event;
+    for await (const event of client.sendMessageStream(reviewRequest("review-file-1"))) expect(event).toBeDefined();
 
     const [request] = reviewer.requests;
     const shown = JSON.stringify(request);
@@ -117,7 +117,7 @@ describe("Files over A2A: what the door lets in", () => {
     expect(task.artifacts[0]?.parts[0]?.text).toBe(ANSWER);
   });
 
-  test("the gateway's typed client sends the invoice with A2AClientFile and gets the text answer", async ({
+  test("the gateway's typed client sends the invoice with FileDto.fromBytes and gets the text answer", async ({
     a2aServer,
     mockLlm,
   }) => {
@@ -137,7 +137,7 @@ describe("Files over A2A: what the door lets in", () => {
 
     const answer = await client.execute({
       question: QUESTION,
-      invoice: A2AClientFile.fromBytes(new TextEncoder().encode(INVOICE_CSV), {
+      invoice: FileDto.fromBytes(new TextEncoder().encode(INVOICE_CSV), {
         mediaType: "text/csv",
         filename: "invoice.csv",
       }),

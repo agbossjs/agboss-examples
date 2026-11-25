@@ -10,7 +10,7 @@ import { InvoiceReplyJudge } from "../../judges/invoice-reply.judge.js";
 @Agent({
   name: "invoice-reviewer-agent",
   description: "Reads an invoice CSV and answers the customer's question about it",
-  promptUrls: ["./invoice-reviewer.prompt.md"],
+  prompt: "./invoice-reviewer.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: InvoiceReviewRequestDto },
   files: ModelFiles.of({
@@ -21,7 +21,7 @@ import { InvoiceReplyJudge } from "../../judges/invoice-reply.judge.js";
     maxFiles: 1,
   }),
   judges: [InvoiceReplyJudge],
-  maxRetries: 1,
+  executionLimits: { maxRetries: 1 },
   maxTokens: 300,
 })
 export class InvoiceReviewerAgent {}

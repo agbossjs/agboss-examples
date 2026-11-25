@@ -9,18 +9,18 @@ import { PlainTextDto } from "@agboss/core/dto";
   name: "invoice-reply-judge",
   // another vendor than the reviewer: a judge grades its own family's answers too kindly (judge.same-model-family)
   model: "google/gemini-2.5-flash-lite",
-  reply: PlainTextDto,
+  output: PlainTextDto,
   deps: [JudgeModel],
 })
 export class InvoiceReplyJudge implements JudgeHandler<PlainTextDto> {
   constructor(private readonly judgeModel: JudgeModel) {}
 
-  async judge({ reply }: JudgeInput<PlainTextDto>): Promise<JudgeVerdict> {
+  async judge({ output }: JudgeInput<PlainTextDto>): Promise<JudgeVerdict> {
     const verdict = await this.judgeModel.invoke(
-      `AUDIT RUBRIC: does this reply state the invoice's item count and total? Say PASS or FAIL.\n${reply.text}`,
+      `AUDIT RUBRIC: does this reply state the invoice's item count and total? Say PASS or FAIL.\n${output.text}`,
     );
     return verdict.startsWith("PASS")
       ? JudgeVerdict.passed()
-      : JudgeVerdict.failed({ reason: "the reply does not state the item count and total" });
+      : JudgeVerdict.failed("the reply does not state the item count and total");
   }
 }

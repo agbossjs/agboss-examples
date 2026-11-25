@@ -28,102 +28,109 @@
         {
           "contract": "BaseCheckpointSaver",
           "implementation": "SqliteCheckpointSaver",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionRecordRepository",
           "implementation": "SqliteExecutionRecordRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "CostLedgerRepository",
           "implementation": "SqliteCostLedgerRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "PausedExecutionRepository",
           "implementation": "SqlitePausedExecutionRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionLeaseRepository",
           "implementation": "SqliteExecutionLeaseRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ExecutionTreeRepository",
           "implementation": "SqliteExecutionTreeRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "RateLimitRepository",
           "implementation": "SqliteRateLimitRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "MeshRequestRepository",
           "implementation": "SqliteMeshRequestRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "A2ATaskRepository",
-          "implementation": "InMemoryA2ATaskRepository",
-          "reason": "default"
+          "implementation": "SqliteA2ATaskRepository",
+          "reason": "storage"
         },
         {
-          "contract": "A2AFileRepository",
-          "implementation": "InlineA2AFileRepository",
+          "contract": "FileRepository",
+          "implementation": "InlineFileRepository",
           "reason": "default"
         },
         {
           "contract": "A2ADirectMessageRepository",
-          "implementation": "InMemoryA2ADirectMessageRepository",
-          "reason": "default"
+          "implementation": "SqliteA2ADirectMessageRepository",
+          "reason": "storage"
         },
         {
           "contract": "ExecutionHistoryRepository",
           "implementation": "SqliteExecutionHistoryRepository",
-          "reason": "listed"
+          "reason": "storage"
         },
         {
           "contract": "ChildExecutionQueueRepository",
-          "implementation": "InMemoryChildExecutionQueueRepository",
-          "reason": "default"
+          "implementation": "SqliteChildExecutionQueueRepository",
+          "reason": "storage"
         },
         {
           "contract": "FencedEffectRepository",
-          "implementation": "InMemoryFencedEffectRepository",
-          "reason": "default"
+          "implementation": "SqliteFencedEffectRepository",
+          "reason": "storage"
         },
         {
           "contract": "ExecutionAuditLogRepository",
-          "implementation": "InMemoryExecutionAuditLogRepository",
-          "reason": "default"
+          "implementation": "SqliteExecutionAuditLogRepository",
+          "reason": "storage"
         },
         {
           "contract": "OutboundCallRepository",
           "implementation": "SqliteOutboundCallRepository",
-          "reason": "listed"
+          "reason": "storage"
+        },
+        {
+          "contract": "FileTranscriber",
+          "implementation": "ModelFileTranscriber",
+          "reason": "default"
+        },
+        {
+          "contract": "FileRedactor",
+          "implementation": "ModelImageRedactor",
+          "reason": "default"
+        }
+      ],
+      "storage": [
+        {
+          "role": "database",
+          "name": "triage-database-storage",
+          "backend": "sqlite",
+          "describes": "sqlite (SQLITE_PATH)"
         }
       ],
       "modelProviders": [
         {
-          "name": "openrouter-model-provider",
-          "className": "OpenRouterModelProvider",
-          "reason": "default",
-          "serves": [
-            "/^(?!(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide))/"
-          ],
-          "isTransport": false
-        },
-        {
-          "name": "decisions-model-provider",
-          "className": "DecisionsModelProvider",
-          "reason": "default",
-          "serves": [
-            "/^(?:(?:[^/]+\\/)?jev-|openai\\/[^/]+-decisions$|perplexity\\/pplx-decider|cloudflare\\/clef|upstage\\/solar-decide|inception\\/mercury-decide)/"
-          ],
-          "isTransport": false
+          "name": "triage-offline-model-provider",
+          "className": "TriageOfflineModelProvider",
+          "reason": "listed",
+          "isTransport": true,
+          "isNamed": false
         }
       ],
       "budgets": [
@@ -150,6 +157,7 @@
         }
       ],
       "observers": [],
+      "pauseListeners": [],
       "warnings": [],
       "maxConcurrentSteps": null,
       "tree": [
@@ -318,14 +326,7 @@
       },
       "environment": {
         "name": "dev",
-        "fields": {
-          "sqlitePath": "\":memory:\"",
-          "piiPseudonymKey": "*** (PII_PSEUDONYM_KEY)",
-          "meshSigningKey": "*** (MESH_SIGNING_KEY)",
-          "triageVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "billingVerifyKey": "\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAIVL40Zt5HSRFMkLhXy6rbLfP+ntqXtMAl5YOBpiB2xI=\\n-----END PUBLIC KEY-----\\n\"",
-          "openRouterApiKey": "*** (OPENROUTER_API_KEY)"
-        }
+        "fields": {}
       }
     },
     "workflows": [
@@ -333,15 +334,13 @@
         "name": "triage-workflow",
         "version": "1.0.0",
         "profile": "base",
-        "config": "d66e7e90",
+        "config": "55af2661",
         "piiPolicies": [],
         "flow": [
-          "start(TriageWorkflowStart)",
-          "  .returns(TriageRequestDto)",
+          "onStart(TriageWorkflowStart)",
           "  .toAgent(TriageAgent)",
           "  .onError(MeshLoopDetectedError, toFinish(MeshLoopFallbackWorkflowFinish))",
           "  .onError(HopsLimitExceededError, toFinish(MeshLoopFallbackWorkflowFinish))",
-          "  .returns(TriageResponseDto)",
           "  .toFinish(TriageWorkflowFinish)"
         ],
         "inputs": [
@@ -365,20 +364,19 @@
           {
             "key": "agents.triage-agent",
             "model": "openai/gpt-4o-mini",
-            "provider": "openrouter-model-provider"
+            "provider": "triage-offline-model-provider"
           }
         ],
         "tools": [
           {
-            "name": "ask-billing-tool",
-            "description": "Delegates invoice resolution to BillingApplication over A2A",
+            "name": "search-catalog-tool",
+            "description": "Looks up SKU details on the remote Catalog MCP server",
             "kind": "local"
           },
           {
-            "name": "search-catalog-tool",
-            "description": "Looks up SKU details on the remote Catalog MCP server",
-            "kind": "mcp",
-            "server": "catalog-mcp-server"
+            "name": "ask-billing-tool",
+            "description": "Delegates invoice resolution to BillingApplication over A2A",
+            "kind": "local"
           }
         ],
         "unassignedTools": [],
@@ -404,14 +402,14 @@
               "children": []
             }
           ],
-          "maxConcurrentExecutions": 10,
-          "isMaxConcurrentExecutionsSet": false
+          "maxConcurrency": 10,
+          "isMaxConcurrencySet": false
         },
         "steps": {
           "least": 1,
           "most": 1
         },
-        "configHash": "d66e7e90a45c9fc70aebb25a7d0cd438c40a28b90fb557bbac7a2a0d74b3d9b1",
+        "configHash": "55af266177fc2c8de88c6c52478f9d9e7f240859a2c8f302598a6fdde656b04e",
         "starts": [
           "triage-workflow-start"
         ],
@@ -450,13 +448,13 @@
             },
             "agent": {
               "model": "openai/gpt-4o-mini",
-              "provider": "openrouter-model-provider",
+              "provider": "triage-offline-model-provider",
               "reasoning": "provider",
               "maxTokens": 8192,
               "maxModelCalls": 12,
               "maxToolCalls": 4,
               "maxResultSize": 131072,
-              "uncompactedTurns": 5,
+              "uncompactedTurns": 0,
               "tools": [
                 "search-catalog-tool",
                 "ask-billing-tool"
@@ -605,6 +603,53 @@
             }
           },
           "tools": {
+            "search-catalog-tool": {
+              "promptHash": "dda1a14f8da118d3d92b20e218f5b8864503094cf27004581fdb160f48156033",
+              "schemaHash": "7a96293ba122018589b0fab91ec3c449308380b63613d09de6234c769ac7c40c",
+              "maxResultSize": 32768,
+              "input": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code (e.g. SKU-GPU-900)"
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "description": "Product SKU code"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Product title"
+                  },
+                  "unitPriceUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Unit price in USD"
+                  },
+                  "inStockUnits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Units currently in stock"
+                  }
+                },
+                "required": [
+                  "sku",
+                  "title",
+                  "unitPriceUsd",
+                  "inStockUnits"
+                ]
+              }
+            },
             "ask-billing-tool": {
               "promptHash": "d772ccb92d438eb43b8a5845c9b52c82c82500e275b1f5f6362df31de3227b5e",
               "schemaHash": "e4d6fd6410a5fe2af20296b5fcd525e837f2bdfdf84b93e41d38903fa8d0cf5c",
@@ -652,53 +697,6 @@
                   "resolution",
                   "creditedUsd",
                   "resolvedTenantId"
-                ]
-              }
-            },
-            "search-catalog-tool": {
-              "promptHash": "dda1a14f8da118d3d92b20e218f5b8864503094cf27004581fdb160f48156033",
-              "schemaHash": "7a96293ba122018589b0fab91ec3c449308380b63613d09de6234c769ac7c40c",
-              "maxResultSize": 32768,
-              "input": {
-                "type": "object",
-                "properties": {
-                  "sku": {
-                    "type": "string",
-                    "description": "Product SKU code (e.g. SKU-GPU-900)"
-                  }
-                },
-                "required": [
-                  "sku"
-                ]
-              },
-              "output": {
-                "type": "object",
-                "properties": {
-                  "sku": {
-                    "type": "string",
-                    "description": "Product SKU code"
-                  },
-                  "title": {
-                    "type": "string",
-                    "description": "Product title"
-                  },
-                  "unitPriceUsd": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Unit price in USD"
-                  },
-                  "inStockUnits": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991,
-                    "description": "Units currently in stock"
-                  }
-                },
-                "required": [
-                  "sku",
-                  "title",
-                  "unitPriceUsd",
-                  "inStockUnits"
                 ]
               }
             }

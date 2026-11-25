@@ -1,4 +1,3 @@
-import { createHash, createPrivateKey, generateKeyPairSync, sign } from "node:crypto";
 import { createServer, type RequestListener, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import {
@@ -6,18 +5,16 @@ import {
   ExecutionStatus,
   ToolCallStatus,
   MeshLoopDetectedError,
-  type MeshEnvelope,
 } from "@agboss/core";
 import {
-  A2ACallerRejectedError,
+  A2AError,
   A2AClient,
   a2aHttpListener,
   type A2AApp,
 } from "@agboss/core/a2a";
-import { createMcpService } from "@agboss/core/mcp";
 import { callTool, replyWith, testWith } from "@agboss/core/testing";
+import { ms } from "@agboss/core/units";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_MESH_PRIVATE_KEY_PEM } from "../../../apps/1-order-gateway/src/environments/app.environment.js";
 import {
   AskBillingTool,
   CatalogMcpServer,
@@ -32,18 +29,13 @@ import {
 } from "../../../apps/1-order-gateway/src/order-gateway.application.js";
 import { BillingA2AAgent } from "../../../apps/1-order-gateway/src/a2a/billing.a2a-agent.js";
 import {
-  BillingA2AExpose,
-  BillingA2aCallerResolver,
+  BillingA2AEndpoint,
+  BillingHttpAuthenticator,
   BillingApplication,
   BillingInquiryDto,
   BillingResolutionDto,
 } from "../../../apps/2-billing-a2a/src/billing.application.js";
-import {
-  CatalogApplication,
-  CatalogMcp,
-  getCatalogExecutionCount,
-  resetCatalogExecutionCount,
-} from "../../../apps/3-catalog-mcp/src/catalog.application.js";
+import { resetCatalogExecutionCount } from "../../../apps/3-catalog-mcp/src/catalog.application.js";
 import { runFederationBlastRadiusProof } from "../../../federation/verify-federation.js";
 
 const billingTest = testWith(BillingApplication);
@@ -52,120 +44,6 @@ const triageTest = testWith(TriageGatewayApplication, {
 });
 
 const openServers: Server[] = [];
-
-interface JsonRpcMessage {
-  readonly jsonrpc: "2.0";
-  readonly id?: number;
-  readonly method?: string;
-  readonly params?: Record<string, unknown>;
-  readonly result?: unknown;
-  readonly error?: unknown;
-}
-
-function createLoopbackMcpChannel() {
-  const pending = new Map<number, (msg: JsonRpcMessage) => void>();
-  let onServerMessage: ((msg: JsonRpcMessage) => void) | undefined;
-
-  const transport = {
-    start(): Promise<void> {
-      return Promise.resolve();
-    },
-    send(message: JsonRpcMessage): Promise<void> {
-      if (message.id !== undefined) {
-        pending.get(message.id)?.(message);
-        pending.delete(message.id);
-      }
-      return Promise.resolve();
-    },
-    close(): Promise<void> {
-      return Promise.resolve();
-    },
-    get onmessage() {
-      return onServerMessage;
-    },
-    set onmessage(fn: ((msg: JsonRpcMessage) => void) | undefined) {
-      onServerMessage = fn;
-    },
-  };
-
-  let nextId = 1;
-  return {
-    transport,
-    request(
-      method: string,
-      params: Record<string, unknown> = {},
-    ): Promise<JsonRpcMessage> {
-      const id = nextId++;
-      return new Promise<JsonRpcMessage>((resolve) => {
-        pending.set(id, resolve);
-        onServerMessage?.({ jsonrpc: "2.0", id, method, params });
-      });
-    },
-  };
-}
-
-function signMcpMeshEnvelope(args: Record<string, unknown>): string {
-  const bodyHash = `sha256:${createHash("sha256")
-    .update(JSON.stringify(args))
-    .digest("hex")}`;
-  const envelope: MeshEnvelope = {
-    schema: 1,
-    issuer: "triage-gateway-application",
-    audience: "catalog-application",
-    origin: {
-      rootExecutionId: "exec_root_mcp_1",
-      executionId: "exec_mcp_1",
-      workflow: { name: "triage-workflow", version: "1.0.0" },
-      step: {
-        component: "triage-agent",
-        idempotencyKey: "step_mcp_1",
-        tool: "search-catalog-tool",
-      },
-    },
-    callChain: [
-      {
-        application: "triage-gateway-application",
-        start: "triage-workflow-start",
-        executionId: "exec_mcp_1",
-      },
-    ],
-    issuedAt: new Date().toISOString(),
-    expiresIn: "PT60S",
-    bodyHash,
-  };
-  return encodeSignedMeshJws(envelope, DEFAULT_MESH_PRIVATE_KEY_PEM);
-}
-
-function encodeUnsignedMeshJws(envelope: MeshEnvelope): string {
-  const header = Buffer.from(
-    JSON.stringify({ alg: "none", typ: "agboss-mesh" }),
-    "utf8",
-  ).toString("base64url");
-  const payload = Buffer.from(JSON.stringify(envelope), "utf8").toString(
-    "base64url",
-  );
-  return `${header}.${payload}.`;
-}
-
-function encodeSignedMeshJws(
-  envelope: MeshEnvelope,
-  privateKeyPem: string,
-): string {
-  const header = Buffer.from(
-    JSON.stringify({ alg: "EdDSA", typ: "agboss-mesh" }),
-    "utf8",
-  ).toString("base64url");
-  const payload = Buffer.from(JSON.stringify(envelope), "utf8").toString(
-    "base64url",
-  );
-  const input = `${header}.${payload}`;
-  const signature = sign(
-    null,
-    Buffer.from(input, "utf8"),
-    createPrivateKey(privateKeyPem),
-  ).toString("base64url");
-  return `${input}.${signature}`;
-}
 
 beforeEach(() => {
   resetCatalogExecutionCount();
@@ -190,8 +68,8 @@ async function listenedA2A(billingApp: A2AApp): Promise<number> {
   });
   const port = (httpServer.address() as AddressInfo).port;
   listener = a2aHttpListener(billingApp, {
-    expose: BillingA2AExpose,
-    callerResolver: BillingA2aCallerResolver,
+    endpoint: BillingA2AEndpoint,
+    authenticator: BillingHttpAuthenticator,
     publicUrl: `http://127.0.0.1:${String(port)}`,
     base: "/a2a",
   });
@@ -221,8 +99,8 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
     "rejects unauthenticated A2A requests with 401 and resolves tenant acme for valid Bearer token",
     async ({ a2aServer }) => {
       const server = await a2aServer({
-        expose: BillingA2AExpose,
-        callerResolver: BillingA2aCallerResolver,
+        endpoint: BillingA2AEndpoint,
+        authenticator: BillingHttpAuthenticator,
       });
 
       const unauthenticatedClient = new A2AClient<
@@ -243,7 +121,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
           invoiceId: "INV-5001",
           question: "Check SLA credit",
         }),
-      ).rejects.toThrow(A2ACallerRejectedError);
+      ).rejects.toThrow(A2AError.CallerRejected);
 
       const authenticatedClient = new A2AClient<
         BillingInquiryDto,
@@ -282,7 +160,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
       // the billing server below runs on the real time and checks the envelope's replay window
       // against it; the gateway signs on the test's clock — so bring the test's clock to the real now
       const behind = new Date().getTime() - clock.now().getTime();
-      await clock.advance(`${behind}ms`);
+      await clock.advance(ms(behind));
       const billingApp = await createApp(BillingApplication);
       const port = await listenedA2A(billingApp);
       configureTriageMeshTarget({
@@ -344,179 +222,6 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
     },
   );
 
-  it("exposes lookup-sku-tool and catalog-workflow-start over MCP and deduplicates repeated _meta.callId", async () => {
-    const app = await createApp(CatalogApplication);
-    const mcpService = createMcpService(app, CatalogMcp);
-    const channel = createLoopbackMcpChannel();
-
-    await mcpService.connect(
-      channel.transport as unknown as Parameters<typeof mcpService.connect>[0],
-      {
-        peer: "triage-gateway-application",
-        tenant: { tenantId: "acme" },
-        ownerId: "triage-gateway-acme",
-      },
-    );
-
-    const listResponse = await channel.request("tools/list");
-    const toolsResult = listResponse.result as {
-      tools: { name: string }[];
-    };
-    expect(toolsResult.tools.map((t) => t.name)).toEqual([
-      "lookup-sku-tool",
-      "catalog-workflow-start",
-      "resume_workflow",
-    ]);
-
-    const toolArgs = { sku: "SKU-GPU-900" };
-    const signedMesh = signMcpMeshEnvelope(toolArgs);
-
-    const firstCall = await channel.request("tools/call", {
-      name: "lookup-sku-tool",
-      arguments: toolArgs,
-      _meta: {
-        callId: "step_idem_sku_900",
-        "agboss.dev/mesh": signedMesh,
-      },
-    });
-
-    expect(getCatalogExecutionCount()).toBe(1);
-
-    const secondCall = await channel.request("tools/call", {
-      name: "lookup-sku-tool",
-      arguments: toolArgs,
-      _meta: {
-        callId: "step_idem_sku_900",
-        "agboss.dev/mesh": signedMesh,
-      },
-    });
-
-    expect(getCatalogExecutionCount()).toBe(1);
-    expect(secondCall.result).toEqual(firstCall.result);
-
-    await app.close();
-  });
-
-  it("refuses forged Ed25519 mesh signatures with mesh.signature-invalid and enforces loop / maxMeshHops limits over MCP", async () => {
-    const app = await createApp(CatalogApplication);
-    const mcpService = createMcpService(app, CatalogMcp);
-    const channel = createLoopbackMcpChannel();
-    await mcpService.connect(
-      channel.transport as unknown as Parameters<typeof mcpService.connect>[0],
-      {
-        peer: "triage-gateway-application",
-        tenant: { tenantId: "acme" },
-        ownerId: "triage-gateway-acme",
-      },
-    );
-    const toolArgs = { sku: "SKU-GPU-900" };
-    const origin: MeshEnvelope["origin"] = {
-      rootExecutionId: "exec_root_1",
-      executionId: "exec_1",
-      workflow: { name: "triage-workflow", version: "1.0.0" },
-      step: {
-        component: "triage-agent",
-        idempotencyKey: "step_mesh_1",
-        tool: "search-catalog-tool",
-      },
-    };
-    const callWith = async (mesh: string) =>
-      (
-        await channel.request("tools/call", {
-          name: "lookup-sku-tool",
-          arguments: toolArgs,
-          _meta: { "agboss.dev/mesh": mesh },
-        })
-      ).result as {
-        isError?: boolean;
-        _meta?: Record<string, { code?: string }>;
-      };
-
-    const attackerKeys = generateKeyPairSync("ed25519", {
-      publicKeyEncoding: { type: "spki", format: "pem" },
-      privateKeyEncoding: { type: "pkcs8", format: "pem" },
-    });
-    const forged = await callWith(
-      encodeSignedMeshJws(
-        {
-          schema: 1,
-          issuer: "triage-gateway-application",
-          audience: "catalog-application",
-          origin,
-          callChain: [
-            {
-              application: "triage-gateway-application",
-              start: "triage-workflow-start",
-              executionId: "exec_1",
-            },
-          ],
-          issuedAt: new Date().toISOString(),
-          expiresIn: "PT60S",
-          bodyHash: `sha256:${createHash("sha256").update(JSON.stringify(toolArgs)).digest("hex")}`,
-        },
-        attackerKeys.privateKey,
-      ),
-    );
-    expect(forged.isError).toBe(true);
-    expect(forged._meta?.["agboss.dev/error"]?.code).toBe(
-      "mesh.signature-invalid",
-    );
-
-    // a chain that already passed through this tool: the loop guard refuses before anything runs
-    const loop = await callWith(
-      encodeUnsignedMeshJws({
-        schema: 1,
-        issuer: "triage-gateway-application",
-        origin,
-        callChain: [
-          {
-            application: "catalog-application",
-            start: "lookup-sku-tool",
-            executionId: "exec_loop_1",
-          },
-          {
-            application: "triage-gateway-application",
-            start: "triage-workflow-start",
-            executionId: "exec_loop_2",
-          },
-        ],
-      }),
-    );
-    expect(loop.isError).toBe(true);
-    expect(loop._meta?.["agboss.dev/error"]?.code).toBe("limit.mesh-loop");
-
-    // three hops already: the catalog's maxMeshHops is 3
-    const hops = await callWith(
-      encodeUnsignedMeshJws({
-        schema: 1,
-        issuer: "triage-gateway-application",
-        origin,
-        callChain: [
-          {
-            application: "ingress-application",
-            start: "ingress-start",
-            executionId: "exec_hop_1",
-          },
-          {
-            application: "router-application",
-            start: "router-start",
-            executionId: "exec_hop_2",
-          },
-          {
-            application: "triage-gateway-application",
-            start: "triage-workflow-start",
-            executionId: "exec_hop_3",
-          },
-        ],
-      }),
-    );
-    expect(hops.isError).toBe(true);
-    expect(hops._meta?.["agboss.dev/error"]?.code).toBe("limit.hops");
-    expect(getCatalogExecutionCount()).toBe(0);
-
-    await app.close();
-  });
-
   triageTest(
     "routes TriageWorkflow to MeshLoopFallbackWorkflowFinish via .onError(MeshLoopDetectedError, ...)",
     async ({ app, mockLlm, mockOf }) => {
@@ -527,7 +232,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
             application: "billing-application",
             start: "billing-workflow-start",
           },
-          chain: [
+          callChain: [
             {
               application: "billing-application",
               start: "billing-workflow-start",

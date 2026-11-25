@@ -1,24 +1,25 @@
+import "./offline-keys.js";
 import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp, ExecutionStatus } from "@agboss/core";
 import { A2AClient, a2aHttpListener } from "@agboss/core/a2a";
-import { runFederationBlastRadiusProof } from "../../../federation/verify-federation.js";
+import { runFederationBlastRadiusProof } from "../../../../federation/verify-federation.js";
 import {
   installOfflineNetworkGuard,
   isLiveDemoRequested,
   requireLiveApiKey,
-} from "../../../../scripts/tooling/offline-transports.js";
+} from "../../../../../scripts/tooling/offline-transports.js";
 import {
-  BillingA2AExpose,
-  BillingA2aCallerResolver,
+  BillingA2AEndpoint,
+  BillingHttpAuthenticator,
   BillingApplication,
   BillingInquiryDto,
   BillingResolutionDto,
-} from "../../2-billing-a2a/src/billing.application.js";
+} from "../../../2-billing-a2a/src/billing.application.js";
 import {
   CatalogApplication,
   CatalogWorkflowStart,
-} from "../../3-catalog-mcp/src/catalog.application.js";
+} from "../../../3-catalog-mcp/src/catalog.application.js";
 
 const isLive = isLiveDemoRequested();
 if (isLive) {
@@ -43,8 +44,8 @@ try {
   });
   const port = (httpServer.address() as AddressInfo).port;
   listener = a2aHttpListener(billingApp, {
-    expose: BillingA2AExpose,
-    callerResolver: BillingA2aCallerResolver,
+    endpoint: BillingA2AEndpoint,
+    authenticator: BillingHttpAuthenticator,
     publicUrl: `http://127.0.0.1:${String(port)}`,
     base: "/a2a",
   });

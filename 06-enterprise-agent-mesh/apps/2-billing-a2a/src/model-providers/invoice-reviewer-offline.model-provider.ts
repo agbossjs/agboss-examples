@@ -1,15 +1,14 @@
-import { Clock } from "@agboss/core";
+import { Clock, type TokenUsage } from "@agboss/core";
 import {
   ModelCost,
   ModelProvider,
+  CircuitBreakerPolicy,
   PromptCaching,
   Reasoning,
-  RetryPolicy,
   type ModelProviderHandler,
   type ModelProviderRequest,
   type ModelProviderResponse,
   type ModelProviderStream,
-  type ModelProviderUsage,
 } from "@agboss/core/models";
 import { minutes, seconds, usd } from "@agboss/core/units";
 
@@ -30,9 +29,14 @@ function answerOf(request: ModelProviderRequest): string {
   return text.includes("AUDIT RUBRIC") ? "PASS (internal audit note: item count and total present)" : reviewOf(text);
 }
 
-function usageOf(request: ModelProviderRequest, answer: string): ModelProviderUsage {
+function usageOf(request: ModelProviderRequest, answer: string): TokenUsage {
   const sent = request.messages.reduce((sum, message) => sum + message.text.length, 0);
-  return { inputTokens: Math.ceil(sent / 4), outputTokens: Math.ceil(answer.length / 4) };
+  return {
+    inputTokens: Math.ceil(sent / 4),
+    outputTokens: Math.ceil(answer.length / 4),
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 }
 
 /**
@@ -44,7 +48,6 @@ function usageOf(request: ModelProviderRequest, answer: string): ModelProviderUs
 @ModelProvider({
   name: "invoice-reviewer-offline-model-provider",
   description: "Offline stand-in for the invoice reviewer's model; streams its answer word by word",
-  serves: [/^openai\//u, /^google\//u],
   timeout: seconds(30),
   cost: ModelCost.fromPrices({
     "openai/gpt-4o-mini": { inputPerMillion: usd(0.15), outputPerMillion: usd(0.6) },
@@ -52,8 +55,11 @@ function usageOf(request: ModelProviderRequest, answer: string): ModelProviderUs
   }),
   reasoning: Reasoning.off(),
   promptCaching: PromptCaching.off(),
-  retryPolicy: RetryPolicy.none(),
-  circuitBreakerPolicy: { failureThreshold: 5, window: minutes(1), openFor: seconds(10) },
+  circuitBreakerPolicy: CircuitBreakerPolicy.fixed({
+    failureThreshold: 5,
+    failureWindow: minutes(1),
+    openDuration: seconds(10),
+  }),
   deps: [Clock],
 })
 export class InvoiceReviewerOfflineModelProvider implements ModelProviderHandler {
@@ -74,6 +80,6 @@ export class InvoiceReviewerOfflineModelProvider implements ModelProviderHandler
         yield word;
       }
     };
-    return { textStream: textStream(), usage: Promise.resolve(usageOf(request, answer)) };
+    return { textStream: textStream(), result: Promise.resolve({ usage: usageOf(request, answer) }) };
   }
 }

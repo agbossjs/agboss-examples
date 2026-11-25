@@ -24,7 +24,7 @@ export class AskBillingTool implements ToolHandler<BillingInquiryDto, BillingRes
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  run(inquiry: BillingInquiryDto): Promise<BillingResolutionDto> {
+  execute(inquiry: BillingInquiryDto): Promise<BillingResolutionDto> {
     const activeBillingBaseUrl = getActiveBillingBaseUrl();
     const client =
       activeBillingBaseUrl === "http://127.0.0.1:8081/a2a"
@@ -38,7 +38,7 @@ export class AskBillingTool implements ToolHandler<BillingInquiryDto, BillingRes
               output: BillingResolutionDto,
             },
             headers: {
-              authorization: `Bearer ${getActiveBillingApiKey()}`,
+              authorization: `Bearer ${getActiveBillingApiKey() ?? ""}`,
               ...getCustomA2aHeaders(),
             },
           });

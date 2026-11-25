@@ -1,3 +1,4 @@
+import "./offline-keys.js";
 import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Role, type Message } from "@a2a-js/sdk";
@@ -9,9 +10,9 @@ import {
 } from "@a2a-js/sdk/client";
 import { createApp } from "@agboss/core";
 import { A2A_SKILLS_EXTENSION, a2aHttpListener } from "@agboss/core/a2a";
-import { BillingA2AExpose } from "../../2-billing-a2a/src/a2a/billing.a2a-expose.js";
-import { BillingLiveApplication } from "../../2-billing-a2a/src/billing.live.app.js";
-import { BillingA2aCallerResolver } from "../../2-billing-a2a/src/services/billing-a2a-caller-resolver.service.js";
+import { BillingA2AEndpoint } from "../../../2-billing-a2a/src/a2a/billing.a2a-endpoint.js";
+import { BillingLiveApplication } from "../../../2-billing-a2a/src/scripts/billing.live.app.js";
+import { BillingHttpAuthenticator } from "../../../2-billing-a2a/src/a2a/billing.http-authenticator.js";
 
 /**
  * Live only (`npm run demo:stream`, needs OPENROUTER_API_KEY): the invoice review runs on a real
@@ -32,8 +33,8 @@ if (key === undefined || key === "" || key === "offline-test-openrouter-api-key"
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const url = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
   listener = a2aHttpListener(app, {
-    expose: BillingA2AExpose,
-    callerResolver: BillingA2aCallerResolver,
+    endpoint: BillingA2AEndpoint,
+    authenticator: BillingHttpAuthenticator,
     publicUrl: url,
   });
   try {

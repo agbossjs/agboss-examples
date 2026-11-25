@@ -11,15 +11,15 @@ import type { MeshEnvelope } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { describe, expect } from "vitest";
 import {
-  BillingA2AExpose,
-  BillingA2aCallerResolver,
+  BillingA2AEndpoint,
+  BillingHttpAuthenticator,
   BillingApplication,
 } from "../../apps/2-billing-a2a/src/billing.application.js";
 
 const billingTest = testWith(BillingApplication);
 const billing = {
-  expose: BillingA2AExpose,
-  callerResolver: BillingA2aCallerResolver,
+  endpoint: BillingA2AEndpoint,
+  authenticator: BillingHttpAuthenticator,
 };
 const inquiry = { invoiceId: "INV-5001", question: "Check SLA credit" };
 
@@ -53,7 +53,7 @@ describe("Billing over A2A v1.0: its Agent Card", () => {
       const card = (await response.json()) as Card;
 
       expect(response.status).toBe(200);
-      expect(card.name).toBe("billing-a2a-expose");
+      expect(card.name).toBe("billing");
       expect(
         card.skills.map((skill) => ({ id: skill.id, tags: skill.tags })),
       ).toEqual([
@@ -139,10 +139,7 @@ describe("Billing over A2A v1.0: the official SDK client", () => {
               {
                 content: {
                   $case: "data",
-                  value: expect.objectContaining({
-                    invoiceId: "INV-5001",
-                    creditedUsd: 45,
-                  }),
+                  value: { invoiceId: "INV-5001", creditedUsd: 45, resolvedTenantId: "acme", resolution: expect.stringContaining("INV-5001") as string },
                 },
               },
             ],
@@ -170,7 +167,7 @@ describe("Billing over A2A v1.0: the inbound mesh checks", () => {
         method: "SendMessage",
         params: {
           message: {
-            messageId: `m-${envelope.length}`,
+            messageId: `m-${String(envelope.length)}`,
             role: "ROLE_USER",
             parts: [{ data: inquiry, mediaType: "application/json" }],
             metadata: { [A2A_MESH_EXTENSION]: { envelope } },

@@ -2,13 +2,12 @@ import {
   HopsLimitExceededError,
   MeshLoopDetectedError,
   Workflow,
-  start,
+  onStart,
   toFinish,
+  Ttl,
 } from "@agboss/core";
 import { BillingA2AAgent } from "../../a2a/billing.a2a-agent.js";
 import { TriageAgent } from "../../agents/triage/triage.agent.js";
-import { TriageRequestDto } from "../../dto/triage-request.dto.js";
-import { TriageResponseDto } from "../../dto/triage-response.dto.js";
 import { CatalogMcpServer } from "../../mcp/catalog.mcp-server.js";
 import { MeshLoopFallbackWorkflowFinish } from "./mesh-loop-fallback.workflow-finish.js";
 import { TriageWorkflowFinish } from "./triage.workflow-finish.js";
@@ -17,17 +16,16 @@ import { TriageWorkflowStart } from "./triage.workflow-start.js";
 @Workflow({
   name: "triage-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(TriageWorkflowStart)
-      .returns(TriageRequestDto)
+    onStart(TriageWorkflowStart)
       .toAgent(TriageAgent)
       .onError(MeshLoopDetectedError, toFinish(MeshLoopFallbackWorkflowFinish))
       .onError(HopsLimitExceededError, toFinish(MeshLoopFallbackWorkflowFinish))
-      .returns(TriageResponseDto)
       .toFinish(TriageWorkflowFinish),
   ],
-  maxSteps: 6,
-  mcp: [CatalogMcpServer],
-  providers: [BillingA2AAgent],
+  executionLimits: { maxSteps: 6 },
+  // an A2A client and an MCP server are providers like any service; the tools that call them reach them through `deps`
+  providers: [BillingA2AAgent, CatalogMcpServer],
 })
 export class TriageWorkflow {}

@@ -6,11 +6,11 @@ import { LookupSkuTool } from "../../tools/lookup-sku.tool.js";
 @Agent({
   name: "lookup-sku-agent",
   description: "Reads SKU details from CatalogInventoryService via lookup-sku-tool",
-  promptUrls: ["./lookup-sku.prompt.md"],
+  prompt: "./lookup-sku.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: SkuLookupInputDto },
   output: SkuDetailsDto,
   tools: [LookupSkuTool],
-  maxToolCalls: 2,
+  executionLimits: { maxToolCalls: 2 },
 })
 export class LookupSkuAgent {}
