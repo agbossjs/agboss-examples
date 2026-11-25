@@ -19,7 +19,7 @@ export class IssueRefundTool implements ToolHandler<IssueRefundInputDto, RefundR
     private readonly orderBookService: OrderBookService,
   ) {}
 
-  run(input: IssueRefundInputDto): Promise<RefundReceiptDto> {
+  execute(input: IssueRefundInputDto): Promise<RefundReceiptDto> {
     const order = this.orderBookService.findById(input.orderId);
     if (order === undefined) {
       throw new RefundRefusedError("unknown-order", input.orderId);

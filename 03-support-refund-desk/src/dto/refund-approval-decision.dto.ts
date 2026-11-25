@@ -1,8 +1,8 @@
-import { Flag, Text } from "@agboss/core/dto";
+import { Bool, Text } from "@agboss/core/dto";
 
 /** What an approver answers. */
 export class RefundApprovalDecisionDto {
-  @Flag({ prompt: "Whether the refund goes ahead" })
+  @Bool({ prompt: "Whether the refund goes ahead" })
   approved!: boolean;
 
   @Text({ prompt: "A note for the audit trail", optional: true })

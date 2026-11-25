@@ -1,11 +1,8 @@
-import { PauseExpiredError, Workflow, start, toQuestion } from "@agboss/core";
+import { PauseExpiredError, Workflow, toExternalTask, onStart, Ttl } from "@agboss/core";
 import { SettleEscalatedRefundAction } from "../../actions/settle-refund.action.js";
 import { SettleRefundAction } from "../../actions/settle-refund.action.js";
-import { RefundApproverQuestion } from "../../channels/refund-approver.channel-role.js";
-import { SeniorRefundApproverQuestion } from "../../channels/senior-refund-approver.channel-role.js";
-import { RefundApprovalAskDto } from "../../dto/refund-approval-ask.dto.js";
-import { RefundApprovalDecisionDto } from "../../dto/refund-approval-decision.dto.js";
-import { RefundApprovalOutcomeDto } from "../../dto/refund-approval-outcome.dto.js";
+import { RefundApproverExternalTask } from "../../channels/refund-approver.external-task.js";
+import { SeniorRefundApproverExternalTask } from "../../channels/senior-refund-approver.external-task.js";
 import { SupportTicketIdPiiPolicy } from "../../pii-policies/support-ticket-id.pii-policy.js";
 import { OrderBookService } from "../../services/order-book.service.js";
 import { RefundApprovalWorkflowFinish } from "./refund-approval.workflow-finish.js";
@@ -19,21 +16,17 @@ import { RefundApprovalWorkflowStart } from "./refund-approval.workflow-start.js
 @Workflow({
   name: "refund-approval-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(RefundApprovalWorkflowStart)
-      .returns(RefundApprovalAskDto)
-      .toQuestion(RefundApproverQuestion)
+    onStart(RefundApprovalWorkflowStart)
+      .toExternalTask(RefundApproverExternalTask)
       .onError(
         PauseExpiredError,
-        toQuestion(SeniorRefundApproverQuestion)
-          .returns(RefundApprovalDecisionDto)
+        toExternalTask(SeniorRefundApproverExternalTask)
           .toAction(SettleEscalatedRefundAction)
-          .returns(RefundApprovalOutcomeDto)
           .toFinish(RefundApprovalWorkflowFinish),
       )
-      .returns(RefundApprovalDecisionDto)
       .toAction(SettleRefundAction)
-      .returns(RefundApprovalOutcomeDto)
       .toFinish(RefundApprovalWorkflowFinish),
   ],
   // every workflow of this application declares the ticket-id policy: the run's span input is masked

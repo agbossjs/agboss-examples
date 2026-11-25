@@ -1,8 +1,4 @@
-import {
-  ToolInterceptor,
-  type AfterToolCall,
-  type ToolCallResultContext,
-} from "@agboss/core";
+import { ToolInterceptor, type ToolCallResultContext } from "@agboss/core";
 
 export interface AuditedToolCallEntry {
   readonly toolName: string;
@@ -24,8 +20,8 @@ export function resetAuditTrail(): void {
   name: "audit-trail-tool-interceptor",
   description: "Records completed tool executions into the compliance audit log.",
 })
-export class AuditTrailToolInterceptor implements AfterToolCall {
-  afterToolCall(call: ToolCallResultContext): unknown {
+export class AuditTrailToolInterceptor  {
+  afterAnyTool(call: ToolCallResultContext): unknown {
     auditTrail.push({
       toolName: call.tool.name,
       input: call.input,

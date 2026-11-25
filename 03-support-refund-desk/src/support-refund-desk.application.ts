@@ -1,15 +1,4 @@
-import {
-  Application,
-  SqliteCheckpointSaver,
-  SqliteCostLedgerRepository,
-  SqliteExecutionHistoryRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionRecordRepository,
-  SqliteExecutionTreeRepository,
-  SqlitePausedExecutionRepository,
-  SqliteRateLimitRepository,
-} from "@agboss/core";
-import { OpenRouterModelProvider } from "@agboss/core/models";
+import { Application, EmptyEnvironment } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { OnCallRefundApproverChannel } from "./channels/on-call-refund-approver.channel.js";
 import { OnCallSeniorApproverChannel } from "./channels/on-call-senior-approver.channel.js";
@@ -19,8 +8,9 @@ import { SupportTenantDailyBudget } from "./budgets/support-tenant-daily.budget.
 import { RECEIPT_LIVE } from "./config/receipt-live.js";
 import { SupportExecutionContext } from "./contexts/support-execution.context.js";
 import { SupportTenantContext } from "./contexts/support-tenant.context.js";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { AuditTrailToolInterceptor } from "./interceptors/audit.interceptor.js";
+import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
+import { SupportDeskDatabaseStorage } from "./storages/support-desk.database-storage.js";
 import { SupportOfflineModelProvider } from "./model-providers/support-offline.model-provider.js";
 import { CustomerContactPiiPolicy } from "./pii-policies/customer-contact.pii-policy.js";
 import { RefundDeskPauseListener } from "./listeners/refund-desk.pause-listener.js";
@@ -35,10 +25,12 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
 @Application({
   name: "support-refund-desk-application",
   version: "1.0.0",
-  environment: AppEnvironment,
+  environment: EmptyEnvironment,
   tenantContext: SupportTenantContext,
   executionContext: SupportExecutionContext,
-  piiKeyField: "piiPseudonymKey",
+  storage: SupportDeskDatabaseStorage,
+  // every model: the offline provider, or — `npm run demo:files:live`, the receipt workflows only — the real OpenRouter
+  modelProvider: RECEIPT_LIVE ? OpenRouterModelProvider : SupportOfflineModelProvider,
   workflows: [
     SupportRefundWorkflow,
     LiveSupportRefundWorkflow,
@@ -50,24 +42,15 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
   piiPolicies: [CustomerContactPiiPolicy],
   toolInterceptors: [AuditTrailToolInterceptor],
   providers: [
-    SupportOfflineModelProvider,
-    ...(RECEIPT_LIVE ? [OpenRouterModelProvider] : []),
+    ...(RECEIPT_LIVE ? [OpenRouterModelProvider] : [SupportOfflineModelProvider]),
     OnCallRefundApproverChannel,
     OnCallSeniorApproverChannel,
     RefundDeskPauseListener,
     ApprovalInboxService,
     OnCallLogService,
-    SqliteCheckpointSaver,
-    SqliteExecutionRecordRepository,
-    SqlitePausedExecutionRepository,
-    SqliteCostLedgerRepository,
-    SqliteExecutionLeaseRepository,
-    SqliteExecutionTreeRepository,
-    SqliteRateLimitRepository,
-    SqliteExecutionHistoryRepository,
   ],
   retention: { executionRecords: hours(24 * 30), pauseRecords: hours(24) },
-  shutdownTimeout: seconds(15),
+  executionLimits: { shutdownTimeout: seconds(15) },
   defaults: {
     models: { temperature: 0 },
     // the receipt photo's redaction: flash-lite (the default) sometimes answers in pixels, not the fractions asked for; the call is then refused, fail closed

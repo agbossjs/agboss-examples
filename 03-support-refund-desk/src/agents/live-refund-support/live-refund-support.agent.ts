@@ -1,5 +1,5 @@
-import { Agent, RagMode, TokenLimit } from "@agboss/core";
-import { PolicyAwareCompaction } from "../../compactions/policy-aware/policy-aware.compaction.js";
+import { Agent, TokenLimit } from "@agboss/core";
+import { PolicyAwareMemory } from "../../memories/policy-aware/policy-aware.memory.js";
 import { SupportAnswerDto } from "../../dto/support-answer.dto.js";
 import { SupportRequestDto } from "../../dto/support-request.dto.js";
 import { UnauthorizedPayoutGuardrail } from "../../guardrails/policy-promise/policy-promise.guardrail.js";
@@ -12,18 +12,16 @@ import { LookupOrderTool } from "../../tools/lookup-order.tool.js";
 @Agent({
   name: "live-refund-support-agent",
   description: "Live OpenRouter (openai/gpt-4o-mini) refund support agent under PII masking, tool interception, guardrails, and policy RAG.",
-  promptUrls: ["./live-refund-support.prompt.md"],
+  prompt: "./live-refund-support.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: SupportRequestDto },
   output: SupportAnswerDto,
   tools: [LookupOrderTool, IssueRefundTool],
-  maxToolCalls: 5,
-  maxTokens: TokenLimit.MODEL_MAX,
-  rag: [{ use: RefundPolicyRag, mode: RagMode.Context }],
+  maxTokens: TokenLimit.ModelMax,
+  rag: [RefundPolicyRag],
   judges: [CitationCodeJudge],
-  maxRetries: 1,
-  uncompactedTurns: 2,
-  compaction: PolicyAwareCompaction,
+  memory: PolicyAwareMemory,
   guardrails: [PromptInjectionGuardrail, UnauthorizedPayoutGuardrail],
+  executionLimits: { maxToolCalls: 5, maxRetries: 1 },
 })
 export class LiveRefundSupportAgent {}

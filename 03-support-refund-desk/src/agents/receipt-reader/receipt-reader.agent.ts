@@ -1,4 +1,4 @@
-import { Agent, FileView, ModelFiles } from "@agboss/core";
+import { Agent, FileView, ModelFiles, inline } from "@agboss/core";
 import { kilobytes } from "@agboss/core/units";
 import { ReceiptRefundRequestDto } from "../../dto/receipt-refund-request.dto.js";
 import { CustomerContactPiiPolicy } from "../../pii-policies/customer-contact.pii-policy.js";
@@ -14,7 +14,7 @@ import { ReceiptPhotoPiiPolicy } from "../../pii-policies/receipt-photo.pii-poli
 @Agent({
   name: "receipt-reader-agent",
   description: "Reads a receipt photo on a copy with the card number blacked out",
-  prompt: "Say what the receipt shows: the store, the order and the total. One line.",
+  prompt: inline("Say what the receipt shows: the store, the order and the total. One line."),
   model: "google/gemini-2.5-flash-lite",
   input: { request: ReceiptRefundRequestDto },
   piiPolicies: [ReceiptPhotoPiiPolicy],

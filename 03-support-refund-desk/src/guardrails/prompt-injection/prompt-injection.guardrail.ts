@@ -1,26 +1,19 @@
-import {
-  DecidedBy,
-  GuardrailVerdict,
-  InputGuardrail,
-  type GuardrailHandler,
-  type GuardrailRefusal,
-} from "@agboss/core";
+import { GuardrailVerdict, type GuardrailContent, InputGuardrail, type GuardrailRefusal } from "@agboss/core";
 import { SupportExecutionContext } from "../../contexts/support-execution.context.js";
 import { InjectionDetectorService } from "../../services/injection-detector.service.js";
 
 @InputGuardrail({
   name: "prompt-injection-guardrail",
   description: "Deterministically blocks prompt injection and policy-override attempts before any model call.",
-  decidedBy: DecidedBy.Code,
   deps: [SupportExecutionContext, InjectionDetectorService],
 })
-export class PromptInjectionGuardrail implements GuardrailHandler, GuardrailRefusal {
+export class PromptInjectionGuardrail implements GuardrailRefusal {
   constructor(
     private readonly supportExecutionContext: SupportExecutionContext,
     private readonly injectionDetectorService: InjectionDetectorService,
   ) {}
 
-  check(text: string): GuardrailVerdict {
+  check({ text }: GuardrailContent): GuardrailVerdict {
     return this.injectionDetectorService.isInjectionAttempt(text)
       ? GuardrailVerdict.blocked()
       : GuardrailVerdict.passed();

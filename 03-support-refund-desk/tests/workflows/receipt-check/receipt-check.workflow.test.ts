@@ -82,7 +82,7 @@ test("a redaction answer that is not the regions fails closed: no model sees the
   const agent = mockLlm(ReceiptReaderAgent);
 
   await expect(app.execute(ReceiptCheckWorkflowStart, request, CONTEXTS)).rejects.toMatchObject({
-    code: "step.file-redaction-failed",
+    code: "step.file-masking-failed",
   });
   expect(agent).toHaveBeenCalledTimes(0);
 });

@@ -1,10 +1,4 @@
-import {
-  ExecutionStatus,
-  PauseClosedError,
-  PauseClosedReason,
-  PausedExecutionRepository,
-  PauseResolution,
-} from "@agboss/core";
+import { ExecutionStatus, PauseClosedError, PauseClosedReason, PausedExecutionRepository, PauseResolution } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { describe, expect } from "vitest";
@@ -12,10 +6,7 @@ import { driveApprovalEscalation } from "../../../scenarios/approval-escalation.
 import { afterWindow, APPROVAL_REMINDER, APPROVAL_WINDOW } from "../../../src/config/approval-window.js";
 import { ApprovalInboxService } from "../../../src/services/approval-inbox.service.js";
 import { OnCallLogService } from "../../../src/services/on-call-log.service.js";
-import {
-  getRecordedToolOperations,
-  resetRecordedToolOperations,
-} from "../../../src/services/order-book.service.js";
+import { getRecordedToolOperations, resetRecordedToolOperations } from "../../../src/services/order-book.service.js";
 import { SupportRefundDeskApplication } from "../../../src/support-refund-desk.application.js";
 import { RefundApprovalWorkflowFinish } from "../../../src/workflows/refund-approval/refund-approval.workflow-finish.js";
 import { RefundApprovalWorkflowStart } from "../../../src/workflows/refund-approval/refund-approval.workflow-start.js";
@@ -38,8 +29,8 @@ const ORDER = {
   reason: "the workstation arrived broken",
 };
 const CONTEXTS = { tenant: { tenantId: "acme", maxAutoRefundUsd: 500 }, execution: { locale: "en" } } as const;
-const lead = { tenantId: "acme", answeredBy: "lead-1" };
-const head = { tenantId: "acme", answeredBy: "head-of-support" };
+const lead = { tenantId: "acme", actor: { id: "lead-1" } };
+const head = { tenantId: "acme", actor: { id: "head-of-support" } };
 
 /** Waits (on the virtual clock) until the pause timers' look has done what `done` checks. */
 async function until(
@@ -64,7 +55,7 @@ describe("AC2: a refund approval that expires escalates to the second approver",
 
     const done = await app.resume(
       { pauseId: first.pauseId, decision: { approved: true } },
-      { ...lead, record: true },
+      { ...lead, includeRecord: true },
     );
 
     expect(done).toFinishWith(RefundApprovalWorkflowFinish, {
@@ -108,10 +99,10 @@ describe("AC2: a refund approval that expires escalates to the second approver",
 
     const log = result.onCallLog.map((line) => line.replace(/ [0-9a-f]{16,}/u, " <pause>"));
     expect(log).toHaveLength(4);
-    expect(log.filter((line) => line.startsWith("opened refund-approver-question"))).toHaveLength(1);
-    expect(log.filter((line) => line.startsWith("opened senior-refund-approver-question"))).toHaveLength(1);
-    expect(log).toContain("closed refund-approver-question <pause>: expired");
-    expect(log).toContain("closed senior-refund-approver-question <pause>: answered by head-of-support");
+    expect(log.filter((line) => line.startsWith("opened on-call-refund-approver-channel"))).toHaveLength(1);
+    expect(log.filter((line) => line.startsWith("opened on-call-senior-approver-channel"))).toHaveLength(1);
+    expect(log).toContain("closed on-call-refund-approver-channel <pause>: expired");
+    expect(log).toContain("closed on-call-senior-approver-channel <pause>: answered by head-of-support");
   });
 });
 

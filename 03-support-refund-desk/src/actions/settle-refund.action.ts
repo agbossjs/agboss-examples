@@ -1,10 +1,4 @@
-import {
-  Action,
-  ExecutionContext,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, ExecutionContext, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { RefundRefusedError } from "../errors/refund-refused.error.js";
 import { RefundApprovalAskDto } from "../dto/refund-approval-ask.dto.js";
 import { RefundApprovalDecisionDto } from "../dto/refund-approval-decision.dto.js";
@@ -64,7 +58,7 @@ export class SettleRefundAction implements ActionHandler<SettleRefundAction> {
 
   execute({ ask, decision }: InputOf<SettleRefundAction>): Promise<OutputOf<SettleRefundAction>> {
     return Promise.resolve(
-      settle(this.orderBook, this.executionContext, ask.value, decision.value, "approver"),
+      settle(this.orderBook, this.executionContext, ask, decision, "approver"),
     );
   }
 }
@@ -90,8 +84,8 @@ export class SettleEscalatedRefundAction implements ActionHandler<SettleEscalate
       settle(
         this.orderBook,
         this.executionContext,
-        ask.value,
-        decision.value,
+        ask,
+        decision,
         "senior-approver",
       ),
     );

@@ -7,7 +7,7 @@ export class SupportRequestDto {
 
   @Text({
     prompt: "Customer full name (masked everywhere by field-level sensitivity)",
-    sensitive: PiiAction.replaceWithToken(),
+    sensitive: PiiAction.tokenize(),
   })
   customerName!: string;
 }

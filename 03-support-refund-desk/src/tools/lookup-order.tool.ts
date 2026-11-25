@@ -19,7 +19,7 @@ export class LookupOrderTool implements ToolHandler<OrderLookupInputDto, OrderDe
     private readonly orderBookService: OrderBookService,
   ) {}
 
-  run(input: OrderLookupInputDto): Promise<OrderDetailsDto> {
+  execute(input: OrderLookupInputDto): Promise<OrderDetailsDto> {
     const order = this.orderBookService.findById(input.orderId);
     if (order === undefined) {
       throw new Error(`Order ${input.orderId} not found`);

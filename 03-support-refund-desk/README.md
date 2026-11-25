@@ -9,21 +9,21 @@
    - Tools marked with `revealPii: true` (`IssueRefundTool`) receive the real de-tokenized email for external side effects while all traces, execution records, and eval artifacts remain masked.
    - Raw payment card numbers (`PiiKind.CardNumber`) are refused at the boundary with `PiiRefusedError`.
 2. **Pre-Execution Tool Interception & Guardrails (`@ToolInterceptor`, `@InputGuardrail`, `@OutputGuardrail`):**
-   - `RefundPolicyToolInterceptor` intercepts over-cap refund attempts (`> $500`) with `ToolCallDecision.replyToModel(...)` so the model revises its decision to `"escalated"` with zero side effects on `OrderBookService`.
+   - `RefundPolicyToolInterceptor` intercepts over-cap refund attempts (`> $500`) with `ToolCallDecision.reply(...)` so the model revises its decision to `"escalated"` with zero side effects on `OrderBookService`.
    - Cross-tenant order lookups are hard-blocked with `ToolCallDecision.block(...)` (`ToolBlockedError`).
    - `PromptInjectionGuardrail` (`DecidedBy.Code`, $0) blocks prompt injection before any model call; `UnauthorizedPayoutGuardrail` (`DecidedBy.Model`) blocks unverified legal settlement promises on output.
-3. **In-Memory `@Rag` (`InMemoryKnowledgeIndexService` + `RefundPolicyRetriever`) & Memory Compaction vs. Policy Drift (`@Compaction`):**
+3. **In-Memory `@Rag` (`InMemoryKnowledgeIndexService` + `RefundPolicyRetriever`) & Memory Compaction vs. Policy Drift (`@Memory`):**
    - `InMemoryKnowledgeIndexService` splits `fixtures/refund-policy-current.md` into 6 markdown sections (`[policy-window]`, `[policy-cap]`, `[policy-digital-licenses]`, `[policy-vip-restocking]`, `[policy-tenant]`, `[policy-citation]`) and ranks chunks using deterministic BM25/TF-IDF token overlap + citation boost.
    - `RefundPolicyRetriever` queries the top-K relevant sections and injects `RetrievedChunk[]` into `RefundPolicyRag` (`RagMode.Context`).
-   - The knowledge base is per tenant (agbossjs/agboss#700, #796): `@Rag({ tenancy: RagTenancy.PerTenant })`, every retrieval reads `options.tenantId` and searches that tenant's corpus only (the fixtures are `acme`'s; another tenant gets none of them). `tests/rag/refund-policy.rag-contract.test.ts` runs `ragConnectorContract` on it.
-   - Across a 5-turn conversation (`uncompactedTurns: 2`, `turnsBetweenCompactions: 2`), `PolicyAwareCompaction` summarizes older turns while explicitly marking early v1.0 policy claims (`90 days / $2,000`) as superseded by active v2.0 policy (`30 days / $500`).
+   - The knowledge base is per tenant (agbossjs/agboss#700, #796): `@Rag({ scope: RagScope.Tenant })` on a `RagSource`, every retrieval reads `options.tenantId` and searches that tenant's corpus only (the fixtures are `acme`'s; another tenant gets none of them). `tests/rag/refund-policy.rag-contract.test.ts` runs `ragSourceContract` on it.
+   - Across a 5-turn conversation (`uncompactedTurns: 2`, `turnsBetweenCompactions: 2`), `PolicyAwareMemory` (`@Memory` with a `compact()` method) summarizes older turns while explicitly marking early v1.0 policy claims (`90 days / $2,000`) as superseded by active v2.0 policy (`30 days / $500`).
 4. **5-Layer Evaluation, Compact Git Baseline & Judge Calibration (`@EvalSuite`, `agboss eval`):**
    - `RefundDeskEvalSuite` (`src/eval-suites/refund-desk.eval-suite.ts`) defines the quality gate executed by `npx agboss eval run` in CI/CD before deployment (`trajectory → code judge → model judge` with `EvalCascade.StopAtFirstFailure`).
    - Compact `eval/baseline/main-baseline.json` (`kind: "agboss.eval-baseline"`, `schemaVersion: 1`) stores only git-diff-friendly metrics (`caseId`, `caseHash`, `runs`, `passed`, `passAtK`, `passHatK`, `flaky`, `avgSpendUsd`, `verdictSummary`), while full per-run traces stay in `.agboss/eval/` (gitignored).
    - `pass@k` vs `pass^k` (`isUnstable: true`) and baseline comparison (`CaseComparison.FlakyOnBaseline` quarantined vs `CaseComparison.Regressed`).
    - Judge calibration (`agboss eval calibrate`) computing pairwise Cohen's $\kappa$, confusion matrices, and rubric disagreements against `eval/human-labels/refund-desk-eval-suite.jsonl`.
 
-5. **A deadline for the answer, an escalation, a reminder, an extension and a pause listener (`@ChannelRole({ expiresIn, remindBefore })`, `.onError(PauseExpiredError, toQuestion(…))`, `app.extendPause`, `@PauseListener`):**
+5. **A deadline for the answer, an escalation, a reminder, an extension and a pause listener (`@ExternalTask({ timeout, remindBefore })` with a `@Channel({ target })`, `.onError(PauseExpiredError, toExternalTask(…))`, `app.extendPause`, `@ChannelListener`):**
    - A refund above the self-service cap (`refund-approval-workflow`) is put to the on-call support lead (`refund-approver-question`), who has `APPROVAL_EXPIRES_IN` (default `4h`) to answer. When nobody does, the pause closes `expired`, the question step fails with `PauseExpiredError` and the flow's side path asks the head of support (`senior-refund-approver-question`, a pause of its own); an approval there issues the refund once (`OrderBookService`, keyed by the step's idempotency key).
    - The lead's channel hears `onPauseExpiring` once per deadline (`remindBefore` is a quarter of the window) and `onPauseExtended` after `app.extendPause`. The head's channel implements `PauseExpiryHandler`: when even the head does not answer, the desk **declines** on the channel's own answer (`PauseExpiration.decide`, recorded `PauseResolution.DecidedOnExpiry`) — never an approval nobody looked at.
    - `RefundDeskPauseListener` (`@PauseListener`) writes "opened" and "closed: <reason>" for every pause of the application to the on-call log, once per `deliveryId` (notices are at least once). A late answer to the lead's pause is `PauseClosedError` with `reason: expired`.
@@ -67,7 +67,7 @@ APPROVAL_EXPIRES_IN=30s npm run demo:approval
 - `src/services/in-memory-knowledge-index.service.ts` & `src/retrievers/refund-policy.retriever.ts` — Real in-memory BM25/TF-IDF section indexer and retriever injected into `src/rag/refund-policy.rag.ts`.
 - `src/workflows/refund-approval/`, `src/channels/` (two question roles and their channels), `src/listeners/refund-desk.pause-listener.ts`, `src/actions/settle-refund.action.ts`, `src/config/approval-window.ts` — the approval with a deadline and its escalation (`scenarios/approval-escalation.ts`).
 - `src/agents/receipt-reader/`, `src/agents/strict-receipt-reader/`, `src/workflows/receipt-check/`, `src/workflows/strict-receipt-check/`, `src/dto/receipt-refund-request.dto.ts`, `fixtures/receipt-card-statement.png` — the receipt photo under PII policy (`scenarios/receipt-live.ts`).
-- `src/pii-policies/`, `src/guardrails/<name>/`, `src/interceptors/`, `src/compactions/<name>/`, `src/agents/<name>/`, `src/judges/<name>/`.
+- `src/pii-policies/`, `src/guardrails/<name>/`, `src/interceptors/`, `src/memories/<name>/`, `src/agents/<name>/`, `src/judges/<name>/`.
 - `src/eval-suites/refund-desk.eval-suite.ts` & `eval/baseline/main-baseline.json` — Quality-gate suite and compact git-tracked baseline snapshot.
 - `tests/` — Mirrors `src/` 1-to-1:
   - `tests/guardrails/prompt-injection/prompt-injection.guardrail.test.ts`
@@ -84,9 +84,9 @@ APPROVAL_EXPIRES_IN=30s npm run demo:approval
 |---|---|---|---|
 | **A: PII Roundtrip & Refusal** (`scenarios/pii.ts`) | Raw email, ticket ID, and raw payment card number in customer message | `@PiiPolicy`, `PiiAction.replaceWithToken()`, `revealPii: true`, `PiiAction.blockWithRefusal()` | Model sees `<email:d1ac5c>`; `IssueRefundTool` receives `alice.synth@example.com`; card number throws `PiiRefusedError` |
 | **B: Policy & Guardrails** (`scenarios/policy.ts`) | Over-cap `$1,450` tool call, cross-tenant lookup, prompt injection, and legal settlement promise | `@ToolInterceptor`, `@InputGuardrail`, `@OutputGuardrail` | Over-cap call gets `ToolCallStatus.Replied` and escalates; cross-tenant throws `ToolBlockedError`; guardrails throw `GuardrailBlockedError` |
-| **C: Memory vs. Policy Drift** (`scenarios/memory-drift.ts`) | Customer cites superseded v1.0 90-day policy across 5 turns for 45-day-old `ORD-1003` | `PolicyAwareCompaction` + `RefundPolicyRag` (`RagMode.Context`) | Compaction preserves `ORD-1003` fact, strips stale v1.0 claim, and agent denies refund (`refundedUsd === 0`) |
+| **C: Memory vs. Policy Drift** (`scenarios/memory-drift.ts`) | Customer cites superseded v1.0 90-day policy across 5 turns for 45-day-old `ORD-1003` | `PolicyAwareMemory` + `RefundPolicyRag` (`rag: [RefundPolicyRag]`: the context) | Compaction preserves `ORD-1003` fact, strips stale v1.0 claim, and agent denies refund (`refundedUsd === 0`) |
 | **D: 5-Layer Evaluation** (`scenarios/evals.ts`) | Flaky run (`1/2`), rubric ambiguity across human raters, chaos faults, and incident drafting | `agboss eval run --baseline`, `eval calibrate`, `--chaos`, `--metamorphic`, `generate eval-case` | `FlakyOnBaseline` quarantined; `Regressed` caught; $\kappa = 1.00$ (`anna`) / $0.57$ (`ben`); drafted case & HTML report contain zero raw PII |
-| **E: Approval Deadline & Escalation** (`scenarios/approval-escalation.ts`) | Nobody answers the on-call lead's approval of a $1,450 refund; later, nobody answers the head either | `expiresIn`, `.onError(PauseExpiredError, toQuestion(…))`, `remindBefore`, `app.extendPause`, `PauseExpiryHandler`, `@PauseListener` | The head is asked, approves, one refund is issued; the lead's late answer is `PauseClosedError` (`expired`); the listener logged opened and closed for both pauses; with no answer at all the desk declines and issues nothing |
+| **E: Approval Deadline & Escalation** (`scenarios/approval-escalation.ts`) | Nobody answers the on-call lead's approval of a $1,450 refund; later, nobody answers the head either | `timeout`, `.onError(PauseExpiredError, toExternalTask(…))`, `remindBefore`, `app.extendPause`, `PauseExpiryHandler`, `@ChannelListener` | The head is asked, approves, one refund is issued; the lead's late answer is `PauseClosedError` (`expired`); the listener logged opened and closed for both pauses; with no answer at all the desk declines and issues nothing |
 | **F: Receipt Photo under PII Policy** (`tests/workflows/receipt-check/receipt-check.workflow.test.ts`, `tests/workflows/strict-receipt-check/strict-receipt-check.workflow.test.ts`) | Card number, email and an IBAN on a photo of a receipt; a redaction model that answers prose instead of regions | `ModelFiles.of({ views: [FileView.Redacted] })`, `PiiFileAction.RedactWithModel`, block rule refusing an image whole, `mockLlm(FileRedactor)` | The reader's model gets one image part whose `sha256` differs from the original and no raw email; spend under `files:redactor`; an IBAN found throws `PiiRefusedError`, a prose answer `step.file-redaction-failed`, and under the desk's block rule the image is refused (`card-number`) with no model call |
 
 ## 5. How to reproduce each case
@@ -101,3 +101,19 @@ npx agboss eval run --suite refund-desk-eval-suite --runs 2 --save-baseline eval
 # Run CLI calibration directly
 npx agboss eval calibrate --report eval/calibration/calibration-run.json --labels eval/human-labels/refund-desk-eval-suite.jsonl
 ```
+
+## The 0.1.1 shape of this example
+
+- Prompts are `PromptSource`s (`prompt: "./x.prompt.md"` or `inline("…")`); every `@Workflow` has `historyTtl`; flows are
+  `onStart(…).toAgent(…).toFinish(…)` with no `.returns(…)`, and `maxSteps` is `executionLimits.maxSteps`.
+- The model provider is explicit: `SupportOfflineModelProvider` (a transport over the offline script) is the application's
+  `modelProvider`; `npm run demo:files:live` swaps in `OpenRouterModelProvider` (an `OpenRouterDriver`) for the receipt workflows.
+- The rows go to `SupportDeskDatabaseStorage` (`@DatabaseStorage` on `SqliteDriver`, its PII key read through `defineEnv`).
+- An approval is an `@ExternalTask` (`RefundApproverExternalTask`: `input`, `output`, `respondent`, `timeout`, `remindBefore`);
+  its `@Channel({ target, ttl })` is the inbox transport; "nobody is left to escalate to" is the target's `onExpired`.
+- Receipts are `@File` fields read under `ReceiptFilePolicy`; the PII rules read `PiiKind.Email.tokenize()`,
+  `PiiGroup.Contact.mask()`, `PiiKind.CardNumber.block()`.
+- Judges declare `output` and return `JudgeVerdict.failed(reason, { metrics })`; the eval suite lists `judges`, the trajectory
+  check comes from each case's `tools`; its baseline and calibration artifacts are schema 2 / 5 (regenerate with `agboss eval run`).
+- The Langfuse scenario hands `LangfuseTracer.fromEnv()` (`@agboss/langfuse`, a devDependency) to `createApp({ tracerProvider })`.
+- `src/scripts/demo.ts` lives in `scripts/` so `agboss check` does not load it.

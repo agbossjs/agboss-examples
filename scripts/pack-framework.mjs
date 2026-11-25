@@ -109,6 +109,9 @@ function packPackage(pkgSubdir) {
 
 const agboss = packPackage("packages/agboss");
 const agbossCli = packPackage("packages/agboss-cli");
+// the Langfuse tracing adapter (`@agboss/langfuse`) lives in the framework repository and is released
+// with it; an example that traces (03) names it as a devDependency
+const agbossLangfuse = packPackage("packages/agboss-langfuse");
 
 /**
  * The store packages packed like the core until they are on npm (agbossjs/agboss#487, #891): each
@@ -165,6 +168,7 @@ const manifest = {
   packages: {
     agboss,
     agbossCli,
+    langfuse: agbossLangfuse,
     ...stores,
   },
 };
@@ -177,6 +181,9 @@ console.log(
 );
 console.log(
   `[pack-framework] Packed ${agbossCli.name}@${agbossCli.version} -> ${agbossCli.filename} (${agbossCli.integrity}, sha256:${agbossCli.sha256})`,
+);
+console.log(
+  `[pack-framework] Packed ${agbossLangfuse.name}@${agbossLangfuse.version} -> ${agbossLangfuse.filename} (${agbossLangfuse.integrity}, sha256:${agbossLangfuse.sha256})`,
 );
 for (const store of Object.values(stores)) {
   console.log(

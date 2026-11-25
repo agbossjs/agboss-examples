@@ -1,6 +1,6 @@
 {
   "kind": "agboss.eval-baseline",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "suite": "refund-desk-eval-suite",
   "application": {
     "name": "support-refund-desk-application",
@@ -10,13 +10,13 @@
     "name": "support-refund-workflow",
     "version": "1.0.0"
   },
-  "configHash": "cbacbe06559addfbcaafb283650c216b0433c8294d25b46c45a0de8a695d71a4",
+  "configHash": "13ded2021243468f174e28483e3d3ba806fc50a676a4cf96d52cb76e8c06dca7",
   "start": "support-refund-workflow-start",
   "environment": "dev",
   "runs": 2,
   "cascade": "stop-at-first-failure",
-  "startedAt": "2026-10-25T14:26:22.319Z",
-  "endedAt": "2026-10-25T14:26:22.454Z",
+  "startedAt": "2026-11-25T09:51:53.078Z",
+  "endedAt": "2026-11-25T09:51:53.261Z",
   "summary": {
     "cases": 3,
     "passAtK": 3,
@@ -26,23 +26,41 @@
     "skippedByCascade": 1
   },
   "spend": {
-    "totalUsd": 0.0026
+    "executionUsd": 0.002,
+    "judgeUsd": 0.0006000000000000001,
+    "totalUsd": 0.0026000000000000003
   },
+  "models": [
+    {
+      "component": "refund-support-agent",
+      "kind": "agent",
+      "model": "offline/support-chat",
+      "provider": "support-offline-model-provider"
+    }
+  ],
+  "judges": [
+    {
+      "component": "grounded-answer-judge",
+      "kind": "judge",
+      "model": "delegate/judge-chat",
+      "provider": "support-offline-model-provider"
+    }
+  ],
   "cases": [
     {
       "caseId": "eligible-refund-within-policy",
-      "caseHash": "a4531b1486f941f1",
+      "caseHash": "9642c31fa27d684c",
       "runs": 2,
       "passed": 2,
       "passAtK": true,
       "passHatK": true,
       "flaky": false,
-      "avgSpendUsd": 0.0005,
+      "avgSpendUsd": 0.0004,
       "verdictSummary": "2/2 passed (trajectory: 2/2 passed, citation-code-judge: 2/2 passed, grounded-answer-judge: 2/2 passed)"
     },
     {
       "caseId": "over-cap-refund-escalated",
-      "caseHash": "6814bd2e0c4705f5",
+      "caseHash": "60999ec3c7e19b13",
       "runs": 2,
       "passed": 1,
       "passAtK": true,
@@ -53,13 +71,13 @@
     },
     {
       "caseId": "policy-drift-past-30-days-denied",
-      "caseHash": "2e86c9bff5c27230",
+      "caseHash": "52724a028284c661",
       "runs": 2,
       "passed": 2,
       "passAtK": true,
       "passHatK": true,
       "flaky": false,
-      "avgSpendUsd": 0.0004,
+      "avgSpendUsd": 0.0003,
       "verdictSummary": "2/2 passed (trajectory: 2/2 passed, citation-code-judge: 2/2 passed, grounded-answer-judge: 2/2 passed)"
     }
   ]

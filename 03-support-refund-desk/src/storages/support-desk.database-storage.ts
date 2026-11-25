@@ -1,0 +1,22 @@
+import { DatabaseStorage, SqliteDriver, defineEnv, env, secret } from "@agboss/core";
+import { hours } from "@agboss/core/units";
+
+// Offline default, so `agboss check`, the demos and `eval run` work with zero setup; a real deployment sets the variable.
+process.env.PII_PSEUDONYM_KEY ??= "agboss-test-pseudonym-key";
+
+const databaseEnv = defineEnv({
+  /** The SQLite file (`:memory:` for the demo and the tests). */
+  path: env("SQLITE_PATH", { default: ":memory:" }),
+  /** The application's PII key: one token per value on every instance. */
+  piiSecret: secret("PII_PSEUDONYM_KEY"),
+});
+
+/** Where the desk's rows go: the ledger of its budgets, the records, the pauses, the checkpoints and the leases. */
+@DatabaseStorage({
+  name: "support-desk-database-storage",
+  driver: SqliteDriver({ path: databaseEnv.path }),
+  auditLogTtl: hours(24),
+  ledgerEntriesTtl: hours(24),
+  piiSecret: databaseEnv.piiSecret,
+})
+export class SupportDeskDatabaseStorage {}

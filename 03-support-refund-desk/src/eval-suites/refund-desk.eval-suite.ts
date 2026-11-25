@@ -1,14 +1,4 @@
-import {
-  EvalCascade,
-  EvalSuite,
-  checkTrajectory,
-  evalCase,
-  judgedBy,
-  pastTurn,
-  toolCall,
-  toolInvariant,
-  turn,
-} from "@agboss/core/eval";
+import { EvalCascade, EvalSuite, evalCase, pastTurn, toolCall, toolInvariant, turn } from "@agboss/core/eval";
 import { CitationCodeJudge } from "../judges/citation-code/citation-code.judge.js";
 import { GroundedAnswerJudge } from "../judges/grounded-answer/grounded-answer.judge.js";
 import { IssueRefundTool } from "../tools/issue-refund.tool.js";
@@ -20,12 +10,12 @@ import { SupportRefundWorkflowStart } from "../workflows/support-refund/support-
  * Why `@EvalSuite` is a first-class declarative component in AGBoss:
  *
  * 1. **Static verification (`agboss check`):** The compiler and static analyzer verify that
- *    `start`, `pastTurn(Start, ..., Finish, ...)`, `toolCall(Tool, ...)`, and `judgedBy(Judge)`
+ *    `start`, `pastTurn({ start, input, finish, output })`, `toolCall(Tool, ...)`, and `judges`
  *    all match the workflow's real DTO contracts before a single model token is spent.
  * 2. **Cost-ordered evaluation cascade (`EvalCascade.StopAtFirstFailure`):**
- *    - `checkTrajectory()` ($0) verifies required/forbidden tool calls and argument invariants first.
- *    - `judgedBy(CitationCodeJudge)` ($0 `DecidedBy.Code`) checks deterministic policy citation and cap rules.
- *    - `judgedBy(GroundedAnswerJudge)` (`DecidedBy.Model`) only runs if the $0 checks pass.
+ *    - the trajectory check ($0), from each case's `tools`, verifies required/forbidden tool calls and argument invariants first.
+ *    - `CitationCodeJudge` ($0 `DecidedBy.Code`) checks deterministic policy citation and cap rules.
+ *    - `GroundedAnswerJudge` (`DecidedBy.Model`) only runs if the $0 checks pass.
  * 3. **Compact Git baseline vs full local artifacts:**
  *    - `npx agboss eval run --suite refund-desk-eval-suite --runs 2 --save-baseline eval/baseline/main-baseline.json`
  *      writes a compact, git-diff-friendly per-case metrics snapshot (`passAtK`, `passHatK`, `flaky`, `avgSpendUsd`, `verdictSummary`).
@@ -36,11 +26,7 @@ import { SupportRefundWorkflowStart } from "../workflows/support-refund/support-
   description:
     "Multi-layered evaluation suite for Support Refund Desk: trajectory invariants ($0), deterministic code judge ($0), and grounded model judge.",
   start: SupportRefundWorkflowStart,
-  checks: [
-    checkTrajectory(),
-    judgedBy(CitationCodeJudge),
-    judgedBy(GroundedAnswerJudge),
-  ],
+  judges: [CitationCodeJudge, GroundedAnswerJudge],
   cascade: EvalCascade.StopAtFirstFailure,
   cases: [
     evalCase({
@@ -99,21 +85,21 @@ import { SupportRefundWorkflowStart } from "../workflows/support-refund/support-
       tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
       execution: { locale: "en" },
       history: [
-        pastTurn(
-          SupportRefundWorkflowStart,
-          {
+        pastTurn({
+          start: SupportRefundWorkflowStart,
+          input: {
             customerName: "Bob Synth",
             message:
               "I bought ORD-1003 45 days ago (email bob.synth@example.com). Under old v1.0 policy I had 90 days.",
           },
-          SupportRefundWorkflowFinish,
-          {
+          finish: SupportRefundWorkflowFinish,
+          output: {
             decision: "denied",
             orderId: "ORD-1003",
             refundedUsd: 0,
             explanation: "Noted order ORD-1003 under active 30-day policy [policy].",
           },
-        ),
+        }),
       ],
       turns: [
         turn({

@@ -1,19 +1,12 @@
 import { createApp } from "@agboss/core";
-import {
-  installOfflineNetworkGuard,
-  isLiveDemoRequested,
-  requireLiveApiKey,
-} from "../../scripts/tooling/offline-transports.js";
-import { runEvalScenario } from "../scenarios/evals.js";
-import { runMemoryDriftScenario } from "../scenarios/memory-drift.js";
-import { runPiiScenario } from "../scenarios/pii.js";
-import { runPolicyScenario } from "../scenarios/policy.js";
-import {
-  getRecordedToolOperations,
-  resetRecordedToolOperations,
-} from "./services/order-book.service.js";
-import { SupportRefundDeskApplication } from "./support-refund-desk.application.js";
-import { LiveSupportRefundWorkflowStart } from "./workflows/live-support-refund/live-support-refund.workflow-start.js";
+import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey } from "../../../scripts/tooling/offline-transports.js";
+import { runEvalScenario } from "../../scenarios/evals.js";
+import { runMemoryDriftScenario } from "../../scenarios/memory-drift.js";
+import { runPiiScenario } from "../../scenarios/pii.js";
+import { runPolicyScenario } from "../../scenarios/policy.js";
+import { getRecordedToolOperations, resetRecordedToolOperations } from "../services/order-book.service.js";
+import { SupportRefundDeskApplication } from "../support-refund-desk.application.js";
+import { LiveSupportRefundWorkflowStart } from "../workflows/live-support-refund/live-support-refund.workflow-start.js";
 
 const isLive = isLiveDemoRequested();
 if (isLive) {
@@ -42,7 +35,7 @@ try {
         {
           tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
           execution: { locale: "en" },
-          record: true,
+          includeRecord: true,
         },
       );
       const ops = getRecordedToolOperations();

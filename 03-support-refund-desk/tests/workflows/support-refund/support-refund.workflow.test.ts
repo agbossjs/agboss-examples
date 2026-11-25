@@ -19,7 +19,7 @@ describe("SupportRefundWorkflow — End-to-End Scenarios (PII, Langfuse OTel, Gu
     expect(res.modelSawRawEmail).toBe(false);
     expect(res.toolReceivedRealEmail).toBe("alice.synth@example.com");
     expect(res.recordMaskedEmail).toBe(true);
-    expect(res.blockedCardRefusalKind).toBe(PiiKind.CardNumber);
+    expect(res.blockedCardRefusalKind).toBe(PiiKind.CardNumber.id);
     expect(res.langfuseTraceUrlMatchesSession).toBe(true);
     expect(res.langfuseOtelSpansExported).toBe(true);
     expect(res.langfuseOtelSpansMaskedPii).toBe(true);
@@ -64,7 +64,7 @@ describe("SupportRefundWorkflow — End-to-End Scenarios (PII, Langfuse OTel, Gu
       }[];
     };
     expect(baselineRaw.kind).toBe("agboss.eval-baseline");
-    expect(baselineRaw.schemaVersion).toBe(1);
+    expect(baselineRaw.schemaVersion).toBe(2);
     expect(baselineRaw.cases).toHaveLength(3);
 
     const res = await runEvalScenario();

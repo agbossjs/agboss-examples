@@ -38,6 +38,8 @@ export interface OfflineTransportResponse {
   readonly usage: {
     readonly inputTokens: number;
     readonly outputTokens: number;
+    readonly cacheReadTokens: number;
+    readonly cacheWriteTokens: number;
   };
   readonly cost?: OfflineUsd;
 }
@@ -348,7 +350,7 @@ export abstract class OfflineNoopTransport {
     return Promise.resolve({
       text: "{}",
       toolCalls: [],
-      usage: { inputTokens: 0, outputTokens: 0 },
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
     });
   }
 }
@@ -411,7 +413,7 @@ export abstract class SupportOfflineTransport {
             arguments: { blocks: shouldBlock },
           },
         ],
-        usage: { inputTokens: 15, outputTokens: 5 },
+        usage: { inputTokens: 15, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -422,7 +424,7 @@ export abstract class SupportOfflineTransport {
         text: hasUnverifiedFee
           ? "FAILED: Explanation invents an unverified restocking fee not in v2.0 policy."
           : "PASSED: Decision and explanation are grounded in the order record and v2.0 policy.",
-        usage: { inputTokens: 25, outputTokens: 12 },
+        usage: { inputTokens: 25, outputTokens: 12, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -431,7 +433,7 @@ export abstract class SupportOfflineTransport {
       const orderId = extractOrderId(combinedText);
       return Promise.resolve({
         text: `Summary: Customer inquired about order ${orderId}; note that legacy v1.0 policy is superseded by active v2.0 (30-day window, $500 cap).`,
-        usage: { inputTokens: 30, outputTokens: 20 },
+        usage: { inputTokens: 30, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -453,7 +455,7 @@ export abstract class SupportOfflineTransport {
             arguments: { orderId, customerEmail },
           },
         ],
-        usage: { inputTokens: 40, outputTokens: 15 },
+        usage: { inputTokens: 40, outputTokens: 15, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -475,7 +477,7 @@ export abstract class SupportOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 45, outputTokens: 20 },
+          usage: { inputTokens: 45, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
           cost: usdBrand(0.0001),
         });
       }
@@ -511,7 +513,7 @@ export abstract class SupportOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 45, outputTokens: 25 },
+          usage: { inputTokens: 45, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
           cost: usdBrand(0.0001),
         });
       }
@@ -534,7 +536,7 @@ export abstract class SupportOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 50, outputTokens: 20 },
+          usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
           cost: usdBrand(0.0001),
         });
       }
@@ -558,7 +560,7 @@ export abstract class SupportOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 50, outputTokens: 25 },
+          usage: { inputTokens: 50, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
           cost: usdBrand(0.0001),
         });
       }
@@ -578,7 +580,7 @@ export abstract class SupportOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 50, outputTokens: 25 },
+          usage: { inputTokens: 50, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
           cost: usdBrand(0.0001),
         });
       }
@@ -597,7 +599,7 @@ export abstract class SupportOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 50, outputTokens: 20 },
+        usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -618,7 +620,7 @@ export abstract class SupportOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 60, outputTokens: 25 },
+        usage: { inputTokens: 60, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -638,7 +640,7 @@ export abstract class SupportOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 60, outputTokens: 25 },
+        usage: { inputTokens: 60, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -672,7 +674,7 @@ export abstract class SupportOfflineTransport {
           },
         },
       ],
-      usage: { inputTokens: 60, outputTokens: 25 },
+      usage: { inputTokens: 60, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
       cost: usdBrand(0.0001),
     });
   }
@@ -706,7 +708,7 @@ export abstract class SagaOfflineTransport {
       if (isExceed && request.messages.length <= 2) {
         return {
           text: "Drafting executive itinerary...",
-          usage: { inputTokens: 500_000, outputTokens: 500_000 },
+          usage: { inputTokens: 500_000, outputTokens: 500_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
         };
       }
       return {
@@ -718,7 +720,7 @@ export abstract class SagaOfflineTransport {
             arguments: { brief: `Executive itinerary prepared for ${bookingId}` },
           },
         ],
-        usage: { inputTokens: 100, outputTokens: 50 },
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
       };
     }
 
@@ -733,7 +735,7 @@ export abstract class SagaOfflineTransport {
               arguments: { bookingId, amountUsd },
             },
           ],
-          usage: { inputTokens: 60, outputTokens: 20 },
+          usage: { inputTokens: 60, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
         };
       }
       if (toolResultMsg !== undefined && answerTool !== undefined) {
@@ -750,7 +752,7 @@ export abstract class SagaOfflineTransport {
               arguments: { approvalToken: parsed.approvalToken, approved: parsed.approved },
             },
           ],
-          usage: { inputTokens: 80, outputTokens: 25 },
+          usage: { inputTokens: 80, outputTokens: 25, cacheReadTokens: 0, cacheWriteTokens: 0 },
         };
       }
     }
@@ -773,7 +775,7 @@ export abstract class SagaOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 50, outputTokens: 20 },
+        usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
       };
     }
 
@@ -795,7 +797,7 @@ export abstract class SagaOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 50, outputTokens: 20 },
+        usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
       };
     }
 
@@ -814,7 +816,7 @@ export abstract class SagaOfflineTransport {
               arguments: { bookingId, amountUsd },
             },
           ],
-          usage: { inputTokens: 50, outputTokens: 20 },
+          usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
         };
       }
 
@@ -833,14 +835,14 @@ export abstract class SagaOfflineTransport {
               },
             },
           ],
-          usage: { inputTokens: 50, outputTokens: 20 },
+          usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
         };
       }
     }
 
     return {
       text: "Completed",
-      usage: { inputTokens: 10, outputTokens: 5 },
+      usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 },
     };
   }
 }
@@ -861,7 +863,7 @@ export abstract class ClusterOfflineTransport {
             arguments: { reason: "Root shard exceeds single-worker threshold" },
           },
         ],
-        usage: { inputTokens: 20, outputTokens: 10 },
+        usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -876,7 +878,7 @@ export abstract class ClusterOfflineTransport {
             arguments: { report: "Leaf shard completed offline" },
           },
         ],
-        usage: { inputTokens: 20, outputTokens: 10 },
+        usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -895,7 +897,7 @@ export abstract class ClusterOfflineTransport {
           arguments: { chunkId, summary: `Processed ${chunkId}` },
         },
       ],
-      usage: { inputTokens: 20, outputTokens: 10 },
+      usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
       cost: usdBrand(0.0001),
     });
   }
@@ -918,7 +920,7 @@ export abstract class TriageOfflineTransport {
             arguments: { sku: "SKU-GPU-900" },
           },
         ],
-        usage: { inputTokens: 30, outputTokens: 12 },
+        usage: { inputTokens: 30, outputTokens: 12, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -936,7 +938,7 @@ export abstract class TriageOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 40, outputTokens: 15 },
+        usage: { inputTokens: 40, outputTokens: 15, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -956,7 +958,7 @@ export abstract class TriageOfflineTransport {
           },
         },
       ],
-      usage: { inputTokens: 50, outputTokens: 20 },
+      usage: { inputTokens: 50, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0 },
       cost: usdBrand(0.0001),
     });
   }
@@ -971,7 +973,7 @@ export abstract class MigrationOfflineTransport {
           next: "research-planner-agent",
           reason: "Customer requested a refund for a delayed order",
         }),
-        usage: { inputTokens: 20, outputTokens: 10 },
+        usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -989,7 +991,7 @@ export abstract class MigrationOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 25, outputTokens: 12 },
+        usage: { inputTokens: 25, outputTokens: 12, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -1007,7 +1009,7 @@ export abstract class MigrationOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 30, outputTokens: 14 },
+        usage: { inputTokens: 30, outputTokens: 14, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -1025,7 +1027,7 @@ export abstract class MigrationOfflineTransport {
             },
           },
         ],
-        usage: { inputTokens: 35, outputTokens: 16 },
+        usage: { inputTokens: 35, outputTokens: 16, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -1040,7 +1042,7 @@ export abstract class MigrationOfflineTransport {
             arguments: {},
           },
         ],
-        usage: { inputTokens: 30, outputTokens: 10 },
+        usage: { inputTokens: 30, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
         cost: usdBrand(0.0001),
       });
     }
@@ -1055,7 +1057,7 @@ export abstract class MigrationOfflineTransport {
           arguments: {},
         },
       ],
-      usage: { inputTokens: 20, outputTokens: 10 },
+      usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
       cost: usdBrand(0.0001),
     });
   }

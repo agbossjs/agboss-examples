@@ -1,4 +1,4 @@
-import { Agent, FileView, ModelFiles } from "@agboss/core";
+import { Agent, FileView, ModelFiles, inline } from "@agboss/core";
 import { kilobytes } from "@agboss/core/units";
 import { ReceiptRefundRequestDto } from "../../dto/receipt-refund-request.dto.js";
 
@@ -10,7 +10,7 @@ import { ReceiptRefundRequestDto } from "../../dto/receipt-refund-request.dto.js
 @Agent({
   name: "strict-receipt-reader-agent",
   description: "Reads a receipt photo, refusing it whole under the desk's block rule",
-  prompt: "Say what the receipt shows: the store, the order and the total. One line.",
+  prompt: inline("Say what the receipt shows: the store, the order and the total. One line."),
   model: "google/gemini-2.5-flash-lite",
   input: { request: ReceiptRefundRequestDto },
   files: ModelFiles.of({

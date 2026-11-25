@@ -1,14 +1,9 @@
-import {
-  PiiAction,
-  PiiPolicy,
-  type PiiMatch,
-  type PiiPolicyHandler,
-} from "@agboss/core";
+import { PiiAction, PiiPolicy, type PiiMatch, type PiiPolicyHandler } from "@agboss/core";
 import { TicketPatternService } from "../services/ticket-pattern.service.js";
 
 @PiiPolicy({
   name: "support-ticket-id-pii-policy",
-  action: PiiAction.replaceWithToken(),
+  action: PiiAction.tokenize(),
   deps: [TicketPatternService],
 })
 export class SupportTicketIdPiiPolicy implements PiiPolicyHandler {

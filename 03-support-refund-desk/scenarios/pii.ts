@@ -1,15 +1,10 @@
 import { createApp, PiiKind, PiiRefusedError } from "@agboss/core";
+import { LangfuseTracer } from "@agboss/langfuse";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
-import {
-  getRecordedModelRequests,
-  resetSupportModel,
-} from "../src/model-providers/support-offline.model-provider.js";
-import {
-  getRecordedToolOperations,
-  resetRecordedToolOperations,
-} from "../src/services/order-book.service.js";
+import { getRecordedModelRequests, resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
+import { getRecordedToolOperations, resetRecordedToolOperations } from "../src/services/order-book.service.js";
 import { setProcessEnv } from "../../scripts/tooling/offline-transports.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
 import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
@@ -44,7 +39,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
       {
         tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
         execution: { locale: "en" },
-        record: true,
+        includeRecord: true,
       },
     );
 
@@ -91,14 +86,14 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof PiiRefusedError && error.kind === PiiKind.CardNumber) {
+      if (error instanceof PiiRefusedError && error.kind === PiiKind.CardNumber.id) {
         blockedCardRefusalKind = error.kind;
       } else {
         throw error;
       }
     }
 
-    if (blockedCardRefusalKind !== PiiKind.CardNumber) {
+    if (blockedCardRefusalKind !== PiiKind.CardNumber.id) {
       throw new Error("Expected PiiRefusedError for CardNumber");
     }
 
@@ -140,7 +135,9 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
         LANGFUSE_BASE_URL: langfuseBaseUrl,
         LANGFUSE_PROJECT_ID: "proj-support",
       });
-      const tracedApp = await createApp(SupportRefundDeskApplication);
+      const tracer = LangfuseTracer.fromEnv(); // the framework's spans, masked by the PII policies, to the Langfuse the variables name
+      if (tracer === undefined) throw new Error("LANGFUSE_* variables are not set");
+      const tracedApp = await createApp(SupportRefundDeskApplication, { tracerProvider: tracer });
       try {
         const tracedResult = await tracedApp.execute(
           SupportRefundWorkflowStart,

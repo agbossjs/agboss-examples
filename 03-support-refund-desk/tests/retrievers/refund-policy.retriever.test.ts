@@ -1,11 +1,8 @@
-import { testRag } from "@agboss/core/testing";
+import { testUnit } from "@agboss/core/testing";
 import { beforeEach, describe, expect, it } from "vitest";
 import { RefundPolicyRag, setActivePolicyVersion } from "../../src/rag/refund-policy.rag.js";
 import { RefundPolicyRetriever } from "../../src/retrievers/refund-policy.retriever.js";
-import {
-  InMemoryKnowledgeIndexService,
-  POLICY_TENANT,
-} from "../../src/services/in-memory-knowledge-index.service.js";
+import { InMemoryKnowledgeIndexService, POLICY_TENANT } from "../../src/services/in-memory-knowledge-index.service.js";
 
 describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowledge Base)", () => {
   beforeEach(() => {
@@ -53,8 +50,8 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
     expect(capResults[0]?.source).toBe("refund-policy-current.md#policy-cap");
   });
 
-  it("wires RefundPolicyRetriever into @Rag (RefundPolicyRag) and validates via testRag()", async () => {
-    const searchRag = testRag(RefundPolicyRag, { tenant: { tenantId: POLICY_TENANT } });
+  it("wires RefundPolicyRetriever into @Rag (RefundPolicyRag) and validates via testUnit()", async () => {
+    const searchRag = testUnit(RefundPolicyRag, { tenant: { tenantId: POLICY_TENANT } });
 
     const { output: digitalChunks } = await searchRag(
       "digital software license activation key",
@@ -76,7 +73,7 @@ describe("RefundPolicyRetriever & RefundPolicyRag (In-Memory BM25/TF-IDF Knowled
   });
 
   it("another tenant reads none of acme's refund policy (agbossjs/agboss#796)", async () => {
-    const searchRag = testRag(RefundPolicyRag, { tenant: { tenantId: "globex" } });
+    const searchRag = testUnit(RefundPolicyRag, { tenant: { tenantId: "globex" } });
 
     const { output } = await searchRag("digital software license activation key", { topK: 3 });
 

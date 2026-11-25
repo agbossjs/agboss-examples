@@ -1,14 +1,8 @@
 import { createApp } from "@agboss/core";
 import { pathToFileURL } from "node:url";
-import {
-  getRecordedModelRequests,
-  resetSupportModel,
-} from "../src/model-providers/support-offline.model-provider.js";
+import { getRecordedModelRequests, resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
 import { setActivePolicyVersion } from "../src/rag/refund-policy.rag.js";
-import {
-  getRecordedToolOperations,
-  resetRecordedToolOperations,
-} from "../src/services/order-book.service.js";
+import { getRecordedToolOperations, resetRecordedToolOperations } from "../src/services/order-book.service.js";
 import { SupportRefundDeskApplication } from "../src/support-refund-desk.application.js";
 import { SupportRefundWorkflowStart } from "../src/workflows/support-refund/support-refund.workflow-start.js";
 

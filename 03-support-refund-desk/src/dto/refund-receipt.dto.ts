@@ -1,4 +1,4 @@
-import { Decimal, Text } from "@agboss/core/dto";
+import { Float, Text } from "@agboss/core/dto";
 
 export class RefundReceiptDto {
   @Text({ prompt: "Refund receipt ID" })
@@ -7,7 +7,7 @@ export class RefundReceiptDto {
   @Text({ prompt: "Refunded order ID" })
   orderId!: string;
 
-  @Decimal({ prompt: "Refunded amount in USD", min: 0 })
+  @Float({ prompt: "Refunded amount in USD", min: 0 })
   refundedUsd!: number;
 
   @Text({ prompt: "Status of the refund operation" })

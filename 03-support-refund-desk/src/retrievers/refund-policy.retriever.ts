@@ -1,9 +1,6 @@
 import { Injectable } from "@agboss/core";
 import type { RagRetrieval, RagRetrieveOptions } from "@agboss/core/rag";
-import {
-  InMemoryKnowledgeIndexService,
-  type ScoredPolicyChunk,
-} from "../services/in-memory-knowledge-index.service.js";
+import { InMemoryKnowledgeIndexService, type ScoredPolicyChunk } from "../services/in-memory-knowledge-index.service.js";
 
 /**
  * Domain retriever injected into `RefundPolicyRag`.
@@ -23,6 +20,9 @@ export class RefundPolicyRetriever {
   retrieve(query: string, options: RagRetrieveOptions): Promise<RagRetrieval> {
     return Promise.resolve().then(() => {
       options.signal.throwIfAborted();
+      if (options.tenantId === undefined) {
+        throw new Error("the refund policy is per tenant: a retrieval names its tenant"); // fail closed
+      }
       const ranked = this.index.search(query, { topK: options.topK, tenantId: options.tenantId });
       return {
         results: ranked.map((chunk) => ({

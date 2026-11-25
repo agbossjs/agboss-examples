@@ -41,7 +41,7 @@ test("a block rule refuses the receipt whole: neither the redactor nor the reade
   );
 
   await expect(run).rejects.toBeInstanceOf(PiiRefusedError);
-  await expect(run).rejects.toMatchObject({ kind: PiiKind.CardNumber });
+  await expect(run).rejects.toMatchObject({ kind: PiiKind.CardNumber.id });
   expect(redactor).toHaveBeenCalledTimes(0);
   expect(agent).toHaveBeenCalledTimes(0);
 });

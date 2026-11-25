@@ -1,7 +1,5 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { LiveRefundSupportAgent } from "../../agents/live-refund-support/live-refund-support.agent.js";
-import { SupportAnswerDto } from "../../dto/support-answer.dto.js";
-import { SupportRequestDto } from "../../dto/support-request.dto.js";
 import { RefundPolicyToolInterceptor } from "../../interceptors/refund-policy.interceptor.js";
 import { SupportTicketIdPiiPolicy } from "../../pii-policies/support-ticket-id.pii-policy.js";
 import { RefundPolicyRetriever } from "../../retrievers/refund-policy.retriever.js";
@@ -16,14 +14,12 @@ import { LiveSupportRefundWorkflowStart } from "./live-support-refund.workflow-s
 @Workflow({
   name: "live-support-refund-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(LiveSupportRefundWorkflowStart)
-      .returns(SupportRequestDto)
+    onStart(LiveSupportRefundWorkflowStart)
       .toAgent(LiveRefundSupportAgent)
-      .returns(SupportAnswerDto)
       .toFinish(LiveSupportRefundWorkflowFinish),
   ],
-  maxSteps: 4,
   piiPolicies: [SupportTicketIdPiiPolicy],
   toolInterceptors: [RefundPolicyToolInterceptor],
   providers: [
@@ -34,5 +30,6 @@ import { LiveSupportRefundWorkflowStart } from "./live-support-refund.workflow-s
     InMemoryKnowledgeIndexService,
     RefundPolicyRetriever,
   ],
+  executionLimits: { maxSteps: 4 },
 })
 export class LiveSupportRefundWorkflow {}

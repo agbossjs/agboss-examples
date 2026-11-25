@@ -1,7 +1,7 @@
 import { ExecutionContext } from "@agboss/core";
-import { OneOf } from "@agboss/core/dto";
+import { Enum } from "@agboss/core/dto";
 
 export class SupportExecutionContext extends ExecutionContext {
-  @OneOf({ values: ["en", "es"] })
+  @Enum(["en", "es"])
   locale!: "en" | "es";
 }

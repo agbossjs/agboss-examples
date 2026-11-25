@@ -49,9 +49,13 @@ function restorePublicPkg(pkg, frameworkVersion = PINNED_VERSION, cliVersion = P
   if (copy.devDependencies?.["@agboss/cli"] !== undefined) {
     copy.devDependencies["@agboss/cli"] = `^${cliVersion}`;
   }
+  if (copy.devDependencies?.["@agboss/langfuse"] !== undefined) {
+    copy.devDependencies["@agboss/langfuse"] = `^${frameworkVersion}`;
+  }
   if (copy.overrides && typeof copy.overrides === "object") {
     delete copy.overrides["@agboss/core"];
     delete copy.overrides["@agboss/cli"];
+    delete copy.overrides["@agboss/langfuse"];
     delete copy.overrides["agboss"];
     delete copy.overrides["agboss-cli"];
     for (const store of STORE_PACKAGES) delete copy.overrides[store.name];
@@ -116,6 +120,15 @@ for (const relDir of TARGET_DIRS) {
     "@agboss/core": relAgboss,
     "@agboss/cli": relCli,
   };
+  if (packedPkg.devDependencies?.["@agboss/langfuse"] !== undefined) {
+    const langfuse = manifest.packages.langfuse;
+    if (langfuse === undefined) {
+      throw new Error(`[install-packed] ${relDir} needs @agboss/langfuse: run npm run pack:framework first`);
+    }
+    const relLangfuse = `file:${relative(projectDir, resolvePortablePackedTarballPath(ROOT, langfuse.filename, "@agboss/langfuse"))}`;
+    packedPkg.devDependencies["@agboss/langfuse"] = relLangfuse;
+    packedPkg.overrides["@agboss/langfuse"] = relLangfuse;
+  }
   // the store packages (agbossjs/agboss#487, #891), packed until they are on npm: the project's
   // own range stays in git (the published one), the tarball is installed in its place
   for (const store of STORE_PACKAGES) {

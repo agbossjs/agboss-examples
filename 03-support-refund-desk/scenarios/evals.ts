@@ -5,12 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { createApp } from "@agboss/core";
-import {
-  CaseComparison,
-  type EvalCalibration,
-  type EvalRunComparison,
-  type EvalRunReport,
-} from "@agboss/core/eval";
+import { CaseComparison, type EvalCalibration, type EvalRunComparison, type EvalRunReport } from "@agboss/core/eval";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import { resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
 import { setProcessEnv } from "../../scripts/tooling/offline-transports.js";
@@ -223,7 +218,7 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
       SQLITE_PATH: sqlitePath,
       PII_PSEUDONYM_KEY: "agboss-test-pseudonym-key",
     });
-    const app = await createApp(SupportRefundDeskApplication, { env: "dev" });
+    const app = await createApp(SupportRefundDeskApplication);
 
     let secondExecutionId = "";
     try {
@@ -237,7 +232,7 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
           threadId,
           tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
           execution: { locale: "en" },
-          record: true,
+          includeRecord: true,
         },
       );
 
@@ -251,7 +246,7 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
           threadId,
           tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
           execution: { locale: "en" },
-          record: true,
+          includeRecord: true,
         },
       );
       secondExecutionId = secondTurn.executionId;
@@ -271,8 +266,6 @@ export async function runEvalScenario(): Promise<EvalScenarioResult> {
         secondExecutionId,
         "--tenant",
         "acme",
-        "--env",
-        "dev",
         "--dry-run",
         "--json",
       ],

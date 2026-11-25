@@ -14,7 +14,7 @@
     "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "describe": "agboss describe",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts",
+    "demo": "tsx src/scripts/demo.ts",
     "demo:pii": "tsx scenarios/pii.ts",
     "demo:policy": "tsx scenarios/policy.ts",
     "demo:memory-drift": "tsx scenarios/memory-drift.ts",
@@ -27,10 +27,11 @@
     "dotenv": "^17.3.1"
   },
   "devDependencies": {
+    "@agboss/cli": "^0.1.1",
+    "@agboss/langfuse": "^0.1.1",
     "@eslint/js": "^9.39.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.13.0",
-    "@agboss/cli": "^0.1.1",
     "eslint": "^9.39.0",
     "sharp": "^0.35.5",
     "tsx": "^4.19.0",

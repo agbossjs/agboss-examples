@@ -1,6 +1,6 @@
 {
   "kind": "agboss.eval-run",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "suite": "refund-desk-eval-suite",
   "application": {
     "name": "support-refund-desk-application",
@@ -10,17 +10,17 @@
     "name": "support-refund-workflow",
     "version": "1.0.0"
   },
-  "configHash": "cbacbe06559addfbcaafb283650c216b0433c8294d25b46c45a0de8a695d71a4",
+  "configHash": "13ded2021243468f174e28483e3d3ba806fc50a676a4cf96d52cb76e8c06dca7",
   "start": "support-refund-workflow-start",
   "environment": "dev",
   "runs": 2,
   "cascade": "stop-at-first-failure",
-  "startedAt": "2026-10-24T21:36:07.742Z",
-  "endedAt": "2026-10-24T21:36:07.871Z",
+  "startedAt": "2026-11-25T09:52:38.256Z",
+  "endedAt": "2026-11-25T09:52:38.433Z",
   "cases": [
     {
       "name": "eligible-refund-within-policy",
-      "caseHash": "a4531b1486f941f1",
+      "caseHash": "9642c31fa27d684c",
       "passed": 2,
       "runs": 2,
       "passAtK": true,
@@ -29,18 +29,20 @@
       "runResults": [
         {
           "run": 1,
-          "threadId": "2b851c29-f0eb-4974-b3e1-17436d4e1987",
+          "threadId": "036dd088-d14b-4b3b-9caf-71a8ceb968ff",
           "tenantId": "acme",
-          "executionId": "e1927f92-95ae-4fbc-9115-1a98bc67befc",
+          "executionId": "319b73a5-938c-4fab-a3b4-12c6627ca4ef",
           "finish": "support-refund-workflow-finish",
           "passed": true,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -49,6 +51,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "grounded": "yes",
@@ -57,9 +60,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0005,
+          "executionUsd": 0.0004,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0005,
           "trace": {
-            "executionId": "e1927f92-95ae-4fbc-9115-1a98bc67befc",
+            "executionId": "319b73a5-938c-4fab-a3b4-12c6627ca4ef",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -79,8 +84,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.762Z",
-                "endedAt": "2026-10-24T21:36:07.762Z"
+                "startedAt": "2026-11-25T09:52:38.280Z",
+                "endedAt": "2026-11-25T09:52:38.280Z"
               },
               {
                 "component": "refund-support-agent",
@@ -92,16 +97,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -110,6 +108,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 20,
                     "cacheReadTokens": 0,
@@ -118,6 +117,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 60,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -126,6 +126,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -139,19 +140,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1001",
-                      "customerEmail": "<email:d1ac5c>"
+                      "customerEmail": "<email:f4dbab>"
                     },
                     "output": {
                       "orderId": "ORD-1001",
                       "tenantId": "acme",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "item": "Ergonomic Mechanical Keyboard",
                       "amountUsd": 180,
                       "daysSincePurchase": 12,
                       "eligibleByWindow": true
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.297Z",
+                    "endedAt": "2026-11-25T09:52:38.300Z"
                   },
                   {
                     "tool": "issue-refund-tool",
@@ -159,7 +162,7 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1001",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "amountUsd": 180,
                       "reason": "Eligible self-service refund within 30-day window and $500 cap"
                     },
@@ -170,7 +173,9 @@
                       "status": "refunded"
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.307Z",
+                    "endedAt": "2026-11-25T09:52:38.308Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -199,8 +204,8 @@
                   }
                 ],
                 "spentUsd": 0.0004,
-                "startedAt": "2026-10-24T21:36:07.765Z",
-                "endedAt": "2026-10-24T21:36:07.788Z"
+                "startedAt": "2026-11-25T09:52:38.283Z",
+                "endedAt": "2026-11-25T09:52:38.317Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -215,12 +220,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.789Z",
-                "endedAt": "2026-10-24T21:36:07.789Z"
+                "startedAt": "2026-11-25T09:52:38.318Z",
+                "endedAt": "2026-11-25T09:52:38.319Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -234,18 +240,20 @@
         },
         {
           "run": 2,
-          "threadId": "585a0f66-e069-4fdf-a361-474950a5918b",
+          "threadId": "30010694-d3d1-453c-bed5-13fe893a6378",
           "tenantId": "acme",
-          "executionId": "7ed69438-b282-4103-af3b-7c9189432ccb",
+          "executionId": "ee150f9f-b7c0-44d4-a411-8e9fd5cc5430",
           "finish": "support-refund-workflow-finish",
           "passed": true,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -254,6 +262,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "grounded": "yes",
@@ -262,9 +271,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0005,
+          "executionUsd": 0.0004,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0005,
           "trace": {
-            "executionId": "7ed69438-b282-4103-af3b-7c9189432ccb",
+            "executionId": "ee150f9f-b7c0-44d4-a411-8e9fd5cc5430",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -284,8 +295,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.798Z",
-                "endedAt": "2026-10-24T21:36:07.798Z"
+                "startedAt": "2026-11-25T09:52:38.331Z",
+                "endedAt": "2026-11-25T09:52:38.331Z"
               },
               {
                 "component": "refund-support-agent",
@@ -297,16 +308,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -315,6 +319,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 20,
                     "cacheReadTokens": 0,
@@ -323,6 +328,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 60,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -331,6 +337,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -344,19 +351,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1001",
-                      "customerEmail": "<email:d1ac5c>"
+                      "customerEmail": "<email:f4dbab>"
                     },
                     "output": {
                       "orderId": "ORD-1001",
                       "tenantId": "acme",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "item": "Ergonomic Mechanical Keyboard",
                       "amountUsd": 180,
                       "daysSincePurchase": 12,
                       "eligibleByWindow": true
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.339Z",
+                    "endedAt": "2026-11-25T09:52:38.340Z"
                   },
                   {
                     "tool": "issue-refund-tool",
@@ -364,7 +373,7 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1001",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "amountUsd": 180,
                       "reason": "Eligible self-service refund within 30-day window and $500 cap"
                     },
@@ -375,7 +384,9 @@
                       "status": "refunded"
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.344Z",
+                    "endedAt": "2026-11-25T09:52:38.345Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -404,8 +415,8 @@
                   }
                 ],
                 "spentUsd": 0.0004,
-                "startedAt": "2026-10-24T21:36:07.799Z",
-                "endedAt": "2026-10-24T21:36:07.810Z"
+                "startedAt": "2026-11-25T09:52:38.332Z",
+                "endedAt": "2026-11-25T09:52:38.349Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -420,12 +431,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.811Z",
-                "endedAt": "2026-10-24T21:36:07.811Z"
+                "startedAt": "2026-11-25T09:52:38.350Z",
+                "endedAt": "2026-11-25T09:52:38.350Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -442,13 +454,13 @@
         "requiredTools": [
           {
             "tool": "lookup-order-tool",
-            "arguments": {
+            "input": {
               "orderId": "ORD-1001"
             }
           },
           {
             "tool": "issue-refund-tool",
-            "arguments": {
+            "input": {
               "orderId": "ORD-1001",
               "amountUsd": 180
             }
@@ -467,7 +479,7 @@
     },
     {
       "name": "over-cap-refund-escalated",
-      "caseHash": "6814bd2e0c4705f5",
+      "caseHash": "60999ec3c7e19b13",
       "passed": 2,
       "runs": 2,
       "passAtK": true,
@@ -476,18 +488,20 @@
       "runResults": [
         {
           "run": 1,
-          "threadId": "dd4fe490-b75a-4450-8da9-1cd05ce0d314",
+          "threadId": "eb7bff3b-55c3-426f-a99f-b8b22d939a52",
           "tenantId": "acme",
-          "executionId": "4f23667b-6611-4a7a-b9c1-4d151c8f1432",
+          "executionId": "c8d5d93b-c257-4ac9-9bee-9b33f0833886",
           "finish": "support-refund-workflow-finish",
           "passed": true,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -496,6 +510,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "grounded": "yes",
@@ -504,9 +519,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0004,
+          "executionUsd": 0.00030000000000000003,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0004,
           "trace": {
-            "executionId": "4f23667b-6611-4a7a-b9c1-4d151c8f1432",
+            "executionId": "c8d5d93b-c257-4ac9-9bee-9b33f0833886",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -526,8 +543,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.816Z",
-                "endedAt": "2026-10-24T21:36:07.816Z"
+                "startedAt": "2026-11-25T09:52:38.359Z",
+                "endedAt": "2026-11-25T09:52:38.359Z"
               },
               {
                 "component": "refund-support-agent",
@@ -539,16 +556,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -557,6 +567,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -565,6 +576,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -578,19 +590,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1002",
-                      "customerEmail": "<email:d1ac5c>"
+                      "customerEmail": "<email:f4dbab>"
                     },
                     "output": {
                       "orderId": "ORD-1002",
                       "tenantId": "acme",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "item": "Enterprise GPU Workstation",
                       "amountUsd": 1450,
                       "daysSincePurchase": 8,
                       "eligibleByWindow": true
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.365Z",
+                    "endedAt": "2026-11-25T09:52:38.365Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -619,8 +633,8 @@
                   }
                 ],
                 "spentUsd": 0.00030000000000000003,
-                "startedAt": "2026-10-24T21:36:07.817Z",
-                "endedAt": "2026-10-24T21:36:07.824Z"
+                "startedAt": "2026-11-25T09:52:38.360Z",
+                "endedAt": "2026-11-25T09:52:38.370Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -635,12 +649,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.825Z",
-                "endedAt": "2026-10-24T21:36:07.825Z"
+                "startedAt": "2026-11-25T09:52:38.372Z",
+                "endedAt": "2026-11-25T09:52:38.372Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -654,18 +669,20 @@
         },
         {
           "run": 2,
-          "threadId": "86027c4f-df9b-4c77-b0ff-2a16cbdf823d",
+          "threadId": "daed72f5-990d-4f48-899a-3d56768eea05",
           "tenantId": "acme",
-          "executionId": "d0b447a1-7726-46f4-a188-27d1d9f7fdba",
+          "executionId": "7d493bf5-cd00-4042-9642-ed96e716ef19",
           "finish": "support-refund-workflow-finish",
           "passed": true,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -674,6 +691,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "grounded": "yes",
@@ -682,9 +700,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0004,
+          "executionUsd": 0.00030000000000000003,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0004,
           "trace": {
-            "executionId": "d0b447a1-7726-46f4-a188-27d1d9f7fdba",
+            "executionId": "7d493bf5-cd00-4042-9642-ed96e716ef19",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -704,8 +724,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.831Z",
-                "endedAt": "2026-10-24T21:36:07.831Z"
+                "startedAt": "2026-11-25T09:52:38.379Z",
+                "endedAt": "2026-11-25T09:52:38.379Z"
               },
               {
                 "component": "refund-support-agent",
@@ -717,16 +737,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -735,6 +748,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -743,6 +757,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -756,19 +771,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1002",
-                      "customerEmail": "<email:d1ac5c>"
+                      "customerEmail": "<email:f4dbab>"
                     },
                     "output": {
                       "orderId": "ORD-1002",
                       "tenantId": "acme",
-                      "customerEmail": "<email:d1ac5c>",
+                      "customerEmail": "<email:f4dbab>",
                       "item": "Enterprise GPU Workstation",
                       "amountUsd": 1450,
                       "daysSincePurchase": 8,
                       "eligibleByWindow": true
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.385Z",
+                    "endedAt": "2026-11-25T09:52:38.385Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -797,8 +814,8 @@
                   }
                 ],
                 "spentUsd": 0.00030000000000000003,
-                "startedAt": "2026-10-24T21:36:07.832Z",
-                "endedAt": "2026-10-24T21:36:07.839Z"
+                "startedAt": "2026-11-25T09:52:38.380Z",
+                "endedAt": "2026-11-25T09:52:38.389Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -813,12 +830,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.840Z",
-                "endedAt": "2026-10-24T21:36:07.840Z"
+                "startedAt": "2026-11-25T09:52:38.390Z",
+                "endedAt": "2026-11-25T09:52:38.390Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -835,7 +853,7 @@
         "requiredTools": [
           {
             "tool": "lookup-order-tool",
-            "arguments": {
+            "input": {
               "orderId": "ORD-1002"
             }
           }
@@ -853,7 +871,7 @@
     },
     {
       "name": "policy-drift-past-30-days-denied",
-      "caseHash": "2e86c9bff5c27230",
+      "caseHash": "52724a028284c661",
       "passed": 1,
       "runs": 2,
       "passAtK": true,
@@ -862,18 +880,20 @@
       "runResults": [
         {
           "run": 1,
-          "threadId": "c6c37ca2-d692-4d62-8254-89893eaaf85f",
+          "threadId": "b48af873-4057-4bef-8130-4ec8d96f1db8",
           "tenantId": "acme",
-          "executionId": "a6d3f085-da2d-4b86-ab4e-8e5a3f61a192",
+          "executionId": "4b401414-7884-4965-9d46-58e3f5fb4d43",
           "finish": "support-refund-workflow-finish",
           "passed": true,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -882,6 +902,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "grounded": "yes",
@@ -890,9 +911,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0004,
+          "executionUsd": 0.00030000000000000003,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0004,
           "trace": {
-            "executionId": "a6d3f085-da2d-4b86-ab4e-8e5a3f61a192",
+            "executionId": "4b401414-7884-4965-9d46-58e3f5fb4d43",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -912,8 +935,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.846Z",
-                "endedAt": "2026-10-24T21:36:07.846Z"
+                "startedAt": "2026-11-25T09:52:38.398Z",
+                "endedAt": "2026-11-25T09:52:38.398Z"
               },
               {
                 "component": "refund-support-agent",
@@ -925,16 +948,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -943,6 +959,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -951,6 +968,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -964,19 +982,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1003",
-                      "customerEmail": "<email:603a4e>"
+                      "customerEmail": "<email:1f6290>"
                     },
                     "output": {
                       "orderId": "ORD-1003",
                       "tenantId": "acme",
-                      "customerEmail": "<email:603a4e>",
+                      "customerEmail": "<email:1f6290>",
                       "item": "USB-C Docking Station",
                       "amountUsd": 220,
                       "daysSincePurchase": 45,
                       "eligibleByWindow": false
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.406Z",
+                    "endedAt": "2026-11-25T09:52:38.406Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -1005,8 +1025,8 @@
                   }
                 ],
                 "spentUsd": 0.00030000000000000003,
-                "startedAt": "2026-10-24T21:36:07.846Z",
-                "endedAt": "2026-10-24T21:36:07.852Z"
+                "startedAt": "2026-11-25T09:52:38.399Z",
+                "endedAt": "2026-11-25T09:52:38.410Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -1021,12 +1041,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.853Z",
-                "endedAt": "2026-10-24T21:36:07.853Z"
+                "startedAt": "2026-11-25T09:52:38.411Z",
+                "endedAt": "2026-11-25T09:52:38.411Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -1040,18 +1061,20 @@
         },
         {
           "run": 2,
-          "threadId": "2e5c8c0e-4f04-487e-bc2f-7028479cbe22",
+          "threadId": "2d9556ae-5c3b-412d-810d-9367d9130de7",
           "tenantId": "acme",
-          "executionId": "d516cf71-c5b0-4d0b-853b-414d8406c1a9",
+          "executionId": "01e5c2c6-dcc6-4ffe-b09c-74e13a7dee36",
           "finish": "support-refund-workflow-finish",
           "passed": false,
           "checks": [
             {
               "check": "trajectory",
+              "kind": "tools",
               "status": "passed"
             },
             {
               "check": "citation-code-judge",
+              "kind": "judge",
               "status": "passed",
               "metrics": {
                 "citesPolicy": true,
@@ -1060,6 +1083,7 @@
             },
             {
               "check": "grounded-answer-judge",
+              "kind": "judge",
               "status": "failed",
               "reason": "Explanation invents an unverified restocking fee not in v2.0 policy.",
               "metrics": {
@@ -1069,9 +1093,11 @@
               "spentUsd": 0.0001
             }
           ],
-          "spentUsd": 0.0004,
+          "executionUsd": 0.00030000000000000003,
+          "judgeUsd": 0.0001,
+          "totalUsd": 0.0004,
           "trace": {
-            "executionId": "d516cf71-c5b0-4d0b-853b-414d8406c1a9",
+            "executionId": "01e5c2c6-dcc6-4ffe-b09c-74e13a7dee36",
             "path": [
               "support-refund-workflow-start",
               "refund-support-agent",
@@ -1091,8 +1117,8 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.858Z",
-                "endedAt": "2026-10-24T21:36:07.858Z"
+                "startedAt": "2026-11-25T09:52:38.418Z",
+                "endedAt": "2026-11-25T09:52:38.418Z"
               },
               {
                 "component": "refund-support-agent",
@@ -1104,16 +1130,9 @@
                 "validationAttempts": 0,
                 "modelCalls": [
                   {
-                    "caller": "rag:refund-policy-rag",
-                    "model": "refund-policy-rag",
-                    "inputTokens": 0,
-                    "outputTokens": 0,
-                    "cacheReadTokens": 0,
-                    "costUsd": 0
-                  },
-                  {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 40,
                     "outputTokens": 15,
                     "cacheReadTokens": 0,
@@ -1122,6 +1141,7 @@
                   {
                     "caller": "refund-support-agent",
                     "model": "offline/support-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 50,
                     "outputTokens": 25,
                     "cacheReadTokens": 0,
@@ -1130,6 +1150,7 @@
                   {
                     "caller": "guardrail:unauthorized-payout-guardrail",
                     "model": "offline/guardrail-chat",
+                    "provider": "support-offline-model-provider",
                     "inputTokens": 15,
                     "outputTokens": 5,
                     "cacheReadTokens": 0,
@@ -1143,19 +1164,21 @@
                     "status": "succeeded",
                     "input": {
                       "orderId": "ORD-1003",
-                      "customerEmail": "<email:603a4e>"
+                      "customerEmail": "<email:1f6290>"
                     },
                     "output": {
                       "orderId": "ORD-1003",
                       "tenantId": "acme",
-                      "customerEmail": "<email:603a4e>",
+                      "customerEmail": "<email:1f6290>",
                       "item": "USB-C Docking Station",
                       "amountUsd": 220,
                       "daysSincePurchase": 45,
                       "eligibleByWindow": false
                     },
                     "isResultTruncated": false,
-                    "validationAttempts": 0
+                    "validationAttempts": 0,
+                    "startedAt": "2026-11-25T09:52:38.423Z",
+                    "endedAt": "2026-11-25T09:52:38.424Z"
                   }
                 ],
                 "guardrailDecisions": [
@@ -1184,8 +1207,8 @@
                   }
                 ],
                 "spentUsd": 0.00030000000000000003,
-                "startedAt": "2026-10-24T21:36:07.859Z",
-                "endedAt": "2026-10-24T21:36:07.867Z"
+                "startedAt": "2026-11-25T09:52:38.419Z",
+                "endedAt": "2026-11-25T09:52:38.427Z"
               },
               {
                 "component": "support-refund-workflow-finish",
@@ -1200,12 +1223,13 @@
                 "guardrailDecisions": [],
                 "judgeVerdicts": [],
                 "spentUsd": 0,
-                "startedAt": "2026-10-24T21:36:07.868Z",
-                "endedAt": "2026-10-24T21:36:07.868Z"
+                "startedAt": "2026-11-25T09:52:38.428Z",
+                "endedAt": "2026-11-25T09:52:38.428Z"
               }
             ],
             "pauses": [],
             "children": [],
+            "status": "finished",
             "handledErrors": [],
             "compensations": [],
             "finish": "support-refund-workflow-finish",
@@ -1222,7 +1246,7 @@
         "requiredTools": [
           {
             "tool": "lookup-order-tool",
-            "arguments": {
+            "input": {
               "orderId": "ORD-1003"
             }
           }
@@ -1248,9 +1272,11 @@
     "skippedByCascade": 0
   },
   "spend": {
+    "executionUsd": 0.002,
+    "judgeUsd": 0.0006000000000000001,
     "totalUsd": 0.0026000000000000003
   },
-  "agbossVersion": "0.1.0",
+  "agbossVersion": "0.1.1",
   "models": [
     {
       "component": "refund-support-agent",
@@ -1262,5 +1288,13 @@
   "piiPolicies": [
     "customer-contact-pii-policy",
     "support-ticket-id-pii-policy"
+  ],
+  "judges": [
+    {
+      "component": "grounded-answer-judge",
+      "kind": "judge",
+      "model": "delegate/judge-chat",
+      "provider": "support-offline-model-provider"
+    }
   ]
 }

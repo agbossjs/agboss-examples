@@ -1,30 +1,27 @@
 import { JudgeVerdict } from "@agboss/core";
-import { replyWith, testCompaction, testJudge, testTool } from "@agboss/core/testing";
+import { replyWith, testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
-import { PolicyAwareCompaction } from "../../../src/compactions/policy-aware/policy-aware.compaction.js";
+import { PolicyAwareMemory } from "../../../src/memories/policy-aware/policy-aware.memory.js";
 import { SupportAnswerDto } from "../../../src/dto/support-answer.dto.js";
 import { CitationCodeJudge } from "../../../src/judges/citation-code/citation-code.judge.js";
 import { GroundedAnswerJudge } from "../../../src/judges/grounded-answer/grounded-answer.judge.js";
 import { InjectionDetectorService } from "../../../src/services/injection-detector.service.js";
-import {
-  OrderBookService,
-  resetRecordedToolOperations,
-} from "../../../src/services/order-book.service.js";
+import { OrderBookService, resetRecordedToolOperations } from "../../../src/services/order-book.service.js";
 import { TicketPatternService } from "../../../src/services/ticket-pattern.service.js";
 import { SupportTenantContext } from "../../../src/contexts/support-tenant.context.js";
 import { IssueRefundTool } from "../../../src/tools/issue-refund.tool.js";
 import { LookupOrderTool } from "../../../src/tools/lookup-order.tool.js";
 
 describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Services", () => {
-  it("PolicyAwareCompaction strips superseded v1.0 policy claims while preserving order IDs", async () => {
-    const compact = testCompaction(PolicyAwareCompaction);
+  it("PolicyAwareMemory strips superseded v1.0 policy claims while preserving order IDs", async () => {
+    const compact = testUnit(PolicyAwareMemory);
     const { output } = await compact({
       previousSummaries: [],
       turnsToCompact: [
         {
-          startName: "support-workflow-start",
+          start: "support-workflow-start",
           input: { message: "Order ORD-1003 under old 90-day policy" },
-          finishName: "support-workflow-finish",
+          finish: "support-workflow-finish",
           output: { decision: "denied" },
         },
       ],
@@ -35,11 +32,11 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
   });
 
   it("CitationCodeJudge and GroundedAnswerJudge verify [policy] citation and grounding", async () => {
-    const runCodeJudge = testJudge(CitationCodeJudge);
+    const runCodeJudge = testUnit(CitationCodeJudge);
     const missingCitation = await runCodeJudge({
       variant: SupportAnswerDto,
       task: "Refund ORD-1001",
-      reply: {
+      output: {
         decision: "approved",
         orderId: "ORD-1001",
         refundedUsd: 180,
@@ -48,16 +45,13 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
       attempt: 0,
     });
     expect(missingCitation.output).toEqual(
-      JudgeVerdict.failed({
-        reason: "Explanation must cite the active refund policy as [policy].",
-        metrics: { citesPolicy: false, respectsCap: true },
-      }),
+      JudgeVerdict.failed("Explanation must cite the active refund policy as [policy].", { metrics: { citesPolicy: false, respectsCap: true } }),
     );
 
     const validCitation = await runCodeJudge({
       variant: SupportAnswerDto,
       task: "Refund ORD-1001",
-      reply: {
+      output: {
         decision: "approved",
         orderId: "ORD-1001",
         refundedUsd: 180,
@@ -69,13 +63,13 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
       JudgeVerdict.passed({ metrics: { citesPolicy: true, respectsCap: true } }),
     );
 
-    const runModelJudge = testJudge(GroundedAnswerJudge, {
+    const runModelJudge = testUnit(GroundedAnswerJudge, {
       model: replyWith("PASSED: Grounded in v2.0 policy."),
     });
     const modelVerdict = await runModelJudge({
       variant: SupportAnswerDto,
       task: "Refund ORD-1001",
-      reply: {
+      output: {
         decision: "approved",
         orderId: "ORD-1001",
         refundedUsd: 180,
@@ -88,7 +82,7 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
 
   it("LookupOrderTool, IssueRefundTool, and domain services operate deterministically", async () => {
     resetRecordedToolOperations();
-    const runLookup = testTool(LookupOrderTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
+    const runLookup = testUnit(LookupOrderTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
     const { output: lookedUp } = await runLookup({
       orderId: "ORD-1001",
       customerEmail: "alice.synth@example.com",
@@ -96,7 +90,7 @@ describe("Judges (@Judge), Compaction (@Compaction), Tools (@Tool) & Domain Serv
     expect(lookedUp.amountUsd).toBe(180);
     expect(lookedUp.eligibleByWindow).toBe(true);
 
-    const runRefund = testTool(IssueRefundTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
+    const runRefund = testUnit(IssueRefundTool, { tenantContext: SupportTenantContext, tenant: { tenantId: "acme", maxAutoRefundUsd: 500 } });
     const { output: receipt } = await runRefund({
       orderId: "ORD-1001",
       customerEmail: "alice.synth@example.com",

@@ -1,5 +1,5 @@
 import { PiiRefusedError } from "@agboss/core";
-import { decideWith, testGuardrail, testPii } from "@agboss/core/testing";
+import { decideWith, testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { SupportExecutionContext } from "../../../src/contexts/support-execution.context.js";
 import { UnauthorizedPayoutGuardrail } from "../../../src/guardrails/policy-promise/policy-promise.guardrail.js";
@@ -9,7 +9,7 @@ import { SupportTicketIdPiiPolicy } from "../../../src/pii-policies/support-tick
 
 describe("Guardrails (@InputGuardrail & @OutputGuardrail) and PII Policies (@PiiPolicy)", () => {
   it("tokenizes emails and ticket IDs reversibly, redacts phones, and blocks raw card numbers", async () => {
-    const pii = testPii([CustomerContactPiiPolicy, SupportTicketIdPiiPolicy]);
+    const pii = testUnit([CustomerContactPiiPolicy, SupportTicketIdPiiPolicy]);
 
     const { output: masked } = await pii.mask(
       "Ticket TCK-104920 for alice.synth@example.com or +1-555-234-5678",
@@ -29,7 +29,7 @@ describe("Guardrails (@InputGuardrail & @OutputGuardrail) and PII Policies (@Pii
   });
 
   it("PromptInjectionGuardrail blocks injection attempts with locale-specific refusal", async () => {
-    const checkEn = testGuardrail(PromptInjectionGuardrail, {
+    const checkEn = testUnit(PromptInjectionGuardrail, {
       executionContext: SupportExecutionContext,
       execution: { locale: "en" },
     });
@@ -46,7 +46,7 @@ describe("Guardrails (@InputGuardrail & @OutputGuardrail) and PII Policies (@Pii
   });
 
   it("UnauthorizedPayoutGuardrail blocks model responses above the 0.8 threshold", async () => {
-    const checkPayout = testGuardrail(UnauthorizedPayoutGuardrail, {
+    const checkPayout = testUnit(UnauthorizedPayoutGuardrail, {
       model: [decideWith({ blocks: 0.95 }), decideWith({ blocks: 0.1 })],
     });
 

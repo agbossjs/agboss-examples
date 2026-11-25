@@ -9,7 +9,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ["src/**/*.ts"],
-    ignores: ["src/**/*.test.ts", "src/demo.ts"],
+    ignores: ["src/**/*.test.ts", "src/scripts/**"],
     plugins: { agboss: agbossPlugin },
     rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
   },

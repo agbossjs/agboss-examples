@@ -1,4 +1,4 @@
-import { Decimal, Flag, Integer, Text } from "@agboss/core/dto";
+import { Float, Bool, Integer, Text } from "@agboss/core/dto";
 
 export class OrderDetailsDto {
   @Text({ prompt: "Order ID" })
@@ -13,12 +13,12 @@ export class OrderDetailsDto {
   @Text({ prompt: "Purchased item name" })
   item!: string;
 
-  @Decimal({ prompt: "Order amount in USD", min: 0 })
+  @Float({ prompt: "Order amount in USD", min: 0 })
   amountUsd!: number;
 
   @Integer({ prompt: "Days elapsed since purchase", min: 0 })
   daysSincePurchase!: number;
 
-  @Flag({ prompt: "Whether the order is within the active 30-day refund window" })
+  @Bool({ prompt: "Whether the order is within the active 30-day refund window" })
   eligibleByWindow!: boolean;
 }

@@ -1,19 +1,15 @@
 import { ToolCallDecision } from "@agboss/core";
-import { testToolInterceptor } from "@agboss/core/testing";
+import { testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { SupportTenantContext } from "../../src/contexts/support-tenant.context.js";
-import {
-  AuditTrailToolInterceptor,
-  getAuditTrail,
-  resetAuditTrail,
-} from "../../src/interceptors/audit.interceptor.js";
+import { AuditTrailToolInterceptor, getAuditTrail, resetAuditTrail } from "../../src/interceptors/audit.interceptor.js";
 import { RefundPolicyToolInterceptor } from "../../src/interceptors/refund-policy.interceptor.js";
 import { IssueRefundTool } from "../../src/tools/issue-refund.tool.js";
 import { LookupOrderTool } from "../../src/tools/lookup-order.tool.js";
 
 describe("Tool Interceptors (@ToolInterceptor unit runner)", () => {
   it("RefundPolicyToolInterceptor enforces tenant isolation, $500 cap, and 30-day window", async () => {
-    const interceptor = testToolInterceptor(RefundPolicyToolInterceptor, {
+    const interceptor = testUnit(RefundPolicyToolInterceptor, {
       tenantContext: SupportTenantContext,
       tenant: { tenantId: "acme", maxAutoRefundUsd: 500 },
     });
@@ -23,10 +19,7 @@ describe("Tool Interceptors (@ToolInterceptor unit runner)", () => {
       customerEmail: "carol.synth@example.org",
     });
     expect(crossTenant.output).toEqual(
-      ToolCallDecision.block({
-        reason:
-          'Tenant isolation violation: order ORD-2001 belongs to tenant "globex", not caller tenant "acme".',
-      }),
+      ToolCallDecision.block('Tenant isolation violation: order ORD-2001 belongs to tenant "globex", not caller tenant "acme".'),
     );
 
     const overCap = await interceptor.beforeToolCall(IssueRefundTool, {
@@ -36,10 +29,7 @@ describe("Tool Interceptors (@ToolInterceptor unit runner)", () => {
       reason: "Full refund",
     });
     expect(overCap.output).toEqual(
-      ToolCallDecision.replyToModel({
-        message:
-          'Policy rejection [policy-cap]: requested refund $780 exceeds the self-service cap of $500. Do not call issue-refund-tool; return decision="escalated" with refundedUsd=0 citing [policy].',
-      }),
+      ToolCallDecision.reply('Policy rejection [policy-cap]: requested refund $780 exceeds the self-service cap of $500. Do not call issue-refund-tool; return decision="escalated" with refundedUsd=0 citing [policy].'),
     );
 
     const allowed = await interceptor.beforeToolCall(IssueRefundTool, {
@@ -53,7 +43,7 @@ describe("Tool Interceptors (@ToolInterceptor unit runner)", () => {
 
   it("AuditTrailToolInterceptor records completed tool executions", async () => {
     resetAuditTrail();
-    const audit = testToolInterceptor(AuditTrailToolInterceptor);
+    const audit = testUnit(AuditTrailToolInterceptor);
     const { output } = await audit.afterToolCall(
       LookupOrderTool,
       { orderId: "ORD-1001", customerEmail: "alice.synth@example.com" },

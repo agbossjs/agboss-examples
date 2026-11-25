@@ -1,9 +1,4 @@
-import {
-  ToolCallDecision,
-  ToolInterceptor,
-  type BeforeToolCall,
-  type ToolCallContext,
-} from "@agboss/core";
+import { ToolCallDecision, ToolInterceptor, type ToolCallContext } from "@agboss/core";
 import { SupportTenantContext } from "../contexts/support-tenant.context.js";
 import { OrderBookService } from "../services/order-book.service.js";
 
@@ -13,13 +8,13 @@ import { OrderBookService } from "../services/order-book.service.js";
     "Enforces tenant isolation (hard block) and active 30-day / $500 self-service refund caps (replyToModel) before any tool executes.",
   deps: [SupportTenantContext, OrderBookService],
 })
-export class RefundPolicyToolInterceptor implements BeforeToolCall {
+export class RefundPolicyToolInterceptor  {
   constructor(
     private readonly supportTenantContext: SupportTenantContext,
     private readonly orderBookService: OrderBookService,
   ) {}
 
-  beforeToolCall(call: ToolCallContext): ToolCallDecision {
+  beforeAnyTool(call: ToolCallContext): ToolCallDecision {
     if (typeof call.input !== "object" || call.input === null) {
       return ToolCallDecision.allow();
     }
@@ -31,23 +26,19 @@ export class RefundPolicyToolInterceptor implements BeforeToolCall {
 
     const order = this.orderBookService.findById(orderId);
     if (order !== undefined && order.tenantId !== this.supportTenantContext.tenantId) {
-      return ToolCallDecision.block({
-        reason: `Tenant isolation violation: order ${orderId} belongs to tenant "${order.tenantId}", not caller tenant "${this.supportTenantContext.tenantId}".`,
-      });
+      return ToolCallDecision.block(
+        `Tenant isolation violation: order ${orderId} belongs to tenant "${order.tenantId}", not caller tenant "${this.supportTenantContext.tenantId}".`,
+      );
     }
 
     if (call.tool.name === "issue-refund-tool") {
       const amountUsd = typeof raw.amountUsd === "number" ? raw.amountUsd : 0;
       const cap = this.supportTenantContext.maxAutoRefundUsd;
       if (amountUsd > cap) {
-        return ToolCallDecision.replyToModel({
-          message: `Policy rejection [policy-cap]: requested refund $${amountUsd} exceeds the self-service cap of $${cap}. Do not call issue-refund-tool; return decision="escalated" with refundedUsd=0 citing [policy].`,
-        });
+        return ToolCallDecision.reply(`Policy rejection [policy-cap]: requested refund $${amountUsd} exceeds the self-service cap of $${cap}. Do not call issue-refund-tool; return decision="escalated" with refundedUsd=0 citing [policy].`);
       }
       if (order !== undefined && order.daysSincePurchase > 30) {
-        return ToolCallDecision.replyToModel({
-          message: `Policy rejection [policy-window]: order ${orderId} was purchased ${order.daysSincePurchase} days ago, outside the active 30-day window. Return decision="denied" with refundedUsd=0 citing [policy].`,
-        });
+        return ToolCallDecision.reply(`Policy rejection [policy-window]: order ${orderId} was purchased ${order.daysSincePurchase} days ago, outside the active 30-day window. Return decision="denied" with refundedUsd=0 citing [policy].`);
       }
     }
 
