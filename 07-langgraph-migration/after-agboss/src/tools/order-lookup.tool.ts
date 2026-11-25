@@ -13,7 +13,7 @@ import { OrderBookService } from "../services/order-book.service.js";
 export class OrderLookupTool implements ToolHandler<OrderLookupDto, OrderFactsDto> {
   constructor(private readonly orderBookService: OrderBookService) {}
 
-  async run({ orderId }: OrderLookupDto): Promise<OrderFactsDto> {
+  async execute({ orderId }: OrderLookupDto): Promise<OrderFactsDto> {
     return { facts: await this.orderBookService.factsOf(orderId) };
   }
 }

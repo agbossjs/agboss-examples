@@ -7,11 +7,11 @@ import { OrderLookupTool } from "../../tools/order-lookup.tool.js";
 @Agent({
   name: "order-researcher-agent",
   description: "Answers one question from the order's facts",
-  promptUrls: ["./order-researcher.prompt.md"],
+  prompt: "./order-researcher.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { question: ResearchQuestionDto, request: SupportRequestDto },
   output: ResearchFindingDto,
   tools: [OrderLookupTool],
-  maxToolCalls: 2,
+  executionLimits: { maxToolCalls: 2 },
 })
 export class OrderResearcherAgent {}

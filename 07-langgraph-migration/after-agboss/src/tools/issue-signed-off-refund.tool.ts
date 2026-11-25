@@ -1,5 +1,5 @@
 import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
-import { RefundSignOffChannel } from "../channels/refund-sign-off.channel-role.js";
+import { RefundSignOffToolApproval } from "../channels/refund-sign-off.tool-approval.js";
 import { RefundIssuedDto } from "../dto/refund-issued.dto.js";
 import { RefundOrderDto } from "../dto/refund-order.dto.js";
 import { RefundApiService } from "../services/refund-api.service.js";
@@ -9,7 +9,7 @@ import { RefundApiService } from "../services/refund-api.service.js";
   description: "Issues a large refund — a supervisor signs it off first",
   input: RefundOrderDto,
   output: RefundIssuedDto,
-  channel: RefundSignOffChannel,
+  approval: RefundSignOffToolApproval,
   deps: [RefundApiService, ExecutionContext],
 })
 export class IssueSignedOffRefundTool
@@ -20,7 +20,7 @@ export class IssueSignedOffRefundTool
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async run({ orderId, amountCents }: RefundOrderDto): Promise<RefundIssuedDto> {
+  async execute({ orderId, amountCents }: RefundOrderDto): Promise<RefundIssuedDto> {
     const key: string = this.executionContext.step.idempotencyKey;
     return { refundId: await this.refundApiService.issue(orderId, amountCents, key) };
   }

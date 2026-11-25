@@ -1,10 +1,4 @@
-import {
-  Action,
-  ExecutionContext,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, ExecutionContext, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { RefundIssuedDto } from "../dto/refund-issued.dto.js";
 import { ReplyDraftDto } from "../dto/reply-draft.dto.js";
 import { SupportRequestDto } from "../dto/support-request.dto.js";
@@ -27,8 +21,8 @@ export class IssueRefundAction implements ActionHandler<IssueRefundAction> {
     const key: string = this.executionContext.step.idempotencyKey;
     return {
       refundId: await this.refundApiService.issue(
-        input.request.value.orderId,
-        input.draft.value.refundCents,
+        input.request.orderId,
+        input.draft.refundCents,
         key,
       ),
     };

@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/after-agboss/src/support.application.js",
     "dev": "tsx watch after-agboss/src/support.application.ts",
-    "demo": "tsx after-agboss/src/demo.ts",
+    "demo": "tsx after-agboss/src/scripts/demo.ts",
     "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "lint": "eslint .",
     "test": "vitest run"

@@ -1,4 +1,4 @@
-import { ModelCost, ModelProvider, RetryPolicy } from "@agboss/core/models";
+import { ModelCost, ModelProvider, CircuitBreakerPolicy } from "@agboss/core/models";
 import { minutes, seconds } from "@agboss/core/units";
 import { MigrationOfflineTransport } from "../../../../scripts/tooling/offline-transports.js";
 
@@ -6,14 +6,12 @@ import { MigrationOfflineTransport } from "../../../../scripts/tooling/offline-t
   name: "offline-migration-model-provider",
   description:
     "Deterministic offline provider serving migrated SupportWorkflow models without API keys.",
-  serves: [/^openai\//u, /^moonshotai\//u],
   timeout: seconds(30),
   cost: ModelCost.fromResponse(),
-  retryPolicy: RetryPolicy.none(),
-  circuitBreakerPolicy: {
+  circuitBreakerPolicy: CircuitBreakerPolicy.fixed({
     failureThreshold: 5,
-    window: minutes(1),
-    openFor: seconds(10),
-  },
+    failureWindow: minutes(1),
+    openDuration: seconds(10),
+  }),
 })
 export class OfflineMigrationModelProvider extends MigrationOfflineTransport {}

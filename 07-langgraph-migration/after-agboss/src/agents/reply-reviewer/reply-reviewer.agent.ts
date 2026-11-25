@@ -7,10 +7,10 @@ import { ResearchFindingDto } from "../../dto/research-finding.dto.js";
 @Agent({
   name: "reply-reviewer-agent",
   description: "Approves the reply or asks for changes",
-  promptUrls: ["./reply-reviewer.prompt.md"],
+  prompt: "./reply-reviewer.prompt.md",
   model: "openai/gpt-4o-mini",
-  input: { draft: historyOf(ReplyDraftDto, { limit: 2 }), findings: listOf(ResearchFindingDto) },
+  input: { draft: historyOf(ReplyDraftDto, { maxPrevious: 2 }), findings: listOf(ResearchFindingDto) },
   output: oneOf(ChangesRequestedDto, ReplyApprovedDto),
-  maxVisits: 3,
+  executionLimits: { maxVisits: 3 },
 })
 export class ReplyReviewerAgent {}

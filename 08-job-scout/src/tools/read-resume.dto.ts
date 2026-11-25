@@ -14,7 +14,7 @@ export class ResumeText {
   @Text({ prompt: "the path asked for, when a near match was read instead", optional: true })
   requestedPath?: string;
 
-  @OneOf({ values: ["pdf", "markdown", "text"] })
+  @Enum(["pdf", "markdown", "text"])
   format!: "pdf" | "markdown" | "text";
 
   @Text() text!: string;

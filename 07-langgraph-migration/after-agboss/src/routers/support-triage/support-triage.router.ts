@@ -7,7 +7,7 @@ import { HandOverWorkflowFinish } from "../../workflows/support/hand-over.workfl
   name: "support-triage-router",
   description: "Sends a refund request on, hands anything else over",
   decidedBy: DecidedBy.Model,
-  promptUrls: ["./support-triage.prompt.md"],
+  prompt: "./support-triage.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: SupportRequestDto },
   routes: [

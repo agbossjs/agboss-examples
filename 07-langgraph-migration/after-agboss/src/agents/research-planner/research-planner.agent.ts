@@ -5,7 +5,7 @@ import { SupportRequestDto } from "../../dto/support-request.dto.js";
 @Agent({
   name: "research-planner-agent",
   description: "Lists what to check before answering",
-  promptUrls: ["./research-planner.prompt.md"],
+  prompt: "./research-planner.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: SupportRequestDto },
   output: listOf(ResearchQuestionDto),

@@ -7,11 +7,11 @@ import { IssueSignedOffRefundTool } from "../../tools/issue-signed-off-refund.to
 @Agent({
   name: "refund-sign-off-agent",
   description: "Issues a large refund once it is signed off",
-  promptUrls: ["./refund-sign-off.prompt.md"],
+  prompt: "./refund-sign-off.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { request: SupportRequestDto, draft: ReplyDraftDto },
   output: RefundIssuedDto,
   tools: [IssueSignedOffRefundTool],
-  maxToolCalls: 1,
+  executionLimits: { maxToolCalls: 1 },
 })
 export class RefundSignOffAgent {}
