@@ -1,23 +1,9 @@
-import {
-  Application,
-  SqliteCheckpointSaver,
-  SqliteConnection,
-  SqliteCostLedgerRepository,
-  SqliteExecutionLeaseRepository,
-  SqliteExecutionRecordRepository,
-  SqliteExecutionTreeRepository,
-  SqliteFencedEffectRepository,
-  SqliteOutboundCallRepository,
-  SqlitePausedExecutionRepository,
-} from "@agboss/core";
+import { Application, EmptyEnvironment } from "@agboss/core";
 import { GatewaysApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { GatewaysExecutionBudget } from "./budgets/execution.budget.js";
 import { GatewaysTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { StripeGatewayPayments } from "./gateways/stripe/stripe.gateway-payments.js";
-import { BooksRepository } from "./repositories/books.repository.js";
-import { GatewayStubService } from "./services/gateway-stub.service.js";
-import { PaymentBooksService } from "./services/payment-books.service.js";
+import { GatewaysDatabaseStorage } from "./storages/gateways.database-storage.js";
 import { CaptureWorkflow } from "./workflows/capture/capture.workflow.js";
 import { CheckoutWorkflow } from "./workflows/checkout/checkout.workflow.js";
 import { GatewayEventWorkflow } from "./workflows/gateway-event/gateway-event.workflow.js";
@@ -25,31 +11,17 @@ import { RefundWorkflow } from "./workflows/refund/refund.workflow.js";
 
 /**
  * A shop on one gateway: the checkout (charge → ship, the undo refunds), refunds, partial captures
- * and gateway events, every store on one SQLite file. It lists Stripe's wiring; the tests and the
- * demo run each supported gateway's (`override(GatewayPayments, <Slug>GatewayPayments)`).
+ * and gateway events, every store on one SQLite file (`GatewaysDatabaseStorage`, with the idempotency
+ * secret of the business-key fingerprints). It lists Stripe's wiring; the tests and the demo run each
+ * supported gateway's (`testWith(…, { services: [<Slug>GatewayPayments] })`).
  */
 @Application({
   name: "payment-gateways-application",
   version: "1.0.0",
-  environment: AppEnvironment,
-  piiKeyField: "piiPseudonymKey",
-  idempotencyKeyField: "idempotencyKey", // agbossjs/agboss#825: business-key fingerprints, a Secret of their own
+  environment: EmptyEnvironment,
+  storage: GatewaysDatabaseStorage,
   workflows: [CheckoutWorkflow, RefundWorkflow, CaptureWorkflow, GatewayEventWorkflow],
   budgets: [GatewaysApplicationDailyBudget, GatewaysTenantDailyBudget, GatewaysExecutionBudget],
-  providers: [
-    StripeGatewayPayments,
-    GatewayStubService,
-    PaymentBooksService,
-    BooksRepository,
-    SqliteCheckpointSaver,
-    SqliteExecutionRecordRepository,
-    SqlitePausedExecutionRepository,
-    SqliteCostLedgerRepository,
-    SqliteExecutionLeaseRepository,
-    SqliteExecutionTreeRepository,
-    SqliteFencedEffectRepository,
-    SqliteOutboundCallRepository,
-    SqliteConnection,
-  ],
+  providers: [StripeGatewayPayments],
 })
 export class PaymentGatewaysApplication {}

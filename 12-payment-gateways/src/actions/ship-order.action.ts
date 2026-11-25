@@ -13,7 +13,7 @@ import { CarrierRefusedError } from "../errors.js";
 })
 export class ShipOrderAction implements ActionHandler<ShipOrderAction> {
   execute(input: InputOf<ShipOrderAction>): Promise<OutputOf<ShipOrderAction>> {
-    if (input.order.value.failShipping) return Promise.reject(new CarrierRefusedError(input.order.value.orderId));
-    return Promise.resolve({ trackingNumber: `track-${input.payment.value.paymentId}` });
+    if (input.order.failShipping) return Promise.reject(new CarrierRefusedError(input.order.orderId));
+    return Promise.resolve({ trackingNumber: `track-${input.payment.paymentId}` });
   }
 }

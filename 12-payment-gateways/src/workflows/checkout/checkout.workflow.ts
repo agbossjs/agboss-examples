@@ -1,9 +1,6 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { ChargeOrderAction } from "../../actions/charge-order.action.js";
 import { ShipOrderAction } from "../../actions/ship-order.action.js";
-import { CheckoutRequestDto } from "../../dto/checkout-request.dto.js";
-import { PaymentDto } from "../../dto/payment.dto.js";
-import { ShipmentDto } from "../../dto/shipment.dto.js";
 import { CheckoutWorkflowFinish } from "./checkout.workflow-finish.js";
 import { CheckoutWorkflowStart } from "./checkout.workflow-start.js";
 
@@ -11,13 +8,11 @@ import { CheckoutWorkflowStart } from "./checkout.workflow-start.js";
 @Workflow({
   name: "checkout-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(CheckoutWorkflowStart)
-      .returns(CheckoutRequestDto)
+    onStart(CheckoutWorkflowStart)
       .toAction(ChargeOrderAction)
-      .returns(PaymentDto)
       .toAction(ShipOrderAction)
-      .returns(ShipmentDto)
       .toFinish(CheckoutWorkflowFinish),
   ],
 })

@@ -6,6 +6,8 @@ import { agbossVitest } from "@agboss/core/testing/vitest";
 export default defineConfig({
   test: agbossVitest({
     include: ["tests/**/*.test.ts"],
+    // synthetic keys for the tests only; the application fails closed without its own
+    env: { PII_PSEUDONYM_KEY: "payment-gateways-offline-pseudonym-key!", IDEMPOTENCY_KEY: "payment-gateways-offline-idempotency-key" },
     // a test that asserts nothing proves nothing
     expect: { requireAssertions: true },
     // the two real-process scenarios (PS2, PS5) wait for a real lease expiry and sweep

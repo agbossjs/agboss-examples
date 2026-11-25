@@ -47,7 +47,7 @@ documented machine-readable answer is not a key; closed docs are not supported. 
 | **A lost answer is never charged again, on each gateway's own SDK** | The gateway charges and the connection drops (ps1); a crash before the answer (ps5); the answer in flight while the holder freezes (ps2) | An outbound call per operation under a business key, `call.idempotencyKey` (or its digest) given to the SDK, `reconcile` by the gateway's own lookup | [`tests/gateways/*.test.ts`](./tests/gateways/) › "ps1 … charges once", "ps5 …" |
 | **Two executions, one charge** | The first charge still at the gateway when the second starts (ps8) | The business key: `OutboundCallInFlightError` | › "ps8 …" |
 | **A key past its retention** | The repeat 25 h (Stripe), 7 h (PayPal), 73 h (Checkout.com) or 7 days (Adyen) later (ps17) | AGBoss's own stored receipt; an error of unknown outcome reconciled, never resent blindly (#657); reconcile by a lookup that does not expire; a replay-only lookup's `notSent()` sent only inside the declared `keyRetention` (#658) | › "ps17a", "ps17b", "ps17c", "ps17d" — each exactly once |
-| **One refund, one capture, one webhook** | A refund's answer lost and the refund asked again (ps19); shipment 2 captured twice (ps18); Adyen's REFUND webhook delivered twice (ps15); two requests under one key at once (ps23) | `refund:<payment>:<n>`, `capture:<payment>:<n>`, a fenced effect under the event's own id | › "ps19", "ps18", "ps15", "ps23" |
+| **One refund, one capture, one webhook** | A refund's answer lost and the refund asked again (ps19); shipment 2 captured twice (ps18); Adyen's REFUND webhook delivered twice (ps15); two requests under one key at once (ps23) | `refund:<payment>:<n>`, `capture:<payment>:<n>`, an `Idempotency.runOnce` under the event's own id | › "ps19", "ps18", "ps15", "ps23" |
 | **The stubs follow the docs** | A stub that disagreed with its gateway's docs | each stub's documented behaviour, tested | [`tests/gateways/stubs.test.ts`](./tests/gateways/stubs.test.ts) |
 
 ## 2. Commands
@@ -82,12 +82,12 @@ scenarios/                                      the scenarios of 11-safe-payment
   never resent blindly ([#657](https://github.com/agbossjs/agboss/issues/657): Checkout.com ps17 c,
   CardCom ps19 — one charge, one refund), and a replay past the gateway's key retention is never
   sent ([#658](https://github.com/agbossjs/agboss/issues/658): the Stripe and Adyen wirings declare
-  `NotSentTrust.KeyReplay` with its `keyRetention`, the others `NotSentTrust.Lookup` — every call says
+  `OutboundRecovery.lookupWithin(keyTtl, …)` or `replayWithin(keyTtl)`, the others `OutboundRecovery.permanentLookup(…)` — every call says
   which, [#795](https://github.com/agbossjs/agboss/issues/795); Adyen ps17 d). Each is asserted exactly once.
 - **What stays the gateway's:** keeping keys (Adyen 7 days, Checkout.com 72 h, Stripe 24 h,
   PayPal's orders 6 h), protecting a concurrent duplicate (CardCom does not: ps23), signing webhooks.
 - **What stays the application's:** one business key per order and per refund, the gateway's
-  `notSent` trust — `KeyReplay` with the gateway's `keyRetention` where its only lookup is a replay,
+  `recovery` — `replayWithin` / `lookupWithin` with the gateway's key retention where its only lookup is a replay,
   `Lookup` where it reads a record that does not expire —, checking webhook signatures — and two rules every
   wiring here keeps: **a lookup's hit is this order's payment only when its order id (Stripe's
   `metadata.order_id`, Checkout.com's `reference`, PayPal's `reference_id`), amount and currency are

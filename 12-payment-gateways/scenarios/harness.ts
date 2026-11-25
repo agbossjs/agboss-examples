@@ -4,14 +4,14 @@ import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 import type { Class } from "@agboss/core";
 import {
-  override,
   testWith,
   type TestApp,
   type TestLeases,
   type VirtualClock,
 } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
-import { GatewayPayments } from "../src/gateway-payments.js";
+import type { GatewayPayments } from "../src/gateway-payments.js";
+import { instancesFilePerTest } from "../tests/support/instances-file.js";
 import { PaymentGatewaysApplication } from "../src/payment-gateways.application.js";
 import type { StubKit } from "../src/stub-kit/stub-kit.js";
 
@@ -70,10 +70,9 @@ export function useGateway(
   gateway: GatewayUnderTest,
   certificate?: string,
 ): void {
+  instancesFilePerTest(); // a SQLite file of its own for each test of the file
   process.env.GATEWAY_STUB_URL = gateway.stub.baseUrl;
   if (certificate !== undefined) process.env.GATEWAY_STUB_CA = certificate;
-  process.env.PII_PSEUDONYM_KEY ??= "payment-gateways-offline-pseudonym-key!";
-  process.env.IDEMPOTENCY_KEY ??= "payment-gateways-offline-idempotency-key";
 }
 
 /** The outcome of a run, from the stub's records. */
@@ -121,9 +120,9 @@ const ROWS_DIR = join(import.meta.dirname, "..", ".artifacts", "rows");
 export function gatewayTest(gateway: GatewayUnderTest, row: GatewayRow): void {
   const test = testWith(PaymentGatewaysApplication, {
     instances: 2,
-    env: "offline",
     allowNetwork: ["localhost", ...(gateway.allowNetwork ?? [])],
-    overrides: [override(GatewayPayments, gateway.operations)],
+    // this gateway's wiring takes the place of the application's listed one
+    services: [gateway.operations],
   });
   const name =
     row.expected.boundary === undefined

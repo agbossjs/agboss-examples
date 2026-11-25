@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
-import { Injectable, SqliteConnection } from "@agboss/core";
+import { Injectable } from "@agboss/core";
+import { SqliteConnection } from "@agboss/core/stores";
 
 const SCHEMA: string = readFileSync(new URL("../sql/books.sql", import.meta.url), "utf8");
 
@@ -11,17 +12,20 @@ export class BooksRepository {
     sqliteConnection.ensureSchema("payment-gateways-books-v2", SCHEMA);
   }
 
-  /** Applies one event (inside a fenced effect's transaction): how many of the order's are applied. */
-  apply(database: DatabaseSync, tenantId: string, event: { eventId: string; orderId: string; eventCode: string; amountCents: number }): { applied: number } {
-    database
+  /** Applies one event, in the transaction of the `runOnce` it is called inside of: how many of the order's are applied. */
+  apply(tenantId: string, event: { eventId: string; orderId: string; eventCode: string; amountCents: number }): { applied: number } {
+    const transaction = this.sqliteConnection.requireTransaction();
+    transaction
       .prepare("INSERT INTO applied_events (tenant_id, event_id, order_id, event_code, amount_cents) VALUES (?, ?, ?, ?, ?)")
       .run(tenantId, event.eventId, event.orderId, event.eventCode, event.amountCents);
-    return { applied: this.appliedIn(database, tenantId, event.orderId) };
+    const row = transaction.prepare("SELECT COUNT(*) AS n FROM applied_events WHERE tenant_id = ? AND order_id = ?").get(tenantId, event.orderId) as { n?: number } | undefined;
+    return { applied: row?.n ?? 0 };
   }
 
-  /** Books which order (and tenant) a gateway payment belongs to (inside a fenced effect's transaction). */
-  bookPayment(database: DatabaseSync, payment: { paymentId: string; orderId: string; tenantId: string }): { orderId: string } {
-    database
+  /** Books which order (and tenant) a gateway payment belongs to (in the transaction of the `runOnce` it is called inside of). */
+  bookPayment(payment: { paymentId: string; orderId: string; tenantId: string }): { orderId: string } {
+    this.sqliteConnection
+      .requireTransaction()
       .prepare("INSERT OR IGNORE INTO order_payments (tenant_id, payment_id, order_id) VALUES (?, ?, ?)")
       .run(payment.tenantId, payment.paymentId, payment.orderId);
     return { orderId: payment.orderId };

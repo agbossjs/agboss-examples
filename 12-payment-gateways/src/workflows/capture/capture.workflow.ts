@@ -1,7 +1,5 @@
-import { Workflow, start } from "@agboss/core";
+import { Workflow, onStart, Ttl } from "@agboss/core";
 import { CaptureShipmentAction } from "../../actions/capture-shipment.action.js";
-import { CaptureRequestDto } from "../../dto/capture-request.dto.js";
-import { MovementDto } from "../../dto/movement.dto.js";
 import { CaptureWorkflowFinish } from "./capture.workflow-finish.js";
 import { CaptureWorkflowStart } from "./capture.workflow-start.js";
 
@@ -9,11 +7,10 @@ import { CaptureWorkflowStart } from "./capture.workflow-start.js";
 @Workflow({
   name: "capture-workflow",
   version: "1.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(CaptureWorkflowStart)
-      .returns(CaptureRequestDto)
+    onStart(CaptureWorkflowStart)
       .toAction(CaptureShipmentAction)
-      .returns(MovementDto)
       .toFinish(CaptureWorkflowFinish),
   ],
 })

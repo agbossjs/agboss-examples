@@ -1,11 +1,5 @@
-import type { DatabaseSync } from "node:sqlite";
-import {
-  ExecutionContext,
-  Injectable,
-  FencedEffects,
-  TenantContext,
-  effectKeyOf,
-} from "@agboss/core";
+import { Idempotency, Injectable, TenantContext } from "@agboss/core";
+import { hours } from "@agboss/core/units";
 import { BooksRepository } from "../repositories/books.repository.js";
 
 /** A refund or a capture named a payment that is not the order's: refused before anything is sent. */
@@ -24,25 +18,25 @@ export class PaymentOwnershipError extends Error {
  * form, a customer's request): it moves money only when the shop's own books tie it to that order
  * and that tenant, never on the caller's word (an IDOR otherwise).
  */
-@Injectable({ deps: [FencedEffects, BooksRepository, TenantContext] })
+@Injectable({ deps: [Idempotency, BooksRepository, TenantContext] })
 export class PaymentBooksService {
   constructor(
-    private readonly fencedEffects: FencedEffects,
+    private readonly idempotency: Idempotency,
     private readonly booksRepository: BooksRepository,
     private readonly tenantContext: TenantContext,
   ) {}
 
-  /** Books the order's payment, once (a fenced effect under `payment:<id>`). */
-  async book(executionContext: ExecutionContext, orderId: string, paymentId: string): Promise<void> {
-    // agbossjs/agboss#825: the payment booked for this order — the same payment for another order is a conflict
-    const key = effectKeyOf(executionContext, "book-payment", {
-      businessKey: `payment:${paymentId}`,
-      fingerprint: { orderId },
-    });
+  /** Books the order's payment, once (`runOnce` under `payment:<id>`). */
+  async book(orderId: string, paymentId: string): Promise<void> {
     const { tenantId } = this.tenantContext;
-    await this.fencedEffects.runOnce(key, (database: DatabaseSync) =>
-      this.booksRepository.bookPayment(database, { paymentId, orderId, tenantId }),
-    );
+    await this.idempotency.runOnce({
+      name: "book-payment",
+      // agbossjs/agboss#825: the payment booked for this order — the same payment for another order is a conflict
+      key: `payment:${paymentId}`,
+      fingerprint: { orderId },
+      ttl: hours(48),
+      execute: () => this.booksRepository.bookPayment({ paymentId, orderId, tenantId }),
+    });
   }
 
   /** Throws `PaymentOwnershipError` unless the payment is this tenant's order's. */

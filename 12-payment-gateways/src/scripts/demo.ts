@@ -8,7 +8,7 @@ import { startVitest } from "vitest/node";
  * charges, captures and refunds from the stubs' own records; `.artifacts/report.json`. Exit 1 when
  * a row is not as expected. Independent example: no gateway is called, none is affiliated.
  */
-const root = join(import.meta.dirname, "..");
+const root = join(import.meta.dirname, "..", "..");
 const rowsDir = join(root, ".artifacts", "rows");
 rmSync(rowsDir, { recursive: true, force: true });
 

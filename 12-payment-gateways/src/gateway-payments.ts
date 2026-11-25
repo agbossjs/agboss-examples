@@ -1,4 +1,8 @@
-import { Injectable, type ExecutionContext } from "@agboss/core";
+import { Injectable } from "@agboss/core";
+import { hours, seconds } from "@agboss/core/units";
+
+/** What every wiring's call is bound by: one attempt at most 20 s, its rows kept 48 h (over the shortest key retention, Stripe's 24 h). */
+export const CALL_BOUNDS = { timeout: seconds(20), ttl: hours(48) } as const;
 
 /** An order to charge. */
 export interface GatewayOrder {
@@ -40,25 +44,25 @@ export interface GatewayMovement {
 /**
  * The money-moving operations of the shop, in one service: each supported gateway's wiring
  * (`src/gateways/<slug>/<slug>.gateway-payments.ts`) extends it. The application lists one; the
- * tests and the demo swap it for each gateway (`override(GatewayPayments, …)`).
+ * tests and the demo swap it for each gateway (`services: [<Slug>GatewayPayments]` of `testWith`).
  */
 @Injectable()
 export class GatewayPayments {
-  charge(executionContext: ExecutionContext, order: GatewayOrder): Promise<GatewayPayment> {
-    return unsupported(executionContext, "charge", order.orderId);
+  charge(order: GatewayOrder): Promise<GatewayPayment> {
+    return unsupported("charge", order.orderId);
   }
 
-  refund(executionContext: ExecutionContext, refund: GatewayRefund): Promise<GatewayMovement> {
-    return unsupported(executionContext, "refund", refund.orderId);
+  refund(refund: GatewayRefund): Promise<GatewayMovement> {
+    return unsupported("refund", refund.orderId);
   }
 
-  capture(executionContext: ExecutionContext, capture: GatewayCapture): Promise<GatewayMovement> {
-    return unsupported(executionContext, "capture", capture.orderId);
+  capture(capture: GatewayCapture): Promise<GatewayMovement> {
+    return unsupported("capture", capture.orderId);
   }
 }
 
-function unsupported(executionContext: ExecutionContext, operation: string, orderId: string): Promise<never> {
+function unsupported(operation: string, orderId: string): Promise<never> {
   return Promise.reject(
-    new Error(`this gateway's wiring has no ${operation} (order ${orderId}, step ${executionContext.step.idempotencyKey})`),
+    new Error(`this gateway's wiring has no ${operation} (order ${orderId})`),
   );
 }
