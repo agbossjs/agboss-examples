@@ -1,4 +1,4 @@
-import { override, testUnit } from "@agboss/core/testing";
+import { testUnit } from "@agboss/core/testing";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -38,7 +38,7 @@ describe("read-resume-tool", () => {
   });
 
   it("reads PDF through the extractor and truncates long text", async () => {
-    const longPdf = testUnit(ReadResume, { overrides: [override(ResumeReader, LongPdfReader)] });
+    const longPdf = testUnit(ReadResume, { services: [LongPdfReader] });
 
     const { output } = await longPdf({ path: await fileWith("cv.pdf", new Uint8Array([1, 2])) });
 

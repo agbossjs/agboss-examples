@@ -7,8 +7,8 @@
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.13,
-            "type": "noul"
+            "probability": 0.11,
+            "type": "boolean"
           }
         },
         "usage": {
@@ -19,11 +19,12 @@
           "costUsd": 0.00001407,
           "inputTokens": 335,
           "model": "typesafe/jev-1.13-20260917",
-          "outputTokens": 20
+          "outputTokens": 20,
+          "provider": "decisions-model-provider"
         }
       },
       "promptHash": "7262ae580d668ffcf59d33df796d28332ebfcbb37ae3b386339a3eb0dcaf8877",
-      "request": "0ebdf6d363e1b23d2553a9eae2b237d20c27dd8e281a8692dd202d1b51ece3f9"
+      "request": "9910560201ca79e63e707ddde0e99075fa9ef29bc64ccf0869338baec13b468c"
     },
     {
       "component": "main-router",
@@ -44,7 +45,8 @@
           "costUsd": 0.000015708,
           "inputTokens": 0,
           "model": "typesafe/jev-1.13-20260917",
-          "outputTokens": 0
+          "outputTokens": 0,
+          "provider": "decisions-model-provider"
         }
       },
       "promptHash": "0d64e83957fd8073c7b8376b4aea7406f1bf81260ac0649cc39f178366749404",
@@ -58,8 +60,8 @@
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.14,
-            "type": "noul"
+            "probability": 0.15,
+            "type": "boolean"
           }
         },
         "usage": {
@@ -70,11 +72,12 @@
           "costUsd": 0.00001407,
           "inputTokens": 335,
           "model": "typesafe/jev-1.13-20260917",
-          "outputTokens": 20
+          "outputTokens": 20,
+          "provider": "decisions-model-provider"
         }
       },
       "promptHash": "7262ae580d668ffcf59d33df796d28332ebfcbb37ae3b386339a3eb0dcaf8877",
-      "request": "1bad44b81732d91a175107a41cb59eb11f808fa233a66b95670019e219065f77"
+      "request": "c83b6fd3351e2f4ab756fc82202e8baf24f15edb5d26f25795f8a20ff5d09c36"
     },
     {
       "component": "profiler-agent",
@@ -82,39 +85,39 @@
       "kind": "chat",
       "promptHash": "04c585347d059ec7f59e2d03ca74356b9f1099a9b32ac6f94d069a7a68c045c4",
       "reply": {
-        "content": "Please provide the path to your resume (.pdf, .md, or .txt) so I can prepare your search brief.",
+        "content": "Please provide the path to your resume (.pdf, .md, or .txt) so I can build your search brief.",
         "response_metadata": {
           "finish_reason": "stop",
           "model_name": "moonshotai/kimi-k2.6",
           "model_provider": "openai",
           "tokenUsage": {
-            "completionTokens": 91,
-            "promptTokens": 650,
-            "totalTokens": 741
+            "completionTokens": 84,
+            "promptTokens": 673,
+            "totalTokens": 757
           },
           "usage": {
-            "agboss_served_by": "Baidu",
-            "completion_tokens": 91,
+            "agboss_served_by": "CoreWeave",
+            "completion_tokens": 84,
             "completion_tokens_details": {
               "audio_tokens": 0,
               "image_tokens": 0,
-              "reasoning_tokens": 63
+              "reasoning_tokens": 58
             },
-            "cost": 0.0002657292,
+            "cost": 0.00072389,
             "cost_details": {
-              "upstream_inference_completions_cost": 0.00014924,
-              "upstream_inference_cost": 0.0002657292,
-              "upstream_inference_prompt_cost": 0.0001164892
+              "upstream_inference_completions_cost": 0.00028644,
+              "upstream_inference_cost": 0.00072389,
+              "upstream_inference_prompt_cost": 0.00043745
             },
             "is_byok": false,
-            "prompt_tokens": 650,
+            "prompt_tokens": 673,
             "prompt_tokens_details": {
               "audio_tokens": 0,
               "cache_write_tokens": 0,
-              "cached_tokens": 422,
+              "cached_tokens": 0,
               "video_tokens": 0
             },
-            "total_tokens": 741
+            "total_tokens": 757
           }
         },
         "tool_calls": [],
@@ -122,15 +125,15 @@
           "input_token_details": {
             "audio": 0,
             "cache_creation": 0,
-            "cache_read": 422
+            "cache_read": 0
           },
-          "input_tokens": 650,
+          "input_tokens": 673,
           "output_token_details": {
             "audio": 0,
-            "reasoning": 63
+            "reasoning": 58
           },
-          "output_tokens": 91,
-          "total_tokens": 741
+          "output_tokens": 84,
+          "total_tokens": 757
         }
       },
       "request": "0f997a3ce1f666c73e5c1d13c76b57ad1de60cbf059419be17220c821f90ab82"
@@ -142,8 +145,8 @@
       "outcome": {
         "answers": {
           "blocks": {
-            "noul": 0.02,
-            "type": "noul"
+            "probability": 0.02,
+            "type": "boolean"
           }
         },
         "usage": {
@@ -154,11 +157,12 @@
           "costUsd": 0.000014322,
           "inputTokens": 341,
           "model": "typesafe/jev-1.13-20260917",
-          "outputTokens": 20
+          "outputTokens": 20,
+          "provider": "decisions-model-provider"
         }
       },
       "promptHash": "089e43cfadf71c5dce59eed8d1cba2e771a98c2f1759e70a351053e0ffbada0a",
-      "request": "a7a5d13ceb9f0c9511680632997cc2c25c4fd06db7addb0f09efeeb6d89b264b"
+      "request": "807187c013bf226dbfe4c19ba72d0a228f60ea6bcc6426493ab0c70f2cce1ab0"
     }
   ],
   "version": 2

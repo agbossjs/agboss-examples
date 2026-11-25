@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { env, secret } from "@agboss/core";
+import { env } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import type { AppEnvironment } from "../src/environments/app.environment.js";
@@ -54,7 +54,7 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
     async ({ app }) => {
       const urls = recordBoardRequests();
 
-      await app.tool(GreenhouseJobs).invoke(query);
+      await app.runTool(GreenhouseJobs, query);
 
       expect(urls).toEqual([
         "https://boards-api.greenhouse.io/v1/boards/fireblocks/jobs?content=true",
@@ -67,7 +67,7 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
     async ({ app }) => {
       const urls = recordBoardRequests();
 
-      await app.tool(GreenhouseJobs).invoke(query);
+      await app.runTool(GreenhouseJobs, query);
 
       expect(urls).toEqual(["https://greenhouse.test/v1/boards/fireblocks/jobs?content=true"]);
     },
@@ -76,7 +76,7 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
   asTest('{ env: "test" } → test.environment.ts', async ({ app }) => {
     const urls = recordBoardRequests();
 
-    await app.tool(GreenhouseJobs).invoke(query);
+    await app.runTool(GreenhouseJobs, query);
 
     expect(urls).toEqual(["https://greenhouse.test/v1/boards/fireblocks/jobs?content=true"]);
   });
@@ -90,8 +90,6 @@ describe("#261 AC8: an environment of the wrong shape does not compile", () => {
     const mistyped: AppEnvironment = { greenhouseApiUrl: 42 };
     const fromVariable: AppEnvironment = {
       greenhouseApiUrl: env("GREENHOUSE_API_URL"),
-      sqlitePath: env("AGBOSS_SQLITE_PATH"),
-      piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
     };
     expect([missing, mistyped, fromVariable]).toHaveLength(3);
   });

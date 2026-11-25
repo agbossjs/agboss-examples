@@ -1,5 +1,5 @@
-import { ExecutionContext, Injectable, secret, Tool } from "@agboss/core";
-import { testExecutionContext, testUnit } from "@agboss/core/testing";
+import { Decision, DecisionModel, ExecutionContext, Injectable, provide, Tool } from "@agboss/core";
+import { testExecutionContext, testService, testUnit } from "@agboss/core/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { JobMatches, JobQuery } from "../src/tools/greenhouse-jobs.dto.js";
@@ -12,14 +12,11 @@ const { application } = testExecutionContext({
   application: {
     environment: {
       greenhouseApiUrl: "https://boards-api.greenhouse.io",
-      sqlitePath: ":memory:",
-      piiPseudonymKey: secret("PII_PSEUDONYM_KEY"),
     },
   },
 }).tenant;
 
 import type { JobSearch } from "../src/config/search.js";
-import { usageRecord } from "./helpers.js";
 
 /** A test config: its own boards and places — nothing from the shipped example. */
 const testSearch: JobSearch = {
@@ -180,32 +177,25 @@ describe("JobFitJudge (Jev per job)", () => {
     text: "Java",
   };
 
-  it("asks the router the fit question and returns P(fit) with its cost", async () => {
-    const route = vi.fn<any>(() =>
-      Promise.resolve({
-        kind: "decided",
-        decision: { next: "no_fit", reason: "", confidence: 0.8 },
-        usage: usageRecord("router:job-fit", 0.00002),
-      }),
-    );
+  it("asks the decision model the fit question and returns P(fit); the framework records the cost", async () => {
+    const decide = vi.fn().mockResolvedValue({
+      fits: { type: "boolean", probability: 0.8 },
+    });
+    const judge = testService(JobFitJudge, { services: [provide(DecisionModel, { decide })] });
 
-    const result = await new JobFitJudge(() => ({ name: "job-fit", route })).rate(
-      "Java backend",
-      jobText,
-    );
+    const { output } = await judge.run((service) => service.rate("Java backend", jobText));
 
-    expect(result.fit).toBeCloseTo(0.2);
-    expect(result.costUsd).toBe(0.00002);
-    expect((route.mock.calls[0]?.[0] as any).instructions).toBe(FIT_QUESTION);
+    expect(output).toEqual({ fit: 0.8, costUsd: 0 });
+    expect(decide.mock.calls[0]?.[0].questions).toEqual({ fits: Decision.boolean(FIT_QUESTION) });
   });
 
   it("reports a failed decision as no fit value", async () => {
-    const route = vi.fn<any>(() => Promise.resolve({ kind: "failed", reason: "down" }));
+    const decide = vi.fn().mockRejectedValue(new Error("down"));
+    const judge = testService(JobFitJudge, { services: [provide(DecisionModel, { decide })] });
 
-    expect(await new JobFitJudge(() => ({ name: "job-fit", route })).rate("x", jobText)).toEqual({
-      fit: undefined,
-      costUsd: 0,
-    });
+    const { output } = await judge.run((service) => service.rate("x", jobText));
+
+    expect(output).toEqual({ fit: undefined, costUsd: 0 });
   });
 
   it("mapLimited keeps order under a concurrency limit", async () => {

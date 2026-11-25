@@ -31,7 +31,3 @@ export function addJobs(
     alreadyThere: jobs.filter((job) => !fresh.includes(job)).map((job) => job.title),
   };
 }
-
-/** A file the server could not find is an empty shortlist; any other error stays an error. */
-export const isMissingFile = (error: unknown): boolean =>
-  /ENOENT|no such file|not found/i.test(error instanceof Error ? error.message : String(error));

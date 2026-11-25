@@ -78,7 +78,6 @@ async function main(): Promise<void> {
   // dev: the public board API and the OpenRouter key; records in memory, not in .agboss/ — set in
   // process.env, the app's one source (agbossjs/agboss#834); offline the scripted OpenRouter is
   // served on 127.0.0.1 and reached through the providers' base URL field
-  process.env.PII_PSEUDONYM_KEY ??= "job-scout-demo-synthetic-pseudonym-key"; // a synthetic PII key unless one is set (R6)
   process.env.OPENROUTER_API_KEY = apiKey;
   process.env.AGBOSS_SQLITE_PATH = ":memory:";
   const served = isLive ? undefined : await serveFetch(openRouter.fetch);

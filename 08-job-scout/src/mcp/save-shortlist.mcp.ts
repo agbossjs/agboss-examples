@@ -1,7 +1,8 @@
 import { Tool, type ToolHandler } from "@agboss/core";
 import { SaveShortlistToolApproval } from "../approvals/save-shortlist.tool-approval.js";
 import { SHORTLIST } from "../config/paths.js";
-import { addJobs, isMissingFile } from "../helpers/shortlist.helper.js";
+import { shortlistText } from "../helpers/shortlist-file.helper.js";
+import { addJobs } from "../helpers/shortlist.helper.js";
 import { ChosenJobs, SavedJobs } from "./save-shortlist.dto.js";
 import { ShortlistServer } from "./shortlist.server.js";
 
@@ -21,17 +22,8 @@ export class SaveShortlist implements ToolHandler<ChosenJobs, SavedJobs> {
   ) {}
 
   execute = async ({ jobs }: ChosenJobs): Promise<SavedJobs> => {
-    const { content, added, alreadyThere } = addJobs(await this.current(), jobs);
+    const { content, added, alreadyThere } = addJobs(await shortlistText(this.server, this.file), jobs);
     if (added.length > 0) await this.server.call("write_file", { path: this.file, content });
     return { added, alreadyThere };
   };
-
-  private async current(): Promise<string> {
-    try {
-      return (await this.server.call("read_text_file", { path: this.file })).content;
-    } catch (error) {
-      if (isMissingFile(error)) return "";
-      throw error;
-    }
-  }
 }

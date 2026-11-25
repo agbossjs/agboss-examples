@@ -35,9 +35,9 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
     "AC4: save-shortlist-tool knows the file and never adds a job twice — through the real server",
     async ({ app }) => {
       expect(SHORTLIST_DIR).toContain("job-scout-tests");
-      const first = await app.tool(SaveShortlist).invoke({ jobs: [job(1), job(2)] });
-      const second = await app.tool(SaveShortlist).invoke({ jobs: [job(2), job(3)] });
-      const read = await app.tool(ReadShortlist).invoke({});
+      const first = (await app.runTool(SaveShortlist, { jobs: [job(1), job(2)] })).output;
+      const second = (await app.runTool(SaveShortlist, { jobs: [job(2), job(3)] })).output;
+      const read = (await app.runTool(ReadShortlist, {})).output;
       const file = await readFile(SHORTLIST_FILE, "utf8");
 
       expect(first).toEqual({
@@ -59,18 +59,18 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
   );
 
   scripted(
-    "AC4: tested alone with a stub server — a missing file is an empty shortlist",
+    "AC4: tested alone with a stub server — a folder without the file is an empty shortlist",
     async ({ app, mcpOf }) => {
       const written: string[] = [];
       mcpOf(ShortlistServer).thenReturn({
-        read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
+        list_directory: () => Promise.resolve({ content: "" }),
         write_file: ({ content }) => {
           written.push(content);
           return Promise.resolve({ content: "ok" });
         },
       });
 
-      const saved = await app.tool(SaveShortlist).invoke({ jobs: [job(1)] });
+      const saved = (await app.runTool(SaveShortlist, { jobs: [job(1)] })).output;
 
       expect(saved).toEqual({
         kind: "ok",
@@ -88,7 +88,7 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
       mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
       mockLlm(ShortlistAgent).thenReturn(callTool(ReadShortlist, {}), replyWith("It is empty."));
       mcpOf(ShortlistServer).thenReturn({
-        read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
+        list_directory: () => Promise.resolve({ content: "" }),
       });
 
       const result = await app.execute(ChatWorkflowStart, { text: "what is on my shortlist?" });
@@ -107,4 +107,18 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
     await expect(outside).rejects.toThrow();
   }, 30_000);
+});
+
+describe("the shortlist before anything was saved", () => {
+  real(
+    "reading a folder without the file is an empty shortlist, through the real server",
+    async ({ app }) => {
+      await rm(SHORTLIST_FILE, { force: true });
+
+      const read = (await app.runTool(ReadShortlist, {})).output;
+
+      expect(read).toEqual({ kind: "ok", value: { content: "" } });
+    },
+    30_000,
+  );
 });

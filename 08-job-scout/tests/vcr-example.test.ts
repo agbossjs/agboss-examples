@@ -11,10 +11,10 @@ import { ChatWorkflowFinish } from "../src/workflow-finishes/chat.workflow-finis
  * the Jev main router, the profiler) answers from the cassette — no script, no key, no network.
  * Recorded from real models (version 2: each interaction keyed by its prompt and schema hashes, so
  * `agboss check --cassettes` names a stale one). Re-record after a prompt, tool or flow change:
- * `mode: VcrMode.RECORD` on `env: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
+ * `mode: VcrMode.Record` on `env: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
  */
 const test = testWith(JobScoutApplication, {
-  vcr: { cassetteName: "job-scout-brief", dir: "tests/cassettes", mode: VcrMode.REPLAY },
+  vcr: { cassetteName: "job-scout-brief", dir: "tests/cassettes", mode: VcrMode.Replay },
 });
 
 test("the recorded brief run replays through the real graph without a model", async ({ app }) => {
@@ -23,7 +23,7 @@ test("the recorded brief run replays through the real graph without a model", as
   expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ProfilerAgent, ChatWorkflowFinish]);
   expect(result).toFinishWith(ChatWorkflowFinish, {
     // what the profiler (moonshotai/kimi-k2.6) answered when the cassette was recorded: no resume given
-    text: "Please provide the path to your resume (.pdf, .md, or .txt) so I can prepare your search brief.",
+    text: "Please provide the path to your resume (.pdf, .md, or .txt) so I can build your search brief.",
   });
 });
 

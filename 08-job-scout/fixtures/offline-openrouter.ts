@@ -124,8 +124,22 @@ export function fitOf(state: string): number {
   return Math.round(Math.min(fit, 0.95) * 100) / 100;
 }
 
-function answerOf(question: Question, state: string): Record<string, unknown> {
-  if (question.type === "noul") return { type: "noul", noul: noulOf(question, state) };
+const isJobState = (state: unknown): boolean =>
+  typeof state === "object" && state !== null && "job" in state && "candidate" in state;
+
+/** A fit question's state (`{ candidate, job, department, description }`) as the lines `fitOf` reads. */
+function jobLinesOf(state: unknown): string {
+  const fields = typeof state === "object" && state !== null ? (state as Record<string, unknown>) : {};
+  const text = (key: string): string => (typeof fields[key] === "string" ? fields[key] : "");
+  return `Candidate wants: ${text("candidate")}\n\nJob: ${text("job")}\n${text("department")}\n${text("description")}`;
+}
+
+function answerOf(question: Question, state: string, rawState: unknown): Record<string, unknown> {
+  if (question.type === "noul") {
+    // a yes/no question (`Decision.boolean`, the wire's "noul"): the fit of a job, or a guardrail's check
+    const noul = isJobState(rawState) ? fitOf(jobLinesOf(rawState)) : noulOf(question, state);
+    return { type: "noul", noul };
+  }
   if (question.type === "score") {
     const levels = Array.isArray(question.criteria) ? question.criteria : [];
     return {
@@ -137,12 +151,6 @@ function answerOf(question: Question, state: string): Record<string, unknown> {
     };
   }
   const options = Object.keys(question.criteria ?? {});
-  if (options.includes("fit") && options.includes("no_fit")) {
-    const fit = fitOf(state);
-    const choice = fit >= 0.5 ? "fit" : "no_fit";
-    const confidence = choice === "fit" ? fit : Math.round((1 - fit) * 100) / 100;
-    return { type: "choice", choice, probabilities: { fit, no_fit: 1 - fit }, confidence };
-  }
   const routed = routeOf(latestMessageText(state));
   const choice = options.includes(routed) ? routed : (options[0] ?? "");
   return { type: "choice", choice, probabilities: { [choice]: 1 }, confidence: 1 };
@@ -367,7 +375,7 @@ export function createOfflineOpenRouter(options: OfflineOpenRouterOptions = {}):
       const state =
         typeof decision.state === "string" ? decision.state : JSON.stringify(decision.state);
       const answers = Object.fromEntries(
-        Object.entries(decision.questions).map(([id, question]) => [id, answerOf(question, state)]),
+        Object.entries(decision.questions).map(([id, question]) => [id, answerOf(question, state, decision.state)]),
       );
       calls.push({ kind: "decision", about: Object.keys(decision.questions).join(",") });
       return Promise.resolve(

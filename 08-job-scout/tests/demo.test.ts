@@ -153,14 +153,14 @@ describe("the demo's pass in process: the ledger of the search turn", () => {
       });
       expect(search.spend.byCategory.tools).toBeCloseTo(6 * 0.000004, 9);
       expect(search.spend.trace.every((line) => line.costSource === CostSource.Api)).toBe(true);
-      // the turn's model calls in order: the judge (Jev, one "route" decision per job) runs inside
+      // the turn's model calls in order: the judge (Jev, one "fits" decision per job) runs inside
       // the scout's tool call, between the call that asks for the search and the one that answers
       expect(openRouter.calls.slice(6).map((c) => c.about)).toEqual([
         "blocks",
         "route",
         "blocks",
         "scout-agent",
-        ...Array<string>(6).fill("route"),
+        ...Array<string>(6).fill("fits"),
         "scout-agent",
         "blocks",
       ]);

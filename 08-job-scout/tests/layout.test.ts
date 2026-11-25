@@ -26,11 +26,13 @@ const SUFFIXES: Readonly<Record<string, RegExp>> = {
   helpers: /\.helper\.ts$/,
   "model-providers": /\.model-provider\.ts$/,
   guardrails: /\.(guardrail\.ts|prompt\.md)$/,
-  compactions: /\.(compaction\.ts|prompt\.md)$/,
+  approvals: /\.tool-approval\.ts$/,
+  memories: /\.(memory\.ts|prompt\.md)$/,
+  storages: /\.database-storage\.ts$/,
 };
 
 describe("job-scout follows the file conventions (#107)", () => {
-  it("AC3: at the top of src/ only the application, the workflow, the demo and folders by theme (no Studio entry, #268)", () => {
+  it("AC3: at the top of src/ only the application, the workflow and folders by theme (no Studio entry, #268)", () => {
     // a further workflow (`agboss g workflow <name>`) keeps all its files in src/workflows/<name>/ (#197)
     const ownWorkflow = (entry: string): boolean =>
       entry === "workflows" || existsSync(join(src, entry, `${entry}.workflow.ts`));
@@ -42,11 +44,10 @@ describe("job-scout follows the file conventions (#107)", () => {
     ).toEqual(
       [
         "agents",
-        "compactions",
+        "approvals",
         "workflow-finishes",
         "config",
         "data",
-        "demo.ts", // the entry point of `npm run demo` / `npm run demo:live` (agboss-examples R1)
         "environments",
         "guardrails",
         "helpers",
@@ -54,11 +55,13 @@ describe("job-scout follows the file conventions (#107)", () => {
         "job-scout.workflow.ts",
         "workflow-starts",
         "mcp",
+        "memories",
         "model-providers",
         "rag",
         "routers",
         "scripts",
         "services",
+        "storages",
         "tools",
       ].sort(),
     );

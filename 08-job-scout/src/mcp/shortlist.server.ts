@@ -1,9 +1,10 @@
 import { McpServer, McpServerClient, McpTransport } from "@agboss/core/mcp";
 import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../config/paths.js";
-import { FileContent, FileRead, FileWrite, FileWritten } from "./shortlist.dto.js";
+import { DirectoryList, DirectoryListing, FileContent, FileRead, FileWrite, FileWritten } from "./shortlist.dto.js";
 
 /** The server tools this workflow uses — checked against the server at startup. */
 const tools = {
+  list_directory: { input: DirectoryList, output: DirectoryListing },
   read_text_file: { input: FileRead, output: FileContent },
   write_file: { input: FileWrite, output: FileWritten },
 };

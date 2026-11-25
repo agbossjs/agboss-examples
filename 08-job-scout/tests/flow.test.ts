@@ -100,7 +100,7 @@ describe("job-scout by script (#135): a turn, the approval pause and resume", ()
     );
     const written: string[] = [];
     mcpOf(ShortlistServer).thenReturn({
-      read_text_file: () => Promise.reject(new Error("ENOENT: no such file")),
+      list_directory: () => Promise.resolve({ content: "" }),
       write_file: ({ content }: { content: string }) => {
         written.push(content);
         return Promise.resolve({ content: "ok" });

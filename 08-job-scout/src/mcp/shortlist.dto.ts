@@ -26,3 +26,15 @@ export class FileWritten {
   @Text({ prompt: "what the server reported" })
   content!: string;
 }
+
+/** `list_directory`: which folder. */
+export class DirectoryList {
+  @Text({ prompt: "path of the shortlist folder" })
+  path!: string;
+}
+
+/** `list_directory`: one `[FILE] name` or `[DIR] name` line per entry. */
+export class DirectoryListing {
+  @Text({ prompt: "the folder's entries" })
+  content!: string;
+}

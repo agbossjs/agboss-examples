@@ -20,12 +20,12 @@ test("job-scout assembles from its components; constructor dependencies resolved
 }) => {
   await app.ready();
 
-  expect(() => app.agent(ProfilerAgent)).not.toThrow();
-  expect(() => app.agent(ScoutAgent)).not.toThrow();
-  expect(() => app.agent(ShortlistAgent)).not.toThrow();
-  expect(() => app.router(MainRouter)).not.toThrow();
-  expect(() => app.tool(ReadResume)).not.toThrow();
-  expect(() => app.tool(GreenhouseJobs)).not.toThrow();
-  expect(() => app.tool(ReadShortlist)).not.toThrow();
-  expect(() => app.tool(SaveShortlist)).not.toThrow();
+  expect(() => app.get(ProfilerAgent)).not.toThrow();
+  expect(() => app.get(ScoutAgent)).not.toThrow();
+  expect(() => app.get(ShortlistAgent)).not.toThrow();
+  expect(() => app.get(MainRouter)).not.toThrow();
+  expect(() => app.get(ReadResume)).not.toThrow();
+  expect(() => app.get(GreenhouseJobs)).not.toThrow();
+  expect(() => app.get(ReadShortlist)).not.toThrow();
+  expect(() => app.get(SaveShortlist)).not.toThrow();
 });
