@@ -2,6 +2,19 @@ import { HttpAuthenticator, HttpAuthResult, HttpSecurity, type HttpAuthRequest }
 import { A2AOperation } from "@agboss/core/a2a";
 import { BillingApiKeyDirectory } from "../services/billing-api-key-directory.service.js";
 
+const READ_ONLY_OPERATIONS: ReadonlySet<string | undefined> = new Set<string>([
+  A2AOperation.GetTask,
+  A2AOperation.ListTasks,
+  A2AOperation.SubscribeToTask,
+]);
+
+/** A read of tasks, or a message that starts a new one (it names no task). */
+function isReadOrNewTask(request: HttpAuthRequest): boolean {
+  if (READ_ONLY_OPERATIONS.has(request.operation)) return true;
+  const isSend = request.operation === A2AOperation.SendMessage || request.operation === A2AOperation.SendStreamingMessage;
+  return isSend && request.taskId === undefined;
+}
+
 /**
  * Who calls billing: decided by the host from the request's headers, never from its body. A key that is
  * unknown is `401`, a read-only key that answers a pause is `403`; a known one is its tenant and owner,
@@ -28,10 +41,11 @@ export class BillingHttpAuthenticator {
         challenge: 'Bearer realm="billing-a2a"',
       });
     }
-    // a SendMessage naming its task answers that task's pause
-    const isResume = request.operation === A2AOperation.SendMessage && request.taskId !== undefined;
-    if (isResume && !grant.canAnswerPauses) {
-      return HttpAuthResult.forbidden("This API key is not permitted to answer pauses");
+    // deny by default: a grant without canAnswerPauses may read (GetTask, ListTasks, SubscribeToTask) and start
+    // a new task; any other operation, above all one that names a task (a resume by SendMessage or
+    // SendStreamingMessage, a CancelTask), needs the right
+    if (!grant.canAnswerPauses && !isReadOrNewTask(request)) {
+      return HttpAuthResult.forbidden("This API key is not permitted to answer pauses or change a task");
     }
     return HttpAuthResult.authenticated({
       tenant: { tenantId: grant.tenantId },

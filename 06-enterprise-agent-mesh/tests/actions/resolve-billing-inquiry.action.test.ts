@@ -80,5 +80,24 @@ describe("06-enterprise-agent-mesh — Isolated Action, Tool & Authenticator Uni
       http: requestOf({ authorization: "Bearer key-readonly" }),
     });
     expect(forbiddenResume.kind).toBe(HttpAuthKind.Forbidden);
+
+    // deny by default: the streaming resume and the cancel of a task need the right too, a read does not
+    const readOnly = { authorization: "Bearer key-readonly" };
+    for (const operation of [A2AOperation.SendStreamingMessage, A2AOperation.CancelTask]) {
+      const refused = await authenticator.authenticate({ operation, taskId: "task-1", http: requestOf(readOnly) });
+      expect(refused.kind).toBe(HttpAuthKind.Forbidden);
+    }
+    for (const operation of [A2AOperation.GetTask, A2AOperation.ListTasks, A2AOperation.SubscribeToTask]) {
+      const allowed = await authenticator.authenticate({ operation, taskId: "task-1", http: requestOf(readOnly) });
+      expect(allowed.kind).toBe(HttpAuthKind.Authenticated);
+    }
+    const newStreamed = await authenticator.authenticate({ operation: A2AOperation.SendStreamingMessage, http: requestOf(readOnly) });
+    expect(newStreamed.kind).toBe(HttpAuthKind.Authenticated);
+    const fullKey = await authenticator.authenticate({
+      operation: A2AOperation.SendStreamingMessage,
+      taskId: "task-1",
+      http: requestOf({ authorization: "Bearer key-acme" }),
+    });
+    expect(fullKey.kind).toBe(HttpAuthKind.Authenticated);
   });
 });
