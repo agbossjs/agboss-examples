@@ -1,4 +1,4 @@
-import { Decimal, Text } from "@agboss/core/dto";
+import { Float, Text } from "@agboss/core/dto";
 
 export class SupportReplyDto {
   @Text({ prompt: "department that handled the inquiry (support | pricing)" })
@@ -7,6 +7,6 @@ export class SupportReplyDto {
   @Text({ prompt: "final response message to the customer", minLength: 1 })
   answer!: string;
 
-  @Decimal({ prompt: "quoted monthly amount in USD (0 for general non-pricing inquiries)", min: 0 })
+  @Float({ prompt: "quoted monthly amount in USD (0 for general non-pricing inquiries)", min: 0 })
   quotedMonthlyUsd!: number;
 }

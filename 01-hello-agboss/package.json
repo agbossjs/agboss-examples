@@ -14,12 +14,12 @@
     "lint": "eslint .",
     "check": "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts",
-    "demo:live": "tsx src/demo.ts --live",
-    "demo:stream": "tsx src/demo.stream.ts",
-    "demo:codex-cli": "tsx src/demo.cli.ts codex",
-    "demo:claude-cli": "tsx src/demo.cli.ts claude",
-    "demo:gemini-cli": "tsx src/demo.cli.ts gemini"
+    "demo": "tsx src/scripts/demo.ts",
+    "demo:live": "tsx src/scripts/demo.ts --live",
+    "demo:stream": "tsx src/scripts/demo.stream.ts",
+    "demo:codex-cli": "tsx src/scripts/demo.cli.ts codex",
+    "demo:claude-cli": "tsx src/scripts/demo.cli.ts claude",
+    "demo:gemini-cli": "tsx src/scripts/demo.cli.ts gemini"
   },
   "dependencies": {
     "@agboss/core": "^0.1.1",

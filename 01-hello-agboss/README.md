@@ -12,7 +12,10 @@ When evaluating an agentic framework, three questions come up on day one:
 ```text
 src/
   ├── hello-agboss.application.ts
-  ├── demo.ts
+  ├── scripts/                 # run when imported, never loaded by `agboss check`
+  │   ├── demo.ts, demo.stream.ts, demo.cli.ts
+  │   ├── hello-agboss.gateway.app.ts, hello-agboss.<vendor>-cli.app.ts
+  │   └── environments/        # the second applications' environments (re-exports)
   ├── http/
   │   └── server.ts
   ├── contexts/
@@ -51,8 +54,10 @@ src/
   │   ├── hello-application-daily.budget.ts
   │   ├── hello-tenant-daily.budget.ts
   │   └── hello-execution.budget.ts
+  ├── storages/
+  │   └── hello.database-storage.ts      # @DatabaseStorage on SqliteDriver, the PII key via defineEnv
   └── model-providers/
-      └── openrouter-chat.model-provider.ts
+      └── openrouter-chat.model-provider.ts   # a driver provider: OpenRouterDriver, key and URL as references
 
 tests/
   ├── services/
@@ -113,17 +118,17 @@ Full guide: the Wiki page "Try agboss on a subscription".
 
 A support chat widget wants the reply token by token, not after the last token. `StreamingAnswerWorkflow`
 (`src/workflows/streaming-answer/`) has one plain-text agent, `AnswerWriterAgent`: no `output` DTO, so
-its answer streams to `onStream` as `textDelta` events (an agent with an output DTO answers through a
+its answer streams to `onStream` as `StreamEventKind.TextDelta` events (an agent with an output DTO answers through a
 tool call and streams no text, #1004). Two providers stream it:
 
-- the default `OpenRouterChatModelProvider` (HTTP, server-sent events) in `HelloAgbossApplication`;
+- `OpenRouterChatModelProvider`, a driver provider (`OpenRouterDriver`: HTTP, server-sent events), the explicit `modelProvider` of `HelloAgbossApplication`;
 - `GatewayStreamModelProvider` (`src/model-providers/gateway-stream.model-provider.ts`), a transport
   provider for a company LLM gateway that is no OpenAI-compatible server: it implements `complete()` and
-  `stream()` and is listed in `HelloAgbossGatewayApplication` (`src/hello-agboss.gateway.app.ts`).
+  `stream()` and is listed in `HelloAgbossGatewayApplication` (`src/scripts/hello-agboss.gateway.app.ts`).
 
 | What it proves | Test |
 | --- | --- |
-| a transport's `stream()` chunks are `textDelta`s, heard before the answer is complete (the stub holds the rest until the widget has the first token) | `tests/model-providers/gateway-stream.model-provider.test.ts` |
+| a transport's `stream()` chunks are text deltas, heard before the answer is complete (the stub holds the rest until the widget has the first token) | `tests/model-providers/gateway-stream.model-provider.test.ts` |
 | the usage a transport reports is counted once, tokens times the price table | same |
 | a transport failure before the first chunk is retried; one after the first chunk is not (the text is out) | same |
 | an HTTP provider streams token by token from a server-sent stream on 127.0.0.1, heard before the answer is complete | `tests/model-providers/openrouter-chat.model-provider.test.ts` |
@@ -136,3 +141,16 @@ All of it runs against stubs on `127.0.0.1`: `npm test` needs no key and no netw
 ```bash
 npm run demo:stream   # the reply streams from OpenRouter; prints the deltas count, first/last arrival, spend
 ```
+
+## 6. The 0.1.1 shape of this example
+
+- Prompts are `PromptSource`s (`prompt: "./quote-advisor.prompt.md"`), every `@Workflow` has `historyTtl`, flows are
+  written with `onStart(...)`, `.toRouter(...)` and one `.onRoute(...)` per router route, and a `@Tool` has `execute`.
+- The model provider is explicit: `OpenRouterChatModelProvider` is listed in `providers` and named as the application's
+  `modelProvider`; its `OpenRouterDriver` reads `secret("OPENROUTER_API_KEY")` and `env("OPENROUTER_BASE_URL")` when the
+  application starts, so neither is a field of the environment contract.
+- The rows go to `HelloDatabaseStorage` (`@DatabaseStorage`, `SqliteDriver`); its PII key is read through `defineEnv`.
+- `agboss check` loads every module under `src/` except `scripts/` and `bin/`, so the demos and the three CLI / gateway
+  applications live in `src/scripts/`: a workflow that two applications list keeps its typed contexts.
+- The tests use `testUnit(CalculateQuoteTool, { services: [...] })` for a tool and `testWith(HelloAgbossApplication)` for the
+  application; the model is scripted, so no provider is reached.

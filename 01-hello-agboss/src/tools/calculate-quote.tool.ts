@@ -18,7 +18,7 @@ export class CalculateQuoteTool
     private readonly executionContext: ExecutionContext,
   ) {}
 
-  async run(input: QuoteCalculationInputDto): Promise<QuoteCalculationOutputDto> {
+  async execute(input: QuoteCalculationInputDto): Promise<QuoteCalculationOutputDto> {
     this.executionContext.signal.throwIfAborted();
     return this.catalog.fetchQuote(input.tier, input.seats);
   }

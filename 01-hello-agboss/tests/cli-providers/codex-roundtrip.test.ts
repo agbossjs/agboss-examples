@@ -23,7 +23,7 @@ describe("Codex CLI provider: a tool-call round trip over recorded JSONL", () =>
     expect(first.toolCalls).toEqual([
       { id: expect.stringMatching(/^call_[0-9a-f]{8}_0$/u) as string, name: "calculate-quote", arguments: { seats: 12, tier: "pro" } },
     ]);
-    expect(first.usage).toEqual({ inputTokens: 9427, cacheReadTokens: 0, outputTokens: 41 });
+    expect(first.usage).toEqual({ inputTokens: 9427, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 41 });
     expect(first.cost).toBe(usd(0));
 
     const id = first.toolCalls?.[0]?.id ?? "";

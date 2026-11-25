@@ -17,7 +17,7 @@ export default tseslint.config(
   },
   {
     files: ["src/**/*.ts"],
-    ignores: ["src/**/*.test.ts", "src/demo.ts", "src/demo.stream.ts"],
+    ignores: ["src/**/*.test.ts", "src/scripts/**"],
     plugins: { agboss: agbossPlugin },
     rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
   },

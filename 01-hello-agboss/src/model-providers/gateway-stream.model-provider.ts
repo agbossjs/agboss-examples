@@ -1,5 +1,6 @@
 import { ApplicationContext } from "@agboss/core";
 import {
+  CircuitBreakerPolicy,
   ModelCost,
   ModelFailure,
   ModelProvider,
@@ -12,14 +13,15 @@ import {
   type ModelProviderRequest,
   type ModelProviderResponse,
   type ModelProviderStream,
-  type ModelProviderUsage,
+  type ModelProviderStreamResult,
+  type TokenUsage,
 } from "@agboss/core/models";
 import { minutes, seconds, usd } from "@agboss/core/units";
 
 /** What the company's LLM gateway sends per line of its `/stream` answer: a token, then the usage. */
 interface GatewayLine {
   readonly token?: string;
-  readonly usage?: ModelProviderUsage;
+  readonly usage?: TokenUsage;
 }
 
 /** A 429 and a 5xx are failures the retry policy may retry; any other status is not retried. */
@@ -60,7 +62,6 @@ async function* linesOf(body: ReadableStream<Uint8Array>): AsyncGenerator<Gatewa
 @ModelProvider({
   name: "gateway-stream-model-provider",
   description: "The company LLM gateway: complete() and a token-by-token stream()",
-  serves: [/^openai\//u],
   timeout: minutes(1),
   cost: ModelCost.fromPrices({
     "openai/gpt-4o-mini": { inputPerMillion: usd(0.15), outputPerMillion: usd(0.6) },
@@ -76,7 +77,11 @@ async function* linesOf(body: ReadableStream<Uint8Array>): AsyncGenerator<Gatewa
     // a socket that dies is a NetworkError, which TRANSIENT_FAILURES does not list: this provider opts in
     retryOn: [...TRANSIENT_FAILURES, ModelFailure.NetworkError],
   }),
-  circuitBreakerPolicy: { failureThreshold: 5, window: minutes(1), openFor: seconds(30) },
+  circuitBreakerPolicy: CircuitBreakerPolicy.fixed({
+    failureThreshold: 5,
+    failureWindow: minutes(1),
+    openDuration: seconds(30),
+  }),
   deps: [ApplicationContext],
 })
 export class GatewayStreamModelProvider implements ModelProviderHandler {
@@ -86,18 +91,21 @@ export class GatewayStreamModelProvider implements ModelProviderHandler {
     const stream = this.stream(request);
     let text = "";
     for await (const token of stream.textStream) text += token;
-    return { text, usage: await stream.usage };
+    return { text, usage: (await stream.result).usage };
   }
 
   stream(request: ModelProviderRequest): ModelProviderStream {
-    let settle: { resolve(usage: ModelProviderUsage): void; reject(error: unknown): void } = {
+    let settle: {
+      resolve(result: ModelProviderStreamResult): void;
+      reject(error: unknown): void;
+    } = {
       resolve: () => undefined,
       reject: () => undefined,
     };
-    const usage = new Promise<ModelProviderUsage>((resolve, reject) => {
+    const result = new Promise<ModelProviderStreamResult>((resolve, reject) => {
       settle = { resolve, reject };
     });
-    usage.catch(() => undefined); // the stream's own error reaches the gateway through textStream
+    result.catch(() => undefined); // the stream's own error reaches the gateway through textStream
     const baseUrl = this.applicationContext.environment.gatewayBaseUrl;
     const textStream = async function* (): AsyncGenerator<string> {
       try {
@@ -111,7 +119,7 @@ export class GatewayStreamModelProvider implements ModelProviderHandler {
         if (!response.ok || response.body === null) {
           throw failureOfStatus(response.status);
         }
-        let used: ModelProviderUsage | undefined;
+        let used: TokenUsage | undefined;
         for await (const line of linesOf(response.body)) {
           if (line.usage !== undefined) used = line.usage;
           if (line.token !== undefined) yield line.token;
@@ -120,13 +128,13 @@ export class GatewayStreamModelProvider implements ModelProviderHandler {
         if (used === undefined) {
           throw new ModelProviderFailureError({ failure: ModelFailure.NetworkError });
         }
-        settle.resolve(used);
+        settle.resolve({ usage: used });
       } catch (error) {
         const failure = networkFailureOf(error, request.signal);
         settle.reject(failure);
         throw failure;
       }
     };
-    return { textStream: textStream(), usage };
+    return { textStream: textStream(), result };
   }
 }

@@ -1,4 +1,4 @@
-import { secret } from "@agboss/core";
+import type { Secret } from "@agboss/core";
 import { testExecutionContext } from "@agboss/core/testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -6,6 +6,9 @@ import {
   startPricingApiStubServer,
   type PricingApiStubServer,
 } from "../../src/services/pricing-catalog.service.js";
+
+/** A resolved secret: a running application resolves `secret("PRICING_API_KEY")` when it starts. */
+const PRICING_API_KEY = { reveal: () => "test-pricing-key" } as unknown as Secret;
 
 describe("PricingCatalogService (@Injectable with real HTTP fetch)", () => {
   let apiServer: PricingApiStubServer;
@@ -23,9 +26,8 @@ describe("PricingCatalogService (@Injectable with real HTTP fetch)", () => {
       application: {
         environment: {
           catalogCurrency,
-          openRouterApiKey: secret("OPENROUTER_API_KEY"),
+          pricingApiKey: PRICING_API_KEY,
           pricingApiBaseUrl: baseUrl,
-          sqlitePath: ":memory:",
         },
       },
       executionId: "exec-quote-test-1",
@@ -64,7 +66,7 @@ describe("PricingCatalogService (@Injectable with real HTTP fetch)", () => {
       idempotencyKey: expectedIdempotencyKey,
       body: { tier: "pro", seats: 10, currency: "GBP" },
     });
-    expect(apiServer.requests[0]?.authorization).toMatch(/^Bearer /u);
+    expect(apiServer.requests[0]?.authorization).toBe("Bearer test-pricing-key");
   });
 
   it("calculates starter and enterprise quotes without discount below 10 seats", async () => {

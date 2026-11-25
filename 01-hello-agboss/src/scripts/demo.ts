@@ -5,10 +5,10 @@ import {
   isLiveDemoRequested,
   requireLiveApiKey,
   serveFetch,
-} from "../../scripts/tooling/offline-transports.js";
-import { HelloAgbossApplication } from "./hello-agboss.application.js";
-import { startPricingApiStubServer } from "./services/pricing-catalog.service.js";
-import { HelloWorkflowStart } from "./workflows/hello-agboss/hello.workflow-start.js";
+} from "../../../scripts/tooling/offline-transports.js";
+import { HelloAgbossApplication } from "../hello-agboss.application.js";
+import { startPricingApiStubServer } from "../services/pricing-catalog.service.js";
+import { HelloWorkflowStart } from "../workflows/hello-agboss/hello.workflow-start.js";
 
 async function main(): Promise<void> {
   const isLive = isLiveDemoRequested();

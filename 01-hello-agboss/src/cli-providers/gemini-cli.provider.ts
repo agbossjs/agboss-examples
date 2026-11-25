@@ -52,7 +52,7 @@ const GEMINI: VendorSpec = {
   reader: () => {
     let text = "";
     let done = false;
-    let usage = { inputTokens: 0, outputTokens: 0 };
+    let usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
     return {
       onEvent: (event) => {
         if (!isJson(event)) return;
@@ -68,6 +68,8 @@ const GEMINI: VendorSpec = {
           usage = {
             inputTokens: Number(stats["input_tokens"] ?? 0),
             outputTokens: Number(stats["output_tokens"] ?? 0),
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
           };
         }
       },
@@ -87,7 +89,6 @@ export function geminiCliModelProvider(options: { readonly acknowledgeVendorTerm
   @ModelProvider({
     name: "gemini-cli-model-provider",
     description: "Your own gemini CLI (gemini -p) on your own login; demo / local only, terms risk acknowledged",
-    serves: [/^gemini-cli\//u, /^openai\//u],
     ...CLI_PROVIDER_POLICY,
     deps: [Logger, Clock],
   })

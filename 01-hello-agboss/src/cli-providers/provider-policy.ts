@@ -1,4 +1,4 @@
-import { ModelCost, PromptCaching, Reasoning, RetryPolicy, TRANSIENT_FAILURES, RateLimitPolicy } from "@agboss/core/models";
+import { CircuitBreakerPolicy, ModelCost, PromptCaching, Reasoning, RetryPolicy, TRANSIENT_FAILURES, RateLimitPolicy } from "@agboss/core/models";
 import { minutes, seconds } from "@agboss/core/units";
 
 /**
@@ -18,6 +18,10 @@ export const CLI_PROVIDER_POLICY = {
     jitter: true,
     retryOn: TRANSIENT_FAILURES,
   }),
-  circuitBreakerPolicy: { failureThreshold: 5, window: minutes(1), openFor: seconds(30) },
+  circuitBreakerPolicy: CircuitBreakerPolicy.fixed({
+    failureThreshold: 5,
+    failureWindow: minutes(1),
+    openDuration: seconds(30),
+  }),
   rateLimitPolicy: RateLimitPolicy.of({ maxConcurrentCalls: 1 }),
 } as const;

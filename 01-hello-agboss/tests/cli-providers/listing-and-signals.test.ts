@@ -82,7 +82,7 @@ describe("Ctrl+C on the demo", () => {
     const { mkdirSync } = await import("node:fs");
     mkdirSync(tmp);
 
-    const demo = spawn(process.execPath, ["--import", "tsx", "src/demo.cli.ts", "codex"], {
+    const demo = spawn(process.execPath, ["--import", "tsx", "src/scripts/demo.cli.ts", "codex"], {
       cwd: join(import.meta.dirname, "..", ".."),
       env: { ...process.env, AGBOSS_CODEX_BINARY: binary, TMPDIR: tmp },
       stdio: "ignore",

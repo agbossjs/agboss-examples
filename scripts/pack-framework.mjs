@@ -73,6 +73,7 @@ function packPackage(pkgSubdir) {
   const rawOut = execFileSync("npm", ["pack", "--json", "--pack-destination", PACKED_DIR], {
     cwd: pkgDir,
     encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024, // the JSON lists every file of the tarball: 0.1.1's core has ~10k
   });
   const parsed = JSON.parse(rawOut);
   const info = Array.isArray(parsed)

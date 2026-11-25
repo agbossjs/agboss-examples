@@ -5,7 +5,7 @@ import { SupportReplyDto } from "../../dto/support-reply.dto.js";
 @Agent({
   name: "support-specialist-agent",
   description: "Answers general product and technical support questions",
-  promptUrls: ["./support-specialist.prompt.md"],
+  prompt: "./support-specialist.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { inquiry: CustomerInquiryDto },
   output: SupportReplyDto,

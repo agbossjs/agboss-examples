@@ -1,6 +1,6 @@
-import { createApp, ExecutionStatus } from "@agboss/core";
-import { HelloAgbossApplication } from "./hello-agboss.application.js";
-import { StreamingAnswerWorkflowStart } from "./workflows/streaming-answer/streaming-answer.workflow-start.js";
+import { createApp, ExecutionStatus, StreamEventKind } from "@agboss/core";
+import { HelloAgbossApplication } from "../hello-agboss.application.js";
+import { StreamingAnswerWorkflowStart } from "../workflows/streaming-answer/streaming-answer.workflow-start.js";
 
 /**
  * Live only (`npm run demo:stream`, needs OPENROUTER_API_KEY): the support reply streams token by
@@ -23,7 +23,7 @@ if (key === undefined || key === "" || key === "offline-test-openrouter-api-key"
         tenant: { tenantId: "tenant-acme", plan: "pro" },
         execution: { userId: "user-demo-1" },
         onStream: (event) => {
-          if (event.kind === "textDelta") {
+          if (event.kind === StreamEventKind.TextDelta) {
             arrivals.push({ ms: Math.round(performance.now() - startedAt), delta: event.delta });
           }
         },

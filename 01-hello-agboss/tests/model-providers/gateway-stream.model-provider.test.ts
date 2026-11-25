@@ -1,7 +1,7 @@
 import type { ServerResponse } from "node:http";
-import { ExecutionStatus, type ExecutionStreamEvent } from "@agboss/core";
+import { ExecutionStatus, StreamEventKind, type ExecutionStreamEvent } from "@agboss/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { HelloAgbossGatewayApplication } from "../../src/hello-agboss.gateway.app.js";
+import { HelloAgbossGatewayApplication } from "../../src/scripts/hello-agboss.gateway.app.js";
 import { askStreamed, Gate, startStub, textOf, tick, type Stub } from "./stub-server.js";
 
 /** What the gateway's `/stream` writes: one JSON line per token, the usage as the last line. */
@@ -54,11 +54,11 @@ describe("GatewayStreamModelProvider: a transport that streams (#1011)", () => {
       "Was my invoice credited?",
       events,
       (event) => {
-        if (event.kind === "textDelta") afterFirstToken.open();
+        if (event.kind === StreamEventKind.TextDelta) afterFirstToken.open();
       },
     );
 
-    const deltas = events.flatMap((event) => (event.kind === "textDelta" ? [event.delta] : []));
+    const deltas = events.flatMap((event) => (event.kind === StreamEventKind.TextDelta ? [event.delta] : []));
     expect(deltas).toEqual(TOKENS);
     expect(result.status).toBe(ExecutionStatus.Finished);
     expect(result.output).toEqual({ text: TOKENS.join("") });
@@ -114,6 +114,6 @@ describe("GatewayStreamModelProvider: a transport that streams (#1011)", () => {
 
     expect(outcome).toBeInstanceOf(Error);
     expect(gateway.requests).toHaveLength(1); // never asked again: the text is out
-    expect(events.some((event) => event.kind === "textDelta" && event.delta === TOKENS[0])).toBe(true);
+    expect(events.some((event) => event.kind === StreamEventKind.TextDelta && event.delta === TOKENS[0])).toBe(true);
   }, 15_000);
 });

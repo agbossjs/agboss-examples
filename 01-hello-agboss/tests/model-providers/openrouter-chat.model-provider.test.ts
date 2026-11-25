@@ -1,5 +1,5 @@
 import type { ServerResponse } from "node:http";
-import { ExecutionStatus, createApp, type ExecutionStreamEvent } from "@agboss/core";
+import { ExecutionStatus, StreamEventKind, createApp, type ExecutionStreamEvent } from "@agboss/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { HelloAgbossApplication } from "../../src/hello-agboss.application.js";
 import { StreamingAnswerWorkflowStart } from "../../src/workflows/streaming-answer/streaming-answer.workflow-start.js";
@@ -73,10 +73,10 @@ describe("OpenRouterChatModelProvider streams the answer token by token (#1005)"
     });
 
     const result = await askStreamed(HelloAgbossApplication, "Credit?", events, (event) => {
-      if (event.kind === "textDelta") afterFirstToken.open();
+      if (event.kind === StreamEventKind.TextDelta) afterFirstToken.open();
     });
 
-    const deltas = events.flatMap((event) => (event.kind === "textDelta" ? [event.delta] : []));
+    const deltas = events.flatMap((event) => (event.kind === StreamEventKind.TextDelta ? [event.delta] : []));
     expect(deltas).toEqual(TOKENS);
     expect(result.status).toBe(ExecutionStatus.Finished);
     expect(result.output).toEqual({ text: TOKENS.join("") });
@@ -150,7 +150,7 @@ describe("OpenRouterChatModelProvider streams the answer token by token (#1005)"
 
     expect(outcome).toBeInstanceOf(Error);
     expect(completions()).toHaveLength(1); // the text was out: never asked again
-    expect(events.some((event) => event.kind === "textDelta" && event.delta === TOKENS[0])).toBe(true);
+    expect(events.some((event) => event.kind === StreamEventKind.TextDelta && event.delta === TOKENS[0])).toBe(true);
   }, 15_000);
 
   it("a stream cut before the first token is a failed attempt too: nothing is shown, the run fails", async () => {

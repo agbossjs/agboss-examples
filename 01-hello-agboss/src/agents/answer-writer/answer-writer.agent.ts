@@ -7,7 +7,7 @@ import { Agent } from "@agboss/core";
 @Agent({
   name: "answer-writer-agent",
   description: "Writes the support reply as plain text, streamed to the chat widget",
-  promptUrls: ["./answer-writer.prompt.md"],
+  prompt: "./answer-writer.prompt.md",
   model: "openai/gpt-4o-mini",
   maxTokens: 400,
 })

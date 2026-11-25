@@ -84,7 +84,7 @@ const CODEX: VendorSpec = {
   stdin: ({ instructions, body }) => `${instructions}\n${body}`,
   reader: () => {
     let text: string | undefined;
-    let usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
+    let usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
     return {
       onEvent: (event) => {
         if (!isJson(event)) return;
@@ -100,6 +100,7 @@ const CODEX: VendorSpec = {
           usage = {
             inputTokens: Number(u["input_tokens"] ?? 0),
             cacheReadTokens: Number(u["cached_input_tokens"] ?? 0),
+            cacheWriteTokens: 0,
             outputTokens: Number(u["output_tokens"] ?? 0) + Number(u["reasoning_output_tokens"] ?? 0),
           };
         }
@@ -114,7 +115,6 @@ const CODEX: VendorSpec = {
   name: "codex-cli-model-provider",
   description: "Your own codex CLI (codex exec) on your own ChatGPT plan; demo / local only",
   // the example's agents say openai/gpt-4o-mini: in the CLI demo the CLI's default model answers
-  serves: [/^codex-cli\//u, /^openai\//u],
   ...CLI_PROVIDER_POLICY,
   deps: [Logger, Clock],
 })

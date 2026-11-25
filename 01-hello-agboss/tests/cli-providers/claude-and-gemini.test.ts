@@ -41,7 +41,7 @@ describe("Gemini CLI provider", () => {
     process.env.AGBOSS_GEMINI_BINARY = cli.binary;
     const response = await gemini().complete(request());
     expect(response.toolCalls?.[0]).toMatchObject({ name: "calculate-quote", arguments: { seats: 12, tier: "pro" } });
-    expect(response.usage).toEqual({ inputTokens: 250, outputTokens: 50 });
+    expect(response.usage).toEqual({ inputTokens: 250, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 50 });
     const call = cli.calls()[0];
     expect(call?.files.sort()).toEqual([".gemini", "policy"]);
     expect(call?.args).toEqual(expect.arrayContaining(["--skip-trust", "--admin-policy", "--allowed-mcp-server-names", "__none__"]));
@@ -53,7 +53,7 @@ describe("Gemini CLI provider", () => {
     process.env.AGBOSS_GEMINI_BINARY = cli.binary;
     const response = await gemini().complete(request());
     expect(response.toolCalls).toHaveLength(1);
-    expect(response.usage).toEqual({ inputTokens: 258, outputTokens: 52 });
+    expect(response.usage).toEqual({ inputTokens: 258, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 52 });
     expect(cli.calls()[1]?.stdin).toContain("<agboss-correction>");
   });
 

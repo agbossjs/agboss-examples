@@ -7,7 +7,7 @@ import { CustomerInquiryDto } from "../../dto/customer-inquiry.dto.js";
   name: "intake-triage-router",
   description: "Routes incoming customer inquiries between product support and pricing quotes",
   decidedBy: DecidedBy.Model,
-  promptUrls: ["./intake-triage.prompt.md"],
+  prompt: "./intake-triage.prompt.md",
   model: "openai/gpt-4o-mini",
   input: { inquiry: CustomerInquiryDto },
   maxVisits: 2,

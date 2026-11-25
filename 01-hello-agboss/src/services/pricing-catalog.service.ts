@@ -135,7 +135,7 @@ export async function startPricingApiStubServer(): Promise<PricingApiStubServer>
  * Domain service injected into CalculateQuoteTool via constructor DI.
  * Demonstrates:
  * - `deps: [ApplicationContext, ExecutionContext]`
- * - Reading `pricingApiBaseUrl`, `catalogCurrency`, and `openRouterApiKey` from `ApplicationContext.environment`
+ * - Reading `pricingApiBaseUrl`, `catalogCurrency`, and `pricingApiKey` from `ApplicationContext.environment`
  * - Validating endpoint configuration and reachability in `async onInit()`
  * - Passing `signal: this.executionContext.signal` and `"Idempotency-Key": this.executionContext.step.idempotencyKey` to `fetch()`
  */
@@ -167,7 +167,7 @@ export class PricingCatalogService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${String(this.applicationContext.environment.openRouterApiKey)}`,
+        Authorization: `Bearer ${this.applicationContext.environment.pricingApiKey.reveal()}`,
         "Idempotency-Key": this.executionContext.step.idempotencyKey,
       },
       body: JSON.stringify({

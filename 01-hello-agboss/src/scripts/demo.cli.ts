@@ -1,7 +1,7 @@
 import { createApp, ExecutionStatus } from "@agboss/core";
-import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
-import { startPricingApiStubServer } from "./services/pricing-catalog.service.js";
-import { HelloWorkflowStart } from "./workflows/hello-agboss/hello.workflow-start.js";
+import { installOfflineNetworkGuard } from "../../../scripts/tooling/offline-transports.js";
+import { startPricingApiStubServer } from "../services/pricing-catalog.service.js";
+import { HelloWorkflowStart } from "../workflows/hello-agboss/hello.workflow-start.js";
 
 /**
  * `npm run demo:codex-cli | demo:claude-cli | demo:gemini-cli`: the hello-agboss workflow on your own

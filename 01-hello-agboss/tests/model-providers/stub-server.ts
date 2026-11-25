@@ -1,8 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { createApp, type ExecutionStreamEvent } from "@agboss/core";
+import { StreamEventKind, createApp, type ExecutionStreamEvent } from "@agboss/core";
 import { HelloAgbossApplication } from "../../src/hello-agboss.application.js";
-import { HelloAgbossGatewayApplication } from "../../src/hello-agboss.gateway.app.js";
+import { HelloAgbossGatewayApplication } from "../../src/scripts/hello-agboss.gateway.app.js";
 import { StreamingAnswerWorkflowStart } from "../../src/workflows/streaming-answer/streaming-answer.workflow-start.js";
 
 /** A request the stub got. */
@@ -116,4 +116,4 @@ export async function askStreamed(
 
 /** The text the widget would show: the deltas, joined. */
 export const textOf = (events: readonly ExecutionStreamEvent[]): string =>
-  events.map((event) => (event.kind === "textDelta" ? event.delta : "")).join("");
+  events.map((event) => (event.kind === StreamEventKind.TextDelta ? event.delta : "")).join("");

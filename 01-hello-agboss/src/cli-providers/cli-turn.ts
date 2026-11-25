@@ -1,5 +1,5 @@
 import { ModelFailure, ModelProviderFailureError, ReasoningEffort } from "@agboss/core/models";
-import type { ModelProviderRequest, ModelProviderResponse, ModelProviderUsage } from "@agboss/core/models";
+import type { ModelProviderRequest, ModelProviderResponse, TokenUsage } from "@agboss/core/models";
 import type { Clock } from "@agboss/core";
 import { usd } from "@agboss/core/units";
 import { childEnv } from "./child-env.js";
@@ -11,7 +11,7 @@ import { buildPrompt, envelopeSchema, readReply } from "./turn.js";
 /** What a vendor's event reader found: the final reply (text, or the object a schema flag gave) and tokens. */
 export interface Finding {
   readonly reply: unknown;
-  readonly usage: ModelProviderUsage;
+  readonly usage: TokenUsage;
 }
 
 export interface VendorSpec {
@@ -117,9 +117,11 @@ async function runOnce(
   return { finding, stderr: result.stderr };
 }
 
-const sumUsage = (a: ModelProviderUsage, b: ModelProviderUsage): ModelProviderUsage => ({
+const sumUsage = (a: TokenUsage, b: TokenUsage): TokenUsage => ({
   inputTokens: a.inputTokens + b.inputTokens,
   outputTokens: a.outputTokens + b.outputTokens,
+  cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+  cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
 });
 
 /** One model call = one CLI run (a second only when a prompt-parsed reply is not valid JSON). */

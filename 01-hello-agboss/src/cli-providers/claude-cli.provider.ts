@@ -87,7 +87,6 @@ export function claudeCliModelProvider(options: { readonly acknowledgeVendorTerm
   @ModelProvider({
     name: "claude-cli-model-provider",
     description: "Your own claude CLI (claude -p) on your own plan; demo / local only, terms risk acknowledged",
-    serves: [/^claude-cli\//u, /^openai\//u],
     ...CLI_PROVIDER_POLICY,
     deps: [Logger, Clock],
   })
