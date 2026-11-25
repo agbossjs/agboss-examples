@@ -1,4 +1,4 @@
-import { Flag, OneOf, Text } from "@agboss/core/dto";
+import { Bool, Enum, Text } from "@agboss/core/dto";
 
 /** Which resume to read. */
 export class ResumeRequest {
@@ -19,6 +19,6 @@ export class ResumeText {
 
   @Text() text!: string;
 
-  @Flag({ prompt: "true when the text was cut to fit" })
+  @Bool({ prompt: "true when the text was cut to fit" })
   truncated!: boolean;
 }

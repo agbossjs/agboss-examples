@@ -1,6 +1,5 @@
-import { Workflow, provide, route, start } from "@agboss/core";
-import { WorkflowStartTextDto } from "@agboss/core/dto";
-import { ConversationCompaction } from "./compactions/conversation.compaction.js";
+import { Workflow, provide, onStart, toAgent, Ttl } from "@agboss/core";
+import { ConversationMemory } from "./memories/conversation.memory.js";
 import { ProfilerAgent } from "./agents/profiler.agent.js";
 import { PersonalDataGuardrail } from "./guardrails/personal-data.guardrail.js";
 import { PromptInjectionGuardrail } from "./guardrails/prompt-injection.guardrail.js";
@@ -11,12 +10,12 @@ import { ChatWorkflowFinish } from "./workflow-finishes/chat.workflow-finish.js"
 import { MainRouter } from "./routers/main.router.js";
 import { ShortlistServer } from "./mcp/shortlist.server.js";
 import { NOTES_DB, NOTES_DIR, SHORTLIST, SHORTLIST_FILE } from "./config/paths.js";
-import { NOTES_INDEX } from "./rag/company-notes.rag.js";
+import { CompanyNotes, NOTES_INDEX } from "./rag/company-notes.rag.js";
 import { JobFitJudge } from "./services/job-fit.service.js";
 import { ResumeReader } from "./services/resume-reader.service.js";
 import { GreenhouseBoards } from "./services/greenhouse-boards.service.js";
 import { jobScoutPromptVariables } from "./config/prompt-variables.js";
-import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
+import { JOB_SEARCH, jobSearchConfig } from "./config/search.js";
 
 /**
  * Resume from disk → proposed brief → Greenhouse jobs ranked by Jev, explained with the user's company
@@ -27,30 +26,28 @@ import { JOB_SEARCH, jobSearchConfig } from "./config/search.config.js";
 @Workflow({
   name: "job-scout-workflow",
   version: "3.0.0",
+  historyTtl: Ttl.Forever,
   flow: [
-    start(ChatWorkflowStart)
-      .returns(WorkflowStartTextDto)
+    onStart(ChatWorkflowStart)
       .toRouter(MainRouter)
-      .chooseOne(
-        route(ProfilerAgent)
-          .toFinish(ChatWorkflowFinish),
-        route(ScoutAgent)
-          .toFinish(ChatWorkflowFinish),
-        route(ShortlistAgent)
-          .toFinish(ChatWorkflowFinish),
-      ),
+      .onRoute(toAgent(ProfilerAgent)
+          .toFinish(ChatWorkflowFinish))
+      .onRoute(toAgent(ScoutAgent)
+          .toFinish(ChatWorkflowFinish))
+      .onRoute(toAgent(ShortlistAgent)
+          .toFinish(ChatWorkflowFinish)),
   ],
   guardrails: [PromptInjectionGuardrail, PersonalDataGuardrail], // every agent's; the router: input only
-  uncompactedTurns: 8, // over the application's 5: its agents and router see the last 8 turns in full
-  compaction: ConversationCompaction, // older turns: summaries of 5, the latest 10 kept
-  mcp: [ShortlistServer],
+  memory: ConversationMemory, // the last 8 turns in full; older turns: summaries of 5, the latest 10 kept
   providers: [
+    ShortlistServer, // the MCP server its tools call (connected at start)
     JobFitJudge,
+    CompanyNotes, // the knowledge base the notes tool injects
     ResumeReader,
     GreenhouseBoards,
     provide(JOB_SEARCH, jobSearchConfig),
     provide(SHORTLIST, SHORTLIST_FILE),
-    provide(NOTES_INDEX, { folder: NOTES_DIR, sqlitePath: NOTES_DB }),
+    provide(NOTES_INDEX, { directory: NOTES_DIR, path: NOTES_DB }),
   ],
   promptVariables: jobScoutPromptVariables(jobSearchConfig),
 })

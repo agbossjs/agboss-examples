@@ -1,5 +1,5 @@
 import { ExecutionContext, Injectable, secret, Tool } from "@agboss/core";
-import { testExecutionContext, testTool } from "@agboss/core/testing";
+import { testExecutionContext, testUnit } from "@agboss/core/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { JobMatches, JobQuery } from "../src/tools/greenhouse-jobs.dto.js";
@@ -18,7 +18,7 @@ const { application } = testExecutionContext({
   },
 }).tenant;
 
-import type { JobSearch } from "../src/config/search.config.js";
+import type { JobSearch } from "../src/config/search.js";
 import { usageRecord } from "./helpers.js";
 
 /** A test config: its own boards and places — nothing from the shipped example. */
@@ -100,7 +100,7 @@ class TestGreenhouseJobs extends GreenhouseJobs {}
 const greenhouse = (deps: { judge?: FitJudge; fetchJson?: (url: string) => Promise<unknown> }) => {
   judgeImpl = deps.judge ?? judge;
   fetchImpl = deps.fetchJson ?? fetchJson;
-  return testTool(TestGreenhouseJobs);
+  return testUnit(TestGreenhouseJobs);
 };
 
 const search = {

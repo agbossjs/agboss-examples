@@ -6,7 +6,7 @@ import { KIMI } from "../config/settings.js";
 
 @Agent({
   name: "shortlist-agent",
-  promptUrls: ["./shortlist.prompt.md"],
+  prompt: "./shortlist.prompt.md",
   description: "Saves the jobs the user chooses to their shortlist file and shows what is on it",
   model: KIMI,
   // a ceiling: a model stuck in a repetition loop stops here instead of generating for minutes

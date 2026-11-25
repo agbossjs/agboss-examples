@@ -2,7 +2,7 @@ import { ExecutionContext, Tool, type ToolHandler } from "@agboss/core";
 import type { Candidate } from "../helpers/boards.helper.js";
 import { GreenhouseBoards } from "../services/greenhouse-boards.service.js";
 import { fitScorer, matchScore, MAX_JUDGED, passesFilters } from "../helpers/greenhouse.helper.js";
-import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
+import { JOB_SEARCH, type JobSearch } from "../config/search.js";
 import { JobFitJudge, type FitRater } from "../services/job-fit.service.js";
 import { JobMatches, JobQuery } from "./greenhouse-jobs.dto.js";
 import { minutes } from "@agboss/core/units";
@@ -35,7 +35,7 @@ export class GreenhouseJobs implements ToolHandler<JobQuery, JobMatches> {
     this.score = fitScorer((profile, job) => judge.rate(profile, job));
   }
 
-  async run(input: JobQuery): Promise<JobMatches> {
+  async execute(input: JobQuery): Promise<JobMatches> {
     const requested = input.boards.length > 0 ? input.boards : Object.keys(this.search.boards);
     const boards = [...new Set(requested.map((board) => board.trim().toLowerCase()))];
     const { failedBoards, candidates } = await this.boards.jobs(boards);

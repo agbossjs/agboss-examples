@@ -1,4 +1,4 @@
-import { Integer, ListOf, Text } from "@agboss/core/dto";
+import { Integer, List, Text } from "@agboss/core/dto";
 
 /** One job the user chose, copied from the list shown. */
 export class ChosenJob {
@@ -15,12 +15,12 @@ export class ChosenJob {
 
 /** The jobs to add to the shortlist. */
 export class ChosenJobs {
-  @ListOf(ChosenJob, { prompt: "the jobs the user chose, copied from the list shown", minItems: 1 })
+  @List(ChosenJob, { prompt: "the jobs the user chose, copied from the list shown", minItems: 1 })
   jobs!: ChosenJob[];
 }
 
 /** What was added and what was there already (by title). */
 export class SavedJobs {
-  @ListOf(Text) added!: string[];
-  @ListOf(Text) alreadyThere!: string[];
+  @List(Text) added!: string[];
+  @List(Text) alreadyThere!: string[];
 }

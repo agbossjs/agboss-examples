@@ -1,4 +1,4 @@
-import type { JobSearch } from "./search.config.js";
+import type { JobSearch } from "./search.js";
 
 /** Prompt variables from the search config: the boards and places job-scout knows. */
 export function jobScoutPromptVariables(search: JobSearch): Record<string, string> {

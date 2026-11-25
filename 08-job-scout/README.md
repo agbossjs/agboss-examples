@@ -36,7 +36,7 @@ message → [prompt-injection guardrail] → main-router (Jev) ─┬→ profile
 - [`src/job-scout.application.ts`](./src/job-scout.application.ts) — `@Application`: the workflow, the OpenRouter and Decisions model providers, the SQLite repositories, three budgets.
 - [`src/job-scout.workflow.ts`](./src/job-scout.workflow.ts) — the flow, guardrails, compaction, the shortlist MCP server, providers.
 - `src/agents/`, `src/routers/`, `src/tools/`, `src/mcp/`, `src/rag/`, `src/guardrails/`, `src/compactions/`, `src/services/`, `src/helpers/`, `src/config/`, `src/environments/`, `src/model-providers/` — one kind per folder ([`tests/layout.test.ts`](./tests/layout.test.ts) checks it).
-- [`src/demo.ts`](./src/demo.ts) — `npm run demo` / `npm run demo:live`.
+- [`src/scripts/demo.ts`](./src/scripts/demo.ts) — `npm run demo` / `npm run demo:live`.
 - [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the offline OpenRouter: chat completions and the Decisions API, scripted, behind served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`).
 - [`fixtures/greenhouse/`](./fixtures/greenhouse/) + [`fixtures/offline-greenhouse.ts`](./fixtures/offline-greenhouse.ts) — synthetic boards in Greenhouse's response shape; `taboola` is down (503).
 - `tests/` — unit, flow, MCP, VCR and demo tests; [`tests/cassettes/`](./tests/cassettes/) holds the recorded run.

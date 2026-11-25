@@ -1,4 +1,4 @@
-import { McpServer, McpServerClient } from "@agboss/core/mcp";
+import { McpServer, McpServerClient, McpTransport } from "@agboss/core/mcp";
 import { FILESYSTEM_SERVER, SHORTLIST_DIR } from "../config/paths.js";
 import { FileContent, FileRead, FileWrite, FileWritten } from "./shortlist.dto.js";
 
@@ -11,7 +11,7 @@ const tools = {
 /** The official filesystem MCP server, limited to the shortlist folder. */
 @McpServer({
   name: "shortlist",
-  transport: "stdio",
+  transport: McpTransport.Stdio,
   command: process.execPath,
   args: [FILESYSTEM_SERVER, SHORTLIST_DIR],
   tools,

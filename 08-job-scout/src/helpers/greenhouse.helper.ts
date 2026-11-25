@@ -1,5 +1,5 @@
 import type { Candidate } from "./boards.helper.js";
-import type { JobSearch } from "../config/search.config.js";
+import type { JobSearch } from "../config/search.js";
 import { mapLimited, type FitJudge } from "./fit.helper.js";
 
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

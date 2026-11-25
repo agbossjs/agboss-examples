@@ -18,11 +18,11 @@ const tenantId = "default";
 describe("company notes (knowledge base)", () => {
   it("AC3: finds the note about a company, with its file as the source", async () => {
     const notes = new CompanyNotes({
-      folder: NOTES_DIR,
-      sqlitePath: join(await mkdtemp(join(tmpdir(), "notes-")), "notes.sqlite"),
+      directory: NOTES_DIR,
+      path: join(await mkdtemp(join(tmpdir(), "notes-")), "notes.sqlite"),
     });
 
-    const retrieval = await notes.retrieve("Why is Fireblocks a fit for a backend engineer?", {
+    const retrieval = await notes.search("Why is Fireblocks a fit for a backend engineer?", {
       topK: 3,
       signal,
       tenantId,
@@ -42,8 +42,8 @@ describe("company notes (knowledge base)", () => {
       replyWith("done"),
     );
     const index = await new CompanyNotes({
-      folder: NOTES_DIR,
-      sqlitePath: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
+      directory: NOTES_DIR,
+      path: join(await mkdtemp(join(tmpdir(), "notes-")), "n.sqlite"),
     }).index({ tenantId, signal });
 
     const result = await app.execute(ChatWorkflowStart, { text: "what do my notes say?" });

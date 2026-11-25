@@ -2,26 +2,9 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  BudgetExceededError,
-  BudgetScope,
-  CostSource,
-  createApp,
-  ExecutionStatus,
-} from "@agboss/core";
-import {
-  createFixtureGreenhouse,
-  DOWN_BOARD,
-  FIXTURE_BOARDS,
-  fixtureBoard,
-} from "../fixtures/offline-greenhouse.js";
-import {
-  CHAT_MODEL,
-  createOfflineOpenRouter,
-  fitOf,
-  latestMessageText,
-  routeOf,
-} from "../fixtures/offline-openrouter.js";
+import { BudgetExceededError, BudgetScope, CostSource, createApp, ExecutionStatus } from "@agboss/core";
+import { createFixtureGreenhouse, DOWN_BOARD, FIXTURE_BOARDS, fixtureBoard } from "../fixtures/offline-greenhouse.js";
+import { CHAT_MODEL, createOfflineOpenRouter, fitOf, latestMessageText, routeOf } from "../fixtures/offline-openrouter.js";
 import { serveFetch, type ServedFetch } from "../../scripts/tooling/offline-transports.js";
 import { JobScoutApplication } from "../src/job-scout.application.js";
 import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
@@ -41,7 +24,7 @@ async function runDemo(
   delete env.AGBOSS_LIVE_DEMO;
   delete env.JOB_SCOUT_DIR;
   try {
-    const { stdout, stderr } = await promisify(execFile)(TSX, ["src/demo.ts", ...args], {
+    const { stdout, stderr } = await promisify(execFile)(TSX, ["src/scripts/demo.ts", ...args], {
       cwd: ROOT,
       env,
       maxBuffer: 10 * 1024 * 1024,

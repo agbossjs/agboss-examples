@@ -1,9 +1,9 @@
 import { parseArgs } from "node:util";
 import { fetchJsonOverHttp, probeBoard } from "../services/greenhouse-boards.service.js";
-import { jobSearchConfig } from "../config/search.config.js";
+import { jobSearchConfig } from "../config/search.js";
 
 // npm run job-scout:probe -- --place <place> <board token> …
-// Which Greenhouse boards have live jobs in a place; prints lines to paste into search.config.ts.
+// Which Greenhouse boards have live jobs in a place; prints lines to paste into search.ts.
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: { place: { type: "string" } },
@@ -28,6 +28,6 @@ for (const r of found)
     `${r.board}\t${String(r.jobs)} jobs\t${String(r.inPlace)} in ${place}\t${r.company}\n`,
   );
 for (const r of results) if ("error" in r) process.stdout.write(`${r.board}\tfailed: ${r.error}\n`);
-process.stdout.write(`\nboards with jobs in ${place} — paste into search.config.ts:\n`);
+process.stdout.write(`\nboards with jobs in ${place} — paste into search.ts:\n`);
 for (const r of found.filter((x) => x.inPlace > 0))
   process.stdout.write(`    ${r.board}: ${JSON.stringify(r.company)},\n`);

@@ -1,12 +1,7 @@
 import { ApplicationContext, Injectable } from "@agboss/core";
 import { z } from "zod";
-import { JOB_SEARCH, type JobSearch } from "../config/search.config.js";
-import {
-  BoardResponse,
-  candidateOf,
-  type BoardJob,
-  type Candidate,
-} from "../helpers/boards.helper.js";
+import { JOB_SEARCH, type JobSearch } from "../config/search.js";
+import { BoardResponse, candidateOf, type BoardJob, type Candidate } from "../helpers/boards.helper.js";
 
 export type FetchJson = (url: string) => Promise<unknown>;
 

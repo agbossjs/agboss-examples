@@ -1,25 +1,11 @@
-import type { Secret } from "@agboss/core";
-
 /**
  * job-scout's environment contract (#261): declared fields only — the values are in each
  * `<name>.environment.ts` here. Declared once: `@Application({ environment: AppEnvironment })`;
- * `GreenhouseBoards` reads it as `applicationContext.environment` (`deps: [ApplicationContext]`).
+ * `GreenhouseBoards` reads it as `applicationContext.environment` (`deps: [ApplicationContext]`). The model
+ * providers' keys and base URL and the storage's file and PII key are not here: each reads its own
+ * reference (`secret(…)`, `env(…)`, `defineEnv`) when the application starts.
  */
 export class AppEnvironment {
-  /**
-   * OpenRouter's key — read by both model providers (`apiKey: "openRouterApiKey"`, #266). Set in
-   * the environments that call models; `test` leaves it out: tests script or replay every model.
-   */
-  openRouterApiKey?: Secret;
-  /** OpenRouter's base URL (`baseUrlField: "openRouterBaseUrl"`); unset → the provider's default. */
-  openRouterBaseUrl?: string;
-  /**
-   * The application's PII pseudonym key (`@Application({ piiKeyField: "piiPseudonymKey" })`): one
-   * token per value on every instance and in every process, not a key of each execution.
-   */
-  piiPseudonymKey!: Secret;
   /** The Greenhouse job-board API. */
   greenhouseApiUrl!: string;
-  /** The file of the SQLite implementations the application lists (`:memory:` in tests). */
-  sqlitePath!: string;
 }

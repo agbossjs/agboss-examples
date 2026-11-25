@@ -20,25 +20,14 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  CostCategory,
-  ExecutionStatus,
-  GuardrailBlockedError,
-  type CostReport,
-  type ExecutionOutput,
-  type UsageRecord,
-} from "@agboss/core";
-import {
-  installOfflineNetworkGuard,
-  isLiveDemoRequested,
-  requireLiveApiKey,
-  serveFetch,
-} from "../../scripts/tooling/offline-transports.js";
-import { createFixtureGreenhouse, DOWN_BOARD } from "../fixtures/offline-greenhouse.js";
-import { createOfflineOpenRouter } from "../fixtures/offline-openrouter.js";
+import { CostCategory, ExecutionStatus, GuardrailBlockedError, type CostReport, type ExecutionOutput, type UsageRecord } from "@agboss/core";
+import { usd as toUsd, type Usd } from "@agboss/core/units";
+import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey, serveFetch } from "../../../scripts/tooling/offline-transports.js";
+import { createFixtureGreenhouse, DOWN_BOARD } from "../../fixtures/offline-greenhouse.js";
+import { createOfflineOpenRouter } from "../../fixtures/offline-openrouter.js";
 
 const GREENHOUSE_API_URL = "https://boards-api.greenhouse.io";
-const RESUME = resolve(fileURLToPath(new URL("./data/sample-resume.md", import.meta.url)));
+const RESUME = resolve(fileURLToPath(new URL("../data/sample-resume.md", import.meta.url)));
 
 /** The job seeker's messages, in order, on one thread. */
 export const DEMO_MESSAGES = [
@@ -81,9 +70,9 @@ async function main(): Promise<void> {
   if (!isLive) globalThis.fetch = greenhouse.fetch;
 
   const { createApp } = await import("@agboss/core");
-  const { JobScoutApplication } = await import("./job-scout.application.js");
-  const { ChatWorkflowStart } = await import("./workflow-starts/chat.workflow-start.js");
-  const { SHORTLIST_FILE } = await import("./config/paths.js");
+  const { JobScoutApplication } = await import("../job-scout.application.js");
+  const { ChatWorkflowStart } = await import("../workflow-starts/chat.workflow-start.js");
+  const { SHORTLIST_FILE } = await import("../config/paths.js");
 
   // dev: the public board API and the OpenRouter key; records in memory, not in .agboss/ — set in
   // process.env, the app's one source (agbossjs/agboss#834); offline the scripted OpenRouter is
@@ -173,14 +162,21 @@ async function main(): Promise<void> {
   }
 }
 
+const ZERO: Usd = toUsd(0);
+
 const EMPTY_SPEND: CostReport = {
-  totalUsd: 0,
+  totalUsd: ZERO,
   calls: 0,
   unknownCalls: 0,
   cacheReadTokens: 0,
+  cacheWriteTokens: 0,
+  inputTokens: 0,
+  outputTokens: 0,
+  totalTokens: 0,
   byCaller: {},
   byCategory: {} as CostReport["byCategory"],
   byModel: {},
+  byProvider: {},
   trace: [],
 };
 
@@ -188,7 +184,7 @@ const EMPTY_SPEND: CostReport = {
 function reportOf(usage: readonly UsageRecord[]): CostReport {
   return usage.reduce<CostReport>((report, record) => {
     const category = record.caller.startsWith("guardrail:")
-      ? CostCategory.Guards
+      ? CostCategory.Guardrails
       : record.caller.startsWith("router:")
         ? CostCategory.Routing
         : CostCategory.Agents;
@@ -205,19 +201,24 @@ function reportOf(usage: readonly UsageRecord[]): CostReport {
 }
 
 function mergeSpend(a: CostReport, b: CostReport): CostReport {
-  const add = (x: Readonly<Record<string, number>>, y: Readonly<Record<string, number>>) => {
-    const sum: Record<string, number> = { ...x };
-    for (const [key, value] of Object.entries(y)) sum[key] = (sum[key] ?? 0) + value;
+  const add = (x: Readonly<Record<string, Usd>>, y: Readonly<Record<string, Usd>>): Record<string, Usd> => {
+    const sum: Record<string, Usd> = { ...x };
+    for (const [key, value] of Object.entries(y)) sum[key] = toUsd((sum[key] ?? 0) + value);
     return sum;
   };
   return {
-    totalUsd: a.totalUsd + b.totalUsd,
+    totalUsd: toUsd(a.totalUsd + b.totalUsd),
     calls: a.calls + b.calls,
     unknownCalls: a.unknownCalls + b.unknownCalls,
     cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    totalTokens: a.totalTokens + b.totalTokens,
     byCaller: add(a.byCaller, b.byCaller),
     byCategory: add(a.byCategory, b.byCategory) as CostReport["byCategory"],
     byModel: add(a.byModel, b.byModel),
+    byProvider: add(a.byProvider, b.byProvider),
     trace: [...a.trace, ...b.trace],
   };
 }

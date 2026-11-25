@@ -14,7 +14,7 @@ import { ResumeRequest, ResumeText } from "./read-resume.dto.js";
 export class ReadResume implements ToolHandler<ResumeRequest, ResumeText> {
   constructor(private readonly reader: ResumeReader) {}
 
-  run({ path }: ResumeRequest): Promise<ResumeText> {
+  execute({ path }: ResumeRequest): Promise<ResumeText> {
     return this.reader.read(path);
   }
 }

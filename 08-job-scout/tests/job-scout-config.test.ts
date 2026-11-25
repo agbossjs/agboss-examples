@@ -23,7 +23,7 @@ import { ScoutAgent } from "../src/agents/scout.agent.js";
 import { MainRouter } from "../src/routers/main.router.js";
 import { ChatWorkflowStart } from "../src/workflow-starts/chat.workflow-start.js";
 import { jobScoutPromptVariables } from "../src/config/prompt-variables.js";
-import { jobSearchConfig, JobSearchSchema } from "../src/config/search.config.js";
+import { jobSearchConfig, JobSearchSchema } from "../src/config/search.js";
 
 const test = testWith(JobScoutApplication);
 
