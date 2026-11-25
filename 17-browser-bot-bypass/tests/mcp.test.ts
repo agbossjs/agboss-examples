@@ -54,7 +54,7 @@ describe("the server's own browser, spoken to with the MCP SDK's client (no tool
   beforeAll(async () => {
     transport = new StdioClientTransport({
       command: process.execPath,
-      args: ["--import", "tsx", "src/mcp/stealth-browser.server-main.ts", "--fake"],
+      args: ["--import", "tsx", "src/scripts/stealth-browser.server-main.ts", "--fake"],
       cwd: fileURLToPath(new URL("..", import.meta.url)),
       env: { ...(process.env as Record<string, string>), BROWSER_ALLOWED_ORIGINS: "https://docs.example.com" },
       stderr: "inherit",

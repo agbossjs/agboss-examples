@@ -15,7 +15,7 @@ const tools = {
 };
 
 /** The server process: the official package behind the example's guarded launcher (see its header). */
-const LAUNCHER = fileURLToPath(new URL("./guarded-playwright.server.ts", import.meta.url));
+const LAUNCHER = fileURLToPath(new URL("../scripts/guarded-playwright.server.ts", import.meta.url));
 
 @McpServer({
   name: "playwright",

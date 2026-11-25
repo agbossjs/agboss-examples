@@ -19,7 +19,7 @@ let transport: StdioClientTransport;
 beforeAll(async () => {
   transport = new StdioClientTransport({
     command: process.execPath,
-    args: ["--import", "tsx", "src/mcp/guarded-playwright.server.ts"],
+    args: ["--import", "tsx", "src/scripts/guarded-playwright.server.ts"],
     cwd: PROJECT,
     env: Object.fromEntries(Object.entries({ ...process.env, ...running().variables }).filter((entry): entry is [string, string] => entry[1] !== undefined)),
     stderr: "inherit",

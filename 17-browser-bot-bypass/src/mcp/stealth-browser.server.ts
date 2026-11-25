@@ -8,7 +8,7 @@ const tools = {
   open_page: { input: OpenPageArgumentsDto, output: OpenedPageDto },
 };
 
-const SERVER_MAIN = fileURLToPath(new URL("./stealth-browser.server-main.ts", import.meta.url));
+const SERVER_MAIN = fileURLToPath(new URL("../scripts/stealth-browser.server-main.ts", import.meta.url));
 
 /** The example's own MCP server (the plugin ships none), started over stdio. */
 @McpServer({
