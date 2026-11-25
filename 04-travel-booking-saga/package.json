@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "check": "agboss check --strict --cassettes && npm run typecheck && npm run lint",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/scripts/demo.ts"
   },
   "dependencies": {
     "@agboss/core": "^0.1.1"

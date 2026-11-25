@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resetChannelRecords } from "../../src/channels/corporate-booking-approval.channel.js";
 import { startTravelHttpServer } from "../../src/http/server.js";
-import {
-  getResourceState,
-  resetOperationLedger,
-} from "../../src/services/operation-ledger.service.js";
+import { getResourceState, resetOperationLedger } from "../../src/services/operation-ledger.service.js";
 
 describe("TravelHTTPServer (src/http/server.ts)", () => {
   it("returns 202 Accepted on HITL pause, resumes via POST /api/pauses/:pauseId/resume, cancels via POST /api/threads/:threadId/cancel, and serves /health/live & /health/ready", async () => {
@@ -53,7 +50,7 @@ describe("TravelHTTPServer (src/http/server.ts)", () => {
           body: JSON.stringify({
             approved: true,
             reason: "Approved via HTTP test",
-            answeredBy: "vp-travel",
+            actor: { id: "vp-travel" },
           }),
         },
       );

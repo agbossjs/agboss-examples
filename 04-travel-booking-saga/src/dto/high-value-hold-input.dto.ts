@@ -1,9 +1,9 @@
-import { Decimal, Text } from "@agboss/core/dto";
+import { Float, Text } from "@agboss/core/dto";
 
 export class HighValueHoldInputDto {
   @Text({ prompt: "Booking ID requiring manager approval" })
   bookingId!: string;
 
-  @Decimal({ prompt: "Total amount in USD requiring approval", min: 0 })
+  @Float({ prompt: "Total amount in USD requiring approval", min: 0 })
   amountUsd!: number;
 }

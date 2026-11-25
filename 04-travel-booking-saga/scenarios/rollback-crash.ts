@@ -1,26 +1,13 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  CompensationFailedError,
-  CompensationStatus,
-  createApp,
-  ExecutionStatus,
-} from "@agboss/core";
+import { CompensationFailedError, CompensationStatus, createApp, ExecutionStatus } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
-import {
-  getSentChannelAsks,
-  resetChannelRecords,
-} from "../src/channels/corporate-booking-approval.channel.js";
+import { getSentChannelAsks, resetChannelRecords } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { FakeAirlineService } from "../src/services/fake-airline.service.js";
 import { FakeHotelService } from "../src/services/fake-hotel.service.js";
-import {
-  getOperationLedgerEntries,
-  getResourceState,
-  injectTransientCancelFailureOnce,
-  resetOperationLedger,
-} from "../src/services/operation-ledger.service.js";
+import { getOperationLedgerEntries, getResourceState, injectTransientCancelFailureOnce, resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
 import { BudgetSagaWorkflowStart } from "../src/workflows/budget-saga/budget-saga.workflow-start.js";
 import { HitlHoldSagaWorkflowStart } from "../src/workflows/hitl-hold-saga/hitl-hold-saga.workflow-start.js";
@@ -165,7 +152,7 @@ export async function runRollbackCrashScenario(
               reason: "Approved after process restart on Instance 2",
             }),
           },
-          { answeredBy: "director-99" },
+          { actor: { id: "director-99" } },
         );
         sqliteResumedAcrossRestartStatus = resumed.status;
         sqliteResumedOutputStatus = (

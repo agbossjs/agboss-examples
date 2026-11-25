@@ -9,7 +9,7 @@ import { RequestManagerApprovalTool } from "../../tools/request-manager-approval
   name: "risk-reviewer-agent",
   description: "Evaluates destination and vendor risk",
   model: "saga-model",
-  promptUrls: ["./risk-reviewer.prompt.md"],
+  prompt: "./risk-reviewer.prompt.md",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,

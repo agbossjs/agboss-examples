@@ -1,9 +1,4 @@
-import {
-  ModelCost,
-  ModelProvider,
-  RetryPolicy,
-  TRANSIENT_FAILURES,
-} from "@agboss/core/models";
+import { CircuitBreakerPolicy, ModelCost, ModelProvider, RetryPolicy, TRANSIENT_FAILURES } from "@agboss/core/models";
 import { minutes, seconds, usd } from "@agboss/core/units";
 import { SagaOfflineTransport } from "../../../scripts/tooling/offline-transports.js";
 import { waitForChannelAskSent } from "../channels/corporate-booking-approval.channel.js";
@@ -12,7 +7,6 @@ import { waitForChannelAskSent } from "../channels/corporate-booking-approval.ch
   name: "saga-offline-model-provider",
   description:
     "Deterministic offline transport model provider for travel-booking-saga",
-  serves: [/^saga-model$/u],
   timeout: seconds(30),
   cost: ModelCost.fromPrices({
     "saga-model": { inputPerMillion: usd(1), outputPerMillion: usd(2) },
@@ -24,11 +18,11 @@ import { waitForChannelAskSent } from "../channels/corporate-booking-approval.ch
     jitter: false,
     retryOn: TRANSIENT_FAILURES,
   }),
-  circuitBreakerPolicy: {
+  circuitBreakerPolicy: CircuitBreakerPolicy.fixed({
     failureThreshold: 5,
-    window: minutes(1),
-    openFor: seconds(15),
-  },
+    failureWindow: minutes(1),
+    openDuration: seconds(15),
+  }),
 })
 export class SagaOfflineModelProvider extends SagaOfflineTransport {
   protected override waitForChannelAsk = waitForChannelAskSent;

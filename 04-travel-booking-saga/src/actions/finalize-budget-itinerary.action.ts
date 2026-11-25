@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { ItineraryBriefDto } from "../dto/itinerary-brief.dto.js";
@@ -26,11 +21,11 @@ export class FinalizeBudgetItineraryAction implements ActionHandler<FinalizeBudg
     input: InputOf<FinalizeBudgetItineraryAction>,
   ): Promise<OutputOf<FinalizeBudgetItineraryAction>> {
     return Object.assign(new TravelBookingOutcomeDto(), {
-      bookingId: input.request.value.bookingId,
+      bookingId: input.request.bookingId,
       status: "CONFIRMED",
-      flightReservationId: input.flight.value.flightReservationId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
-      summary: input.brief.value.brief,
+      flightReservationId: input.flight.flightReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
+      summary: input.brief.brief,
     });
   }
 }

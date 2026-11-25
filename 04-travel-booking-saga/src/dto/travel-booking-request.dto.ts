@@ -1,4 +1,4 @@
-import { Decimal, Flag, Text } from "@agboss/core/dto";
+import { Float, Bool, Text } from "@agboss/core/dto";
 
 export class TravelBookingRequestDto {
   @Text({ prompt: "Unique booking reference ID" })
@@ -13,9 +13,9 @@ export class TravelBookingRequestDto {
   @Text({ prompt: "Hotel code (e.g., TOKYO-GRAND-5)" })
   hotelCode!: string;
 
-  @Decimal({ prompt: "Total trip cost in USD", min: 0 })
+  @Float({ prompt: "Total trip cost in USD", min: 0 })
   totalAmountUsd!: number;
 
-  @Flag({ prompt: "Whether payment gateway should decline the card" })
+  @Bool({ prompt: "Whether payment gateway should decline the card" })
   simulatePaymentDecline!: boolean;
 }

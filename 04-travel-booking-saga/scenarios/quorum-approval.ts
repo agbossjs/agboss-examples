@@ -1,9 +1,4 @@
-import {
-  BranchStatus,
-  BranchVerdict,
-  createApp,
-  ExecutionStatus,
-} from "@agboss/core";
+import { BranchStatus, BranchVerdict, createApp, ExecutionStatus } from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
@@ -23,7 +18,7 @@ export interface QuorumApprovalScenarioResult {
 /**
  * Scenario E — 2-of-3 Parallel Quorum Approval:
  * Launches `FinanceReviewerAgent`, `ComplianceReviewerAgent`, and `RiskReviewerAgent` in parallel
- * with `.acceptedBy(BookingQuorumArbiter).joinQuorum({ min: 2, max: 2 })`.
+ * with `.arbitratedBy(BookingQuorumArbiter).joinQuorum({ min: 2, max: 2 })`.
  * Finance (95) and Compliance (92) pass `BookingQuorumArbiter`, while Risk (45, approved=false) is rejected.
  * The quorum succeeds with 2 counted votes.
  */

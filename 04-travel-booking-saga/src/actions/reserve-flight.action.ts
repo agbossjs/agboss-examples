@@ -1,10 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 import { FakeAirlineService } from "../services/fake-airline.service.js";
@@ -28,8 +22,8 @@ export class ReserveFlightAction implements ActionHandler<ReserveFlightAction> {
     input: InputOf<ReserveFlightAction>,
   ): Promise<OutputOf<ReserveFlightAction>> {
     const res = this.airline.reserveSeat({
-      bookingId: input.request.value.bookingId,
-      flightCode: input.request.value.flightCode,
+      bookingId: input.request.bookingId,
+      flightCode: input.request.flightCode,
       idempotencyKey: this.executionContext.step.idempotencyKey,
     });
     return Object.assign(new FlightReservationDto(), res);

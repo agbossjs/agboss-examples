@@ -8,7 +8,7 @@ import { TravelBookingRequestDto } from "../../dto/travel-booking-request.dto.js
   name: "compliance-reviewer-agent",
   description: "Evaluates corporate travel policy compliance",
   model: "saga-model",
-  promptUrls: ["./compliance-reviewer.prompt.md"],
+  prompt: "./compliance-reviewer.prompt.md",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,

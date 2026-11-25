@@ -1,13 +1,7 @@
 import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { hours } from "@agboss/core/units";
-import {
-  getClosedChannelAsks,
-  getSentChannelAsks,
-  resetChannelRecords,
-  waitForChannelAskSent,
-  waitForChannelClose,
-} from "../src/channels/corporate-booking-approval.channel.js";
+import { DeputyBookingApprovalChannel, getClosedChannelAsks, getSentChannelAsks, resetChannelRecords, waitForChannelAskSent, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { getOperationLedgerEntries, resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
@@ -45,7 +39,7 @@ function statusOf(output: unknown): string | undefined {
  * Scenario G — The Manager Is Away: the Approval Moves to a Deputy:
  * 1. Flight and hotel are reserved, the approval is posted to the travel manager, the run pauses.
  * 2. `app.extendPause` gives the question 24 hours instead of the role's 4 (a pause with `expiresIn`).
- * 3. The manager is on leave: `app.reassignPause({ pauseId, assignee: "deputy" })` moves the open question.
+ * 3. The manager is on leave: `app.reassignPause({ pauseId, assignees: ["deputy"] })` moves the open question.
  *    The agent and the reservations do not run again. The channel is sent again, with a new
  *    `pauseId`, `ChannelAsk.assignee` and `ChannelAsk.replaces`, and told `onPauseClosed` with
  *    `PauseClosedReason.Reassigned` for the old message.
@@ -70,11 +64,11 @@ export async function runManagerAwayScenario(bookingId = "AWAY-G1"): Promise<Man
       }),
     );
     const managerPauseId = getSentChannelAsks()[0]?.pauseId ?? "";
-    const operator = { answeredBy: "travel-desk-operator" };
+    const operator = { actor: { id: "travel-desk-operator" } };
 
     const extension = await app.extendPause({ pauseId: managerPauseId, expiresIn: hours(24) }, operator);
 
-    const reassignment = await app.reassignPause({ pauseId: managerPauseId, assignee: "deputy" }, operator);
+    const reassignment = await app.reassignPause({ pauseId: managerPauseId, channel: DeputyBookingApprovalChannel, assignees: ["deputy"] }, operator);
     await waitForChannelAskSent(2);
     await waitForChannelClose();
 
@@ -96,7 +90,7 @@ export async function runManagerAwayScenario(bookingId = "AWAY-G1"): Promise<Man
     const pending = await app.listPauses({ tenantId: "default" });
     const finished = await app.resume(
       { pauseId: deputyPauseId, decision: approval("Deputy approves the hold") },
-      { answeredBy: "deputy" },
+      { actor: { id: "deputy" } },
     );
 
     const ledger = getOperationLedgerEntries();

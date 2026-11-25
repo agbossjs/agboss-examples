@@ -1,4 +1,4 @@
-import { testAction, testArbiter, testTool } from "@agboss/core/testing";
+import { testUnit } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
 import { CancelFlightCompensationAction } from "../../src/actions/cancel-flight-compensation.action.js";
@@ -13,24 +13,13 @@ import { BookingQuorumArbiter } from "../../src/arbiters/booking-quorum/booking-
 import { SagaApplicationDailyBudget } from "../../src/budgets/saga-application-daily.budget.js";
 import { SagaExecutionBudget } from "../../src/budgets/saga-execution.budget.js";
 import { SagaTenantDailyBudget } from "../../src/budgets/saga-tenant-daily.budget.js";
-import {
-  getResourceState,
-  resetOperationLedger,
-} from "../../src/services/operation-ledger.service.js";
+import { getResourceState, resetOperationLedger } from "../../src/services/operation-ledger.service.js";
 import { RequestManagerApprovalTool } from "../../src/tools/request-manager-approval.tool.js";
-import { PaymentSagaWorkflowStart } from "../../src/workflows/payment-saga/payment-saga.workflow-start.js";
 
-const produced = <TProducer, TValue>(
-  producer: TProducer,
-  value: TValue,
-): { readonly producer: TProducer; readonly value: TValue } => ({
-  producer,
-  value,
-});
 
 describe("04-travel-booking-saga — Isolated Component Unit Tests", () => {
   describe("BookingQuorumArbiter (@Arbiter unit runner)", () => {
-    const runArbiter = testArbiter(BookingQuorumArbiter);
+    const runArbiter = testUnit(BookingQuorumArbiter);
 
     it("counts department votes with approved=true and confidenceScore >= 80, rejecting low-confidence or unapproved votes", async () => {
       const finAccepted = await runArbiter(FinanceReviewerAgent, {
@@ -79,41 +68,41 @@ describe("04-travel-booking-saga — Isolated Component Unit Tests", () => {
         simulatePaymentDecline: false,
       };
 
-      const runReserveFlight = testAction(ReserveFlightAction);
+      const runReserveFlight = testUnit(ReserveFlightAction);
       const { output: flight } = await runReserveFlight({
-        request: produced(PaymentSagaWorkflowStart, bookingRequest),
+        request: bookingRequest,
       });
       expect(flight.flightReservationId).toBe("FLIGHT-UNIT-BK-01");
       expect(getResourceState("airline", "FLIGHT-UNIT-BK-01")).toBe("RESERVED");
 
-      const runReserveHotel = testAction(ReserveHotelAction);
+      const runReserveHotel = testUnit(ReserveHotelAction);
       const { output: hotel } = await runReserveHotel({
-        request: produced(PaymentSagaWorkflowStart, bookingRequest),
-        flight: produced(ReserveFlightAction, flight),
+        request: bookingRequest,
+        flight: flight,
       });
       expect(hotel.hotelReservationId).toBe("HOTEL-UNIT-BK-01");
       expect(getResourceState("hotel", "HOTEL-UNIT-BK-01")).toBe("RESERVED");
 
-      const runCapturePayment = testAction(CapturePaymentAction);
+      const runCapturePayment = testUnit(CapturePaymentAction);
       const { output: payment } = await runCapturePayment({
-        request: produced(PaymentSagaWorkflowStart, bookingRequest),
-        flight: produced(ReserveFlightAction, flight),
-        hotel: produced(ReserveHotelAction, hotel),
+        request: bookingRequest,
+        flight: flight,
+        hotel: hotel,
       });
       expect(payment.paymentTransactionId).toBe("PAY-UNIT-BK-01");
       expect(getResourceState("payments", "PAY-UNIT-BK-01")).toBe("AUTHORIZED");
 
-      const runCancelHotel = testAction(CancelHotelCompensationAction);
+      const runCancelHotel = testUnit(CancelHotelCompensationAction);
       await runCancelHotel({
-        request: produced(PaymentSagaWorkflowStart, bookingRequest),
-        hotel: produced(ReserveHotelAction, hotel),
+        request: bookingRequest,
+        hotel: hotel,
       });
       expect(getResourceState("hotel", "HOTEL-UNIT-BK-01")).toBe("RELEASED");
 
-      const runCancelFlight = testAction(CancelFlightCompensationAction);
+      const runCancelFlight = testUnit(CancelFlightCompensationAction);
       await runCancelFlight({
-        request: produced(PaymentSagaWorkflowStart, bookingRequest),
-        flight: produced(ReserveFlightAction, flight),
+        request: bookingRequest,
+        flight: flight,
       });
       expect(getResourceState("airline", "FLIGHT-UNIT-BK-01")).toBe("RELEASED");
     });
@@ -121,7 +110,7 @@ describe("04-travel-booking-saga — Isolated Component Unit Tests", () => {
 
   describe("RequestManagerApprovalTool (@Tool) & Budgets (@Budget)", () => {
     it("executes RequestManagerApprovalTool and verifies @Budget limits", async () => {
-      const runApprovalTool = testTool(RequestManagerApprovalTool);
+      const runApprovalTool = testUnit(RequestManagerApprovalTool);
       const { output } = await runApprovalTool({
         bookingId: "UNIT-HOLD-01",
         amountUsd: 4_500,

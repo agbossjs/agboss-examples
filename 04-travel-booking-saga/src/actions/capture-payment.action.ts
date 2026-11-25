@@ -1,10 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { PaymentCaptureDto } from "../dto/payment-capture.dto.js";
@@ -34,12 +28,12 @@ export class CapturePaymentAction implements ActionHandler<CapturePaymentAction>
   async execute(
     input: InputOf<CapturePaymentAction>,
   ): Promise<OutputOf<CapturePaymentAction>> {
-    void input.flight.value.flightReservationId;
-    void input.hotel.value.hotelReservationId;
+    void input.flight.flightReservationId;
+    void input.hotel.hotelReservationId;
     const res = this.payments.authorizeAndCapture({
-      bookingId: input.request.value.bookingId,
-      amountUsd: input.request.value.totalAmountUsd,
-      simulateDecline: input.request.value.simulatePaymentDecline,
+      bookingId: input.request.bookingId,
+      amountUsd: input.request.totalAmountUsd,
+      simulateDecline: input.request.simulatePaymentDecline,
       idempotencyKey: this.executionContext.step.idempotencyKey,
     });
     return Object.assign(new PaymentCaptureDto(), res);

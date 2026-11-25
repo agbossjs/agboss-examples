@@ -10,7 +10,7 @@ import { RequestManagerApprovalTool } from "../../tools/request-manager-approval
   description:
     "Coordinates human-in-the-loop manager approval via RequestManagerApprovalTool",
   model: "saga-model",
-  promptUrls: ["./manager-approval-coordinator.prompt.md"],
+  prompt: "./manager-approval-coordinator.prompt.md",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,

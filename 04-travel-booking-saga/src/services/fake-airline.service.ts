@@ -1,9 +1,6 @@
 import { Injectable } from "@agboss/core";
 import { AirlineCompensationCrashError } from "./airline-compensation-crash.error.js";
-import {
-  recordIdempotentOperation,
-  shouldFailCancelOnce,
-} from "./operation-ledger.service.js";
+import { recordIdempotentOperation, shouldFailCancelOnce } from "./operation-ledger.service.js";
 
 export interface AirlineReservationResult {
   readonly bookingId: string;

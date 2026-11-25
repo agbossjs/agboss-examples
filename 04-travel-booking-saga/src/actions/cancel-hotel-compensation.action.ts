@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf } from "@agboss/core";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
 import { FakeHotelService } from "../services/fake-hotel.service.js";
@@ -25,8 +20,8 @@ export class CancelHotelCompensationAction implements ActionHandler<CancelHotelC
 
   async execute(input: InputOf<CancelHotelCompensationAction>): Promise<void> {
     this.hotel.releaseRoom({
-      bookingId: input.request.value.bookingId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
+      bookingId: input.request.bookingId,
+      hotelReservationId: input.hotel.hotelReservationId,
       idempotencyKey: this.executionContext.step.idempotencyKey,
     });
   }

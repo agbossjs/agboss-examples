@@ -1,10 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { PaymentCaptureDto } from "../dto/payment-capture.dto.js";
@@ -37,19 +31,19 @@ export class ConfirmBookingAction implements ActionHandler<ConfirmBookingAction>
     input: InputOf<ConfirmBookingAction>,
   ): Promise<OutputOf<ConfirmBookingAction>> {
     this.airline.confirmSeat({
-      flightReservationId: input.flight.value.flightReservationId,
+      flightReservationId: input.flight.flightReservationId,
       idempotencyKey: `${this.executionContext.step.idempotencyKey}:airline`,
     });
     this.hotel.confirmRoom({
-      hotelReservationId: input.hotel.value.hotelReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
       idempotencyKey: `${this.executionContext.step.idempotencyKey}:hotel`,
     });
     return Object.assign(new TravelBookingOutcomeDto(), {
-      bookingId: input.request.value.bookingId,
+      bookingId: input.request.bookingId,
       status: "CONFIRMED",
-      flightReservationId: input.flight.value.flightReservationId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
-      summary: `Confirmed ${input.flight.value.flightReservationId} + ${input.hotel.value.hotelReservationId} (${input.payment.value.paymentTransactionId})`,
+      flightReservationId: input.flight.flightReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
+      summary: `Confirmed ${input.flight.flightReservationId} + ${input.hotel.hotelReservationId} (${input.payment.paymentTransactionId})`,
     });
   }
 }

@@ -1,16 +1,6 @@
-import {
-  createApp,
-  ExecutionStatus,
-  PauseClosedError,
-  type PauseClosedReason,
-} from "@agboss/core";
+import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
-import {
-  getSentChannelAsks,
-  getClosedChannelAsks,
-  resetChannelRecords,
-  waitForChannelClose,
-} from "../src/channels/corporate-booking-approval.channel.js";
+import { getSentChannelAsks, getClosedChannelAsks, resetChannelRecords, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
@@ -73,7 +63,7 @@ export async function runPauseClosedScenario(
               reason: "Late click on an already-closed pause",
             }),
           },
-          { answeredBy: "risk-manager-7" },
+          { actor: { id: "risk-manager-7" } },
         );
       } catch (error) {
         lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;

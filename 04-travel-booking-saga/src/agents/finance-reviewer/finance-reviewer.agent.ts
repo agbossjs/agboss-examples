@@ -8,7 +8,7 @@ import { TravelBookingRequestDto } from "../../dto/travel-booking-request.dto.js
   name: "finance-reviewer-agent",
   description: "Evaluates budget compliance for the travel booking",
   model: "saga-model",
-  promptUrls: ["./finance-reviewer.prompt.md"],
+  prompt: "./finance-reviewer.prompt.md",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,

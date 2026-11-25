@@ -9,7 +9,7 @@ import { TravelBookingRequestDto } from "../../dto/travel-booking-request.dto.js
   description:
     "Generates an executive itinerary brief (used to test BudgetExceededError rollback)",
   model: "saga-model",
-  promptUrls: ["./itinerary-brief.prompt.md"],
+  prompt: "./itinerary-brief.prompt.md",
   input: {
     request: TravelBookingRequestDto,
     flight: FlightReservationDto,

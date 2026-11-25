@@ -1,17 +1,7 @@
-import {
-  BranchVerdict,
-  CompensationReason,
-  CompensationStatus,
-  createApp,
-  ExecutionStatus,
-  PauseClosedReason,
-} from "@agboss/core";
+import { BranchVerdict, CompensationReason, CompensationStatus, createApp, ExecutionStatus, PauseClosedReason } from "@agboss/core";
 import { describe, expect, it } from "vitest";
 import { assertLifoCompensationOrder } from "../../../../scripts/tooling/assertions/execution-events.js";
-import {
-  assertIdempotencyKeysPresent,
-  assertNoDuplicateSideEffects,
-} from "../../../../scripts/tooling/assertions/idempotency.js";
+import { assertIdempotencyKeysPresent, assertNoDuplicateSideEffects } from "../../../../scripts/tooling/assertions/idempotency.js";
 import { runBudgetExceededScenario } from "../../../scenarios/budget-exceeded.js";
 import { runCancelAndRollbackScenario } from "../../../scenarios/cancel-and-rollback.js";
 import { runManagerAwayScenario } from "../../../scenarios/manager-away-reassign.js";
@@ -23,10 +13,7 @@ import { TravelBookingRequestDto } from "../../../src/dto/travel-booking-request
 import { FakeAirlineService } from "../../../src/services/fake-airline.service.js";
 import { FakeHotelService } from "../../../src/services/fake-hotel.service.js";
 import { FakePaymentService } from "../../../src/services/fake-payment.service.js";
-import {
-  getOperationLedgerEntries,
-  resetOperationLedger,
-} from "../../../src/services/operation-ledger.service.js";
+import { getOperationLedgerEntries, resetOperationLedger } from "../../../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../../../src/travel-booking-saga.application.js";
 import { PaymentSagaWorkflowStart } from "../../../src/workflows/payment-saga/payment-saga.workflow-start.js";
 

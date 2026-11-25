@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { TravelBookingOutcomeDto } from "../dto/travel-booking-outcome.dto.js";
@@ -25,11 +20,11 @@ export class FormatRolledBackBookingAction implements ActionHandler<FormatRolled
     input: InputOf<FormatRolledBackBookingAction>,
   ): Promise<OutputOf<FormatRolledBackBookingAction>> {
     return Object.assign(new TravelBookingOutcomeDto(), {
-      bookingId: input.request.value.bookingId,
+      bookingId: input.request.bookingId,
       status: "ROLLED_BACK",
-      flightReservationId: input.flight.value.flightReservationId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
-      summary: `Rolled back ${input.hotel.value.hotelReservationId} then ${input.flight.value.flightReservationId} after payment decline`,
+      flightReservationId: input.flight.flightReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
+      summary: `Rolled back ${input.hotel.hotelReservationId} then ${input.flight.flightReservationId} after payment decline`,
     });
   }
 }

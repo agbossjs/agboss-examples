@@ -1,15 +1,6 @@
-import {
-  createServer,
-  type IncomingMessage,
-  type ServerResponse,
-} from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import {
-  createApp,
-  ExecutionStatus,
-  HealthStatus,
-  type App,
-} from "@agboss/core";
+import { createApp, ExecutionStatus, HealthStatus, type App } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks } from "../channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
@@ -170,7 +161,7 @@ async function handleRequest(
             reason: body.reason ?? "Approved via HTTP webhook",
           }),
         },
-        { answeredBy: body.answeredBy ?? "http-manager" },
+        { tenantId: DEFAULT_TENANT, actor: { id: body.answeredBy ?? "http-manager" } },
       );
 
       sendJson(res, 200, {
@@ -190,13 +181,16 @@ async function handleRequest(
   const cancelMatch = /^\/api\/threads\/([^/]+)\/cancel$/.exec(url.pathname);
   if (req.method === "POST" && cancelMatch?.[1] !== undefined) {
     const threadId = decodeURIComponent(cancelMatch[1]);
-    const result = await app.cancel(threadId);
+    const result = await app.cancel(threadId, { tenantId: DEFAULT_TENANT });
     sendJson(res, 200, result);
     return;
   }
 
   sendJson(res, 404, { error: "Not found" });
 }
+
+/** The tenant an application with no tenant context runs its executions under. */
+const DEFAULT_TENANT = "default";
 
 async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
   const chunks: Buffer[] = [];

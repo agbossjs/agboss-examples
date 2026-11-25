@@ -1,10 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-  listOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, type InputOf, type OutputOf, listOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { ReviewerVoteDto } from "../dto/reviewer-vote.dto.js";
@@ -26,13 +20,13 @@ export class FinalizeQuorumBookingAction implements ActionHandler<FinalizeQuorum
   async execute(
     input: InputOf<FinalizeQuorumBookingAction>,
   ): Promise<OutputOf<FinalizeQuorumBookingAction>> {
-    const countedDepartments = input.votes.map((v) => v.value.department);
+    const countedDepartments = input.votes.map((v) => v.department);
 
     return Object.assign(new TravelBookingOutcomeDto(), {
-      bookingId: input.request.value.bookingId,
+      bookingId: input.request.bookingId,
       status: "CONFIRMED_BY_QUORUM",
-      flightReservationId: input.flight.value.flightReservationId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
+      flightReservationId: input.flight.flightReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
       summary: `Quorum achieved (${String(countedDepartments.length)}/3): ${countedDepartments.join(", ")}`,
     });
   }

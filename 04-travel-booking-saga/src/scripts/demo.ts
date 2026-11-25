@@ -1,12 +1,12 @@
 import { PauseClosedReason } from "@agboss/core";
-import { installOfflineNetworkGuard } from "../../scripts/tooling/offline-transports.js";
-import { runBudgetExceededScenario } from "../scenarios/budget-exceeded.js";
-import { runCancelAndRollbackScenario } from "../scenarios/cancel-and-rollback.js";
-import { runManagerAwayScenario } from "../scenarios/manager-away-reassign.js";
-import { runPauseClosedScenario } from "../scenarios/pause-closed.js";
-import { runPaymentFailureScenario } from "../scenarios/payment-failure.js";
-import { runQuorumApprovalScenario } from "../scenarios/quorum-approval.js";
-import { runRollbackCrashScenario } from "../scenarios/rollback-crash.js";
+import { installOfflineNetworkGuard } from "../../../scripts/tooling/offline-transports.js";
+import { runBudgetExceededScenario } from "../../scenarios/budget-exceeded.js";
+import { runCancelAndRollbackScenario } from "../../scenarios/cancel-and-rollback.js";
+import { runManagerAwayScenario } from "../../scenarios/manager-away-reassign.js";
+import { runPauseClosedScenario } from "../../scenarios/pause-closed.js";
+import { runPaymentFailureScenario } from "../../scenarios/payment-failure.js";
+import { runQuorumApprovalScenario } from "../../scenarios/quorum-approval.js";
+import { runRollbackCrashScenario } from "../../scenarios/rollback-crash.js";
 
 async function main(): Promise<void> {
   const restoreFetch = installOfflineNetworkGuard();

@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HighValueHoldOutputDto } from "../dto/high-value-hold-output.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
@@ -26,11 +21,11 @@ export class FinalizeApprovedHoldAction implements ActionHandler<FinalizeApprove
     input: InputOf<FinalizeApprovedHoldAction>,
   ): Promise<OutputOf<FinalizeApprovedHoldAction>> {
     return Object.assign(new TravelBookingOutcomeDto(), {
-      bookingId: input.request.value.bookingId,
-      status: input.hold.value.approved ? "CONFIRMED" : "REJECTED",
-      flightReservationId: input.flight.value.flightReservationId,
-      hotelReservationId: input.hotel.value.hotelReservationId,
-      summary: `Manager decision token: ${input.hold.value.approvalToken}`,
+      bookingId: input.request.bookingId,
+      status: input.hold.approved ? "CONFIRMED" : "REJECTED",
+      flightReservationId: input.flight.flightReservationId,
+      hotelReservationId: input.hotel.hotelReservationId,
+      summary: `Manager decision token: ${input.hold.approvalToken}`,
     });
   }
 }

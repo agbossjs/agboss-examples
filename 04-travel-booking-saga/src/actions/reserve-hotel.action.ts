@@ -1,10 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-  type OutputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf, type OutputOf } from "@agboss/core";
 import { FlightReservationDto } from "../dto/flight-reservation.dto.js";
 import { HotelReservationDto } from "../dto/hotel-reservation.dto.js";
 import { TravelBookingRequestDto } from "../dto/travel-booking-request.dto.js";
@@ -31,10 +25,10 @@ export class ReserveHotelAction implements ActionHandler<ReserveHotelAction> {
   async execute(
     input: InputOf<ReserveHotelAction>,
   ): Promise<OutputOf<ReserveHotelAction>> {
-    void input.flight.value.flightReservationId;
+    void input.flight.flightReservationId;
     const res = this.hotel.reserveRoom({
-      bookingId: input.request.value.bookingId,
-      hotelCode: input.request.value.hotelCode,
+      bookingId: input.request.bookingId,
+      hotelCode: input.request.hotelCode,
       idempotencyKey: this.executionContext.step.idempotencyKey,
     });
     return Object.assign(new HotelReservationDto(), res);

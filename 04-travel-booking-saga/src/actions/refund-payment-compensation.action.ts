@@ -1,9 +1,4 @@
-import {
-  Action,
-  type ActionHandler,
-  ExecutionContext,
-  type InputOf,
-} from "@agboss/core";
+import { Action, type ActionHandler, ExecutionContext, type InputOf } from "@agboss/core";
 import { PaymentCaptureDto } from "../dto/payment-capture.dto.js";
 import { FakePaymentService } from "../services/fake-payment.service.js";
 
@@ -23,7 +18,7 @@ export class RefundPaymentCompensationAction implements ActionHandler<RefundPaym
     input: InputOf<RefundPaymentCompensationAction>,
   ): Promise<void> {
     this.payments.voidOrRefund({
-      paymentTransactionId: input.payment.value.paymentTransactionId,
+      paymentTransactionId: input.payment.paymentTransactionId,
       idempotencyKey: this.executionContext.step.idempotencyKey,
     });
   }

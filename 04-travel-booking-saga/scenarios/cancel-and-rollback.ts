@@ -1,22 +1,8 @@
-import {
-  createApp,
-  ExecutionStatus,
-  PauseClosedError,
-  type PauseClosedReason,
-} from "@agboss/core";
+import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
-import {
-  getSentChannelAsks,
-  getClosedChannelAsks,
-  resetChannelRecords,
-  waitForChannelClose,
-} from "../src/channels/corporate-booking-approval.channel.js";
+import { getSentChannelAsks, getClosedChannelAsks, resetChannelRecords, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
-import {
-  getOperationLedgerEntries,
-  getResourceState,
-  resetOperationLedger,
-} from "../src/services/operation-ledger.service.js";
+import { getOperationLedgerEntries, getResourceState, resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
 import { HitlHoldSagaWorkflowStart } from "../src/workflows/hitl-hold-saga/hitl-hold-saga.workflow-start.js";
 
@@ -78,7 +64,7 @@ export async function runCancelAndRollbackScenario(
             reason: "Late manager click after cancellation",
           }),
         },
-        { answeredBy: "manager-42" },
+        { actor: { id: "manager-42" } },
       );
     } catch (error) {
       lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;
