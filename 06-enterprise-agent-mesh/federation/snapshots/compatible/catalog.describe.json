@@ -175,9 +175,19 @@
         "exports": [
           {
             "kind": "mcp",
-            "expose": "catalog-mcp",
+            "endpoint": "catalog-mcp",
             "version": "1.0.0",
             "tool": "lookup-sku-tool",
+            "input": {
+              "dto": "SkuLookupInputDto",
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+            }
+          },
+          {
+            "kind": "mcp",
+            "endpoint": "catalog-mcp",
+            "version": "1.0.0",
+            "tool": "catalog-workflow-start",
             "input": {
               "dto": "SkuLookupInputDto",
               "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"

@@ -145,7 +145,7 @@ describe("AC4 (failure injection): the owner never covers it, or cannot be asked
         error: expect.objectContaining({
           code: StepError.ExternalTask.code,
           message: expect.stringContaining("inbox unreachable") as unknown,
-          details: expect.objectContaining({ question: "budget-owner-external-task" }) as unknown,
+          details: expect.objectContaining({ externalTask: "budget-owner-external-task" }) as unknown,
         }) as unknown,
       }),
     ]);

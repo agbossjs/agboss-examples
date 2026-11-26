@@ -189,7 +189,7 @@
         "exports": [
           {
             "kind": "a2a",
-            "expose": "billing",
+            "endpoint": "billing",
             "version": "1.0.0",
             "skill": "billing-workflow-start",
             "workflow": "billing-workflow",
@@ -209,7 +209,7 @@
           },
           {
             "kind": "a2a",
-            "expose": "billing",
+            "endpoint": "billing",
             "version": "1.0.0",
             "skill": "invoice-review-workflow-start",
             "workflow": "invoice-review-workflow",

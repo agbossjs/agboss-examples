@@ -172,7 +172,18 @@
       ],
       "channels": [],
       "contracts": {
-        "exports": [],
+        "exports": [
+          {
+            "kind": "mcp",
+            "endpoint": "catalog-mcp",
+            "version": "1.0.0",
+            "tool": "catalog-workflow-start",
+            "input": {
+              "dto": "SkuLookupInputDto",
+              "schemaHash": "3db588389d35fe55c33a6a181a96654961eb3f64387413708421740adb7fcc8c"
+            }
+          }
+        ],
         "imports": [],
         "schemas": {
           "SkuLookupInputDto": {

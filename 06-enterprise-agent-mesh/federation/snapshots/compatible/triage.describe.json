@@ -183,7 +183,7 @@
                 "tool": "ask-billing-tool"
               }
             ],
-            "price": 0.002,
+            "costPerCall": 0.002,
             "foreign": false,
             "target": {
               "application": "billing-application",
@@ -204,7 +204,7 @@
             "tool": "lookup-sku-tool",
             "target": {
               "application": "catalog-application",
-              "expose": "catalog-mcp"
+              "endpoint": "catalog-mcp"
             },
             "usedBy": [
               {
@@ -334,7 +334,7 @@
         "name": "triage-workflow",
         "version": "1.0.0",
         "profile": "base",
-        "config": "55af2661",
+        "config": "c81163c4",
         "piiPolicies": [],
         "flow": [
           "onStart(TriageWorkflowStart)",
@@ -409,7 +409,7 @@
           "least": 1,
           "most": 1
         },
-        "configHash": "55af266177fc2c8de88c6c52478f9d9e7f240859a2c8f302598a6fdde656b04e",
+        "configHash": "c81163c429fc63d7a60292e9fe16d4119157bf103cbcb03fc7b8bf9ec6932f06",
         "starts": [
           "triage-workflow-start"
         ],

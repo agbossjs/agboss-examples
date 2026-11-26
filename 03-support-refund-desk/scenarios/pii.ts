@@ -87,8 +87,8 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof PiiError.Refused && error.kind === PiiKind.CardNumber.id) {
-        blockedCardRefusalKind = error.kind;
+      if (error instanceof PiiError.Refused && error.piiKind === PiiKind.CardNumber.id) {
+        blockedCardRefusalKind = error.piiKind;
       } else {
         throw error;
       }
