@@ -119,7 +119,7 @@ async function main(): Promise<void> {
       check(false, "the unreadable reply resumed the run");
     } catch (error) {
       if (!(error instanceof PauseError.UninterpretableReply)) throw error;
-      console.log(`   "🤷" → ${error.name} (${PauseError.UninterpretableReply.code}): ${error.reason}`);
+      console.log(`   "🤷" → ${error.name} (${PauseError.UninterpretableReply.code}): ${error.reason ?? "no reason"}`);
     }
     const status = await pauseStatusOf(app, pauseId);
     console.log(`   the pause is still: ${String(status)}`);

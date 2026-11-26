@@ -46,7 +46,7 @@ async function cancelMidFlight(context: ScenarioContext, point: string, orderId:
   const { cancelled } = await b.cancel(threadId);
   letGo();
   const ended = await run;
-  const refused = fenceRefusals().map((refusal) => `${refusal.store} ${refusal.effect}: ${refusal.code}`);
+  const refused = fenceRefusals().map((refusal) => `${refusal.store} ${refusal.effect ?? "?"}: ${refusal.code}`);
   const stubRequests = context.stub.requests.filter((request) => request.operation === "charge").length;
   return outcomeOf(context, "cancel-fence", point, [order.orderId], [
     `cancel: ${String(cancelled)}`,
