@@ -11,7 +11,7 @@ const posted: BudgetOwnerRequest[] = [];
  * The budget owners' inbox — in production a chat app the owner answers in free text. Here it
  * prints each question once and keeps it, with its pause's id (the channel's key:
  * `app.resume({ pauseId, reply })` takes it), so the demo answers by it. `InboxBudgetOwnerChannel`
- * posts to it; tests replace it (`mockOf`) and read what was posted.
+ * posts to it; tests replace it (`mockService`) and read what was posted.
  */
 @Injectable()
 export class BudgetOwnerInbox {

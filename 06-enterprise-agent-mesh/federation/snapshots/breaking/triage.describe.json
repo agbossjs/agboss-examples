@@ -339,8 +339,8 @@
         "flow": [
           "onStart(TriageWorkflowStart)",
           "  .toAgent(TriageAgent)",
-          "  .onError(MeshLoopDetectedError, toFinish(MeshLoopFallbackWorkflowFinish))",
-          "  .onError(HopsLimitExceededError, toFinish(MeshLoopFallbackWorkflowFinish))",
+          "  .onError(LimitError.MeshLoop, toFinish(MeshLoopFallbackWorkflowFinish))",
+          "  .onError(LimitError.Hops, toFinish(MeshLoopFallbackWorkflowFinish))",
           "  .toFinish(TriageWorkflowFinish)"
         ],
         "inputs": [
@@ -497,14 +497,14 @@
             "to": "mesh-loop-fallback-workflow-finish",
             "kind": "error",
             "writes": [],
-            "error": "HopsLimitExceededError"
+            "error": "LimitError.Hops"
           },
           {
             "from": "triage-agent",
             "to": "mesh-loop-fallback-workflow-finish",
             "kind": "error",
             "writes": [],
-            "error": "MeshLoopDetectedError"
+            "error": "LimitError.MeshLoop"
           },
           {
             "from": "triage-agent",
@@ -530,13 +530,13 @@
         "onError": [
           {
             "at": "triage-agent",
-            "error": "HopsLimitExceededError",
+            "error": "LimitError.Hops",
             "by": "mesh-loop-fallback-workflow-finish",
             "kind": "error"
           },
           {
             "at": "triage-agent",
-            "error": "MeshLoopDetectedError",
+            "error": "LimitError.MeshLoop",
             "by": "mesh-loop-fallback-workflow-finish",
             "kind": "error"
           }

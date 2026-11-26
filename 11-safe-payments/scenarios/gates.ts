@@ -1,5 +1,6 @@
 import {
   ApplicationContext,
+  ExecutionError,
   Injectable,
   type InferEnv,
   SqliteFencedEffectRepository,
@@ -8,7 +9,7 @@ import {
   type FencedEffectWork,
   type IdempotencyRunOutcome,
 } from "@agboss/core";
-import { ExecutionCancelFencedError, SqliteConnection, type EffectKey } from "@agboss/core/stores";
+import { SqliteConnection, type EffectKey } from "@agboss/core/stores";
 import type { TestApp } from "@agboss/core/testing";
 import { StubGatewayService, stubGatewayEnv } from "../src/services/stub-gateway.service.js";
 import { StubGatewayClient, type StubCallOptions } from "../src/stub/stub-gateway.client.js";
@@ -75,11 +76,11 @@ export function letGoOldest(): void {
 export interface FenceRefusal {
   readonly store: "outbound-call" | "fenced-effect";
   /** The write's name (`charge`, `book-charge`). */
-  readonly effect: string;
+  readonly effect: string | undefined;
   /** `execution.cancelled.fenced`. */
   readonly code: string;
-  readonly tenantId: string;
-  readonly rootExecutionId: string;
+  readonly tenantId: string | undefined;
+  readonly rootExecutionId: string | undefined;
 }
 
 const refusals: FenceRefusal[] = [];
@@ -87,9 +88,9 @@ const refusals: FenceRefusal[] = [];
 /** The writes the cancel's fence refused since the last reset, in order. */
 export const fenceRefusals = (): readonly FenceRefusal[] => [...refusals];
 
-/** Notes a store's error when it is the cancel's fence (`ExecutionCancelFencedError`); passes every error on. */
+/** Notes a store's error when it is the cancel's fence (`ExecutionError.CancelFenced`); passes every error on. */
 function witnessed(store: FenceRefusal["store"], error: unknown): unknown {
-  if (error instanceof ExecutionCancelFencedError)
+  if (error instanceof ExecutionError.CancelFenced)
     refusals.push({ store, effect: error.effect, code: error.code, tenantId: error.tenantId, rootExecutionId: error.rootExecutionId });
   return error;
 }

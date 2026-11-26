@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { BudgetExceededError, createApp } from "@agboss/core";
+import { LimitError, createApp } from "@agboss/core";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
 import { getOperationLedgerEntries, getResourceState, resetOperationLedger } from "../src/services/operation-ledger.service.js";
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
@@ -16,7 +16,7 @@ export interface BudgetExceededScenarioResult {
 /**
  * Scenario B — Budget Exceeded Mid-Saga:
  * 1. Flight and hotel reservations succeed.
- * 2. `ItineraryBriefAgent` exceeds the $0.50 execution budget (`BudgetExceededError`).
+ * 2. `ItineraryBriefAgent` exceeds the $0.50 execution budget (`LimitError.Budget`).
  * 3. AGBoss automatically unwinds open compensations in LIFO order (`CancelHotelCompensationAction`,
  *    then `CancelFlightCompensationAction`) before rejecting the execution.
  */
@@ -41,7 +41,7 @@ export async function runBudgetExceededScenario(
         }),
       );
     } catch (error) {
-      rejectedWithBudgetExceeded = error instanceof BudgetExceededError;
+      rejectedWithBudgetExceeded = error instanceof LimitError.Budget;
       errorMessage = error instanceof Error ? error.message : String(error);
     }
 

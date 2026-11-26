@@ -82,9 +82,9 @@ describe("one ticket per reference", () => {
     expect(site().requests).toHaveLength(before.requests);
   });
 
-  test("the model repeats its tool call: one ticket, the same receipt twice", async ({ app, mockLlm }) => {
+  test("the model repeats its tool call: one ticket, the same receipt twice", async ({ app, mockModel }) => {
     const call = { ...REQUEST, reference: "model-repeats-1" };
-    mockLlm(WebAgent).thenReturn(callTool(SubmitContact, call), callTool(SubmitContact, call), replyWith("filed"));
+    mockModel(WebAgent).thenReturn(callTool(SubmitContact, call), callTool(SubmitContact, call), replyWith("filed"));
     const before = site().tickets.length;
 
     const result = await app.execute(AskWorkflowStart, { text: "file my request" });

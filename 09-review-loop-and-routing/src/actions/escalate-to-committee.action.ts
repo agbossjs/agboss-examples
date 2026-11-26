@@ -6,7 +6,7 @@ import { MemoChangesRequestedDto } from "../dto/memo-changes-requested.dto.js";
 
 /**
  * Hands an application the review loop could not settle to the credit committee — code, no
- * model. Reached from `.onError(VisitsLimitExceededError, …)` when the editor's visits are spent:
+ * model. Reached from `.onError(LimitError.Visits, …)` when the editor's visits are spent:
  * it reads what the path holds at that moment — the newest memo and the open request.
  */
 @Action({

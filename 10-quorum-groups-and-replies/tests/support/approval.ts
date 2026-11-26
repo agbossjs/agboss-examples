@@ -20,20 +20,20 @@ export const ordered = (amountUsd: number, note = "PO placed") =>
 export const notOrdered = (note: string) =>
   replyWith(PurchaseOrderDto, { supplier: LAPTOPS.supplier, isOrdered: false, amountUsd: 0, note });
 
-type Fixtures = Pick<WorkflowFixtures, "app" | "mockLlm" | "mockOf">;
+type Fixtures = Pick<WorkflowFixtures, "app" | "mockModel" | "mockService">;
 
 /**
  * Runs the purchase up to its approval: group 1 counts, the order agent calls the tool, the channel
  * posts to the inbox (replaced: the test reads the pause id from what was posted) and the run
  * pauses. Returns the pause's id — the channel's key, which `result.pending` never shows.
  */
-export async function pausedAtApproval({ app, mockLlm, mockOf }: Fixtures): Promise<string> {
-  mockLlm(LegalReviewAgent).thenReturn(legal());
-  mockLlm(ComplianceReviewAgent).thenReturn(compliance());
-  mockLlm(PriceBenchmarkAgent).thenReturn(price());
-  mockLlm(BudgetCheckAgent).thenReturn(budget());
-  mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
-  const inbox = mockOf(ApproverInbox);
+export async function pausedAtApproval({ app, mockModel, mockService }: Fixtures): Promise<string> {
+  mockModel(LegalReviewAgent).thenReturn(legal());
+  mockModel(ComplianceReviewAgent).thenReturn(compliance());
+  mockModel(PriceBenchmarkAgent).thenReturn(price());
+  mockModel(BudgetCheckAgent).thenReturn(budget());
+  mockModel(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
+  const inbox = mockService(ApproverInbox);
   inbox.post.mockResolvedValue(undefined);
 
   const paused = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);

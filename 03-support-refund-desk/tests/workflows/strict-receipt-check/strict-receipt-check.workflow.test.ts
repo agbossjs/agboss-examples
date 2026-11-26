@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FileRedactor, PiiKind, PiiRefusedError } from "@agboss/core";
+import { FileRedactor, PiiKind, PiiError } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { expect } from "vitest";
 import { SupportRefundDeskApplication } from "../../../src/support-refund-desk.application.js";
@@ -20,10 +20,10 @@ const RECEIPT = readFileSync(join(PROJECT_ROOT, "fixtures", "receipt-card-statem
 
 test("a block rule refuses the receipt whole: neither the redactor nor the reader is called", async ({
   app,
-  mockLlm,
+  mockModel,
 }) => {
-  const redactor = mockLlm(FileRedactor);
-  const agent = mockLlm(StrictReceiptReaderAgent);
+  const redactor = mockModel(FileRedactor);
+  const agent = mockModel(StrictReceiptReaderAgent);
 
   const run = app.execute(
     StrictReceiptCheckWorkflowStart,
@@ -40,7 +40,7 @@ test("a block rule refuses the receipt whole: neither the redactor nor the reade
     { tenant: { tenantId: "acme", maxAutoRefundUsd: 500 }, execution: { locale: "en" } },
   );
 
-  await expect(run).rejects.toBeInstanceOf(PiiRefusedError);
+  await expect(run).rejects.toBeInstanceOf(PiiError.Refused);
   await expect(run).rejects.toMatchObject({ kind: PiiKind.CardNumber.id });
   expect(redactor).toHaveBeenCalledTimes(0);
   expect(agent).toHaveBeenCalledTimes(0);

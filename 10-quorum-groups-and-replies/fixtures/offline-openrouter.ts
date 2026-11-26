@@ -4,7 +4,7 @@
  * the reviewers, the order agent, the reply interpreter) and the Decisions API
  * (`DecisionsModelProvider`: the model arbiter). It is passed as served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`), so
  * the real providers, cost readers and budgets run; only the wire is scripted. Tests never use it:
- * they script models with `mockLlm`.
+ * they script models with `mockModel`.
  *
  * Each reviewer answers within the policy and cites what it rests on — except, with
  * `uncitedCompliance`, the compliance reviewer, which cites nothing (the disagreement). The reply

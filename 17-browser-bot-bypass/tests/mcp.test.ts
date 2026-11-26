@@ -27,8 +27,8 @@ describe("way B: the typed tool calls the example's own MCP server", () => {
     expect(result).toEqual({ kind: "ok", value: FAKE_WEB[PRICING] });
   });
 
-  test("a model run: the agent opens the page with the MCP tool and answers", async ({ app, mockLlm }) => {
-    mockLlm(McpStealthWebAgent).thenReturn(callTool(OpenPageStealthViaMcp, { url: PRICING }), replyWith("Starter is 12 USD"));
+  test("a model run: the agent opens the page with the MCP tool and answers", async ({ app, mockModel }) => {
+    mockModel(McpStealthWebAgent).thenReturn(callTool(OpenPageStealthViaMcp, { url: PRICING }), replyWith("Starter is 12 USD"));
 
     const result = await app.execute(McpAskWorkflowStart, { text: "what does Starter cost?" });
 

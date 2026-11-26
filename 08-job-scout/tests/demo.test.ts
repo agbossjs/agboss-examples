@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BudgetExceededError, BudgetScope, CostSource, createApp, ExecutionStatus } from "@agboss/core";
+import { LimitError, BudgetScope, CostSource, createApp, ExecutionStatus } from "@agboss/core";
 import { createFixtureGreenhouse, DOWN_BOARD, FIXTURE_BOARDS, fixtureBoard } from "../fixtures/offline-greenhouse.js";
 import { CHAT_MODEL, createOfflineOpenRouter, fitOf, latestMessageText, routeOf } from "../fixtures/offline-openrouter.js";
 import { serveFetch, type ServedFetch } from "../../scripts/tooling/offline-transports.js";
@@ -171,14 +171,14 @@ describe("the demo's pass in process: the ledger of the search turn", () => {
 });
 
 describe("failure injection: the execution budget ($0.10) stops a run whose model costs too much", () => {
-  it("a chat answer reporting $0.20 ends the execution with BudgetExceededError", async () => {
+  it("a chat answer reporting $0.20 ends the execution with LimitError.Budget", async () => {
     const app = await offlineApp(createOfflineOpenRouter({ chatCostUsd: 0.2 }).fetch);
     try {
       const run = app.execute(ChatWorkflowStart, {
         text: `Here is my resume: ${RESUME}. Propose a search brief.`,
       });
 
-      await expect(run).rejects.toBeInstanceOf(BudgetExceededError);
+      await expect(run).rejects.toBeInstanceOf(LimitError.Budget);
       await expect(run).rejects.toMatchObject({ scope: BudgetScope.Execution });
     } finally {
       await app.close();

@@ -42,7 +42,7 @@ export const ps21: PaymentScenario = {
       wrong: { charges: 2, confirms: 2 },
       right: { charges: 1, confirms: 1, lost: 0, orderStatus: "paid", notes: ["pause.closed"] },
       async run(context) {
-        context.mockLlm(SecureCheckoutAgent).thenReturn(
+        context.mockModel(SecureCheckoutAgent).thenReturn(
           // the form submitted twice: two calls in one turn
           callTools(callTool(CreateSecurePaymentTool, payment), callTool(CreateSecurePaymentTool, payment)),
           callTool(ConfirmSecurePaymentTool, payment),

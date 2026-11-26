@@ -2,7 +2,7 @@ import "../src/scripts/offline-keys.js";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CompensationFailedError, CompensationStatus, createApp, ExecutionStatus } from "@agboss/core";
+import { ExecutionError, CompensationStatus, createApp, ExecutionStatus } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks, resetChannelRecords } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
@@ -30,7 +30,7 @@ export interface RollbackCrashScenarioResult {
  * Scenario D — Crash During Compensation & SQLite Cross-Restart Recovery:
  * Part 1: Injects a transient failure into `FakeAirlineService.releaseSeat` during automatic rollback.
  *   - Verifies that `CancelHotelCompensationAction` still succeeds (`HOTEL` -> `RELEASED`),
- *   - `CompensationFailedError` is surfaced with the exact failed `CompensationRecord` and step idempotency key,
+ *   - `ExecutionError.CompensationFailed` is surfaced with the exact failed `CompensationRecord` and step idempotency key,
  *   - Re-running the compensation sequence with the deterministic idempotency keys deduplicates the
  *     already-released hotel (`deduplicated: true`) and completes the airline release (`FLIGHT` -> `RELEASED`).
  * Part 2: Runs `TravelBookingSqliteApplication` against a real SQLite database file on disk, pauses on
@@ -63,7 +63,7 @@ export async function runRollbackCrashScenario(
         }),
       );
     } catch (error) {
-      if (error instanceof CompensationFailedError) {
+      if (error instanceof ExecutionError.CompensationFailed) {
         compensationFailedErrorSurfaced = true;
         const firstFailure = error.failures[0];
         if (firstFailure?.status === CompensationStatus.Failed) {

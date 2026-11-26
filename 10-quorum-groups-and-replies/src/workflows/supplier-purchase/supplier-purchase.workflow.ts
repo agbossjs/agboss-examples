@@ -1,4 +1,4 @@
-import { QuorumNotReachedError, toAction, toFinish, Workflow, onStart, toAgent, Ttl } from "@agboss/core";
+import { StepError, toAction, toFinish, Workflow, onStart, toAgent, Ttl } from "@agboss/core";
 import { minutes } from "@agboss/core/units";
 import { DeferPurchaseAction } from "../../actions/defer-purchase.action.js";
 import { BudgetCheckAgent } from "../../agents/budget-check/budget-check.agent.js";
@@ -18,7 +18,7 @@ import { PurchaseRequestWorkflowStart } from "./purchase-request.workflow-start.
  * the policy's threshold; its own decision model only when the code rejects the threshold) — and each branch's verdict is recorded (`result.launches[0].branches`). The
  * first group complete by priority goes on its own path: legal + compliance (1) to the order, which
  * waits for an approver's free-text reply; price + budget (2) to a deferral. Neither in time →
- * `QuorumNotReachedError` → the rejected finish.
+ * `StepError.QuorumNotReached` → the rejected finish.
  */
 @Workflow({
   name: "supplier-purchase-workflow",
@@ -29,7 +29,7 @@ import { PurchaseRequestWorkflowStart } from "./purchase-request.workflow-start.
       .inParallel([toAgent(LegalReviewAgent), toAgent(ComplianceReviewAgent), toAgent(PriceBenchmarkAgent), toAgent(BudgetCheckAgent)])
       .arbitratedBy(PurchasePolicyArbiter)
       .joinQuorumGroups({ deadline: minutes(2) })
-      .onError(QuorumNotReachedError, toFinish(PurchaseRejectedWorkflowFinish))
+      .onError(StepError.QuorumNotReached, toFinish(PurchaseRejectedWorkflowFinish))
       .onGroup(
         [LegalReviewAgent, ComplianceReviewAgent],
         { priority: 1 },

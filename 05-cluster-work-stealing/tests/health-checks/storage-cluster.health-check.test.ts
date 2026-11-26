@@ -31,7 +31,7 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
 
   test(
     "reports step-slots Degraded when maxConcurrentSteps: 2 is saturated and returns to Healthy when slots free up",
-    async ({ app, clock, mockLlm }) => {
+    async ({ app, clock, mockModel }) => {
       const initialLiveness = await app.checkLiveness();
       const initialReadiness = await app.checkReadiness();
       const summary = summarizeHealthReport(initialLiveness, initialReadiness);
@@ -41,7 +41,7 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
       expect(summary.hasStepSlotsComponent).toBe(true);
       expect(summary.hasProjectHealthCheckComponent).toBe(true);
 
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "slot-1" } })
         .thenReturn(
           waitFor(seconds(5)),
@@ -50,7 +50,7 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
             summary: "Slot 1 done",
           }),
         );
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "slot-2" } })
         .thenReturn(
           waitFor(seconds(5)),
@@ -86,12 +86,12 @@ describe("StorageClusterHealthCheck & maxConcurrentSteps Backpressure", () => {
 
   test(
     "propagates StorageClusterHealthCheck degraded and unhealthy statuses into checkReadiness()",
-    async ({ app, mockOf }) => {
-      mockOf(StorageBackendProbeService).ping.mockResolvedValueOnce("degraded");
+    async ({ app, mockService }) => {
+      mockService(StorageBackendProbeService).ping.mockResolvedValueOnce("degraded");
       const degradedReport = await app.checkReadiness();
       expect(degradedReport.status).toBe(HealthStatus.Degraded);
 
-      mockOf(StorageBackendProbeService).ping.mockResolvedValueOnce("unhealthy");
+      mockService(StorageBackendProbeService).ping.mockResolvedValueOnce("unhealthy");
       const unhealthyReport = await app.checkReadiness();
       expect(unhealthyReport.status).toBe(HealthStatus.Unhealthy);
     },

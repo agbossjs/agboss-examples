@@ -4,7 +4,7 @@
  * executions' own state — `result.launches`, `result.pending`, `result.toolCalls`, the pause store —
  * never from a log; the demo checks what it prints and exits non-zero when a promise does not hold.
  */
-import { createApp, ExecutionStatus, PausedExecutionRepository, PauseKind, PauseStatus, ToolCallStatus, UninterpretableReplyError, type App, type ExecutionOutput } from "@agboss/core";
+import { createApp, ExecutionStatus, PausedExecutionRepository, PauseKind, PauseStatus, ToolCallStatus, PauseError, type App, type ExecutionOutput } from "@agboss/core";
 import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey, serveFetch } from "../../../scripts/tooling/offline-transports.js";
 import { createOfflineOpenRouter, withUncitedCompliance } from "../../fixtures/offline-openrouter.js";
 import type { PurchaseRequestDto } from "../dto/purchase-request.dto.js";
@@ -118,8 +118,8 @@ async function main(): Promise<void> {
       await app.resume({ pauseId, reply: "🤷" }, APPROVER);
       check(false, "the unreadable reply resumed the run");
     } catch (error) {
-      if (!(error instanceof UninterpretableReplyError)) throw error;
-      console.log(`   "🤷" → ${error.name} (${UninterpretableReplyError.code}): ${error.reason}`);
+      if (!(error instanceof PauseError.UninterpretableReply)) throw error;
+      console.log(`   "🤷" → ${error.name} (${PauseError.UninterpretableReply.code}): ${error.reason}`);
     }
     const status = await pauseStatusOf(app, pauseId);
     console.log(`   the pause is still: ${String(status)}`);

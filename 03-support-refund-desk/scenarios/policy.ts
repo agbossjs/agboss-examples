@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, GuardrailBlockedError, ToolBlockedError, ToolCallStatus } from "@agboss/core";
+import { createApp, GuardrailError, StepError, ToolCallStatus } from "@agboss/core";
 import { pathToFileURL } from "node:url";
 import { resetAuditTrail } from "../src/interceptors/audit.interceptor.js";
 import { configureSupportModel, resetSupportModel } from "../src/model-providers/support-offline.model-provider.js";
@@ -53,7 +53,7 @@ export async function runPolicyScenario(): Promise<PolicyScenarioResult> {
       throw new Error("Expected over-cap tool call to be intercepted with Replied and zero side effects");
     }
 
-    // 2. Cross-tenant order access blocked via ToolCallDecision.block() -> ToolBlockedError
+    // 2. Cross-tenant order access blocked via ToolCallDecision.block() -> StepError.ToolBlocked
     resetSupportModel();
     let crossTenantBlockedTool = "";
     try {
@@ -69,7 +69,7 @@ export async function runPolicyScenario(): Promise<PolicyScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof ToolBlockedError) {
+      if (error instanceof StepError.ToolBlocked) {
         crossTenantBlockedTool = error.tool;
       } else {
         throw error;
@@ -91,8 +91,8 @@ export async function runPolicyScenario(): Promise<PolicyScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof GuardrailBlockedError) {
-        inputGuardrailBlockedGuard = error.guard;
+      if (error instanceof GuardrailError.Blocked) {
+        inputGuardrailBlockedGuard = error.guardrail;
       } else {
         throw error;
       }
@@ -114,8 +114,8 @@ export async function runPolicyScenario(): Promise<PolicyScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof GuardrailBlockedError) {
-        outputGuardrailBlockedGuard = error.guard;
+      if (error instanceof GuardrailError.Blocked) {
+        outputGuardrailBlockedGuard = error.guardrail;
       } else {
         throw error;
       }

@@ -21,7 +21,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CostCategory, ExecutionStatus, GuardrailBlockedError, type CostReport, type ExecutionOutput, type UsageRecord } from "@agboss/core";
+import { CostCategory, ExecutionStatus, GuardrailError, type CostReport, type ExecutionOutput, type UsageRecord } from "@agboss/core";
 import { usd as toUsd, type Usd } from "@agboss/core/units";
 import { installOfflineNetworkGuard, isLiveDemoRequested, requireLiveApiKey, serveFetch } from "../../../scripts/tooling/offline-transports.js";
 import { createFixtureGreenhouse, DOWN_BOARD } from "../../fixtures/offline-greenhouse.js";
@@ -114,11 +114,11 @@ async function main(): Promise<void> {
         });
       } catch (error) {
         // a guardrail stops the execution: its refusal is the answer, its decision is still paid
-        if (!(error instanceof GuardrailBlockedError)) throw error;
+        if (!(error instanceof GuardrailError.Blocked)) throw error;
         turns.push({
           message,
           status: "blocked",
-          path: [`${error.guard} (p=${String(error.probability)} ≥ ${String(error.threshold)})`],
+          path: [`${error.guardrail} (p=${String(error.probability)} ≥ ${String(error.threshold)})`],
           answer: error.refusal,
           approvals: 0,
           spend: reportOf(error.usage),

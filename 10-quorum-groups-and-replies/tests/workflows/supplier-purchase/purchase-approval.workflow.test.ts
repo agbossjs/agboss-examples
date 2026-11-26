@@ -1,4 +1,4 @@
-import { DtoValidationError, ExecutionStatus, PausedExecutionRepository, PauseStatus, UninterpretableReplyError } from "@agboss/core";
+import { ValidationError, ExecutionStatus, PausedExecutionRepository, PauseStatus, PauseError } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { replyWith, step, TestConcurrency, testWith } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
@@ -17,7 +17,7 @@ import { LAPTOP_ORDER } from "../../support/reviews.js";
 /**
  * The approval in free text (#267 PR 3): the order waits on `PurchaseApproverChannel`, the approver
  * answers in words, `PurchaseReplyInterpreter` reads them into the typed decision before anything
- * resumes. Its model is scripted by the reply (`mockLlm(…).when({ reply })`).
+ * resumes. Its model is scripted by the reply (`mockModel(…).when({ reply })`).
  */
 
 const test = testWith(SupplierPurchaseApplication, {
@@ -32,9 +32,9 @@ const test = testWith(SupplierPurchaseApplication, {
 const CAPPED = { ...LAPTOP_ORDER, amountUsd: 500 };
 
 describe("AC3: a free-text approval becomes a typed decision and the run resumes", () => {
-  test("AC3: 'ok but only up to $500' resumes with the amount capped at 500, and the order is capped", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
-    mockLlm(PurchaseReplyInterpreter)
+  test("AC3: 'ok but only up to $500' resumes with the amount capped at 500, and the order is capped", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
+    mockModel(PurchaseReplyInterpreter)
       .when({ reply: "ok but only up to $500" })
       .thenReturn(
         replyWith(
@@ -43,7 +43,7 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
           { cost: usd(0.00003) },
         ),
       );
-    mockLlm(PurchaseOrderAgent).thenReturn(ordered(500));
+    mockModel(PurchaseOrderAgent).thenReturn(ordered(500));
 
     const done = await app.resume({ pauseId, reply: "ok but only up to $500" }, APPROVER);
 
@@ -59,7 +59,7 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
     expect(placed?.input).toEqual(CAPPED);
     expect(placed?.output).toMatchObject({ amountUsd: 500 });
     // the interpreter read the pause's question with the reply
-    expect(mockLlm(PurchaseReplyInterpreter).inputs).toEqual([
+    expect(mockModel(PurchaseReplyInterpreter).inputs).toEqual([
       {
         ask: expect.objectContaining({ tool: "place-purchase-order-tool", arguments: LAPTOP_ORDER }) as unknown,
         reply: "ok but only up to $500",
@@ -68,12 +68,12 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
     expect(done.spend.byCaller["reply-interpreter:purchase-reply-interpreter"]).toBe(0.00003);
   });
 
-  test("a plain approval keeps the amount asked", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
-    mockLlm(PurchaseReplyInterpreter).thenReturn(
+  test("a plain approval keeps the amount asked", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
+    mockModel(PurchaseReplyInterpreter).thenReturn(
       replyWith(ToolCallApprovalDecisionDto, { approved: true }),
     );
-    mockLlm(PurchaseOrderAgent).thenReturn(ordered(1_200));
+    mockModel(PurchaseOrderAgent).thenReturn(ordered(1_200));
 
     const done = await app.resume({ pauseId, reply: "approved, go ahead" }, APPROVER);
 
@@ -81,12 +81,12 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
     expect(done.output).toMatchObject({ isOrdered: true, amountUsd: 1_200 });
   });
 
-  test("AC3: a refusal reply ends without an order", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
-    mockLlm(PurchaseReplyInterpreter).thenReturn(
+  test("AC3: a refusal reply ends without an order", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
+    mockModel(PurchaseReplyInterpreter).thenReturn(
       replyWith(ToolCallApprovalDecisionDto, { approved: false, reason: "we froze hardware spend" }),
     );
-    mockLlm(PurchaseOrderAgent).thenReturn(notOrdered("we froze hardware spend"));
+    mockModel(PurchaseOrderAgent).thenReturn(notOrdered("we froze hardware spend"));
 
     const done = await app.resume({ pauseId, reply: "no — we froze hardware spend" }, APPROVER);
 
@@ -98,14 +98,14 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
     });
     // the tool never ran: the model read the refusal as its result
     expect(done.toolCalls.map((call) => call.status)).not.toContain("succeeded");
-    expect(JSON.stringify(mockLlm(PurchaseOrderAgent).lastRequest)).toContain("we froze hardware spend");
+    expect(JSON.stringify(mockModel(PurchaseOrderAgent).lastRequest)).toContain("we froze hardware spend");
   });
 });
 
 describe("AC3: an unreadable reply never resumes the run", () => {
-  test("AC3: an unreadable reply rejects with UninterpretableReplyError, the pause stays pending, and a second reply resumes", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
-    const interpreter = mockLlm(PurchaseReplyInterpreter);
+  test("AC3: an unreadable reply rejects with PauseError.UninterpretableReply, the pause stays pending, and a second reply resumes", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
+    const interpreter = mockModel(PurchaseReplyInterpreter);
     // the model gives no decision on "🤷" (text instead of its answer tool), then reads a clear reply
     interpreter.when({ reply: "🤷" }).thenReturn(replyWith("I cannot tell whether this approves."));
     interpreter
@@ -113,16 +113,16 @@ describe("AC3: an unreadable reply never resumes the run", () => {
       .thenReturn(
         replyWith(ToolCallApprovalDecisionDto, { approved: true, overrideInput: CAPPED }),
       );
-    mockLlm(PurchaseOrderAgent).thenReturn(ordered(500));
+    mockModel(PurchaseOrderAgent).thenReturn(ordered(500));
 
     await expect(app.resume({ pauseId, reply: "🤷" }, APPROVER)).rejects.toBeInstanceOf(
-      UninterpretableReplyError,
+      PauseError.UninterpretableReply,
     );
     const stored = await app
       .resolve(PausedExecutionRepository)
       .findByTenantIdAndPauseId("default", pauseId);
     expect(stored?.status).toBe(PauseStatus.Pending);
-    expect(mockLlm(PurchaseOrderAgent).requests).toHaveLength(1); // nothing ran after the pause
+    expect(mockModel(PurchaseOrderAgent).requests).toHaveLength(1); // nothing ran after the pause
 
     const done = await app.resume({ pauseId, reply: "yes, up to $500" }, APPROVER);
 
@@ -130,9 +130,9 @@ describe("AC3: an unreadable reply never resumes the run", () => {
     expect(done.toolCalls[0]?.input).toEqual(CAPPED);
   });
 
-  test("an invalid decision (a cap above the order's schema) is unreadable too: the pause stays pending", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
-    mockLlm(PurchaseReplyInterpreter).thenReturn(
+  test("an invalid decision (a cap above the order's schema) is unreadable too: the pause stays pending", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
+    mockModel(PurchaseReplyInterpreter).thenReturn(
       replyWith(ToolCallApprovalDecisionDto, {
         approved: true,
         overrideInput: { ...LAPTOP_ORDER, amountUsd: -5 },
@@ -140,7 +140,7 @@ describe("AC3: an unreadable reply never resumes the run", () => {
     );
 
     await expect(app.resume({ pauseId, reply: "ok, minus five" }, APPROVER)).rejects.toBeInstanceOf(
-      UninterpretableReplyError,
+      PauseError.UninterpretableReply,
     );
     const stored = await app
       .resolve(PausedExecutionRepository)
@@ -148,12 +148,12 @@ describe("AC3: an unreadable reply never resumes the run", () => {
     expect(stored?.status).toBe(PauseStatus.Pending);
   });
 
-  test("an empty reply is refused before the interpreter is asked", async ({ app, mockLlm, mockOf }) => {
-    const pauseId = await pausedAtApproval({ app, mockLlm, mockOf });
+  test("an empty reply is refused before the interpreter is asked", async ({ app, mockModel, mockService }) => {
+    const pauseId = await pausedAtApproval({ app, mockModel, mockService });
 
     await expect(app.resume({ pauseId, reply: "" }, APPROVER)).rejects.toBeInstanceOf(
-      DtoValidationError,
+      ValidationError.DtoInvalid,
     );
-    expect(mockLlm(PurchaseReplyInterpreter).requests).toHaveLength(0);
+    expect(mockModel(PurchaseReplyInterpreter).requests).toHaveLength(0);
   });
 });

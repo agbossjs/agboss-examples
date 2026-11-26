@@ -3,7 +3,7 @@
  * HTTP APIs the application's model providers call — chat completions (`OpenRouterModelProvider`,
  * the agents) and the Decisions API (`DecisionsModelProvider`, the model router). It is passed as
  * served on 127.0.0.1 through `OPENROUTER_BASE_URL` (`serveFetch`), so the real providers, their retry policies, cost readers and the
- * budgets all run; only the wire is scripted. Tests never use it: they script models with `mockLlm`.
+ * budgets all run; only the wire is scripted. Tests never use it: they script models with `mockModel`.
  *
  * Jev routes by the bank's thresholds, read from the application in its state. The analyst writes a
  * memo without its risk line; the risk officer asks for it once, then approves — or, stubborn,

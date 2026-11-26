@@ -1,4 +1,4 @@
-import { PiiRefusedError } from "@agboss/core";
+import { PiiError } from "@agboss/core";
 import { decideWith, testUnit } from "@agboss/core/testing";
 import { describe, expect, it } from "vitest";
 import { SupportExecutionContext } from "../../../src/contexts/support-execution.context.js";
@@ -24,7 +24,7 @@ describe("Guardrails (@InputGuardrail & @OutputGuardrail) and PII Policies (@Pii
     expect(revealed).toContain("TCK-104920");
 
     await expect(pii.mask("Card 4242 4242 4242 4242")).rejects.toBeInstanceOf(
-      PiiRefusedError,
+      PiiError.Refused,
     );
   });
 

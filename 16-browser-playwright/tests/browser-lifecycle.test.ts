@@ -60,10 +60,10 @@ describe("the shared browser", () => {
 });
 
 describe("timeouts and cancellation", () => {
-  test("a page that never answers: the tool's 20 s timeout, on the application's clock, ends the call and closes its context", async ({ app, clock, mockLlm }) => {
+  test("a page that never answers: the tool's 20 s timeout, on the application's clock, ends the call and closes its context", async ({ app, clock, mockModel }) => {
     await app.ready();
     const { handle } = app.resolve(SharedBrowser);
-    mockLlm(WebAgent).thenReturn(callTool(OpenPage, { url: `${running().origin}/slow` }), replyWith("the page did not answer"));
+    mockModel(WebAgent).thenReturn(callTool(OpenPage, { url: `${running().origin}/slow` }), replyWith("the page did not answer"));
     const slowRequests = (): number => site().requests.filter((request) => request === "GET /slow").length;
     const before = slowRequests();
 

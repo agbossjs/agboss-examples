@@ -15,10 +15,10 @@ const test = testWith(JobScoutApplication);
 describe("job-scout on the path grammar (#272)", () => {
   test("the main router sends to the profiler, whose answer finishes the turn", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent));
-    mockLlm(ProfilerAgent).thenReturn(replyWith("ok"));
+    mockModel(MainRouter).thenReturn(routeTo(ProfilerAgent));
+    mockModel(ProfilerAgent).thenReturn(replyWith("ok"));
 
     const result = await app.execute(ChatWorkflowStart, { text: "hello" });
 
@@ -27,10 +27,10 @@ describe("job-scout on the path grammar (#272)", () => {
 
   test("the main router sends to the scout, whose answer finishes the turn", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ScoutAgent));
-    mockLlm(ScoutAgent).thenReturn(replyWith("ok"));
+    mockModel(MainRouter).thenReturn(routeTo(ScoutAgent));
+    mockModel(ScoutAgent).thenReturn(replyWith("ok"));
 
     const result = await app.execute(ChatWorkflowStart, { text: "hello" });
 
@@ -39,23 +39,23 @@ describe("job-scout on the path grammar (#272)", () => {
 
   test("the main router sends to the shortlist agent, whose answer finishes the turn", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
-    mockLlm(ShortlistAgent).thenReturn(replyWith("ok"));
+    mockModel(MainRouter).thenReturn(routeTo(ShortlistAgent));
+    mockModel(ShortlistAgent).thenReturn(replyWith("ok"));
 
     const result = await app.execute(ChatWorkflowStart, { text: "hello" });
 
     expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ShortlistAgent, ChatWorkflowFinish]);
   });
 
-  test("the main router chooses among three routes, listed by name", async ({ app, mockLlm }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent));
-    mockLlm(ProfilerAgent).thenReturn(replyWith("ok"));
+  test("the main router chooses among three routes, listed by name", async ({ app, mockModel }) => {
+    mockModel(MainRouter).thenReturn(routeTo(ProfilerAgent));
+    mockModel(ProfilerAgent).thenReturn(replyWith("ok"));
 
     await app.execute(ChatWorkflowStart, { text: "hello" });
 
-    expect(mockLlm(MainRouter).onlyRequest).toMatchObject({
+    expect(mockModel(MainRouter).onlyRequest).toMatchObject({
       kind: "decision",
       options: ["profiler-agent", "scout-agent", "shortlist-agent"],
     });
@@ -76,30 +76,30 @@ const job = {
 describe("job-scout by script (#135): a turn, the approval pause and resume", () => {
   test("AC12: the main router sends the message to the agent, whose answer finishes the turn", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent));
-    mockLlm(ProfilerAgent).thenReturn(replyWith("Brief: senior backend, Israel"));
+    mockModel(MainRouter).thenReturn(routeTo(ProfilerAgent));
+    mockModel(ProfilerAgent).thenReturn(replyWith("Brief: senior backend, Israel"));
 
     const result = await app.execute(ChatWorkflowStart, { text: "propose a search brief" });
 
     expect(result).toFollowPath([ChatWorkflowStart, MainRouter, ProfilerAgent, ChatWorkflowFinish]);
     expect(result).toFinishWith(ChatWorkflowFinish, { text: "Brief: senior backend, Israel" });
-    expect(mockLlm(MainRouter)).toHaveBeenAskedWith({ input: "propose a search brief" });
+    expect(mockModel(MainRouter)).toHaveBeenAskedWith({ input: "propose a search brief" });
   });
 
   test("AC12: saving to the shortlist waits for approval; after it the agent's answer finishes the turn", async ({
     app,
-    mockLlm,
-    mcpOf,
+    mockModel,
+    mockMcp,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
-    mockLlm(ShortlistAgent).thenReturn(
+    mockModel(MainRouter).thenReturn(routeTo(ShortlistAgent));
+    mockModel(ShortlistAgent).thenReturn(
       callTool(SaveShortlist, { jobs: [job] }),
       replyWith("Saved 1 job."),
     );
     const written: string[] = [];
-    mcpOf(ShortlistServer).thenReturn({
+    mockMcp(ShortlistServer).thenReturn({
       list_directory: () => Promise.resolve({ content: "" }),
       write_file: ({ content }: { content: string }) => {
         written.push(content);
@@ -113,8 +113,8 @@ describe("job-scout by script (#135): a turn, the approval pause and resume", ()
 
     expect(paused).toHavePausedAt(ShortlistAgent);
     expect(done).toFinishWith(ChatWorkflowFinish, { text: "Saved 1 job." });
-    expect(mockLlm(MainRouter).requests).toHaveLength(1);
-    expect(mockLlm(ShortlistAgent)).toHaveScriptedToolCalls([SaveShortlist]);
+    expect(mockModel(MainRouter).requests).toHaveLength(1);
+    expect(mockModel(ShortlistAgent)).toHaveScriptedToolCalls([SaveShortlist]);
     expect(written).toEqual([
       "# Shortlist\n- [Backend Engineer — Fireblocks, Tel Aviv](https://example.com/1) · fit 81%\n",
     ]);
@@ -122,15 +122,15 @@ describe("job-scout by script (#135): a turn, the approval pause and resume", ()
 
   test("AC12: a declined save is not written; the agent answers after the decision", async ({
     app,
-    mockLlm,
-    mcpOf,
+    mockModel,
+    mockMcp,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
-    mockLlm(ShortlistAgent).thenReturn(
+    mockModel(MainRouter).thenReturn(routeTo(ShortlistAgent));
+    mockModel(ShortlistAgent).thenReturn(
       callTool(SaveShortlist, { jobs: [job] }),
       replyWith("Not saved."),
     );
-    const shortlist = mcpOf(ShortlistServer);
+    const shortlist = mockMcp(ShortlistServer);
 
     const paused = await app.execute(ChatWorkflowStart, { text: "save the first job" });
     const pauseId = paused.pending[0]?.pauseId ?? "";

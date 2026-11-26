@@ -20,8 +20,8 @@ const stub = cohereStubForFile();
 const test = testWith(HandbookApplication, { allowNetwork: ["127.0.0.1"] });
 const QUESTION = "When does a new engineer join on-call?";
 
-test("tool mode: the 27th candidate, first after Cohere's reranking, is the first result the agent reads", async ({ app, mockLlm }) => {
-  mockLlm(HandbookAgent).thenReturn(
+test("tool mode: the 27th candidate, first after Cohere's reranking, is the first result the agent reads", async ({ app, mockModel }) => {
+  mockModel(HandbookAgent).thenReturn(
     callTool(SearchHandbookTool, { query: QUESTION }),
     replyWith(`After the third month [${ANSWER.source}].`),
   );
@@ -38,8 +38,8 @@ test("tool mode: the 27th candidate, first after Cohere's reranking, is the firs
   expect(result.spend.byCategory.rag).toBeCloseTo(USD_PER_SEARCH_UNIT, 10);
 });
 
-test("context mode: the knowledge block given with the question starts with the answer", async ({ app, mockLlm }) => {
-  mockLlm(BriefingAgent).thenAnswer((request) => {
+test("context mode: the knowledge block given with the question starts with the answer", async ({ app, mockModel }) => {
+  mockModel(BriefingAgent).respondWith((request) => {
     const input = JSON.stringify(request);
     return replyWith(input.indexOf(ANSWER.source) < input.indexOf("on-call-rota") ? "first" : "not first");
   });

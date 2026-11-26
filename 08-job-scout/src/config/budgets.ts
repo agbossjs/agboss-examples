@@ -5,7 +5,7 @@ import { usd, type Usd } from "@agboss/core/units";
  * Every budget of job-scout (#261): the whole application per day, a tenant per day, and the
  * default execution budget of every workflow. Each execution is checked against them before its
  * first step (one exhausted → it is rejected) and every model call is counted in all of them (the
- * first exhausted stops it with `BudgetExceededError`).
+ * first exhausted stops it with `LimitError.Budget`).
  */
 
 @Budget({

@@ -24,7 +24,7 @@ const witnesses = [
 /** The calls the order's tree recorded, by the store's own intents (`app.outboundCallsOf`). */
 async function recordedCalls(context: ScenarioContext): Promise<string> {
   const [refusal] = fenceRefusals();
-  if (refusal === undefined) return "calls: tree unknown";
+  if (refusal?.tenantId === undefined || refusal.rootExecutionId === undefined) return "calls: tree unknown";
   const calls = await context.app(1).outboundCallsOf({ tenantId: refusal.tenantId, rootExecutionId: refusal.rootExecutionId });
   return `calls: ${calls.map((call) => `${call.name} ${call.status}`).join(", ") || "none"}`;
 }
@@ -60,7 +60,7 @@ async function cancelMidFlight(context: ScenarioContext, point: string, orderId:
 /**
  * A cancel arrives while a payment step is in flight (#909, ADR-0030). The cancel is a durable mark
  * on the fencing store: once `app.cancel` has resolved, no fenced effect starts or commits and no
- * outbound call is recorded or sent for the tree — the write throws `ExecutionCancelFencedError`
+ * outbound call is recorded or sent for the tree — the write throws `ExecutionError.CancelFenced`
  * (`execution.cancelled.fenced`), never at the holder's next renewal. A send already claimed is the
  * one named exception: it may still be answered and recorded.
  *

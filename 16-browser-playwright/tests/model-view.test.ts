@@ -21,8 +21,8 @@ const test = testWith(BrowserPlaywrightApplication, { allowNetwork: ["127.0.0.1"
 const PNG_BASE64_PREFIX = "iVBORw0KGgo";
 
 describe("a page's text passes the PII policy", () => {
-  test("a card number on the page never reaches the model", async ({ app, mockLlm }) => {
-    const agent = mockLlm(WebAgent).thenReturn(callTool(OpenPage, { url: `${running().origin}/billing` }), replyWith("read it"));
+  test("a card number on the page never reaches the model", async ({ app, mockModel }) => {
+    const agent = mockModel(WebAgent).thenReturn(callTool(OpenPage, { url: `${running().origin}/billing` }), replyWith("read it"));
 
     const result = await app.execute(AskWorkflowStart, { text: "open the billing page" });
 
@@ -35,8 +35,8 @@ describe("a page's text passes the PII policy", () => {
 });
 
 describe("a screenshot is a file part", () => {
-  test("the model receives an image part; no base64 in its text, the records or the tool call", async ({ app, mockLlm }) => {
-    const agent = mockLlm(WebAgent).thenReturn(callTool(Screenshot, { url: `${running().origin}/` }), replyWith("I see the home page"));
+  test("the model receives an image part; no base64 in its text, the records or the tool call", async ({ app, mockModel }) => {
+    const agent = mockModel(WebAgent).thenReturn(callTool(Screenshot, { url: `${running().origin}/` }), replyWith("I see the home page"));
 
     const result = await app.execute(AskWorkflowStart, { text: "screenshot the home page" });
 

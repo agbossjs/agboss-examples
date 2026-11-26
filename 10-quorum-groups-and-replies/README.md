@@ -21,7 +21,7 @@ purchase-request-workflow-start
   └→ legal-review ‖ compliance-review ‖ price-benchmark ‖ budget-check        (parallel)
        .arbitratedBy(purchase-policy-arbiter)   (code: cites a clause / source / line, then the threshold; its own Jev only when code rejects)
        .joinQuorumGroups({ deadline: 2 min })
-       .onError(QuorumNotReachedError → purchase-rejected-workflow-finish)
+       .onError(StepError.QuorumNotReached → purchase-rejected-workflow-finish)
        .onGroup([legal, compliance], { priority: 1 }) → purchase-order-agent ── place-purchase-order-tool
                                                      │   ⏸ purchase-approver-tool-approval (free text → purchase-reply-interpreter)
                                                      └→ purchase-ordered-workflow-finish
@@ -29,10 +29,10 @@ purchase-request-workflow-start
 
 budget-raise-request-workflow-start
   └→ ⏸ budget-owner-question (free text → budget-owner-reply-interpreter, code; maxVisits 2)
-       .onError(QuestionFailedError → budget-raise-unasked-workflow-finish)
+       .onError(StepError.ExternalTask → budget-raise-unasked-workflow-finish)
        └→ check-budget-raise-action ─┬→ budget-raised-workflow-finish
                                      └→ budget-owner-question again
-                                          .onError(VisitsLimitExceededError → budget-raise-unresolved-workflow-finish)
+                                          .onError(LimitError.Visits → budget-raise-unresolved-workflow-finish)
 ```
 
 ## 1. Engineering Promises Tested
@@ -42,12 +42,12 @@ budget-raise-request-workflow-start
 | **The first complete group by priority goes on, the rest is cancelled** | Waiting for every review when two decide; a lower-priority group winning a race | `.toParallelAgents(…)` + `.joinQuorumGroups(group(…).priority(n)…, { deadline })`; `result.launches[0].group`, `BranchStatus.Cancelled` | [`tests/workflows/supplier-purchase/supplier-purchase.workflow.test.ts`](./tests/workflows/supplier-purchase/supplier-purchase.workflow.test.ts) › "group 1 … counts first", › "group 2 completes first, yet group 1 (priority 1) still goes on" |
 | **When the groups disagree, the record says who rejected what** | The compliance review cites no clause (failure injection 1) | `@Arbiter` of code with one `@Arbitrate(Agent)` per agent → `BranchVerdict.Rejected` with `rejectedBy`; group 1 cannot complete, group 2 goes on | › "AC2: a compliance answer without a clause is Rejected by purchase-policy-arbiter, and group 2 continues to purchase-deferred-workflow-finish", `npm run demo` (part 2) |
 | **The model arbiter is asked only when the code rejects** | Paying a model for answers code already accepts | one hybrid `@Arbiter({ deps: [ArbiterModel] })` (#1282: no `anyOf`): code decides what it can and asks its own decision model only for a cited review that missed its threshold; the decision is paid under `arbiter:purchase-policy-arbiter` | › "AC2: the model arbiter is asked only when the threshold arbiter rejects", › "every review within the thresholds: the model arbiter is never asked", › "the model arbiter declines too …", [`tests/arbiters/`](./tests/arbiters/) (every `@Arbitrate` path, `testUnit(Arbiter)`) |
-| **No group in time ends on a defined finish** | Both groups fail; the reviews hang past the deadline | `QuorumNotReachedError` → `.onError(QuorumNotReachedError, toFinish(PurchaseRejectedWorkflowFinish))` right after the join; the deadline on the test's `VirtualClock` | › "AC2: both groups failing ends at purchase-rejected-workflow-finish", › "no group complete in 2 minutes" |
+| **No group in time ends on a defined finish** | Both groups fail; the reviews hang past the deadline | `StepError.QuorumNotReached` → `.onError(StepError.QuorumNotReached, toFinish(PurchaseRejectedWorkflowFinish))` right after the join; the deadline on the test's `VirtualClock` | › "AC2: both groups failing ends at purchase-rejected-workflow-finish", › "no group complete in 2 minutes" |
 | **A free-text approval becomes a typed decision, then the run resumes** | The approver writes "ok but only up to $500" | `@ToolApproval({ respondent: PauseRespondent.Delegate, channelInterpreter })` + `app.resume({ pauseId, reply })` → `@ChannelInterpreter` (a chat model) → `ToolCallApprovalDecisionDto` with `overrideInput`: the tool runs at $500 | [`tests/workflows/supplier-purchase/purchase-approval.workflow.test.ts`](./tests/workflows/supplier-purchase/purchase-approval.workflow.test.ts) › "AC3: 'ok but only up to $500' resumes with the amount capped at 500, and the order is capped", › "a plain approval keeps the amount asked", › "AC3: a refusal reply ends without an order" |
-| **An unreadable reply never resumes the run** | The approver answers "🤷" (failure injection 2); a decision outside the tool's schema; an empty reply | `UninterpretableReplyError` (`pause.uninterpretable-reply`), the pause stays `PauseStatus.Pending` — the approver is asked again; an empty reply is `DtoValidationError` before the model is asked | › "AC3: an unreadable reply rejects with UninterpretableReplyError, the pause stays pending, and a second reply resumes", › "an invalid decision … is unreadable too", › "an empty reply is refused before the interpreter is asked", `npm run demo` (part 3) |
+| **An unreadable reply never resumes the run** | The approver answers "🤷" (failure injection 2); a decision outside the tool's schema; an empty reply | `PauseError.UninterpretableReply` (`pause.uninterpretable-reply`), the pause stays `PauseStatus.Pending` — the approver is asked again; an empty reply is `ValidationError.DtoInvalid` before the model is asked | › "AC3: an unreadable reply rejects with PauseError.UninterpretableReply, the pause stays pending, and a second reply resumes", › "an invalid decision … is unreadable too", › "an empty reply is refused before the interpreter is asked", `npm run demo` (part 3) |
 
 | **A question role asks a typed question and puts the typed answer on the path** | A person answers in words ("$2k" is not a limit) | `@ChannelRole({ ask, answer, answerer, replyInterpreter, maxVisits })` + `.toQuestion(Role)`; `result.pending[i].kind === PauseKind.Question`, `step` the question, its `ask` opaque until narrowed (an approval's `ask.arguments` is typed only after `kind === PauseKind.Approval`); the record's `kind` stored | [`tests/workflows/budget-raise/budget-raise.workflow.test.ts`](./tests/workflows/budget-raise/budget-raise.workflow.test.ts) › "the run pauses on the question …", › "'up to $2,000' is read into the typed answer and the line is raised", › "an unreadable reply leaves the question pending …", `npm run demo` (part 4) |
-| **A question asked too often, or that cannot be asked, ends on a finish of its own** | The owner never covers the request (failure injection 3); the owners' inbox is down (failure injection 4) | `maxVisits: 2` → `VisitsLimitExceededError` before a third ask → `.onError(…)`; a `send` that throws → `QuestionFailedError` (`step.question`, `question`) → `.onError(…)` | › "maxVisits: asked twice below the request …", › "a channel that throws is QuestionFailedError …" |
+| **A question asked too often, or that cannot be asked, ends on a finish of its own** | The owner never covers the request (failure injection 3); the owners' inbox is down (failure injection 4) | `maxVisits: 2` → `LimitError.Visits` before a third ask → `.onError(…)`; a `send` that throws → `StepError.ExternalTask` (`step.question`, `question`) → `.onError(…)` | › "maxVisits: asked twice below the request …", › "a channel that throws is StepError.ExternalTask …" |
 
 ## 2. Project Layout
 
@@ -58,7 +58,7 @@ budget-raise-request-workflow-start
 - [`src/channels/`](./src/channels/) — the role `PurchaseApproverChannel` and its one implementation `ConsoleApproverChannel`; the question role `BudgetOwnerQuestion` and `InboxBudgetOwnerChannel`; [`src/services/`](./src/services/) — the stand-ins for the approvers' and the budget owners' chat apps.
 - [`src/reply-interpreters/`](./src/reply-interpreters/) — the purchase reply interpreter (a model) and its prompt; the budget owner's (code).
 - `src/tools/`, `src/actions/`, `src/dto/`, `src/budgets/`, `src/environments/`, `src/model-providers/` — one kind per folder.
-- [`src/scripts/demo.ts`](./src/scripts/demo.ts) — `npm run demo` / `npm run demo:live`; [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's scripted OpenRouter (tests script models with `mockLlm` instead).
+- [`src/scripts/demo.ts`](./src/scripts/demo.ts) — `npm run demo` / `npm run demo:live`; [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's scripted OpenRouter (tests script models with `mockModel` instead).
 - `tests/` mirrors `src/`.
 
 ## 3. Commands
@@ -78,7 +78,7 @@ store):
    cap and the tool call it ran — at $500;
 2. the disagreement: the compliance review `Rejected` by `purchase-policy-arbiter`, price + budget
    winning, the deferred finish;
-3. "🤷" → `UninterpretableReplyError` with the pause still `pending`, then a readable reply that
+3. "🤷" → `PauseError.UninterpretableReply` with the pause still `pending`, then a readable reply that
    finishes the order;
 4. the budget raise paused on its question (`kind` `question`), "up to $500" asking again, "fine, up
    to $2,000" raising the line — the owner asked exactly twice.
@@ -108,7 +108,7 @@ failure injection).
 
 - One arbiter per launch (`.arbitratedBy(PurchasePolicyArbiter)`): the former chain (`WellFormed`, then `anyOf(Threshold, Judgement)`) is one
   class whose `@Arbitrate(Agent)` methods check the citation, then the threshold, then ask the arbiter's own decision model (`deps: [ArbiterModel]`).
-- `.joinQuorumGroups({ deadline })`, then `.onError(QuorumNotReachedError, …)` right after the join, then one `.onGroup([targets], { priority }, path)` per group.
+- `.joinQuorumGroups({ deadline })`, then `.onError(StepError.QuorumNotReached, …)` right after the join, then one `.onGroup([targets], { priority }, path)` per group.
 - The approval is a `@ToolApproval` and the budget owner's question an `@ExternalTask`; their free-text readers are `@ChannelInterpreter`s named by
   `channelInterpreter`; each has a `@Channel({ target, ttl })` listed in `@Application({ channels })`. A flow step is `.toExternalTask(...)`.
 - Providers are drivers (`OpenRouterDriver`, `DecisionsDriver`); the application's `modelProvider` is OpenRouter and the arbiter and the model

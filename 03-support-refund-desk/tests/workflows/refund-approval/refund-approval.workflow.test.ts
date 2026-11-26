@@ -1,4 +1,4 @@
-import { ExecutionStatus, PauseClosedError, PauseClosedReason, PausedExecutionRepository, PauseResolution } from "@agboss/core";
+import { ExecutionStatus, PauseError, PauseClosedReason, PausedExecutionRepository, PauseResolution } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { describe, expect } from "vitest";
@@ -174,7 +174,7 @@ describe("a deadline the person can move, a reminder before it, a default when n
       () => undefined,
       (error: unknown) => error,
     );
-    expect(refusal).toBeInstanceOf(PauseClosedError);
+    expect(refusal).toBeInstanceOf(PauseError.Closed);
   });
 });
 

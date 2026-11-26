@@ -1,4 +1,4 @@
-import { PauseExpiredError, Workflow, toExternalTask, onStart, Ttl } from "@agboss/core";
+import { StepError, Workflow, toExternalTask, onStart, Ttl } from "@agboss/core";
 import { SettleEscalatedRefundAction } from "../../actions/settle-refund.action.js";
 import { SettleRefundAction } from "../../actions/settle-refund.action.js";
 import { RefundApproverExternalTask } from "../../channels/refund-approver.external-task.js";
@@ -10,7 +10,7 @@ import { RefundApprovalWorkflowStart } from "./refund-approval.workflow-start.js
 
 /**
  * The on-call support lead has `APPROVAL_EXPIRES_IN` to answer. When nobody does, the pause closes
- * `expired`, the question step fails with `PauseExpiredError` and the side path asks the head of
+ * `expired`, the question step fails with `StepError.PauseExpired` and the side path asks the head of
  * support, whose answer goes on to its own settle step.
  */
 @Workflow({
@@ -21,7 +21,7 @@ import { RefundApprovalWorkflowStart } from "./refund-approval.workflow-start.js
     onStart(RefundApprovalWorkflowStart)
       .toExternalTask(RefundApproverExternalTask)
       .onError(
-        PauseExpiredError,
+        StepError.PauseExpired,
         toExternalTask(SeniorRefundApproverExternalTask)
           .toAction(SettleEscalatedRefundAction)
           .toFinish(RefundApprovalWorkflowFinish),

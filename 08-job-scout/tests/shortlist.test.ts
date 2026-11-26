@@ -60,9 +60,9 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   scripted(
     "AC4: tested alone with a stub server — a folder without the file is an empty shortlist",
-    async ({ app, mcpOf }) => {
+    async ({ app, mockMcp }) => {
       const written: string[] = [];
-      mcpOf(ShortlistServer).thenReturn({
+      mockMcp(ShortlistServer).thenReturn({
         list_directory: () => Promise.resolve({ content: "" }),
         write_file: ({ content }) => {
           written.push(content);
@@ -84,10 +84,10 @@ describe("the shortlist: MCP tools with the server injected (#109)", () => {
 
   scripted(
     "only the save waits for the user's approval: reading the shortlist goes on at once",
-    async ({ app, mockLlm, mcpOf }) => {
-      mockLlm(MainRouter).thenReturn(routeTo(ShortlistAgent));
-      mockLlm(ShortlistAgent).thenReturn(callTool(ReadShortlist, {}), replyWith("It is empty."));
-      mcpOf(ShortlistServer).thenReturn({
+    async ({ app, mockModel, mockMcp }) => {
+      mockModel(MainRouter).thenReturn(routeTo(ShortlistAgent));
+      mockModel(ShortlistAgent).thenReturn(callTool(ReadShortlist, {}), replyWith("It is empty."));
+      mockMcp(ShortlistServer).thenReturn({
         list_directory: () => Promise.resolve({ content: "" }),
       });
 

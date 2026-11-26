@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason, type App } from "@agboss/core";
+import { createApp, ExecutionStatus, PauseError, type PauseClosedReason, type App } from "@agboss/core";
 import { seconds, type Milliseconds } from "@agboss/core/units";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
@@ -33,9 +33,9 @@ export type PassTime = (duration: Milliseconds) => Promise<void>;
  * 1. A $1,450 refund is put to the on-call support lead (`refund-approver-external-task`, an answer
  *    within `APPROVAL_EXPIRES_IN`) and the run pauses.
  * 2. The deadline passes. The pause closes `expired`, the question step fails with
- *    `PauseExpiredError` and `.onError(PauseExpiredError, toExternalTask(SeniorRefundApproverExternalTask))`
+ *    `StepError.PauseExpired` and `.onError(StepError.PauseExpired, toExternalTask(SeniorRefundApproverExternalTask))`
  *    asks the head of support — a pause of its own.
- * 3. The first approver answers late: `PauseClosedError`, `reason: expired`.
+ * 3. The first approver answers late: `PauseError.Closed`, `reason: expired`.
  * 4. The head of support approves; the refund is issued once and the run finishes.
  * 5. The `refund-desk-pause-listener` wrote "opened" and "closed" for each of the two pauses.
  */
@@ -78,7 +78,7 @@ export async function driveApprovalEscalation(
       { tenantId: "acme", actor: { id: "lead-1" } },
     );
   } catch (error) {
-    lateAnswerRefusedWith = error instanceof PauseClosedError ? error.reason : undefined;
+    lateAnswerRefusedWith = error instanceof PauseError.Closed ? error.reason : undefined;
   }
 
   const done = await app.resume(

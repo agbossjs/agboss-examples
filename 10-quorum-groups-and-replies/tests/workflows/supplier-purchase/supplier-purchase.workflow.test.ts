@@ -1,4 +1,4 @@
-import { BranchStatus, BranchVerdict, PauseKind, QuorumNotReachedError } from "@agboss/core";
+import { BranchStatus, BranchVerdict, PauseKind, StepError } from "@agboss/core";
 import { callTool, decideWith, step, TestConcurrency, testWith, waitFor } from "@agboss/core/testing";
 import { minutes, seconds, usd } from "@agboss/core/units";
 import { describe, expect, vi } from "vitest";
@@ -51,12 +51,12 @@ const verdictsOf = (launch: { branches: readonly { nodeId: string; status: Branc
 describe("AC2: the first complete group by priority goes on", () => {
   legalFirst(
     "group 1 (legal + compliance) counts first: it goes on to the order, the commercial reviews are cancelled",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance());
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance());
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
+      mockModel(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
@@ -86,12 +86,12 @@ describe("AC2: the first complete group by priority goes on", () => {
 
   commercialFirst(
     "group 2 completes first, yet group 1 (priority 1) still goes on once it completes",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance());
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance());
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
+      mockModel(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
@@ -111,11 +111,11 @@ describe("AC2: the first complete group by priority goes on", () => {
 describe("AC2 (failure injection): the groups disagree", () => {
   legalFirst(
     "AC2: a compliance answer without a clause is Rejected by purchase-policy-arbiter, and group 2 continues to purchase-deferred-workflow-finish",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance(COMPLIANCE_UNCITED));
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance(COMPLIANCE_UNCITED));
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
@@ -152,22 +152,22 @@ describe("AC2 (failure injection): the groups disagree", () => {
         budgetLine: "OPEX-IT-2026",
       });
       // the well-formed arbiter rejects first: the policy arbiters are never asked about it
-      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(0);
+      expect(mockModel(PurchasePolicyArbiter).requests).toHaveLength(0);
     },
   );
 
   legalFirst(
     "AC2: both groups failing ends at purchase-rejected-workflow-finish",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance(COMPLIANCE_UNCITED));
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget({ ...BUDGET_OK, budgetLine: "" }));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance(COMPLIANCE_UNCITED));
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget({ ...BUDGET_OK, budgetLine: "" }));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
       expect(result.launches[0]?.isQuorumReached).toBe(false);
-      expect(result).toHaveHandledError(QuorumNotReachedError);
+      expect(result).toHaveHandledError(StepError.QuorumNotReached);
       expect(result).toFinishWith(PurchaseRejectedWorkflowFinish, LAPTOPS);
     },
   );
@@ -176,18 +176,18 @@ describe("AC2 (failure injection): the groups disagree", () => {
 describe("AC2: the arbiter chain — code first, the model only when the code rejects", () => {
   legalFirst(
     "AC2: the model arbiter is asked only when the threshold arbiter rejects",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal({ ...LEGAL_CLEARED, isCleared: false, findings: "Liability uncapped; the supplier agreed to sign our rider." }));
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance());
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.9 }, { cost: usd(0.00002) }));
-      mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal({ ...LEGAL_CLEARED, isCleared: false, findings: "Liability uncapped; the supplier agreed to sign our rider." }));
+      mockModel(ComplianceReviewAgent).thenReturn(compliance());
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
+      mockModel(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.9 }, { cost: usd(0.00002) }));
+      mockModel(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
       // one decision: the legal review the thresholds rejected — never the three that cleared them
-      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(1);
+      expect(mockModel(PurchasePolicyArbiter).requests).toHaveLength(1);
       expect(result.launches[0]?.group?.priority).toBe(1);
       expect(result.spend.byCaller["arbiter:purchase-policy-arbiter"]).toBe(0.00002);
     },
@@ -195,28 +195,28 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
 
   legalFirst(
     "every review within the thresholds: the model arbiter is never asked, $0 for arbitration",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance());
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance());
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
+      mockModel(PurchaseOrderAgent).thenReturn(callTool(PlacePurchaseOrderTool, LAPTOP_ORDER));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
-      expect(mockLlm(PurchasePolicyArbiter).requests).toHaveLength(0);
+      expect(mockModel(PurchasePolicyArbiter).requests).toHaveLength(0);
       expect(result.spend.byCaller["arbiter:purchase-policy-arbiter"]).toBeUndefined();
     },
   );
 
   legalFirst(
     "the model arbiter declines too: the review is Rejected by both policy arbiters, group 2 goes on",
-    async ({ app, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(compliance({ ...COMPLIANCE_OK, isCompliant: false, findings: "Sanctions hit on the parent company." }));
-      mockLlm(PriceBenchmarkAgent).thenReturn(price());
-      mockLlm(BudgetCheckAgent).thenReturn(budget());
-      mockLlm(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.05 }));
+    async ({ app, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(compliance({ ...COMPLIANCE_OK, isCompliant: false, findings: "Sanctions hit on the parent company." }));
+      mockModel(PriceBenchmarkAgent).thenReturn(price());
+      mockModel(BudgetCheckAgent).thenReturn(budget());
+      mockModel(PurchasePolicyArbiter).thenReturn(decideWith({ counts: 0.05 }));
 
       const result = await app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
 
@@ -237,24 +237,24 @@ describe("AC2: the arbiter chain — code first, the model only when the code re
 
 describe("the deadline", () => {
   legalFirst(
-    "no group complete in 2 minutes: QuorumNotReachedError → purchase-rejected-workflow-finish",
-    async ({ app, clock, mockLlm }) => {
-      mockLlm(LegalReviewAgent).thenReturn(legal());
-      mockLlm(ComplianceReviewAgent).thenReturn(waitFor(minutes(5)), compliance());
-      mockLlm(PriceBenchmarkAgent).thenReturn(waitFor(minutes(5)), price());
-      mockLlm(BudgetCheckAgent).thenReturn(waitFor(minutes(5)), budget());
+    "no group complete in 2 minutes: StepError.QuorumNotReached → purchase-rejected-workflow-finish",
+    async ({ app, clock, mockModel }) => {
+      mockModel(LegalReviewAgent).thenReturn(legal());
+      mockModel(ComplianceReviewAgent).thenReturn(waitFor(minutes(5)), compliance());
+      mockModel(PriceBenchmarkAgent).thenReturn(waitFor(minutes(5)), price());
+      mockModel(BudgetCheckAgent).thenReturn(waitFor(minutes(5)), budget());
 
       const running = app.execute(PurchaseRequestWorkflowStart, LAPTOPS);
       // the deadline is taken at dispatch: let the launch start before time moves
       await vi.waitFor(() => {
-        expect(mockLlm(ComplianceReviewAgent).requests).toHaveLength(1);
+        expect(mockModel(ComplianceReviewAgent).requests).toHaveLength(1);
       });
       // the holder renews its lease as time passes: advance in steps shorter than the lease
       for (let elapsed = 0; elapsed < 130; elapsed += 10) await clock.advance(seconds(10));
       const result = await running;
 
       expect(result.launches[0]?.isQuorumReached).toBe(false);
-      expect(result).toHaveHandledError(QuorumNotReachedError);
+      expect(result).toHaveHandledError(StepError.QuorumNotReached);
       expect(result).toFinishWith(PurchaseRejectedWorkflowFinish, LAPTOPS);
     },
   );

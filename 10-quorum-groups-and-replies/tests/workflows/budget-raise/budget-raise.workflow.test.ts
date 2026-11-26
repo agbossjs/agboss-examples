@@ -1,4 +1,4 @@
-import { Channel, ExecutionStatus, PauseRespondent, PausedExecutionRepository, PauseKind, PauseStatus, QuestionFailedError, UninterpretableReplyError, VisitsLimitExceededError, type ChannelOutcome } from "@agboss/core";
+import { Channel, ExecutionStatus, PauseRespondent, PausedExecutionRepository, PauseKind, PauseStatus, StepError, PauseError, LimitError, type ChannelOutcome } from "@agboss/core";
 import { testWith, type WorkflowFixtures } from "@agboss/core/testing";
 import { describe, expect } from "vitest";
 import { days } from "@agboss/core/units";
@@ -47,8 +47,8 @@ const OWNER = { actor: { id: "budget-owner-lee" } };
  * The owners' inbox, replaced: what the channel posted — each ask with its pause id, the channel's
  * key, never in `result.pending`.
  */
-function inboxOf(mockOf: WorkflowFixtures["mockOf"]) {
-  const inbox = mockOf(BudgetOwnerInbox);
+function inboxOf(mockService: WorkflowFixtures["mockService"]) {
+  const inbox = mockService(BudgetOwnerInbox);
   inbox.post.mockResolvedValue(undefined);
   const asked = () => inbox.post.mock.calls.map(([request]) => request);
   const newestPauseId = (): string => {
@@ -60,8 +60,8 @@ function inboxOf(mockOf: WorkflowFixtures["mockOf"]) {
 }
 
 describe("AC4: an external task asks the budget owner and puts the typed answer on the path", () => {
-  test("the run pauses on the question: kind Question, its step, its ask; the owner asked once", async ({ app, mockOf }) => {
-    const { asked, newestPauseId } = inboxOf(mockOf);
+  test("the run pauses on the question: kind Question, its step, its ask; the owner asked once", async ({ app, mockService }) => {
+    const { asked, newestPauseId } = inboxOf(mockService);
     const paused = await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
 
     expect(paused.status).toBe(ExecutionStatus.Paused);
@@ -84,8 +84,8 @@ describe("AC4: an external task asks the budget owner and puts the typed answer 
     expect(asked()).toHaveLength(1);
   });
 
-  test("'up to $2,000' is read into the typed answer and the line is raised", async ({ app, mockOf }) => {
-    const { newestPauseId } = inboxOf(mockOf);
+  test("'up to $2,000' is read into the typed answer and the line is raised", async ({ app, mockService }) => {
+    const { newestPauseId } = inboxOf(mockService);
     await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
 
     const done = await app.resume({ pauseId: newestPauseId(), reply: "ok, up to $2,000" }, { ...OWNER, includeRecord: true });
@@ -100,13 +100,13 @@ describe("AC4: an external task asks the budget owner and puts the typed answer 
     ]);
   });
 
-  test("an unreadable reply leaves the question pending; a readable one goes on", async ({ app, mockOf }) => {
-    const { newestPauseId } = inboxOf(mockOf);
+  test("an unreadable reply leaves the question pending; a readable one goes on", async ({ app, mockService }) => {
+    const { newestPauseId } = inboxOf(mockService);
     await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
     const pauseId = newestPauseId();
 
     for (const reply of ["let me think", "up to $2k", "$2.000"])
-      await expect(app.resume({ pauseId, reply }, OWNER)).rejects.toBeInstanceOf(UninterpretableReplyError);
+      await expect(app.resume({ pauseId, reply }, OWNER)).rejects.toBeInstanceOf(PauseError.UninterpretableReply);
     const stored = await app.resolve(PausedExecutionRepository).findByTenantIdAndPauseId("default", pauseId);
     expect(stored?.status).toBe(PauseStatus.Pending);
 
@@ -116,8 +116,8 @@ describe("AC4: an external task asks the budget owner and puts the typed answer 
 });
 
 describe("AC4 (failure injection): the owner never covers it, or cannot be asked", () => {
-  test("maxVisits: asked twice below the request, the third ask is VisitsLimitExceededError → unresolved", async ({ app, mockOf }) => {
-    const { asked, newestPauseId } = inboxOf(mockOf);
+  test("maxVisits: asked twice below the request, the third ask is LimitError.Visits → unresolved", async ({ app, mockService }) => {
+    const { asked, newestPauseId } = inboxOf(mockService);
     await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
     const again = await app.resume({ pauseId: newestPauseId(), reply: "up to $500" }, OWNER);
     expect(again.status).toBe(ExecutionStatus.Paused);
@@ -130,12 +130,12 @@ describe("AC4 (failure injection): the owner never covers it, or cannot be asked
     expect(asked()).toHaveLength(2); // never asked a third time
     expect(done.handledErrors).toEqual([
       expect.objectContaining({
-        error: expect.objectContaining({ code: VisitsLimitExceededError.code }) as unknown,
+        error: expect.objectContaining({ code: LimitError.Visits.code }) as unknown,
       }),
     ]);
   });
 
-  inboxDown("a channel that throws is QuestionFailedError, taken by .onError → unasked", async ({ app }) => {
+  inboxDown("a channel that throws is StepError.ExternalTask, taken by .onError → unasked", async ({ app }) => {
     const done = await app.execute(BudgetRaiseRequestWorkflowStart, RAISE);
 
     expect(done).toFinishWith(BudgetRaiseUnaskedWorkflowFinish);
@@ -143,7 +143,7 @@ describe("AC4 (failure injection): the owner never covers it, or cannot be asked
     expect(done.handledErrors).toEqual([
       expect.objectContaining({
         error: expect.objectContaining({
-          code: QuestionFailedError.code,
+          code: StepError.ExternalTask.code,
           message: expect.stringContaining("inbox unreachable") as unknown,
           details: expect.objectContaining({ question: "budget-owner-external-task" }) as unknown,
         }) as unknown,

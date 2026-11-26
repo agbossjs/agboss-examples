@@ -25,7 +25,7 @@ export const ps7: PaymentScenario = {
       right: { charges: 1, lost: 0, notes: ["idempotency.key-conflict"] },
       async run(context) {
         const charge = { orderId: "ps7-order", amountCents: 2500 };
-        context.mockLlm(PaymentAgent).thenReturn(
+        context.mockModel(PaymentAgent).thenReturn(
           // two calls in one turn
           callTools(callTool(ChargeOrderTool, charge), callTool(ChargeOrderTool, charge)),
           callTool(ChargeOrderTool, charge),

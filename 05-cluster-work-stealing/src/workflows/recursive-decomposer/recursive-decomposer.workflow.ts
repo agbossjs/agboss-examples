@@ -1,4 +1,4 @@
-import { StepFailedError, Workflow, toAction, onStart, toWorkflow, Ttl, toFinish } from "@agboss/core";
+import { StepError, Workflow, toAction, onStart, toWorkflow, Ttl, toFinish } from "@agboss/core";
 import { MarkShardFailedAction } from "../../actions/mark-shard-failed.action.js";
 import { MergeShardsAction } from "../../actions/merge-shards.action.js";
 import { SplitShardAction } from "../../actions/split-shard.action.js";
@@ -15,7 +15,7 @@ import { RecursiveDecomposerWorkflowStart } from "./recursive-decomposer.workflo
     onStart(RecursiveDecomposerWorkflowStart)
       .toAgent(ShardAnalyzerAgent)
       .onError(
-        StepFailedError,
+        StepError,
         toAction(MarkShardFailedAction)
           .toFinish(RecursiveDecomposerFailedWorkflowFinish),
       )

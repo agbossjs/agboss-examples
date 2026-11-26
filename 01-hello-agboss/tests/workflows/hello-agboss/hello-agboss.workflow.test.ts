@@ -40,10 +40,10 @@ const DEFAULT_EXEC_OPTIONS = {
 
 test("routes general product inquiries to SupportSpecialistAgent and finishes with SupportReplyDto", async ({
   app,
-  mockLlm,
+  mockModel,
 }) => {
-  mockLlm(IntakeTriageRouter).thenReturn(routeTo(SupportSpecialistAgent));
-  mockLlm(SupportSpecialistAgent).thenReturn(
+  mockModel(IntakeTriageRouter).thenReturn(routeTo(SupportSpecialistAgent));
+  mockModel(SupportSpecialistAgent).thenReturn(
     replyWith(SupportReplyDto, {
       handledBy: "support",
       answer: "AGBoss validates workflow graphs statically via `agboss check`.",
@@ -74,12 +74,12 @@ test("routes general product inquiries to SupportSpecialistAgent and finishes wi
   });
 });
 
-test("routes pricing inquiries to QuoteAdvisorAgent and mocks PricingCatalogService via mockOf() with zero network", async ({
+test("routes pricing inquiries to QuoteAdvisorAgent and mocks PricingCatalogService via mockService() with zero network", async ({
   app,
-  mockLlm,
-  mockOf,
+  mockModel,
+  mockService,
 }) => {
-  mockOf(PricingCatalogService).fetchQuote.mockResolvedValue({
+  mockService(PricingCatalogService).fetchQuote.mockResolvedValue({
     tier: "pro",
     seats: 12,
     monthlyTotalUsd: 805.8,
@@ -87,8 +87,8 @@ test("routes pricing inquiries to QuoteAdvisorAgent and mocks PricingCatalogServ
     currency: "USD",
   });
 
-  mockLlm(IntakeTriageRouter).thenReturn(routeTo(QuoteAdvisorAgent));
-  mockLlm(QuoteAdvisorAgent)
+  mockModel(IntakeTriageRouter).thenReturn(routeTo(QuoteAdvisorAgent));
+  mockModel(QuoteAdvisorAgent)
     .thenReturn(callTool(CalculateQuoteTool, { tier: "pro", seats: 12 }))
     .thenReturn(
       replyWith(SupportReplyDto, {
@@ -111,7 +111,7 @@ test("routes pricing inquiries to QuoteAdvisorAgent and mocks PricingCatalogServ
   expect(result).toFollowPath([HelloStart, IntakeTriageRouter, QuoteAdvisorAgent, HelloFinish]);
   expect(result).toHaveCalledTools([CalculateQuoteTool]);
   expect(result).toHaveToolCallMatching(CalculateQuoteTool, { tier: "pro", seats: 12 });
-  expect(mockOf(PricingCatalogService).fetchQuote.mock.calls).toEqual([["pro", 12]]);
+  expect(mockService(PricingCatalogService).fetchQuote.mock.calls).toEqual([["pro", 12]]);
   expect(result.toolCalls[0]?.output).toEqual({
     tier: "pro",
     seats: 12,

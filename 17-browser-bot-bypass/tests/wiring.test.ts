@@ -53,8 +53,8 @@ describe("the tool reads a page through the shared browser", () => {
     expect(app.resolve(StealthBrowser).handle.activeContexts).toBe(0);
   });
 
-  test("a model run: the agent opens the page with the tool and answers", async ({ app, mockLlm }) => {
-    mockLlm(StealthWebAgent).thenReturn(callTool(OpenPageStealth, { url: PRICING }), replyWith("Starter is 12 USD"));
+  test("a model run: the agent opens the page with the tool and answers", async ({ app, mockModel }) => {
+    mockModel(StealthWebAgent).thenReturn(callTool(OpenPageStealth, { url: PRICING }), replyWith("Starter is 12 USD"));
 
     const result = await app.execute(AskWorkflowStart, { text: "what does Starter cost?" });
 
@@ -194,10 +194,10 @@ describe("the browser's life", () => {
 });
 
 describe("timeouts and cancellation", () => {
-  test("a page that never answers: the tool's 30 s timeout, on the application's clock, ends the call and closes its context", async ({ app, clock, mockLlm }) => {
+  test("a page that never answers: the tool's 30 s timeout, on the application's clock, ends the call and closes its context", async ({ app, clock, mockModel }) => {
     await app.ready();
     const { handle } = app.resolve(StealthBrowser);
-    mockLlm(StealthWebAgent).thenReturn(callTool(OpenPageStealth, { url: SLOW_URL }), replyWith("the page did not answer"));
+    mockModel(StealthWebAgent).thenReturn(callTool(OpenPageStealth, { url: SLOW_URL }), replyWith("the page did not answer"));
 
     const run = app.execute(AskWorkflowStart, { text: "open the slow page" });
     await until(() => handle.activeContexts === 1);

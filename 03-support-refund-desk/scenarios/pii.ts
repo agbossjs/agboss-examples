@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, PiiKind, PiiRefusedError } from "@agboss/core";
+import { createApp, PiiKind, PiiError } from "@agboss/core";
 import { LangfuseTracer } from "@agboss/langfuse";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
@@ -71,7 +71,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
       throw new Error("Scenario A (PII Token Roundtrip) assertion failed");
     }
 
-    // 2. Verify raw payment card number is blocked with PiiRefusedError before reaching model/tools
+    // 2. Verify raw payment card number is blocked with PiiError.Refused before reaching model/tools
     let blockedCardRefusalKind = "";
     try {
       await app.execute(
@@ -87,7 +87,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
         },
       );
     } catch (error) {
-      if (error instanceof PiiRefusedError && error.kind === PiiKind.CardNumber.id) {
+      if (error instanceof PiiError.Refused && error.kind === PiiKind.CardNumber.id) {
         blockedCardRefusalKind = error.kind;
       } else {
         throw error;
@@ -95,7 +95,7 @@ export async function runPiiScenario(): Promise<PiiScenarioResult> {
     }
 
     if (blockedCardRefusalKind !== PiiKind.CardNumber.id) {
-      throw new Error("Expected PiiRefusedError for CardNumber");
+      throw new Error("Expected PiiError.Refused for CardNumber");
     }
 
     // 3. Verify Langfuse (@langfuse/langchain + @langfuse/otel) OTel span export & PII masking (#120 AC7)

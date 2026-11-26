@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
+import { createApp, ExecutionStatus, PauseError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks, getClosedChannelAsks, resetChannelRecords, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
@@ -27,7 +27,7 @@ export interface CancelAndRollbackScenarioResult {
  * 4. AGBoss closes the pause (`PauseResolution.Cancelled`), tells the channel once through
  *    `onPauseClosed` (`PauseClosedReason.Cancelled`) and runs open compensations
  *    (`CancelHotelCompensationAction` -> `CancelFlightCompensationAction`) in LIFO order.
- * 5. A late `app.resume({ pauseId, decision })` throws `PauseClosedError` (`reason: cancelled`).
+ * 5. A late `app.resume({ pauseId, decision })` throws `PauseError.Closed` (`reason: cancelled`).
  */
 export async function runCancelAndRollbackScenario(
   bookingId = "SCENARIO-C",
@@ -68,7 +68,7 @@ export async function runCancelAndRollbackScenario(
         { actor: { id: "manager-42" } },
       );
     } catch (error) {
-      lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;
+      lateResumeRejectedWithPauseClosed = error instanceof PauseError.Closed ? error.reason : undefined;
     }
 
     return {

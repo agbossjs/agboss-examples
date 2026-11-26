@@ -30,7 +30,7 @@ put this project's own rules below, never there.
 - All components must remain stateless (`agboss/no-component-state`).
 - Default `npm run check`, `npm test`, and `npm run demo` must run 100% offline: the demo's models are
   `fixtures/offline-openrouter.ts` and its boards `fixtures/greenhouse/*.json`; tests script or replay
-  every model (`mockLlm`, `tests/cassettes/`).
+  every model (`mockModel`, `tests/cassettes/`).
 - Keep the layout by kind (`src/agents/`, `src/tools/`, `src/mcp/`, …): `tests/layout.test.ts` checks it.
 - The shortlist MCP server may touch only `JOB_SCOUT_DIR` (default `~/job-scout`); tests and the demo
   always point it at a temporary folder.

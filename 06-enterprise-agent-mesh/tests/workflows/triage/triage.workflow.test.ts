@@ -4,7 +4,7 @@ import {
   createApp,
   ExecutionStatus,
   ToolCallStatus,
-  MeshLoopDetectedError,
+  LimitError,
 } from "@agboss/core";
 import {
   A2AError,
@@ -156,7 +156,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
 
   triageTest(
     "executes TriageGatewayApplication across live loopback BillingApplication A2A and Catalog MCP",
-    async ({ app, mockLlm, mcpOf, clock }) => {
+    async ({ app, mockModel, mockMcp, clock }) => {
       // the billing server below runs on the real time and checks the envelope's replay window
       // against it; the gateway signs on the test's clock — so bring the test's clock to the real now
       const behind = new Date().getTime() - clock.now().getTime();
@@ -168,7 +168,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
         apiKey: "key-acme",
       });
 
-      mcpOf(CatalogMcpServer).thenReturn({
+      mockMcp(CatalogMcpServer).thenReturn({
         "lookup-sku-tool": ({ sku }) =>
           Promise.resolve({
             sku,
@@ -178,7 +178,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
           }),
       });
 
-      mockLlm(TriageAgent).thenReturn(
+      mockModel(TriageAgent).thenReturn(
         callTool(SearchCatalogTool, { sku: "SKU-GPU-900" }),
         callTool(AskBillingTool, {
           invoiceId: "INV-5001",
@@ -223,12 +223,13 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
   );
 
   triageTest(
-    "routes TriageWorkflow to MeshLoopFallbackWorkflowFinish via .onError(MeshLoopDetectedError, ...)",
-    async ({ app, mockLlm, mockOf }) => {
+    "routes TriageWorkflow to MeshLoopFallbackWorkflowFinish via .onError(LimitError.MeshLoop, ...)",
+    async ({ app, mockModel, mockService }) => {
       // the billing call refused as a loop: billing-application is already in the call chain
-      mockOf(BillingA2AAgent).execute.mockRejectedValue(
-        new MeshLoopDetectedError({
-          entry: {
+      mockService(BillingA2AAgent).execute.mockRejectedValue(
+        new LimitError.MeshLoop({
+          entry: "billing-application › billing-workflow-start",
+          meshEntry: {
             application: "billing-application",
             start: "billing-workflow-start",
           },
@@ -241,7 +242,7 @@ describe("Enterprise Agent Mesh — A2A, MCP, Ed25519 Envelopes, Loop Guard & Fe
           ],
         }),
       );
-      mockLlm(TriageAgent).thenReturn(
+      mockModel(TriageAgent).thenReturn(
         callTool(AskBillingTool, {
           invoiceId: "INV-5001",
           question: "Trigger cyclic call",

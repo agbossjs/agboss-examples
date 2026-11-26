@@ -50,7 +50,7 @@ export function scenarioTest(
     ],
   });
   return (name, check) => {
-    test(name, async ({ apps, clock, leases, mockLlm }) => {
+    test(name, async ({ apps, clock, leases, mockModel }) => {
       stub.reset({
         ...row.stub,
         level: row.level,
@@ -73,7 +73,7 @@ export function scenarioTest(
           stub,
           variant,
           app,
-          mockLlm,
+          mockModel,
         });
         // "check your own gateway call" is not the example's report
         if (options.operations === undefined && expected !== undefined)

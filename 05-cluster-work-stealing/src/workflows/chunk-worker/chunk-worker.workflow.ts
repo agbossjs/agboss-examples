@@ -1,4 +1,4 @@
-import { ChildPlacement, StepFailedError, Workflow, WorkflowSettings, toAction, type IncompatibleResume, ResumeDecision, type WorkflowDefinition, onStart, onAction, Ttl } from "@agboss/core";
+import { ChildPlacement, StepError, Workflow, WorkflowSettings, toAction, type IncompatibleResume, ResumeDecision, type WorkflowDefinition, onStart, onAction, Ttl } from "@agboss/core";
 import { CommitChunkEffectAction } from "../../actions/commit-chunk-effect.action.js";
 import { MarkChunkFailedAction } from "../../actions/mark-chunk-failed.action.js";
 import { ChunkWorkerAgent } from "../../agents/chunk-worker/chunk-worker.agent.js";
@@ -29,9 +29,9 @@ const resumeVersionPolicy = (resume: IncompatibleResume): ResumeDecision => {
   flow: [
     onStart(ChunkWorkerWorkflowStart)
       .toAgent(ChunkWorkerAgent)
-      .onError(StepFailedError, toAction(MarkChunkFailedAction))
+      .onError(StepError, toAction(MarkChunkFailedAction))
       .toAction(CommitChunkEffectAction)
-      .onError(StepFailedError, toAction(MarkChunkFailedAction))
+      .onError(StepError, toAction(MarkChunkFailedAction))
       .toFinish(ChunkWorkerWorkflowFinish),
 
     onAction(MarkChunkFailedAction)

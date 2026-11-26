@@ -1,4 +1,4 @@
-import { ExecutionLeaseLostError, ExecutionLeaseRepository, ExecutionStatus, IncompatibleResumeError } from "@agboss/core";
+import { ExecutionLeaseLostError, ExecutionLeaseRepository, ExecutionStatus, ExecutionError } from "@agboss/core";
 import { callTool, failWith, ModelFailure, replyWith, studioOf, testWith, waitFor } from "@agboss/core/testing";
 import { seconds } from "@agboss/core/units";
 import { afterEach, describe, expect, it } from "vitest";
@@ -30,11 +30,11 @@ afterEach(() => {
 describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow", () => {
   clusterTest(
     "fans out ChunkWorkerWorkflow with ChildPlacement.AnyInstance across 2 cluster instances and isolates soft-failed chunks",
-    async ({ apps, mockLlm }) => {
+    async ({ apps, mockModel }) => {
       const [coordinatorApp] = apps;
       expect(apps.length).toBe(2);
 
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "batch-200-chunk-1" } })
         .thenReturn(
           replyWith(ChunkDraftDto, {
@@ -42,7 +42,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
             summary: "Completed #1",
           }),
         );
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "batch-200-chunk-2" } })
         .thenReturn(
           replyWith(ChunkDraftDto, {
@@ -50,10 +50,10 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
             summary: "Completed #2",
           }),
         );
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "batch-200-chunk-3" } })
         .thenReturn(failWith(ModelFailure.RateLimited));
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "batch-200-chunk-4" } })
         .thenReturn(
           replyWith(ChunkDraftDto, {
@@ -91,22 +91,22 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
 
   clusterTest(
     "recursively decomposes ThisWorkflow up to maxDepth: 2 and merges child shard reports",
-    async ({ app, mockLlm }) => {
-      mockLlm(ShardAnalyzerAgent)
+    async ({ app, mockModel }) => {
+      mockModel(ShardAnalyzerAgent)
         .when({ node: { nodeLabel: "shard-root" } })
         .thenReturn(
           replyWith(DecomposeSplitDecisionDto, {
             reason: "Root shard exceeds single-worker threshold",
           }),
         );
-      mockLlm(ShardAnalyzerAgent)
+      mockModel(ShardAnalyzerAgent)
         .when({ node: { nodeLabel: "shard-root/L" } })
         .thenReturn(
           replyWith(DecomposedLeafDto, {
             report: "Left leaf analyzed",
           }),
         );
-      mockLlm(ShardAnalyzerAgent)
+      mockModel(ShardAnalyzerAgent)
         .when({ node: { nodeLabel: "shard-root/R" } })
         .thenReturn(
           replyWith(DecomposedLeafDto, {
@@ -128,7 +128,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
 
   clusterTest(
     "fences a stalled instance with ExecutionLeaseLostError when another instance steals the expired lease",
-    async ({ apps, clock, mockLlm }) => {
+    async ({ apps, clock, mockModel }) => {
       const [instance1, instance2] = apps;
       await instance1!.ready();
       await instance2!.ready();
@@ -137,7 +137,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
 
       const leaseRepo = instance2!.resolve(ExecutionLeaseRepository);
 
-      mockLlm(ChunkWorkerAgent).thenReturn(
+      mockModel(ChunkWorkerAgent).thenReturn(
         waitFor(seconds(35)),
         replyWith(ChunkDraftDto, {
           chunkId: "chunk-lease-01",
@@ -175,7 +175,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
         await leaseRepo.release(stolenLease);
       }
 
-      mockLlm(ChunkWorkerAgent).thenReturn(
+      mockModel(ChunkWorkerAgent).thenReturn(
         replyWith(ChunkDraftDto, {
           chunkId: "chunk-lease-02",
           summary: "Completed cleanly on instance 2",
@@ -206,11 +206,11 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
   );
 
   clusterTest(
-    "pauses on instance 1, resumes/cancels from instance 2, and rejects incompatible version drift with IncompatibleResumeError",
-    async ({ apps, mockLlm }) => {
+    "pauses on instance 1, resumes/cancels from instance 2, and rejects incompatible version drift with ExecutionError.IncompatibleResume",
+    async ({ apps, mockModel }) => {
       const [instance1, instance2] = apps;
 
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "chunk-pause-resume" } })
         .thenReturn(
           callTool(RequestChunkSignOffTool, {
@@ -250,7 +250,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
         idempotencyKey: expect.any(String) as string,
       });
 
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "chunk-pause-cancel" } })
         .thenReturn(
           callTool(RequestChunkSignOffTool, {
@@ -274,7 +274,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
       });
       expect(cancelledFrom2.cancelled).toBe(true);
 
-      mockLlm(ChunkWorkerAgent)
+      mockModel(ChunkWorkerAgent)
         .when({ task: { chunkId: "chunk-version-drift" } })
         .thenReturn(
           callTool(RequestChunkSignOffTool, {
@@ -307,7 +307,7 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
           { pauseId: driftPauseId, decision: { approved: true } },
           { ownerId: "operator-alice" },
         ),
-      ).rejects.toThrow(IncompatibleResumeError);
+      ).rejects.toThrow(ExecutionError.IncompatibleResume);
 
       setAllowIncompatibleResume(true);
       const resumedAfterOverride = await instance1!.resume(
@@ -358,9 +358,9 @@ describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow
 describe("one commit per chunk across the cluster (#500, #508)", () => {
   clusterTest(
     "the same chunk worked on both instances is committed once: the second worker gets the first commit",
-    async ({ apps, mockLlm }) => {
+    async ({ apps, mockModel }) => {
       const [instance1, instance2] = apps;
-      mockLlm(ChunkWorkerAgent).thenReturn(
+      mockModel(ChunkWorkerAgent).thenReturn(
         replyWith(ChunkDraftDto, { chunkId: "chunk-dup-01", summary: "worked on instance 1" }),
         replyWith(ChunkDraftDto, { chunkId: "chunk-dup-01", summary: "worked again on instance 2" }),
       );

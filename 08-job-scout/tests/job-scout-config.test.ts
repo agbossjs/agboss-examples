@@ -53,15 +53,15 @@ describe("job-scout search config", () => {
     );
   });
 
-  test("assembled prompts: every variable filled, the rules in place", async ({ app, mockLlm }) => {
+  test("assembled prompts: every variable filled, the rules in place", async ({ app, mockModel }) => {
     // the system prompts the two agents' models are given: what assembly made of them
-    mockLlm(MainRouter).thenReturn(routeTo(ProfilerAgent), routeTo(ScoutAgent));
-    mockLlm(ProfilerAgent).thenReturn(replyWith("brief"));
-    mockLlm(ScoutAgent).thenReturn(replyWith("jobs"));
+    mockModel(MainRouter).thenReturn(routeTo(ProfilerAgent), routeTo(ScoutAgent));
+    mockModel(ProfilerAgent).thenReturn(replyWith("brief"));
+    mockModel(ScoutAgent).thenReturn(replyWith("jobs"));
     await app.execute(ChatWorkflowStart, { text: "propose a brief" });
     await app.execute(ChatWorkflowStart, { text: "search" });
-    const p = systemOf(mockLlm(ProfilerAgent).onlyRequest);
-    const s = systemOf(mockLlm(ScoutAgent).onlyRequest);
+    const p = systemOf(mockModel(ProfilerAgent).onlyRequest);
+    const s = systemOf(mockModel(ScoutAgent).onlyRequest);
     const boards = String(Object.keys(jobSearchConfig.boards).length);
 
     expect(p).not.toContain("{{");

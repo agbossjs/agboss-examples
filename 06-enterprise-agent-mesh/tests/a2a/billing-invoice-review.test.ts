@@ -40,10 +40,10 @@ const statesOf = (events: readonly StreamResponse[]): string[] =>
 describe("The invoice review over A2A message/stream (SSE)", () => {
   test("the status updates and the answer arrive as the task runs; only the answer is streamed (#1004)", async ({
     a2aServer,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
-    mockLlm(InvoiceReplyJudge).thenReturn(replyWith(JUDGE_NOTE));
+    mockModel(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
+    mockModel(InvoiceReplyJudge).thenReturn(replyWith(JUDGE_NOTE));
     const { url } = await a2aServer(billing);
     const client = await sdkClientOf(url);
 
@@ -72,7 +72,7 @@ describe("The invoice review over A2A message/stream (SSE)", () => {
     // a client that reads the answer while the task still runs: the stream is no replay of a finished task
     expect(stateWhenAnswerStarted).toBe(TaskState.TASK_STATE_WORKING);
     // nothing but the answer: the judge ran, and its words are in no chunk and no status
-    expect(mockLlm(InvoiceReplyJudge).requests).toHaveLength(1);
+    expect(mockModel(InvoiceReplyJudge).requests).toHaveLength(1);
     expect(shownAfter(chunks)).toBe(ANSWER);
     const wire = JSON.stringify(events);
     expect(wire).not.toContain("audit note");
@@ -81,10 +81,10 @@ describe("The invoice review over A2A message/stream (SSE)", () => {
 
   test("the invoice sent as a file part is read by the agent's model, as the CSV's own text", async ({
     a2aServer,
-    mockLlm,
+    mockModel,
   }) => {
-    const reviewer = mockLlm(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
-    mockLlm(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
+    const reviewer = mockModel(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
+    mockModel(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
     const { url } = await a2aServer(billing);
     const client = await sdkClientOf(url);
 
@@ -101,10 +101,10 @@ describe("The invoice review over A2A message/stream (SSE)", () => {
 describe("Files over A2A: what the door lets in", () => {
   test("a CSV file part is accepted and the task completes with the agent's answer", async ({
     a2aServer,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
-    mockLlm(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
+    mockModel(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
+    mockModel(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
     const { url } = await a2aServer(billing);
 
     const sent = await rpc(
@@ -119,10 +119,10 @@ describe("Files over A2A: what the door lets in", () => {
 
   test("the gateway's typed client sends the invoice with FileDto.fromBytes and gets the text answer", async ({
     a2aServer,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
-    mockLlm(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
+    mockModel(InvoiceReviewerAgent).thenReturn(replyWith(ANSWER));
+    mockModel(InvoiceReplyJudge).thenReturn(replyWith("PASS"));
     const { url } = await a2aServer(billing);
     const client = new A2AClient({
       url,
@@ -174,13 +174,13 @@ describe("Files over A2A: what the door lets in", () => {
   ];
 
   for (const { name, parts, code } of refused) {
-    test(`${name} is refused with ${code}, and nothing runs`, async ({ a2aServer, mockLlm }) => {
+    test(`${name} is refused with ${code}, and nothing runs`, async ({ a2aServer, mockModel }) => {
       const { url } = await a2aServer(billing);
 
       const sent = await rpc(url, reviewParams(`m-${code}`, parts()));
 
       expect(JSON.stringify(sent.body)).toContain(code);
-      expect(mockLlm(InvoiceReviewerAgent).requests).toHaveLength(0);
+      expect(mockModel(InvoiceReviewerAgent).requests).toHaveLength(0);
     });
   }
 });

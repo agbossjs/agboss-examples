@@ -1,4 +1,4 @@
-import { start, StepFailedError, toFinish, Workflow } from "@agboss/core";
+import { start, StepError, toFinish, Workflow } from "@agboss/core";
 import { CountShelfAction } from "../../actions/count-shelf.action.js";
 import { ShelfCountDto } from "../../dto/shelf-count.dto.js";
 import { ShelfDto } from "../../dto/shelf.dto.js";
@@ -17,7 +17,7 @@ import { ShelfWorkflowStart } from "./shelf.workflow-start.js";
     start(ShelfWorkflowStart)
       .returns(ShelfDto)
       .toAction(CountShelfAction)
-      .onError(StepFailedError, toFinish(ShelfFailedWorkflowFinish))
+      .onError(StepError, toFinish(ShelfFailedWorkflowFinish))
       .returns(ShelfCountDto)
       .toFinish(ShelfCountedWorkflowFinish),
   ],

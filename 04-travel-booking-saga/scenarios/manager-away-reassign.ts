@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
+import { createApp, ExecutionStatus, PauseError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { hours } from "@agboss/core/units";
 import { DeputyBookingApprovalChannel, getClosedChannelAsks, getSentChannelAsks, resetChannelRecords, waitForChannelAskSent, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
@@ -44,7 +44,7 @@ function statusOf(output: unknown): string | undefined {
  *    The agent and the reservations do not run again. The channel is sent again, with a new
  *    `pauseId`, `ChannelAsk.assignee` and `ChannelAsk.replaces`, and told `onPauseClosed` with
  *    `PauseClosedReason.Reassigned` for the old message.
- * 4. The old pause id answers nothing (`PauseClosedError`, `reason: reassigned`); the call returned the new
+ * 4. The old pause id answers nothing (`PauseError.Closed`, `reason: reassigned`); the call returned the new
  *    pause's key only — the new id is a capability that reached the channel alone.
  * 5. The deputy approves through the new id and the saga completes.
  */
@@ -85,7 +85,7 @@ export async function runManagerAwayScenario(bookingId = "AWAY-G1"): Promise<Man
     try {
       await app.resume({ pauseId: managerPauseId, decision: approval("Manager clicks from the airport") }, operator);
     } catch (error) {
-      oldPauseAnswerRejectedWith = error instanceof PauseClosedError ? error.reason : undefined;
+      oldPauseAnswerRejectedWith = error instanceof PauseError.Closed ? error.reason : undefined;
     }
 
     const pending = await app.listPauses({ tenantId: "default" });

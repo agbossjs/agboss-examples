@@ -4,7 +4,7 @@ import { minutes } from "@agboss/core/units";
 
 /**
  * Where the agents' chat model would come from: OpenRouter. This example never calls it — every model turn of
- * PS7, PS11 and PS21 is scripted (`mockLlm`), offline and $0; it is here because an agent's model needs a
+ * PS7, PS11 and PS21 is scripted (`mockModel`), offline and $0; it is here because an agent's model needs a
  * provider. Its key is read only when a model is called, so nothing is set anywhere.
  */
 @ModelProvider({

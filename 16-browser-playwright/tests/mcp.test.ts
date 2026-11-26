@@ -42,8 +42,8 @@ describe("way B reads a page through @playwright/mcp", () => {
     expect(home).toMatchObject({ kind: "ok", value: { title: "Acme Desk" } });
   });
 
-  test("a model run: the agent opens the page with the MCP tool and answers", async ({ app, mockLlm }) => {
-    mockLlm(McpWebAgent).thenReturn(callTool(OpenPageViaMcp, { url: `${running().origin}/pricing` }), replyWith("Starter is 12 USD"));
+  test("a model run: the agent opens the page with the MCP tool and answers", async ({ app, mockModel }) => {
+    mockModel(McpWebAgent).thenReturn(callTool(OpenPageViaMcp, { url: `${running().origin}/pricing` }), replyWith("Starter is 12 USD"));
 
     const result = await app.execute(McpAskWorkflowStart, { text: "what does Starter cost?" });
 
@@ -66,10 +66,10 @@ describe("the same allowlist, checked before the server is asked", () => {
 });
 
 describe("way B files the form once", () => {
-  test("a lost answer (502 after the site filed the ticket): the model's next call looks it up and files nothing new", async ({ app, mockLlm }) => {
+  test("a lost answer (502 after the site filed the ticket): the model's next call looks it up and files nothing new", async ({ app, mockModel }) => {
     const before = { tickets: site().tickets.length, posts: posts() };
     site().inject(SiteFault.BadGatewayAfterProcessing);
-    mockLlm(McpWebAgent).thenReturn(
+    mockModel(McpWebAgent).thenReturn(
       callTool(SubmitContactViaMcp, REQUEST), // the answer is lost: an error result, the ticket is filed
       callTool(SubmitContactViaMcp, REQUEST), // the model tries again: reconcile finds it
       callTool(SubmitContactViaMcp, REQUEST), // and once more: the stored result is replayed

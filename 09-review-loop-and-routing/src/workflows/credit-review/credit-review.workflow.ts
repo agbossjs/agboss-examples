@@ -1,4 +1,4 @@
-import { toAction, VisitsLimitExceededError, Workflow, onStart, onAgent, toAgent, toFinish, Ttl } from "@agboss/core";
+import { toAction, LimitError, Workflow, onStart, onAgent, toAgent, toFinish, Ttl } from "@agboss/core";
 import { EscalateToCommitteeAction } from "../../actions/escalate-to-committee.action.js";
 import { CreditAnalystAgent } from "../../agents/credit-analyst/credit-analyst.agent.js";
 import { MemoEditorAgent } from "../../agents/memo-editor/memo-editor.agent.js";
@@ -15,7 +15,7 @@ import { ModelRoutedCreditWorkflowStart } from "./model-routed-credit.workflow-s
  * One workflow, two starts: the same application is routed by code through one and by a model
  * through the other, onto the same two routes. Both reach the same review loop, written once as
  * the analyst's and the risk officer's own paths: the officer requests changes or approves; the
- * editor rewrites; its `maxVisits` spent is taken by `.onError(VisitsLimitExceededError, …)` to
+ * editor rewrites; its `maxVisits` spent is taken by `.onError(LimitError.Visits, …)` to
  * the committee — the loop always ends on a defined finish.
  */
 @Workflow({
@@ -41,7 +41,7 @@ import { ModelRoutedCreditWorkflowStart } from "./model-routed-credit.workflow-s
     onAgent(RiskOfficerAgent)
       .toOneOf([toAgent(MemoEditorAgent)
           .onError(
-            VisitsLimitExceededError, // the editor's maxVisits spent: the committee decides
+            LimitError.Visits, // the editor's maxVisits spent: the committee decides
             toAction(EscalateToCommitteeAction)
               .toFinish(CreditEscalatedWorkflowFinish),
           )
@@ -49,7 +49,7 @@ import { ModelRoutedCreditWorkflowStart } from "./model-routed-credit.workflow-s
   ],
   // the loop's worst case, in agent and router steps: the router, the analyst, the officer 5 times
   // (its maxVisits), the editor 4 times (its), the committee's action — 12 (an action counts as a step now). A lower maxSteps would stop the stubborn run
-  // with StepsLimitExceededError before the editor's limit takes it to the committee: agboss check
+  // with LimitError.Steps before the editor's limit takes it to the committee: agboss check
   // warns then ([limits.max-steps-below-worst-case], agbossjs/agboss#643), and the AC3 test runs it.
   defaults: { models: { temperature: 0 } },
   executionLimits: { maxSteps: 12 },

@@ -4,7 +4,7 @@ import { TravelBookingRequestDto } from "../../dto/travel-booking-request.dto.js
 @WorkflowStart({
   name: "budget-saga-workflow-start",
   description:
-    "Entry point for flight + hotel + LLM itinerary brief saga (tests BudgetExceededError rollback)",
+    "Entry point for flight + hotel + LLM itinerary brief saga (tests LimitError.Budget rollback)",
   input: TravelBookingRequestDto,
 })
 export class BudgetSagaWorkflowStart {}

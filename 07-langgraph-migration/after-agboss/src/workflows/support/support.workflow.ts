@@ -1,4 +1,4 @@
-import { VisitsLimitExceededError, Workflow, toFinish, onStart, onAgent, toAgent, toRouter, toAction, Ttl } from "@agboss/core";
+import { LimitError, Workflow, toFinish, onStart, onAgent, toAgent, toRouter, toAction, Ttl } from "@agboss/core";
 import { IssueRefundAction } from "../../actions/issue-refund.action.js";
 import { OrderResearcherAgent } from "../../agents/order-researcher/order-researcher.agent.js";
 import { RefundSignOffAgent } from "../../agents/refund-sign-off/refund-sign-off.agent.js";
@@ -31,7 +31,7 @@ import { SupportWorkflowStart } from "./support.workflow-start.js";
 
     onAgent(ReplyReviewerAgent)
       .toOneOf([toAgent(ReplyEditorAgent)
-          .onError(VisitsLimitExceededError, toFinish(ReplyStuckWorkflowFinish))
+          .onError(LimitError.Visits, toFinish(ReplyStuckWorkflowFinish))
           .toAgent(ReplyReviewerAgent), toRouter(RefundSizeRouter)
           .onRoute(toAction(IssueRefundAction)
               .toFinish(RefundIssuedWorkflowFinish))

@@ -4,7 +4,7 @@ import { ReceiptRefundRequestDto } from "../../dto/receipt-refund-request.dto.js
 
 /**
  * Reads a receipt under the desk-wide policy as it is: that policy blocks a card number, and a block
- * rule refuses an image whole (`PiiRefusedError`) before any model is asked, the redaction model
+ * rule refuses an image whole (`PiiError.Refused`) before any model is asked, the redaction model
  * included. Nothing a model could be talked out of: the strict choice for a photo.
  */
 @Agent({

@@ -15,7 +15,7 @@ const posted: ApprovalRequest[] = [];
 /**
  * The approvers' inbox — in production a chat app or an e-mail queue that the person answers in
  * free text. Here it prints each request once and keeps it, so the demo and the tests can answer it
- * by its pause id. `ConsoleApproverChannel` posts to it; tests read or replace it (`mockOf`).
+ * by its pause id. `ConsoleApproverChannel` posts to it; tests read or replace it (`mockService`).
  */
 @Injectable()
 export class ApproverInbox {

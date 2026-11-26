@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FileRedactor, PiiRefusedError } from "@agboss/core";
+import { FileRedactor, PiiError } from "@agboss/core";
 import { replyWith, testWith } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
 import { expect } from "vitest";
@@ -13,7 +13,7 @@ import { ReceiptCheckWorkflowStart } from "../../../src/workflows/receipt-check/
 
 /**
  * #899: the receipt a customer attaches reaches the reader's model as a redacted copy made by the built-in
- * redactor (scripted here: mockLlm(FileRedactor)), never as the original; an IBAN found in it refuses it.
+ * redactor (scripted here: mockModel(FileRedactor)), never as the original; an IBAN found in it refuses it.
  */
 
 process.env["OPENROUTER_API_KEY"] ??= "offline-test-openrouter-api-key";
@@ -39,13 +39,13 @@ const request = {
 // where the card number and the name are on the fixture, as fractions of the image
 const CARD_REGION = { x: 0.04, y: 0.46, w: 0.54, h: 0.1 };
 
-test("the receipt reaches the model as a redacted copy, never as the original", async ({ app, mockLlm }) => {
-  const redactor = mockLlm(FileRedactor).thenReturn(
+test("the receipt reaches the model as a redacted copy, never as the original", async ({ app, mockModel }) => {
+  const redactor = mockModel(FileRedactor).thenReturn(
     replyWith(JSON.stringify({ regions: [{ target: "card-number", ...CARD_REGION }] }), {
       cost: usd(0.0004),
     }),
   );
-  const agent = mockLlm(ReceiptReaderAgent).thenReturn(replyWith("Northwind Store, ORD-1001, $180.00."));
+  const agent = mockModel(ReceiptReaderAgent).thenReturn(replyWith("Northwind Store, ORD-1001, $180.00."));
 
   const result = await app.execute(ReceiptCheckWorkflowStart, request, CONTEXTS);
 
@@ -62,24 +62,24 @@ test("the receipt reaches the model as a redacted copy, never as the original", 
   expect(sent).not.toContain("alice.synth@example.com");
 });
 
-test("an IBAN found on the receipt refuses it: the reader's model is never called", async ({ app, mockLlm }) => {
-  mockLlm(FileRedactor).thenReturn(
+test("an IBAN found on the receipt refuses it: the reader's model is never called", async ({ app, mockModel }) => {
+  mockModel(FileRedactor).thenReturn(
     replyWith(JSON.stringify({ regions: [{ target: "iban", ...CARD_REGION }] })),
   );
-  const agent = mockLlm(ReceiptReaderAgent);
+  const agent = mockModel(ReceiptReaderAgent);
 
   const run = app.execute(ReceiptCheckWorkflowStart, request, CONTEXTS);
 
-  await expect(run).rejects.toBeInstanceOf(PiiRefusedError);
+  await expect(run).rejects.toBeInstanceOf(PiiError.Refused);
   expect(agent).toHaveBeenCalledTimes(0);
 });
 
 test("a redaction answer that is not the regions fails closed: no model sees the receipt", async ({
   app,
-  mockLlm,
+  mockModel,
 }) => {
-  mockLlm(FileRedactor).thenReturn(replyWith("There is no personal data in this image."));
-  const agent = mockLlm(ReceiptReaderAgent);
+  mockModel(FileRedactor).thenReturn(replyWith("There is no personal data in this image."));
+  const agent = mockModel(ReceiptReaderAgent);
 
   await expect(app.execute(ReceiptCheckWorkflowStart, request, CONTEXTS)).rejects.toMatchObject({
     code: "step.file-masking-failed",

@@ -1,5 +1,5 @@
 import "../src/scripts/offline-keys.js";
-import { createApp, ExecutionStatus, PauseClosedError, type PauseClosedReason } from "@agboss/core";
+import { createApp, ExecutionStatus, PauseError, type PauseClosedReason } from "@agboss/core";
 import { ToolCallApprovalDecisionDto } from "@agboss/core/dto";
 import { getSentChannelAsks, getClosedChannelAsks, resetChannelRecords, waitForChannelClose } from "../src/channels/corporate-booking-approval.channel.js";
 import { TravelBookingRequestDto } from "../src/dto/travel-booking-request.dto.js";
@@ -26,7 +26,7 @@ export interface PauseClosedScenarioResult {
  *    the 2-of-3 quorum (`max: 2`).
  * 4. AGBoss closes the superseded Branch 3 pause (`PauseResolution.Withdrawn`) and tells
  *    `CorporateBookingApprovalChannel.onPauseClosed()` once, `PauseClosedReason.Withdrawn`.
- * 5. A late `app.resume({ pauseId, decision })` on that pause is rejected with `PauseClosedError`
+ * 5. A late `app.resume({ pauseId, decision })` on that pause is rejected with `PauseError.Closed`
  *    (`reason: withdrawn`).
  */
 export async function runPauseClosedScenario(
@@ -67,7 +67,7 @@ export async function runPauseClosedScenario(
           { actor: { id: "risk-manager-7" } },
         );
       } catch (error) {
-        lateResumeRejectedWithPauseClosed = error instanceof PauseClosedError ? error.reason : undefined;
+        lateResumeRejectedWithPauseClosed = error instanceof PauseError.Closed ? error.reason : undefined;
       }
     }
 

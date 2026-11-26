@@ -1,4 +1,4 @@
-import { QuestionFailedError, toExternalTask, toFinish, VisitsLimitExceededError, Workflow, onStart, onExternalTask, Ttl } from "@agboss/core";
+import { StepError, toExternalTask, toFinish, LimitError, Workflow, onStart, onExternalTask, Ttl } from "@agboss/core";
 import { CheckBudgetRaiseAction } from "../../actions/check-budget-raise.action.js";
 import { BudgetOwnerExternalTask } from "../../channels/budget-owner.external-task.js";
 import { BudgetRaiseRequestWorkflowStart } from "./budget-raise-request.workflow-start.js";
@@ -11,7 +11,7 @@ import { BudgetRaiseUnresolvedWorkflowFinish } from "./budget-raise-unresolved.w
  * `BudgetOwnerExternalTask`, how far the line may be raised — the run pauses until the owner's free-text
  * reply is read into a typed `BudgetOwnerAnswerDto`. A limit below the request asks again (the
  * question's own path, `onExternalTask(BudgetOwnerExternalTask)`), at most `maxVisits: 2` times: the third ask
- * is `VisitsLimitExceededError` → unresolved. A channel that cannot ask is `QuestionFailedError` →
+ * is `LimitError.Visits` → unresolved. A channel that cannot ask is `StepError.ExternalTask` →
  * unasked. No model anywhere: $0.
  */
 @Workflow({
@@ -22,8 +22,8 @@ import { BudgetRaiseUnresolvedWorkflowFinish } from "./budget-raise-unresolved.w
     onStart(BudgetRaiseRequestWorkflowStart)
       .toExternalTask(BudgetOwnerExternalTask),
     onExternalTask(BudgetOwnerExternalTask)
-      .onError(QuestionFailedError, toFinish(BudgetRaiseUnaskedWorkflowFinish))
-      .onError(VisitsLimitExceededError, toFinish(BudgetRaiseUnresolvedWorkflowFinish))
+      .onError(StepError.ExternalTask, toFinish(BudgetRaiseUnaskedWorkflowFinish))
+      .onError(LimitError.Visits, toFinish(BudgetRaiseUnresolvedWorkflowFinish))
       .toAction(CheckBudgetRaiseAction)
       .toOneOf([toFinish(BudgetRaisedWorkflowFinish), toExternalTask(BudgetOwnerExternalTask)]),
   ],

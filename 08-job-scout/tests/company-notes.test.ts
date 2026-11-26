@@ -37,10 +37,10 @@ describe("company notes (knowledge base)", () => {
 
   test("AC3: the scout searches the notes itself (tool mode, 3 passages); the notes are marked as samples", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(MainRouter).thenReturn(routeTo(ScoutAgent));
-    mockLlm(ScoutAgent).thenReturn(
+    mockModel(MainRouter).thenReturn(routeTo(ScoutAgent));
+    mockModel(ScoutAgent).thenReturn(
       callTool(SearchCompanyNotes, { query: "Why is Fireblocks a fit for a backend engineer?" }),
       replyWith("done"),
     );

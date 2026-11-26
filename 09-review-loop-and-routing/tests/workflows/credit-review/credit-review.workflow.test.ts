@@ -1,4 +1,4 @@
-import { VisitsLimitExceededError } from "@agboss/core";
+import { LimitError } from "@agboss/core";
 import { replyWith, routeTo, testWith } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
 import { describe, expect } from "vitest";
@@ -20,7 +20,7 @@ import { ModelRoutedCreditWorkflowStart } from "../../../src/workflows/credit-re
 import { SOUND_APPLICATION, WEAK_APPLICATION } from "../../support/applications.js";
 
 /**
- * The credit review on its application: every model by script (`mockLlm`), the network blocked.
+ * The credit review on its application: every model by script (`mockModel`), the network blocked.
  * The code router needs no script — it calls no model.
  */
 
@@ -35,11 +35,11 @@ const approved = (note?: string) => replyWith(MemoApprovedDto, note === undefine
 describe("AC2: the same application, routed by code and by a model", () => {
   test("AC2: both starts route the same application the same way; the code router's spend is $0", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditIntentModelRouter).thenReturn(routeTo(CreditAnalystAgent, { cost: ROUTER_COST }));
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"), memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturn(approved(), approved());
+    mockModel(CreditIntentModelRouter).thenReturn(routeTo(CreditAnalystAgent, { cost: ROUTER_COST }));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"), memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturn(approved(), approved());
 
     const byCode = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
       includeRecord: true,
@@ -77,9 +77,9 @@ describe("AC2: the same application, routed by code and by a model", () => {
 
   test("AC2: a declined application stops at the declined finish on both starts — no agent runs", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditIntentModelRouter).thenReturn(
+    mockModel(CreditIntentModelRouter).thenReturn(
       routeTo(CreditDeclinedWorkflowFinish, { cost: ROUTER_COST }),
     );
 
@@ -100,17 +100,17 @@ describe("AC2: the same application, routed by code and by a model", () => {
     expect(byModel).toFinishWith(CreditDeclinedWorkflowFinish, WEAK_APPLICATION);
     expect(byCode.spend.totalUsd).toBe(0);
     expect(byCode.spend.calls).toBe(0);
-    expect(mockLlm(CreditAnalystAgent).requests).toHaveLength(0);
+    expect(mockModel(CreditAnalystAgent).requests).toHaveLength(0);
   });
 });
 
 describe("the review loop ends on a defined finish", () => {
   test("approved at once: the analyst's memo is the approved one, no editor", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1: Dana Levi, kitchen", 40_000));
-    mockLlm(RiskOfficerAgent).thenReturn(approved("complete"));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1: Dana Levi, kitchen", 40_000));
+    mockModel(RiskOfficerAgent).thenReturn(approved("complete"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION);
 
@@ -119,16 +119,16 @@ describe("the review loop ends on a defined finish", () => {
       recommendedLimitUsd: 40_000,
     });
     expect(result.path).not.toContain("memo-editor-agent");
-    expect(mockLlm(MemoEditorAgent).requests).toHaveLength(0);
+    expect(mockModel(MemoEditorAgent).requests).toHaveLength(0);
   });
 
   test("approved after one round: changes → editor → approved, the rewrite is the approved memo", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturn(changes("name the main risk"), approved());
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2: the main risk is the DTI"));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturn(changes("name the main risk"), approved());
+    mockModel(MemoEditorAgent).thenReturn(memo("v2: the main risk is the DTI"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION);
 
@@ -146,24 +146,24 @@ describe("the review loop ends on a defined finish", () => {
       recommendedLimitUsd: 35_000,
     });
     // the editor reads the officer's notes and the memo they are about
-    const [editorInput] = mockLlm(MemoEditorAgent).inputs;
+    const [editorInput] = mockModel(MemoEditorAgent).inputs;
     expect(editorInput?.changes).toMatchObject({ notes: "name the main risk" });
     expect(editorInput?.memo).toMatchObject({ current: { text: "v1" }, previous: [] });
     // the officer reads the newest memo each time
-    const officerMemos = mockLlm(RiskOfficerAgent).inputs.map((input) => input.memo.text);
+    const officerMemos = mockModel(RiskOfficerAgent).inputs.map((input) => input.memo.text);
     expect(officerMemos).toEqual(["v1", "v2: the main risk is the DTI"]);
   });
 
-  test("approved on the editor's last visit (visit 4): no escalation", async ({ app, mockLlm }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturn(
+  test("approved on the editor's last visit (visit 4): no escalation", async ({ app, mockModel }) => {
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturn(
       changes("fix 1"),
       changes("fix 2"),
       changes("fix 3"),
       changes("fix 4"),
       approved("finally"),
     );
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
+    mockModel(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
       includeRecord: true,
@@ -173,18 +173,18 @@ describe("the review loop ends on a defined finish", () => {
       text: "v5",
       recommendedLimitUsd: 35_000,
     });
-    expect(mockLlm(MemoEditorAgent).requests).toHaveLength(4);
-    expect(mockLlm(RiskOfficerAgent).requests).toHaveLength(5);
+    expect(mockModel(MemoEditorAgent).requests).toHaveLength(4);
+    expect(mockModel(RiskOfficerAgent).requests).toHaveLength(5);
     expect(result.handledErrors).toEqual([]);
   });
 
   test("AC3: a critic that never accepts ends at credit-escalated-workflow-finish after 4 editor visits", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturnAlways(changes("still not convincing"));
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5", 30_000));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturnAlways(changes("still not convincing"));
+    mockModel(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5", 30_000));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
       includeRecord: true,
@@ -207,7 +207,7 @@ describe("the review loop ends on a defined finish", () => {
       EscalateToCommitteeAction,
       CreditEscalatedWorkflowFinish,
     ]);
-    expect(result).toHaveHandledError(VisitsLimitExceededError, {
+    expect(result).toHaveHandledError(LimitError.Visits, {
       at: MemoEditorAgent,
       by: EscalateToCommitteeAction,
     });
@@ -219,21 +219,21 @@ describe("the review loop ends on a defined finish", () => {
       recommendedLimitUsd: 30_000,
     });
     // four model calls of the editor, five of the officer: the loop never ran past its limits
-    expect(mockLlm(MemoEditorAgent).requests).toHaveLength(4);
-    expect(mockLlm(RiskOfficerAgent).requests).toHaveLength(5);
+    expect(mockModel(MemoEditorAgent).requests).toHaveLength(4);
+    expect(mockModel(RiskOfficerAgent).requests).toHaveLength(5);
   });
 
   test("AC3: the editor reads the current memo and at most two earlier ones", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturnAlways(changes("again"));
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturnAlways(changes("again"));
+    mockModel(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
 
     await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION);
 
-    const seen = mockLlm(MemoEditorAgent).inputs.map((input) => ({
+    const seen = mockModel(MemoEditorAgent).inputs.map((input) => ({
       current: input.memo.current.text,
       previous: input.memo.previous.map((earlier) => earlier.text),
     }));
@@ -249,11 +249,11 @@ describe("the review loop ends on a defined finish", () => {
 
   test("a request for changes is about the memo: a rewrite outdates it, the officer reads the new memo", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturn(changes("shorter"), approved());
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2 shorter"));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturn(changes("shorter"), approved());
+    mockModel(MemoEditorAgent).thenReturn(memo("v2 shorter"));
 
     const result = await app.execute(CodeRoutedCreditWorkflowStart, SOUND_APPLICATION, {
       includeRecord: true,
@@ -278,17 +278,17 @@ describe("the review loop ends on a defined finish", () => {
 describe("the model-routed start reaches the same loop", () => {
   test("AC3: the stubborn critic escalates on the model-routed start too", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(CreditIntentModelRouter).thenReturn(routeTo(CreditAnalystAgent, { cost: ROUTER_COST }));
-    mockLlm(CreditAnalystAgent).thenReturn(memo("v1"));
-    mockLlm(RiskOfficerAgent).thenReturnAlways(changes("no"));
-    mockLlm(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
+    mockModel(CreditIntentModelRouter).thenReturn(routeTo(CreditAnalystAgent, { cost: ROUTER_COST }));
+    mockModel(CreditAnalystAgent).thenReturn(memo("v1"));
+    mockModel(RiskOfficerAgent).thenReturnAlways(changes("no"));
+    mockModel(MemoEditorAgent).thenReturn(memo("v2"), memo("v3"), memo("v4"), memo("v5"));
 
     const result = await app.execute(ModelRoutedCreditWorkflowStart, SOUND_APPLICATION);
 
     expect(result.output).toMatchObject({ lastMemo: "v5", openRequest: "no" });
     expect(result.finish?.name).toBe("credit-escalated-workflow-finish");
-    expect(result).toHaveHandledError(VisitsLimitExceededError);
+    expect(result).toHaveHandledError(LimitError.Visits);
   });
 });

@@ -83,7 +83,7 @@ describe("travel-booking-saga — Workflow Compensation, Quorum, Recovery & Idem
     assertIdempotencyKeysPresent(res.ledgerEntries);
   });
 
-  it("Scenario D: surfaces CompensationFailedError on transient undo crash, deduplicates replay, and resumes SQLite state across restart", async () => {
+  it("Scenario D: surfaces ExecutionError.CompensationFailed on transient undo crash, deduplicates replay, and resumes SQLite state across restart", async () => {
     const res = await runRollbackCrashScenario("BUDGET-EXCEED-CRASH-D1");
 
     expect(res.compensationFailedErrorSurfaced).toBe(true);

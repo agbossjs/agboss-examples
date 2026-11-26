@@ -1,6 +1,5 @@
 import {
-  HopsLimitExceededError,
-  MeshLoopDetectedError,
+  LimitError,
   Workflow,
   onStart,
   toFinish,
@@ -20,8 +19,8 @@ import { TriageWorkflowStart } from "./triage.workflow-start.js";
   flow: [
     onStart(TriageWorkflowStart)
       .toAgent(TriageAgent)
-      .onError(MeshLoopDetectedError, toFinish(MeshLoopFallbackWorkflowFinish))
-      .onError(HopsLimitExceededError, toFinish(MeshLoopFallbackWorkflowFinish))
+      .onError(LimitError.MeshLoop, toFinish(MeshLoopFallbackWorkflowFinish))
+      .onError(LimitError.Hops, toFinish(MeshLoopFallbackWorkflowFinish))
       .toFinish(TriageWorkflowFinish),
   ],
   executionLimits: { maxSteps: 6 },

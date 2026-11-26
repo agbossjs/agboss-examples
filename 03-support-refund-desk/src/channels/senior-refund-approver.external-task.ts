@@ -7,7 +7,7 @@ import { RefundApprovalDecisionDto } from "../dto/refund-approval-decision.dto.j
  * The second approver, asked when the first did not answer in time. Nobody is left to escalate to:
  * when the head of support does not answer either, the desk declines — an answer the target gives,
  * recorded as its own (`DecidedOnExpiry`), never an approval nobody looked at. Without `onExpired`
- * the step would fail with `PauseExpiredError`. It runs once per expiry and only reads.
+ * the step would fail with `StepError.PauseExpired`. It runs once per expiry and only reads.
  */
 @ExternalTask({
   name: "senior-refund-approver-external-task",

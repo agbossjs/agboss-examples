@@ -42,7 +42,7 @@ export const ps11: PaymentScenario = {
       wrong: { charges: 2 },
       right: { charges: 1, lost: 0, orderStatus: "paid", notes: ["pause.closed"] },
       async run(context) {
-        context.mockLlm(ApprovalAgent).thenReturn(
+        context.mockModel(ApprovalAgent).thenReturn(
           callTool(ApprovedChargeTool, charge),
           ...(context.variant === Variant.Right ? [replyWith("Charged once you approved.")] : []),
         );

@@ -3,7 +3,7 @@ import { ChannelInterpretation, ChannelInterpreter, type ChannelInterpreterHandl
 /**
  * Reads a budget owner's words into the question's typed answer, by code (no model, $0): "up to
  * $2,000" or "$2000" is a limit, "no" is a limit of 0. Anything else — "$2k" too — is not understood — the
- * pause stays pending (`UninterpretableReplyError`), nothing goes on on a guess.
+ * pause stays pending (`PauseError.UninterpretableReply`), nothing goes on on a guess.
  */
 @ChannelInterpreter({
   name: "budget-owner-reply-interpreter",

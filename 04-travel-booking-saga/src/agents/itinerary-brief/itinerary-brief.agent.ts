@@ -7,7 +7,7 @@ import { TravelBookingRequestDto } from "../../dto/travel-booking-request.dto.js
 @Agent({
   name: "itinerary-brief-agent",
   description:
-    "Generates an executive itinerary brief (used to test BudgetExceededError rollback)",
+    "Generates an executive itinerary brief (used to test LimitError.Budget rollback)",
   model: "saga-model",
   prompt: "./itinerary-brief.prompt.md",
   input: {

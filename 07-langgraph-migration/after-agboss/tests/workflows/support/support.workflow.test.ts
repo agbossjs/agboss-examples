@@ -54,30 +54,30 @@ describe("07-langgraph-migration — Before (LangGraph God State) vs After (AGBo
 
   test("small refund: one round of review changes (ReplyWriterAgent -> ReplyReviewerAgent -> ReplyEditorAgent -> ReplyReviewerAgent), then issued via IssueRefundAction", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
-    mockLlm(ResearchPlannerAgent).thenReturn(
+    mockModel(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
+    mockModel(ResearchPlannerAgent).thenReturn(
       replyWith(ResearchQuestionDto, [{ question: "Was it late?" }]),
     );
-    mockLlm(OrderResearcherAgent).thenReturn(
+    mockModel(OrderResearcherAgent).thenReturn(
       callTool(OrderLookupTool, { orderId: "7" }),
       replyWith(ResearchFindingDto, {
         question: "Was it late?",
         answer: "yes, by four days",
       }),
     );
-    mockLlm(ReplyWriterAgent).thenReturn(
+    mockModel(ReplyWriterAgent).thenReturn(
       replyWith(ReplyDraftDto, {
         text: "Sorry — refund on its way.",
         refundCents: 2_500,
       }),
     );
-    mockLlm(ReplyReviewerAgent).thenReturn(
+    mockModel(ReplyReviewerAgent).thenReturn(
       replyWith(ChangesRequestedDto, { notes: "say how many days late" }),
       replyWith(ReplyApprovedDto, {}),
     );
-    mockLlm(ReplyEditorAgent).thenReturn(
+    mockModel(ReplyEditorAgent).thenReturn(
       replyWith(ReplyDraftDto, {
         text: "Four days late — sorry, refund on its way.",
         refundCents: 2_500,
@@ -106,26 +106,26 @@ describe("07-langgraph-migration — Before (LangGraph God State) vs After (AGBo
 
   test("large refund: pauses for supervisor sign-off on RefundSignOffChannel and issues refund after app.resume", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
-    mockLlm(ResearchPlannerAgent).thenReturn(
+    mockModel(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
+    mockModel(ResearchPlannerAgent).thenReturn(
       replyWith(ResearchQuestionDto, [{ question: "Was it late?" }]),
     );
-    mockLlm(OrderResearcherAgent).thenReturn(
+    mockModel(OrderResearcherAgent).thenReturn(
       replyWith(ResearchFindingDto, {
         question: "Was it late?",
         answer: "yes, by four days",
       }),
     );
-    mockLlm(ReplyWriterAgent).thenReturn(
+    mockModel(ReplyWriterAgent).thenReturn(
       replyWith(ReplyDraftDto, {
         text: "Full refund.",
         refundCents: 25_000,
       }),
     );
-    mockLlm(ReplyReviewerAgent).thenReturn(replyWith(ReplyApprovedDto, {}));
-    mockLlm(RefundSignOffAgent).thenReturn(
+    mockModel(ReplyReviewerAgent).thenReturn(replyWith(ReplyApprovedDto, {}));
+    mockModel(RefundSignOffAgent).thenReturn(
       callTool(IssueSignedOffRefundTool, { orderId: "7", amountCents: 25_000 }),
       replyWith(RefundIssuedDto, { refundId: "refund-7" }),
     );
@@ -150,29 +150,29 @@ describe("07-langgraph-migration — Before (LangGraph God State) vs After (AGBo
     });
   });
 
-  test("review loop exceeding maxVisits exits cleanly via VisitsLimitExceededError to ReplyStuckWorkflowFinish", async ({
+  test("review loop exceeding maxVisits exits cleanly via LimitError.Visits to ReplyStuckWorkflowFinish", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
-    mockLlm(ResearchPlannerAgent).thenReturn(
+    mockModel(SupportTriageRouter).thenReturn(routeTo(ResearchPlannerAgent));
+    mockModel(ResearchPlannerAgent).thenReturn(
       replyWith(ResearchQuestionDto, [{ question: "Was it late?" }]),
     );
-    mockLlm(OrderResearcherAgent).thenReturn(
+    mockModel(OrderResearcherAgent).thenReturn(
       replyWith(ResearchFindingDto, {
         question: "Was it late?",
         answer: "yes, by four days",
       }),
     );
-    mockLlm(ReplyWriterAgent).thenReturn(
+    mockModel(ReplyWriterAgent).thenReturn(
       replyWith(ReplyDraftDto, { text: "Draft 1", refundCents: 2_500 }),
     );
-    mockLlm(ReplyReviewerAgent).thenReturn(
+    mockModel(ReplyReviewerAgent).thenReturn(
       replyWith(ChangesRequestedDto, { notes: "Change 1" }),
       replyWith(ChangesRequestedDto, { notes: "Change 2" }),
       replyWith(ChangesRequestedDto, { notes: "Change 3" }),
     );
-    mockLlm(ReplyEditorAgent).thenReturn(
+    mockModel(ReplyEditorAgent).thenReturn(
       replyWith(ReplyDraftDto, { text: "Draft 2", refundCents: 2_500 }),
       replyWith(ReplyDraftDto, { text: "Draft 3", refundCents: 2_500 }),
     );
@@ -190,9 +190,9 @@ describe("07-langgraph-migration — Before (LangGraph God State) vs After (AGBo
 
   test("non-refund inquiry routes directly to HandOverWorkflowFinish", async ({
     app,
-    mockLlm,
+    mockModel,
   }) => {
-    mockLlm(SupportTriageRouter).thenReturn(routeTo(HandOverWorkflowFinish));
+    mockModel(SupportTriageRouter).thenReturn(routeTo(HandOverWorkflowFinish));
 
     const result = await app.execute(
       SupportWorkflowStart,

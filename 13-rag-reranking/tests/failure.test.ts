@@ -15,9 +15,9 @@ const stub = cohereStubForFile();
 // the SDK reaches the stub over HTTP on the loopback
 const test = testWith(HandbookApplication, { allowNetwork: ["127.0.0.1"] });
 
-test("Cohere answers 503: the retriever's own first 3 reach the agent, the turn finishes", async ({ app, mockLlm }) => {
+test("Cohere answers 503: the retriever's own first 3 reach the agent, the turn finishes", async ({ app, mockModel }) => {
   stub.failNext(503, 2);
-  mockLlm(HandbookAgent).thenReturn(callTool(SearchHandbookTool, { query: "on-call?" }), replyWith("done"));
+  mockModel(HandbookAgent).thenReturn(callTool(SearchHandbookTool, { query: "on-call?" }), replyWith("done"));
 
   const result = await app.execute(HandbookWorkflowStart, { text: "on-call?" });
 

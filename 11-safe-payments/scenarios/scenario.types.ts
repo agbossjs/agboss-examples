@@ -29,7 +29,7 @@ export interface ScenarioContext {
   readonly stub: StubGateway;
   readonly variant: Variant;
   /** The scripted model turns (PS7, PS11, PS21): no model is ever called. */
-  readonly mockLlm: WorkflowFixtures["mockLlm"];
+  readonly mockModel: WorkflowFixtures["mockModel"];
   /** One instance of the test (`apps[index]`), or a setup error. */
   readonly app: (index: number) => TestApp;
 }
