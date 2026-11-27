@@ -1,9 +1,10 @@
 /**
- * agbossjs/agboss#891 AC2 / AC3 — MongoRedisApplication's stores, offline: the durable bundle beside
- * the Redis coordination bundle, the ids under EXECUTION_ID_STORE (no `new`, no second lease store),
- * and the assembly refusing what Redis leases cannot protect — before anything connects.
+ * agbossjs/agboss#891 AC2 / AC3 — MongoRedisApplication's storages, offline: the MongoDB durable
+ * bundle beside the Redis coordination bundle, the ids under EXECUTION_ID_STORE bound by the container
+ * (no `new`, no second lease store), and the assembly refusing a store class listed beside the
+ * storages — before anything connects.
  */
-import { createApp, type Provider } from "@agboss/core";
+import { createApp, type Class } from "@agboss/core";
 import {
   MONGODB_DURABLE_STORES,
   MongoExecutionLeaseRepository,
@@ -12,17 +13,19 @@ import {
 } from "@agboss/mongodb";
 import { REDIS_COORDINATION_STORES, RedisExecutionLeaseRepository } from "@agboss/redis";
 import { beforeAll, describe, expect, it } from "vitest";
+import { MongoRedisApplication } from "../../src/mongo-redis.application.js";
 import { variantWith } from "./fixtures/variant.fixture.js";
 
-// placeholders: nothing is started — the assembly fails before any store connects
+// placeholders: no server runs; the short selection timeout makes the one connect that is tried fail at once
 beforeAll(() => {
-  process.env.MONGODB_URL = "mongodb://127.0.0.1:1/?replicaSet=rs0";
+  process.env.MONGODB_URL = "mongodb://127.0.0.1:1/?replicaSet=rs0&serverSelectionTimeoutMS=500";
   process.env.REDIS_URL = "redis://127.0.0.1:1";
+  process.env.PII_PSEUDONYM_KEY = "placeholder";
 });
 
-const refusalOf = async (extra: Provider): Promise<string> => {
+const refusalOf = async (application: Class): Promise<string> => {
   try {
-    const app = await createApp(variantWith(extra), {});
+    const app = await createApp(application, {});
     await app.close();
     return "assembled";
   } catch (error) {
@@ -43,15 +46,20 @@ describe("#891: the store bundles of MongoDB + Redis", () => {
     expect(REDIS_COORDINATION_STORES).toHaveLength(3);
   });
 
-  it("AC2: a fenced-effect store beside Redis leases is refused at assembly", async () => {
-    expect(await refusalOf(MongoFencedEffectRepository)).toContain("[application.store-backend-mismatch]");
+  it("AC1: the application assembles — the first thing to fail is the connection to the placeholder URL", async () => {
+    // no rule is broken: the start reaches MongoConnection.onInit, which cannot connect to 127.0.0.1:1 (the 0.5 s selection timeout)
+    const refusal = await refusalOf(MongoRedisApplication);
+
+    expect(refusal).toContain("[di.hook-failed] MongoConnection.onInit failed");
+    expect(refusal).not.toContain("breaks");
   });
 
-  it("AC2: an outbound-call store beside Redis leases is refused at assembly", async () => {
-    expect(await refusalOf(MongoOutboundCallRepository)).toContain("[application.store-backend-mismatch]");
-  });
-
-  it("AC2: MongoDB's lease store listed as a class is a second lease store — the token is what avoids it", async () => {
-    expect(await refusalOf(MongoExecutionLeaseRepository)).toContain("[di.ambiguous-implementation]");
+  it.each([
+    ["a fenced-effect", MongoFencedEffectRepository],
+    ["an outbound-call", MongoOutboundCallRepository],
+    ["MongoDB's lease", MongoExecutionLeaseRepository],
+  ])("AC2: %s store listed beside the storages is refused at assembly", async (_, store) => {
+    // the storage components provide the stores: the driver chooses them, the providers list does not
+    expect(await refusalOf(variantWith(store))).toContain("[storage.providers-conflict]");
   });
 });

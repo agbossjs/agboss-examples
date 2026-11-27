@@ -1,11 +1,11 @@
 # MongoDB + Redis — instructions for coding agents
 
 This is an [AGBoss](https://agboss.dev) application (`MongoRedisApplication`): Redis coordinates —
-the leases, the child queue, the rate limits (`@agboss/redis`, `REDIS_COORDINATION_STORES`) — and a
-MongoDB replica set keeps everything durable (`@agboss/mongodb`, `MONGODB_DURABLE_STORES`), wired
-with `provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository)` and no `new` (agbossjs/agboss#891).
-`LocalMongoRedisApplication` (`src/local/`) is the same workflows on SQLite, for the offline tests
-and the demo.
+the leases, the child queue, the rate limits (`RecountClusterStorage`, `RedisDriver` of
+`@agboss/redis`) — and a MongoDB replica set keeps everything durable (`RecountDatabaseStorage`,
+`MongoDriver` of `@agboss/mongodb`), wired by `storage: { database, cluster }` and no `new`
+(agbossjs/agboss#891). `LocalMongoRedisApplication` (`src/local/`) is the same workflows on SQLite,
+for the offline tests and the demo.
 
 Before writing or changing any AGBoss code, read `.agents/skills/agboss/SKILL.md` — it is the
 framework's own guide for the installed `agboss` version and routes each task to one reference:
@@ -27,8 +27,8 @@ put this project's own rules below, never there.
 
 - All components must remain stateless (`agboss/no-component-state`).
 - `npm run check`, `npm test` and `npm run demo` run 100% offline, $0, no model, no key.
-- The stores come from the bundles only — never a store class constructed by hand, never MongoDB's
-  lease store listed as a class beside Redis's (`[di.ambiguous-implementation]`).
-- No fenced-effect or outbound-call store beside Redis leases (`[application.store-backend-mismatch]`):
-  a step here has no effect outside the execution; work that must happen once runs on MongoDB leases.
+- The stores come from the storage components' drivers only — never a store class constructed by
+  hand or listed in `providers` beside the storages (`[storage.providers-conflict]`).
+- Work that must happen exactly once (a charge, a message) belongs on MongoDB leases: a
+  `@DatabaseStorage` without a `@ClusterStorage`.
 - Never a connection string on a command line: `agboss-mongodb migrate` reads `MONGODB_URL`.

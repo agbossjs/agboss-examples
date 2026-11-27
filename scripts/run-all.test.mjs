@@ -707,7 +707,7 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
     assert.equal(
       pkg.scripts.check,
-      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
+      "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
     assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");

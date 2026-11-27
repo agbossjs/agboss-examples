@@ -4,10 +4,11 @@
  * `createApp` instances on the system clock, as two pods are — the leases and the queue on Redis's own
  * time, nothing on a test's virtual clock. Each run uses its own database and its own Redis key
  * prefix (a new database restarts the execution ids: they must not meet the lease keys of an earlier
- * run's); the test environment migrates the schema at start.
+ * run's); the test migrates the schema first, as a deploy's Job does (the driver's default checks it).
  */
 import { randomUUID } from "node:crypto";
 import { ChildExecutionStatus, createApp } from "@agboss/core";
+import { migrateMongodb } from "@agboss/mongodb";
 import { describe, expect, it } from "vitest";
 import { MongoRedisApplication } from "../../src/mongo-redis.application.js";
 import { shelvesOf } from "../../src/shelves.js";
@@ -22,6 +23,8 @@ describe.skipIf(!isLive)("#891 AC6 live: MongoDB + Redis (MONGODB_URL, REDIS_URL
     async () => {
       process.env.MONGODB_DATABASE = `recount_live_${run}`;
       process.env.REDIS_KEY_PREFIX = `recount_live_${run}:`;
+      process.env.PII_PSEUDONYM_KEY ??= `live-${run}`;
+      await migrateMongodb({ url: process.env.MONGODB_URL ?? "", database: process.env.MONGODB_DATABASE });
       const a = await createApp(MongoRedisApplication, {});
       const b = await createApp(MongoRedisApplication, {});
       try {

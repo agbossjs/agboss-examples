@@ -11,6 +11,9 @@ import { MongoRedisApplication } from "../mongo-redis.application.js";
 import { shelvesOf } from "../shelves.js";
 import { RecountWorkflowStart } from "../workflows/recount/recount.workflow-start.js";
 
+// the application's own PII key (a synthetic one here; a Secret on a pod)
+process.env.PII_PSEUDONYM_KEY ??= "local-demo-synthetic-pseudonym-key";
+
 const isLive = process.argv.includes("--live");
 
 async function instances(): Promise<readonly [App, App]> {

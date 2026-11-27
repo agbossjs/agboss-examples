@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
-  "description": "P1 Proof: AGBoss on MongoDB + Redis — Redis coordinates (leases, the child queue, rate limits; @agboss/redis) and MongoDB keeps everything durable (@agboss/mongodb), wired by the store bundles and provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository) with no `new`; a recount whose shelves run as children on any instance.",
+  "description": "P1 Proof: AGBoss on MongoDB + Redis — Redis coordinates (leases, the child queue, rate limits; @agboss/redis) and MongoDB keeps everything durable (@agboss/mongodb), wired by storage: { database: MongoDriver, cluster: RedisDriver } with no `new`; a recount whose shelves run as children on any instance.",
   "agboss": {
     "application": "src/mongo-redis.application.ts"
   },

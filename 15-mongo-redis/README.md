@@ -5,31 +5,28 @@
 > check in one transaction (fenced effects, outbound calls) on the wrong backend
 > **Principle:** Promise → Wiring the assembly checks → Reproducible Proof
 
-`MongoRedisApplication` splits its stores between two servers:
+`MongoRedisApplication` splits its stores between two servers, one storage component each:
 
-- **Redis** coordinates (`@agboss/redis`, `REDIS_COORDINATION_STORES`): the execution leases, the
-  queue of children launched on any instance, the rate limits.
-- **MongoDB** keeps everything durable (`@agboss/mongodb`, `MONGODB_DURABLE_STORES`): records,
-  checkpoints, pauses, execution trees, history, budgets, mesh requests, the audit log, A2A tasks.
+- **Redis** coordinates (`RecountClusterStorage`, `RedisDriver` of `@agboss/redis`): the execution
+  leases, the queue of children launched on any instance, the rate limits.
+- **MongoDB** keeps everything durable (`RecountDatabaseStorage`, `MongoDriver` of `@agboss/mongodb`):
+  records, checkpoints, pauses, execution trees, history, budgets, mesh requests, the audit log, A2A tasks.
 
 ```ts
-providers: [
-  ...MONGODB_DURABLE_STORES,
-  ...REDIS_COORDINATION_STORES,
-  provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository),
-],
+storage: { database: RecountDatabaseStorage, cluster: RecountClusterStorage },
 ```
 
-The Redis lease store keeps no execution ids of its own (an id handed out is kept forever, with the
-durable rows): it injects `EXECUTION_ID_STORE`, and `provide(EXECUTION_ID_STORE, MongoExecutionLeaseRepository)`
-has the container create MongoDB's lease store under that token only — no `new`, and no second lease
-store (listing the class itself is `[di.ambiguous-implementation]`).
+The drivers are the only source of the connections' settings (`secret("MONGODB_URL")`,
+`secret("REDIS_URL")`, `env("MONGODB_DATABASE")`, `env("REDIS_KEY_PREFIX")`), read once when a pod
+starts. The Redis lease store keeps no execution ids of its own (an id handed out is kept forever, with
+the durable rows): the container binds the database driver's lease store under `EXECUTION_ID_STORE`
+for it — no `new`, and no second lease store. A store class listed in `providers` beside the storages
+is `[storage.providers-conflict]`: the storage components provide the stores, the drivers choose them.
 
-**Coordination only.** A fenced effect or an outbound call checks the lease in the same transaction
-as its write, which a Redis lease and a MongoDB row cannot share. So this application lists neither,
-and the core refuses one at assembly (`[application.store-backend-mismatch]`) — the recount's steps
-have no effect outside the execution, so running one again after a crash is safe. Work that must
-happen exactly once (a charge, a message) belongs on MongoDB leases: list `MONGODB_STORES` instead.
+**Coordination only.** The cluster's stores are the leases, the queue and the rate limits; every other
+store, the fenced-effect and outbound-call ones too, is MongoDB's and checks the lease row it keeps
+(the database's lease row is the authority for the token, the marks and the fence). The recount's steps
+have no effect outside the execution, so running one again after a crash is safe.
 
 The guarantees and what they assume: [Guarantees](https://github.com/agbossjs/agboss/wiki/Guarantees),
 [Several instances](https://github.com/agbossjs/agboss/wiki/Several-instances).
@@ -38,9 +35,9 @@ The guarantees and what they assume: [Guarantees](https://github.com/agbossjs/ag
 
 | Promise | AGBoss mechanism | Proof |
 | --- | --- | --- |
-| **Two backends, one wiring, no `new`** | the store bundles and `provide(EXECUTION_ID_STORE, Class)` | `npm run check` (`agboss check --strict` assembles `MongoRedisApplication`); [`tests/stores/store-wiring.test.ts`](./tests/stores/store-wiring.test.ts) › "AC3" |
-| **No second lease store** | the class under the token only | `tests/stores/store-wiring.test.ts` › "AC2: MongoDB's lease store listed as a class …" (`[di.ambiguous-implementation]`) |
-| **No double-charge protection promised that Redis cannot give** | the one-backend rule at assembly | `tests/stores/store-wiring.test.ts` › "AC2: a fenced-effect store …", "… outbound-call store …" (`[application.store-backend-mismatch]`), before anything connects |
+| **Two backends, one wiring, no `new`** | `storage: { database, cluster }` — the drivers and the lease store the container binds under `EXECUTION_ID_STORE` | `npm run check` (`agboss check --strict` assembles `MongoRedisApplication`); [`tests/stores/store-wiring.test.ts`](./tests/stores/store-wiring.test.ts) › "AC1", "AC3" |
+| **No second lease store** | the storages provide the stores | `tests/stores/store-wiring.test.ts` › "AC2: MongoDB's lease store listed beside the storages …" (`[storage.providers-conflict]`) |
+| **No store chosen outside the drivers** | the storages are the only source of stores | `tests/stores/store-wiring.test.ts` › "AC2: a fenced-effect store …", "… an outbound-call store …" (`[storage.providers-conflict]`), before anything connects |
 | **Children on any instance, each counted once** | `ChildPlacement.AnyWorker` on the Redis child queue, the trees on Redis leases, the state on MongoDB | [`tests/workflows/recount.workflow.test.ts`](./tests/workflows/recount.workflow.test.ts) (offline twin, two instances); [`tests/live/recount.live.test.ts`](./tests/live/recount.live.test.ts) (the real application, two instances, `MONGODB_URL` + `REDIS_URL`) |
 | **The schema is versioned and migrated explicitly** | `agboss-mongodb migrate` / `migrateMongodb`, `SchemaSetup.Check` at start | `npm run demo:live` migrates first; the start refuses an unmigrated or newer schema |
 
@@ -62,8 +59,9 @@ npm run demo:live                       # twelve shelves on two instances of Mon
 npx vitest run tests/live               # the same as a test
 ```
 
-`MONGODB_SCHEMA_SETUP=migrate-on-start` makes each start migrate first instead; the default
-(`check`) refuses an unmigrated or newer schema, so pods need no rights to change it.
+The driver's `schemaSetup` (default `SchemaSetup.Check`) refuses an unmigrated or newer schema, so
+pods need no rights to change it; `SchemaSetup.MigrateOnStart` in `RecountDatabaseStorage` makes each
+start migrate first instead.
 
 **One Redis key prefix per MongoDB database** (`REDIS_KEY_PREFIX`, `redisKeyPrefix`; the live test
 sets its own with its database). A lease key is never deleted, and a retired lease is never taken
@@ -73,8 +71,9 @@ database — an id handed out as new whose lease key already exists in Redis fai
 
 ## 3. Layout
 
-- `src/mongo-redis.application.ts` — the stores and the workflows; the stores read their own settings (see below)
-  (`mongodbUrl`, `redisUrl` as `Secret`s, `mongodbDatabase`, `mongodbSchemaSetup`).
+- `src/mongo-redis.application.ts` — the storages and the workflows; `src/storages/` — the MongoDB
+  database storage and the Redis cluster storage, whose drivers read the settings (`MONGODB_URL`,
+  `REDIS_URL` as secrets; `MONGODB_DATABASE`, `REDIS_KEY_PREFIX`; `PII_PSEUDONYM_KEY`).
 - `src/workflows/recount/` — one `shelf-workflow` per shelf, on any instance; `src/workflows/shelf/`
   — one code step (`count-shelf-action`).
 - `src/local/` — the same workflows on the core's SQLite stores, for the offline tests and demo.

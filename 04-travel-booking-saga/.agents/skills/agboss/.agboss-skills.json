@@ -6,7 +6,7 @@
     "references/02-flow-dsl-all-combinations.md": "sha256-b21c5fec3dabb8b3635afaf41c3408a015eb97fbf9eddb80b51d04b0631619e7",
     "references/03-components-di-and-lifecycle.md": "sha256-39e0315371f0ec120967fab90417266af21c545c2d48a555f03e33e8673993f7",
     "references/04-mcp-and-a2a.md": "sha256-a78f1fdb444954eb548bcdcd502eb7367cadea242144e6af8b4a720d20a89bc0",
-    "references/05-channels-and-human-in-the-loop.md": "sha256-e400f8e7d9fe1d6a98ff707d2bf091388bd4c093634eafae6046e30fcecc7d57",
+    "references/05-channels-and-human-in-the-loop.md": "sha256-718962917d81d5b19555842dbbdbe0821d4182f6aa7ae9fb17fdc81b4098c88c",
     "references/06-finops-providers-and-queues.md": "sha256-bc1aa920b8839bb58ebfd847c4ab4d5861b7f3ba8adb71e16bff67bc4ad6b2cd",
     "references/07-guardrails-pii-and-security.md": "sha256-f352e3f38a3a1e63563f5294128c6369822647a7e25f889f7fa8d705cd31cf11",
     "references/08-observability-and-tracing.md": "sha256-09f89dce6826e720a94ebe45f15f1033c9534262733ba8e16bd49c620fbb499d",
