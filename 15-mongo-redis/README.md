@@ -41,7 +41,7 @@ The guarantees and what they assume: [Guarantees](https://github.com/agbossjs/ag
 | **Two backends, one wiring, no `new`** | the store bundles and `provide(EXECUTION_ID_STORE, Class)` | `npm run check` (`agboss check --strict` assembles `MongoRedisApplication`); [`tests/stores/store-wiring.test.ts`](./tests/stores/store-wiring.test.ts) › "AC3" |
 | **No second lease store** | the class under the token only | `tests/stores/store-wiring.test.ts` › "AC2: MongoDB's lease store listed as a class …" (`[di.ambiguous-implementation]`) |
 | **No double-charge protection promised that Redis cannot give** | the one-backend rule at assembly | `tests/stores/store-wiring.test.ts` › "AC2: a fenced-effect store …", "… outbound-call store …" (`[application.store-backend-mismatch]`), before anything connects |
-| **Children on any instance, each counted once** | `ChildPlacement.AnyInstance` on the Redis child queue, the trees on Redis leases, the state on MongoDB | [`tests/workflows/recount.workflow.test.ts`](./tests/workflows/recount.workflow.test.ts) (offline twin, two instances); [`tests/live/recount.live.test.ts`](./tests/live/recount.live.test.ts) (the real application, two instances, `MONGODB_URL` + `REDIS_URL`) |
+| **Children on any instance, each counted once** | `ChildPlacement.AnyWorker` on the Redis child queue, the trees on Redis leases, the state on MongoDB | [`tests/workflows/recount.workflow.test.ts`](./tests/workflows/recount.workflow.test.ts) (offline twin, two instances); [`tests/live/recount.live.test.ts`](./tests/live/recount.live.test.ts) (the real application, two instances, `MONGODB_URL` + `REDIS_URL`) |
 | **The schema is versioned and migrated explicitly** | `agboss-mongodb migrate` / `migrateMongodb`, `SchemaSetup.Check` at start | `npm run demo:live` migrates first; the start refuses an unmigrated or newer schema |
 
 ## 2. Run it
@@ -73,7 +73,7 @@ database — an id handed out as new whose lease key already exists in Redis fai
 
 ## 3. Layout
 
-- `src/mongo-redis.application.ts` — the stores and the workflows; `src/environments/` its settings
+- `src/mongo-redis.application.ts` — the stores and the workflows; the stores read their own settings (see below)
   (`mongodbUrl`, `redisUrl` as `Secret`s, `mongodbDatabase`, `mongodbSchemaSetup`).
 - `src/workflows/recount/` — one `shelf-workflow` per shelf, on any instance; `src/workflows/shelf/`
   — one code step (`count-shelf-action`).

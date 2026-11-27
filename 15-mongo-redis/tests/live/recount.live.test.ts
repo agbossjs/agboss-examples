@@ -22,8 +22,8 @@ describe.skipIf(!isLive)("#891 AC6 live: MongoDB + Redis (MONGODB_URL, REDIS_URL
     async () => {
       process.env.MONGODB_DATABASE = `recount_live_${run}`;
       process.env.REDIS_KEY_PREFIX = `recount_live_${run}:`;
-      const a = await createApp(MongoRedisApplication, { env: "test" });
-      const b = await createApp(MongoRedisApplication, { env: "test" });
+      const a = await createApp(MongoRedisApplication, {});
+      const b = await createApp(MongoRedisApplication, {});
       try {
         const shelves = shelvesOf(`live-${run}`, 12);
 

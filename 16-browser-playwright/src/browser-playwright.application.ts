@@ -1,6 +1,5 @@
 import {
   Application,
-  EmptyEnvironment,
   PiiFileAction,
   PiiKind,
   PiiPolicy,
@@ -40,7 +39,6 @@ export class CardPiiPolicy {}
 @Application({
   name: "browser-playwright-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   modelProvider: OpenRouterModelProvider,
   storage: BrowserPlaywrightDatabaseStorage, // every store on one SQLite file, with the PII key and the idempotency secret
   piiPolicies: [CardPiiPolicy],

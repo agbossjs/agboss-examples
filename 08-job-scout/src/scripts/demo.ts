@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   process.env.AGBOSS_SQLITE_PATH = ":memory:";
   const served = isLive ? undefined : await serveFetch(openRouter.fetch);
   if (served !== undefined) process.env.OPENROUTER_BASE_URL = served.baseUrl;
-  const app = await createApp(JobScoutApplication, { env: "dev" });
+  const app = await createApp(JobScoutApplication, { profile: "dev" });
 
   const turns: Turn[] = [];
   let threadId: string | undefined;

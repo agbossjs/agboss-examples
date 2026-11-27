@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { MigrationDatabaseStorage } from "./storages/migration.database-storage.js";
 import { SupportApplicationBudget } from "./budgets/support-application.budget.js";
@@ -12,7 +12,6 @@ import { SupportWorkflow } from "./workflows/support/support.workflow.js";
 @Application({
   name: "support-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: MigrationDatabaseStorage,
   modelProvider: OfflineMigrationModelProvider,
   workflows: [SupportWorkflow],

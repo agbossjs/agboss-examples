@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { TriageAppDailyBudget } from "./budgets/triage-app-daily.budget.js";
 import { TriageExecutionBudget } from "./budgets/triage-execution.budget.js";
@@ -36,7 +36,6 @@ export { TriageWorkflow } from "./workflows/triage/triage.workflow.js";
 @Application({
   name: "triage-gateway-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: TriageDatabaseStorage,
   modelProvider: TriageOfflineModelProvider,
   workflows: [TriageWorkflow],

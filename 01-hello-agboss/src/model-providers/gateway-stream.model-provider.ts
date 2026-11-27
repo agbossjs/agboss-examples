@@ -1,4 +1,5 @@
-import { ApplicationContext } from "@agboss/core";
+import type { InferEnv } from "@agboss/core";
+import { helloEnv } from "../hello-agboss.env.js";
 import {
   CircuitBreakerPolicy,
   ModelCost,
@@ -57,7 +58,7 @@ async function* linesOf(body: ReadableStream<Uint8Array>): AsyncGenerator<Gatewa
  * A corporate LLM gateway that is not an OpenAI-compatible server: a transport provider
  * (`complete()`), which also streams (`stream()`, #1011) — the gateway's `/stream` answers one JSON
  * line per token and a last line with the usage, and every token is a `textDelta` of `onStream` as
- * its line arrives. The gateway's address is the environment's `gatewayBaseUrl`.
+ * its line arrives. The gateway's address is the env's `gatewayBaseUrl`.
  */
 @ModelProvider({
   name: "gateway-stream-model-provider",
@@ -82,10 +83,10 @@ async function* linesOf(body: ReadableStream<Uint8Array>): AsyncGenerator<Gatewa
     failureWindow: minutes(1),
     openDuration: seconds(30),
   }),
-  deps: [ApplicationContext],
+  deps: [helloEnv],
 })
 export class GatewayStreamModelProvider implements ModelProviderHandler {
-  constructor(private readonly applicationContext: ApplicationContext) {}
+  constructor(private readonly settings: InferEnv<typeof helloEnv>) {}
 
   async complete(request: ModelProviderRequest): Promise<ModelProviderResponse> {
     const stream = this.stream(request);
@@ -106,7 +107,7 @@ export class GatewayStreamModelProvider implements ModelProviderHandler {
       settle = { resolve, reject };
     });
     result.catch(() => undefined); // the stream's own error reaches the gateway through textStream
-    const baseUrl = this.applicationContext.environment.gatewayBaseUrl;
+    const baseUrl = this.settings.gatewayBaseUrl;
     const textStream = async function* (): AsyncGenerator<string> {
       try {
         if (baseUrl === undefined) throw new Error("the environment has no gatewayBaseUrl");

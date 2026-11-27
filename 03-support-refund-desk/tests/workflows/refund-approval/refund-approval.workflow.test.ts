@@ -131,11 +131,11 @@ describe("a deadline the person can move, a reminder before it, a default when n
 
     await clock.advance(seconds(10));
     // to now + two windows: later than the deadline it has
-    const extension = await app.extendPause(
-      { pauseId: first.pauseId, expiresIn: afterWindow(APPROVAL_WINDOW) },
+    const extension = await app.setPauseTimeout(
+      { pauseId: first.pauseId, timeout: afterWindow(APPROVAL_WINDOW) },
       lead,
     );
-    expect(Date.parse(extension.expiresAt)).toBeGreaterThan(Date.parse(extension.previousExpiresAt));
+    expect(extension.expiresAt?.getTime()).toBeGreaterThan(extension.previousExpiresAt?.getTime() ?? Infinity);
     await until(clock, () => inbox.notes().some((line) => line.startsWith("extended: ORD-1002 until ")));
 
     await clock.advance(afterWindow(seconds(6))); // past the old deadline, before the new one

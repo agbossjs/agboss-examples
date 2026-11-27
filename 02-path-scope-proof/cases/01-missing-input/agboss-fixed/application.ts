@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
@@ -19,7 +19,6 @@ export { MissingInputFixedWorkflow } from "../../../src/workflows/missing-input-
 @Application({
   name: "case-01-missing-input-fixed-application",
   version: "0.1.0",
-  environment: EmptyEnvironment,
   workflows: [MissingInputFixedWorkflow],
   storage: PathScopeProofDatabaseStorage,
   budgets: [SuiteAppBudget, SuiteTenantBudget, SuiteExecBudget],

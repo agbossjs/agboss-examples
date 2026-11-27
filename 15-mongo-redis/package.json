@@ -14,8 +14,8 @@
     "lint": "eslint .",
     "check": "agboss check --application src/local/local-mongo-redis.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts",
-    "demo:live": "tsx src/demo.ts --live",
+    "demo": "tsx src/scripts/demo.ts",
+    "demo:live": "tsx src/scripts/demo.ts --live",
     "migrate": "agboss-mongodb migrate"
   },
   "dependencies": {

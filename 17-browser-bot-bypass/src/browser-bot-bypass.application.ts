@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { browserFactoryClass } from "./browser/browser-choice.js";
 import { StealthBrowser } from "./browser/stealth-browser.service.js";
 import { BrowserApplicationDailyBudget } from "./budgets/application-daily.budget.js";
@@ -19,7 +19,6 @@ import { StealthWorkflow } from "./workflows/stealth/stealth.workflow.js";
 @Application({
   name: "browser-bot-bypass-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   modelProvider: OpenRouterModelProvider,
   storage: BrowserBotBypassDatabaseStorage, // every store on one SQLite file, with the PII key
   workflows: [StealthWorkflow, McpStealthWorkflow],

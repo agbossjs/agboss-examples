@@ -98,6 +98,6 @@ scripted even then (the failure injection), the rest of that run is real.
 - Flows are `onStart(…).toRouter(…).onRoute(…)`, the shared loop is `onAgent(…)` paths, the officer's decision is `.toOneOf([…])`; no `.returns(…)`.
 - The providers are driver providers: `OpenRouterModelProvider` (`OpenRouterDriver`) is the application's `modelProvider` and
   `DecisionsModelProvider` (`DecisionsDriver`) is named by the model router (`modelProvider:`); the key and the base URL are
-  `secret("OPENROUTER_API_KEY")` and `env("OPENROUTER_BASE_URL")`, read once at start, so the environment contract is `EmptyEnvironment`.
+  `secret("OPENROUTER_API_KEY")` and `env("OPENROUTER_BASE_URL")`, read once at start; the application declares no `defineEnv` of its own.
 - The cost ledger is `CreditReviewDatabaseStorage` (`@DatabaseStorage` on `SqliteDriver`); `maxSteps` counts the committee's action.
 - The demo lives in `src/scripts/`, which `agboss check` does not load.

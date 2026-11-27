@@ -15,7 +15,7 @@ import type { AddressInfo } from "node:net";
 /** Where the scenario can hold a job: its remote work, or the answer of its ledger entry. */
 export type HoldStage = "work" | "ledger";
 
-/** One `POST /work`: who worked on which job, under which lease token. */
+/** One `POST /work`: who worked on which job. */
 export interface WorkCall {
   readonly callId: number;
   readonly jobId: string;
@@ -23,7 +23,6 @@ export interface WorkCall {
   readonly rootExecutionId: string;
   readonly instanceId: string;
   readonly pod: string;
-  readonly token: number;
   readonly receivedAt: string;
   answeredAt?: string;
   held: boolean;
@@ -139,7 +138,6 @@ export async function startLedgerStub(port: number, host = "0.0.0.0"): Promise<L
         rootExecutionId: textOf(body["rootExecutionId"], "rootExecutionId"),
         instanceId: textOf(body["instanceId"], "instanceId"),
         pod: textOf(body["pod"], "pod"),
-        token: numberOf(body["token"], "token"),
         receivedAt: now(),
         held: false,
         rejected: rejects.has(textOf(body["jobId"], "jobId")),

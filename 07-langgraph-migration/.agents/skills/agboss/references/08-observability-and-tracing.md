@@ -309,7 +309,7 @@ export class OpenRouterModelProvider {}
 
 ```ts file=src/desk.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { ApplicationDailyBudget } from "./desk/budgets/application-daily.budget.js";
 import { ExecutionBudget } from "./desk/budgets/execution.budget.js";
 import { TenantDailyBudget } from "./desk/budgets/tenant-daily.budget.js";
@@ -323,7 +323,6 @@ import { DeskWorkflow } from "./desk/workflows/desk/desk.workflow.js";
   modelProvider: OpenRouterModelProvider,
   name: "desk-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [DeskWorkflow],
   budgets: [ApplicationDailyBudget, TenantDailyBudget, ExecutionBudget],
   observers: [ExecutionMetricsObserver, CompensationAuditObserver], // the only place observers go
@@ -360,7 +359,7 @@ export class DeskApplication {}
 | `onModelFallback`                                                                                                                  | a model call moved to a fallback provider, once per hop: `primaryProvider`, `primaryModel`, `fallbackProvider`, `fallbackModel`, `reason`, `error` (class and code, never text), `caller`; in the step that made the call |
 | `onChannelInterpreterStart / onChannelInterpreterEnd`                                                                              | a `@ChannelInterpreter` reading a free-text reply in `app.resume`: `interpreter`, `channel`, `isCode`; the end: `outcome` (`ChannelInterpreterOutcome`), `costUsd`                                                        |
 | `onTtlSweep`                                                                                                                       | a look of the retention sweep: `at`, `durationMs`, `categories` (`category`, `removed`, `error`); the application's, no workflow filter                                                                                   |
-| `onPauseTimeoutChanged / onPauseReassigned`                                                                                        | `app.extendPause` / `app.reassignPause` that won: `tenantId`, `executionId`, `threadId`, `workflow`, `channel`; the deadlines / `previousChannel` — never the pause's id or the assignee                                  |
+| `onPauseTimeoutChanged / onPauseReassigned`                                                                                        | `app.setPauseTimeout` / `app.reassignPause` that won: `tenantId`, `executionId`, `threadId`, `workflow`, `channel`; the deadlines / `previousChannel` — never the pause's id or the assignee                              |
 | `onValuesOutdated`                                                                                                                 | one per outdating cascade: `trigger`, `outdated` (no DTO values)                                                                                                                                                          |
 | `onLaunchItemsTruncated`                                                                                                           | a per-item launch dropped items: `launch`, `items`, `maxItems`                                                                                                                                                            |
 | `onQuorumDecided`                                                                                                                  | once per quorum: `launch`, `isReached`, `branches`, `group`                                                                                                                                                               |
@@ -379,7 +378,7 @@ export class DeskApplication {}
   (`observer.failed`) and never fails the execution.
 - Not model calls of an agent (no `onModelStart` / `onModelEnd`): a model arbiter's, a reply
   interpreter's, a guardrail's, a compaction's — their cost is in `spend` under `arbiter:<name>`,
-  `reply-interpreter:<name>`, `guardrail:<name>`, `compaction:<name>`.
+  `channel-interpreter:<name>`, `guardrail:<name>`, `compaction:<name>`.
 
 ## Join keys
 

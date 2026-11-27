@@ -21,7 +21,7 @@
     "run": "agboss run",
     "dev": "agboss dev",
     "studio": "agboss studio",
-    "check:models": "agboss check --models --env test",
+    "check:models": "agboss check --models --profile test",
     "eval": "agboss eval score",
     "replay": "agboss replay",
     "golden": "agboss golden",

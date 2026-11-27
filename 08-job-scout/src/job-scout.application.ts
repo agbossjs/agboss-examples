@@ -2,7 +2,6 @@ import { Application } from "@agboss/core";
 import { hours } from "@agboss/core/units";
 import { ApplicationDailyBudget, ExecutionBudget, TenantDailyBudget } from "./config/budgets.js";
 import { DEFAULTS } from "./config/settings.js";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { JobScout } from "./job-scout.workflow.js";
 import { JobScoutDatabaseStorage } from "./storages/job-scout.database-storage.js";
 import { DecisionsModelProvider, OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
@@ -14,14 +13,13 @@ import { DecisionsModelProvider, OpenRouterModelProvider } from "./model-provide
  * `eval`, `replay` and `golden` see earlier processes, and another instance on the file recovers
  * a run whose process died; tests run on `:memory:`. Its model providers (#266) are listed here too:
  * its own OpenRouter for chat (the application's `modelProvider`), the Decisions API for Jev (named
- * by `defaults`' router and guardrail models). Its environments are in `environments/` next
- * to this file, typed by `AppEnvironment`; its `defaults` are every workflow's, under each
+ * by `defaults`' router and guardrail models). Its process variables are `jobScoutEnv`
+ * (`job-scout.env.ts`), its values the profiles in `config/`; its `defaults` are every workflow's, under each
  * workflow's own.
  */
 @Application({
   name: "job-scout-application",
   version: "1.0.0",
-  environment: AppEnvironment,
   storage: JobScoutDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   defaults: DEFAULTS,

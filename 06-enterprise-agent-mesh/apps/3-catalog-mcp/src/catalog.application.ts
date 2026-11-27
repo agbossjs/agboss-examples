@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { CatalogAppDailyBudget } from "./budgets/catalog-app-daily.budget.js";
 import { CatalogExecutionBudget } from "./budgets/catalog-execution.budget.js";
@@ -38,7 +38,6 @@ export { CatalogWorkflow } from "./workflows/catalog/catalog.workflow.js";
 @Application({
   name: "catalog-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: CatalogDatabaseStorage,
   modelProvider: CatalogOfflineModelProvider,
   workflows: [CatalogWorkflow],

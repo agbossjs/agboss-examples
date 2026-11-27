@@ -54,5 +54,5 @@ it("#768 AC1, AC2: the image build compiles dist/ on a fresh clone — it writes
   expect(build.code, build.output).toBe(0);
   expect(build.output).toContain("ok: src/kubernetes-scaling.application.ts");
   expect(existsSync(join(copy, ".agboss", "types.d.ts"))).toBe(true);
-  expect(existsSync(join(copy, "dist", "main.js"))).toBe(true);
+  expect(existsSync(join(copy, "dist", "scripts", "main.js"))).toBe(true);
 }, 180_000);

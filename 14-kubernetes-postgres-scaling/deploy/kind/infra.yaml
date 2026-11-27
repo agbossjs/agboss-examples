@@ -82,7 +82,7 @@ spec:
         - name: stub
           image: agboss-scaling:local
           imagePullPolicy: Never
-          args: ["node", "dist/stub-main.js"]
+          args: ["node", "dist/scripts/stub-main.js"]
           env:
             - { name: STUB_PORT, value: "8081" }
           ports:

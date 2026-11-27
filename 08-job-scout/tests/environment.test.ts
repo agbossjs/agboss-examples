@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { env } from "@agboss/core";
+import { configureEnv, env } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { JobScoutApplication } from "../src/job-scout.application.js";
-import type { AppEnvironment } from "../src/environments/app.environment.js";
+import { jobScoutEnv } from "../src/job-scout.env.js";
 import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
 
 const query = {
@@ -43,14 +43,14 @@ afterAll(() => {
   vi.unstubAllEnvs();
 });
 
-// `npm run chat` (the app) defaults to dev; testWith defaults to test.environment.ts (#261).
-const asChat = testWith(JobScoutApplication, { env: "dev" });
+// `npm run chat` (the app) defaults to dev; testWith defaults to test.config.ts (#261).
+const asChat = testWith(JobScoutApplication, { profile: "dev" });
 const bare = testWith(JobScoutApplication);
-const asTest = testWith(JobScoutApplication, { env: "test" });
+const asTest = testWith(JobScoutApplication, { profile: "test" });
 
 describe("#182: the app's environment reaches GreenhouseBoards", () => {
   asChat(
-    "AC1: the app's default (npm run chat, no --env) is dev.environment.ts: the real board API",
+    "AC1: the app's default (npm run chat, no --profile) is dev.config.ts: the real board API",
     async ({ app }) => {
       const urls = recordBoardRequests();
 
@@ -63,7 +63,7 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
   );
 
   bare(
-    "testWith without env → test.environment.ts (tests never hit the real API by default)",
+    "testWith without a profile → test.config.ts (tests never hit the real API by default)",
     async ({ app }) => {
       const urls = recordBoardRequests();
 
@@ -73,7 +73,7 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
     },
   );
 
-  asTest('{ env: "test" } → test.environment.ts', async ({ app }) => {
+  asTest('{ profile: "test" } → test.environment.ts', async ({ app }) => {
     const urls = recordBoardRequests();
 
     await app.runTool(GreenhouseJobs, query);
@@ -82,15 +82,17 @@ describe("#182: the app's environment reaches GreenhouseBoards", () => {
   });
 });
 
-describe("#261 AC8: an environment of the wrong shape does not compile", () => {
-  it("a missing or mistyped field is a tsc error in the environment file", () => {
-    // @ts-expect-error — greenhouseApiUrl is missing: the contract (app.environment.ts) requires it
-    const missing: AppEnvironment = {};
-    // @ts-expect-error — greenhouseApiUrl is a string
-    const mistyped: AppEnvironment = { greenhouseApiUrl: 42 };
-    const fromVariable: AppEnvironment = {
-      greenhouseApiUrl: env("GREENHOUSE_API_URL"),
-    };
-    expect([missing, mistyped, fromVariable]).toHaveLength(3);
+describe("#261 AC8: the profile's values are typed by the defineEnv dictionary", () => {
+  it("a key the dictionary does not have, or of the wrong type, is a tsc error", () => {
+    // @ts-expect-error — greenhouseApiUrl is a string, not a number
+    const mistyped = configureEnv(jobScoutEnv, { greenhouseApiUrl: 42 });
+    // @ts-expect-error — a key the dictionary does not declare
+    const unknown = configureEnv(jobScoutEnv, { greenhouseUrl: "https://greenhouse.test" });
+    const ok = configureEnv(jobScoutEnv, { greenhouseApiUrl: "https://greenhouse.test" });
+    expect([mistyped, unknown, ok]).toHaveLength(3);
+  });
+
+  it("the variable of the dictionary is a reference of its own: GREENHOUSE_API_URL, read when the app starts", () => {
+    expect(jobScoutEnv.greenhouseApiUrl).toEqual(env("GREENHOUSE_API_URL"));
   });
 });

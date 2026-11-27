@@ -8,5 +8,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     // a test that asserts nothing proves nothing
     expect: { requireAssertions: true },
+    // synthetic keys for the tests only (R6); the rows in memory unless a test gives two instances a file
+    env: { SQLITE_PATH: ":memory:", PII_PSEUDONYM_KEY: "kubernetes-scaling-offline-pseudonym-key", IDEMPOTENCY_KEY: "kubernetes-scaling-offline-idempotency-key" },
   }),
 });

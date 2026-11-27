@@ -384,7 +384,7 @@ export class OpenRouterModelProvider {}
 
 ```ts file=src/support.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SupportA2AEndpoint } from "./support/a2a/support.a2a-endpoint.js";
 import { ApplicationDailyBudget } from "./support/budgets/application-daily.budget.js";
 import { ExecutionBudget } from "./support/budgets/execution.budget.js";
@@ -396,7 +396,6 @@ import { SupportWorkflow } from "./support/workflows/support/support.workflow.js
   providers: [OpenRouterModelProvider],
   name: "support-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [SupportWorkflow],
   budgets: [ApplicationDailyBudget, TenantDailyBudget, ExecutionBudget],
   endpoints: [SupportA2AEndpoint], // describe --json lists it among the exported contracts
@@ -552,7 +551,7 @@ import { SupportHttpAuthenticator } from "./src/support/a2a/support.http-authent
 import { createServer } from "node:http";
 import { a2aHttpListener } from "@agboss/core/a2a";
 
-const app = await createApp(SupportApplication, { env: "prod" });
+const app = await createApp(SupportApplication, { profile: "prod" });
 createServer(
   a2aHttpListener(app, {
     endpoint: SupportA2AEndpoint, // listed in @Application({ endpoints })
@@ -880,7 +879,7 @@ export class BillingMesh {}
 ```
 
 <!-- snippet-context
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { BillingMesh } from "./config/mesh.config.js";
 export class BillingWorkflow {} // a @Workflow of its own
 -->
@@ -892,7 +891,6 @@ import { OpenRouterModelProvider } from "./model-providers/openrouter.model-prov
   providers: [OpenRouterModelProvider],
   name: "billing-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [BillingWorkflow],
   mesh: BillingMesh,
 })
@@ -996,4 +994,4 @@ application, expose } })`'s over MCP): a receiver of another name refuses it, si
 - Taking the tenant from an MCP or A2A request body: bind it from the authenticated caller (the
   authenticator reads headers and the socket only).
 - `new SupportHttpAuthenticator(…)` by hand: list it in `services`; the listener takes the
-  container's instance (its environment, hooks and test overrides).
+  container's instance (its `defineEnv`, hooks and test overrides).

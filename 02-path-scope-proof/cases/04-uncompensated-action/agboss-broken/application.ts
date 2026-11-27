@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, EmptyEnvironment, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, toAction, onStart, Ttl } from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, toAction, onStart, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -163,7 +163,6 @@ export class Case04BrokenExecBudget implements BudgetHandler {
 @Application({
   name: "case-04-uncompensated-action-broken-application",
   version: "0.1.0",
-  environment: EmptyEnvironment,
   workflows: [UncompensatedBrokenWorkflow],
   budgets: [Case04BrokenAppBudget, Case04BrokenTenantBudget, Case04BrokenExecBudget],
 })

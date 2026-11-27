@@ -37,7 +37,7 @@ async function runDemo(
 }
 
 /**
- * The dev environment with an offline key and records in memory (what the demo runs on), the
+ * The dev profile with an offline key and records in memory (what the demo runs on), the
  * scripted OpenRouter served on 127.0.0.1 and reached through `OPENROUTER_BASE_URL` — `createApp`
  * takes the environment from `process.env` and no `providerFetch` (agbossjs/agboss#834). The
  * shortlist MCP server starts in the tests' temp folder; these turns never save to it.
@@ -50,7 +50,7 @@ async function offlineApp(providerFetch: typeof fetch) {
   vi.stubEnv("OPENROUTER_BASE_URL", stub.baseUrl);
   vi.stubEnv("AGBOSS_SQLITE_PATH", ":memory:");
   served.push(stub);
-  return createApp(JobScoutApplication, { env: "dev" });
+  return createApp(JobScoutApplication, { profile: "dev" });
 }
 
 /** The stubs served by this file's apps, closed after each test. */

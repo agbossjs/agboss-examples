@@ -21,7 +21,7 @@ export default tseslint.config(
   {
     files: ["src/**/*.ts"],
     // the demo is a script around the app
-    ignores: ["src/demo.ts"],
+    ignores: ["src/scripts/demo.ts"],
     plugins: { agboss: agbossPlugin },
     rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
   },

@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, EmptyEnvironment, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, onStart, toAction, Ttl } from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, type InputOf, type OutputOf, Workflow, WorkflowFinish, WorkflowStart, onStart, toAction, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -161,7 +161,6 @@ export class Case03BrokenExecBudget implements BudgetHandler {
 @Application({
   name: "case-03-parallel-invalidation-broken-application",
   version: "0.1.0",
-  environment: EmptyEnvironment,
   workflows: [ParallelInvalidationBrokenWorkflow],
   budgets: [Case03BrokenAppBudget, Case03BrokenTenantBudget, Case03BrokenExecBudget],
 })

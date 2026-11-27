@@ -707,10 +707,10 @@ describe("11-safe-payments registration (agbossjs/agboss#654)", () => {
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
     assert.equal(
       pkg.scripts.check,
-      "agboss check --application scenarios/processes/pod.application.ts --strict --cassettes && agboss check --strict --cassettes && tsc --noEmit && eslint .",
+      "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     assert.equal(pkg.devDependencies["@agboss/cli"], PUBLIC_RANGE);
     const specs = JSON.stringify({
@@ -774,7 +774,7 @@ describe("12-payment-gateways registration (agbossjs/agboss#655)", () => {
       "agboss check --strict --cassettes && tsc --noEmit && eslint .",
     );
     assert.equal(pkg.scripts.test, "vitest run");
-    assert.equal(pkg.scripts.demo, "tsx src/demo.ts");
+    assert.equal(pkg.scripts.demo, "tsx src/scripts/demo.ts");
     assert.equal(pkg.dependencies["@agboss/core"], PUBLIC_RANGE);
     for (const [name, version] of Object.entries({
       stripe: "23.1.0",

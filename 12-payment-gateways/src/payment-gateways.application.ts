@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { GatewaysApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { GatewaysExecutionBudget } from "./budgets/execution.budget.js";
 import { GatewaysTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
@@ -18,7 +18,6 @@ import { RefundWorkflow } from "./workflows/refund/refund.workflow.js";
 @Application({
   name: "payment-gateways-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: GatewaysDatabaseStorage,
   workflows: [CheckoutWorkflow, RefundWorkflow, CaptureWorkflow, GatewayEventWorkflow],
   budgets: [GatewaysApplicationDailyBudget, GatewaysTenantDailyBudget, GatewaysExecutionBudget],

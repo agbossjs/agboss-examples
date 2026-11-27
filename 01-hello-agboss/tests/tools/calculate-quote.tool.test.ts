@@ -1,4 +1,4 @@
-import { ApplicationContext, ExecutionContext, Injectable, secret } from "@agboss/core";
+import { ExecutionContext, Injectable, secret } from "@agboss/core";
 import { testUnit } from "@agboss/core/testing";
 import { usd } from "@agboss/core/units";
 import { describe, expect, it } from "vitest";
@@ -14,12 +14,11 @@ class StubPricingCatalogService extends PricingCatalogService {
   constructor() {
     super(
       {
-        environment: {
-          catalogCurrency: "CHF",
-          pricingApiKey: secret("PRICING_API_KEY"),
-          pricingApiBaseUrl: "https://pricing.internal.example",
-        },
-      } as unknown as ApplicationContext,
+        catalogCurrency: "CHF",
+        gatewayBaseUrl: undefined,
+        pricingApiKey: secret("PRICING_API_KEY"),
+        pricingApiBaseUrl: "https://pricing.internal.example",
+      },
       {} as unknown as ExecutionContext,
     );
   }

@@ -5,7 +5,7 @@
  * `[router.routes-mismatch]` before anything runs (`tests/fixtures/missing-route.test.ts`). It is
  * never part of the example's application.
  */
-import { Agent, Application, DecidedBy, EmptyEnvironment, Router, Workflow, WorkflowFinish, WorkflowStart, inline, onStart, toAgent, Ttl } from "@agboss/core";
+import { Agent, Application, DecidedBy, Router, Workflow, WorkflowFinish, WorkflowStart, inline, onStart, toAgent, Ttl } from "@agboss/core";
 import { DecisionsModelProvider, OpenRouterModelProvider } from "../../src/model-providers/openrouter.model-provider.js";
 import { CreditReviewDatabaseStorage } from "../../src/storages/credit-review.database-storage.js";
 import { CreditReviewApplicationDailyBudget } from "../../src/budgets/application-daily.budget.js";
@@ -76,7 +76,6 @@ export class MissingRouteWorkflow {}
 @Application({
   name: "missing-route-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: CreditReviewDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   workflows: [MissingRouteWorkflow],

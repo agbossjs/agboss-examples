@@ -1,6 +1,7 @@
-import { ApplicationContext, Injectable } from "@agboss/core";
+import { Injectable, type InferEnv } from "@agboss/core";
 import { z } from "zod";
 import { JOB_SEARCH, type JobSearch } from "../config/search.js";
+import { jobScoutEnv } from "../job-scout.env.js";
 import { BoardResponse, candidateOf, type BoardJob, type Candidate } from "../helpers/boards.helper.js";
 
 export type FetchJson = (url: string) => Promise<unknown>;
@@ -60,13 +61,13 @@ export async function probeBoard(
 }
 
 /** Public Greenhouse boards over HTTP (no key); board responses are cached per instance. */
-@Injectable({ deps: [JOB_SEARCH, ApplicationContext] })
+@Injectable({ deps: [JOB_SEARCH, jobScoutEnv] })
 export class GreenhouseBoards {
   readonly #cache = new Map<string, Promise<BoardJob[]>>();
 
   constructor(
     private readonly search: JobSearch,
-    private readonly applicationContext: ApplicationContext,
+    private readonly settings: InferEnv<typeof jobScoutEnv>,
     private readonly fetchJson: FetchJson = fetchJsonOverHttp,
   ) {}
 
@@ -87,14 +88,14 @@ export class GreenhouseBoards {
 
   /** How many live jobs a board has, and how many of them are in a place (any of its words). */
   probe(board: string, placeWords: readonly string[]): Promise<BoardProbe> {
-    const { greenhouseApiUrl } = this.applicationContext.environment;
+    const { greenhouseApiUrl } = this.settings;
     return probeBoard({ greenhouseApiUrl, fetchJson: this.fetchJson }, board, placeWords);
   }
 
   private board(board: string): Promise<BoardJob[]> {
     const cached = this.#cache.get(board);
     if (cached !== undefined) return cached;
-    const url = `${this.applicationContext.environment.greenhouseApiUrl}/v1/boards/${encodeURIComponent(board)}/jobs?content=true`;
+    const url = `${this.settings.greenhouseApiUrl}/v1/boards/${encodeURIComponent(board)}/jobs?content=true`;
     const pending = this.fetchJson(url).then((body) => BoardResponse.parse(body).jobs);
     pending.catch(() => this.#cache.delete(board));
     this.#cache.set(board, pending);

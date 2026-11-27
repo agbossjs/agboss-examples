@@ -1,15 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { testExecutionContext } from "@agboss/core/testing";
 import { GreenhouseBoards, type FetchJson } from "../src/services/greenhouse-boards.service.js";
 
-/** The application context of the dev environment: the public board API. */
-const { application } = testExecutionContext({
-  application: {
-    environment: {
-      greenhouseApiUrl: "https://boards-api.greenhouse.io",
-    },
-  },
-}).tenant;
+/** The settings of the dev profile: the public board API. */
+const application = { greenhouseApiUrl: "https://boards-api.greenhouse.io" };
 
 const probeBoard = (board: string, words: readonly string[], fetchJson: FetchJson) =>
   new GreenhouseBoards({ boards: {}, places: {} }, application, fetchJson).probe(board, words);

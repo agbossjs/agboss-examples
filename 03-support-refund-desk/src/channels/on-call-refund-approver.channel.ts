@@ -27,13 +27,13 @@ export class OnCallRefundApproverChannel {
 
   // told once per deadline (`remindBefore` on the target), at least once: the inbox line is idempotent
   onPauseExpiring(event: ChannelPauseExpiringEvent<RefundApproverExternalTask>): Promise<void> {
-    this.inbox.note(`reminder: ${event.input.orderId} expires at ${event.expiresAt} (${event.deliveryId})`);
+    this.inbox.note(`reminder: ${event.input.orderId} expires at ${event.expiresAt.toISOString()} (${event.deliveryId})`);
     return Promise.resolve();
   }
 
-  // told when `app.extendPause` moved the deadline; the reminder is made again before the new one
+  // told when `app.setPauseTimeout` moved the deadline; the reminder is made again before the new one
   onPauseTimeoutChanged(event: ChannelPauseTimeoutChangedEvent<RefundApproverExternalTask>): Promise<void> {
-    this.inbox.note(`extended: ${event.input.orderId} until ${event.expiresAt}`);
+    this.inbox.note(`extended: ${event.input.orderId} until ${event.expiresAt?.toISOString() ?? "no deadline"}`);
     return Promise.resolve();
   }
 }

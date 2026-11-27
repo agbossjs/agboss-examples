@@ -1,7 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { ApplicationContext, ExecutionContext, Injectable } from "@agboss/core";
+import { ExecutionContext, Injectable, type InferEnv } from "@agboss/core";
 import type { QuoteCalculationOutputDto } from "../dto/quote-calculation-output.dto.js";
+import { helloEnv } from "../hello-agboss.env.js";
 
 const TIER_RATES: Readonly<Record<string, number>> = {
   starter: 29,
@@ -134,20 +135,20 @@ export async function startPricingApiStubServer(): Promise<PricingApiStubServer>
 /**
  * Domain service injected into CalculateQuoteTool via constructor DI.
  * Demonstrates:
- * - `deps: [ApplicationContext, ExecutionContext]`
- * - Reading `pricingApiBaseUrl`, `catalogCurrency`, and `pricingApiKey` from `ApplicationContext.environment`
+ * - `deps: [helloEnv, ExecutionContext]`
+ * - Reading `pricingApiBaseUrl`, `catalogCurrency`, and `pricingApiKey` from `helloEnv` (`InferEnv<typeof helloEnv>`)
  * - Validating endpoint configuration and reachability in `async onInit()`
  * - Passing `signal: this.executionContext.signal` and `"Idempotency-Key": this.executionContext.step.idempotencyKey` to `fetch()`
  */
-@Injectable({ deps: [ApplicationContext, ExecutionContext] })
+@Injectable({ deps: [helloEnv, ExecutionContext] })
 export class PricingCatalogService {
   constructor(
-    private readonly applicationContext: ApplicationContext,
+    private readonly settings: InferEnv<typeof helloEnv>,
     private readonly executionContext: ExecutionContext,
   ) {}
 
   async onInit(): Promise<void> {
-    const baseUrl = this.applicationContext.environment.pricingApiBaseUrl.trim();
+    const baseUrl = this.settings.pricingApiBaseUrl.trim();
     if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
       throw new Error(`Invalid pricingApiBaseUrl: ${baseUrl}`);
     }
@@ -162,18 +163,18 @@ export class PricingCatalogService {
   }
 
   async fetchQuote(tierInput: string, seats: number): Promise<QuoteCalculationOutputDto> {
-    const baseUrl = this.applicationContext.environment.pricingApiBaseUrl.replace(/\/+$/u, "");
+    const baseUrl = this.settings.pricingApiBaseUrl.replace(/\/+$/u, "");
     const response = await fetch(`${baseUrl}/quotes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.applicationContext.environment.pricingApiKey.reveal()}`,
+        Authorization: `Bearer ${this.settings.pricingApiKey.reveal()}`,
         "Idempotency-Key": this.executionContext.step.idempotencyKey,
       },
       body: JSON.stringify({
         tier: tierInput,
         seats,
-        currency: this.applicationContext.environment.catalogCurrency,
+        currency: this.settings.catalogCurrency,
       }),
       signal: this.executionContext.signal,
     });

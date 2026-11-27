@@ -15,7 +15,7 @@ spec:
         - name: load
           image: agboss-scaling:local
           imagePullPolicy: Never
-          args: ["node", "dist/load.js"]
+          args: ["node", "dist/scripts/load.js"]
           env:
             - { name: COORDINATOR_URL, value: "http://agboss-api:8080" }
             - { name: LOAD_BATCHES, value: "backlog:80:4000" }

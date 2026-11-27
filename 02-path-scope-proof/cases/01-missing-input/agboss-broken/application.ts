@@ -1,4 +1,4 @@
-import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, DecidedBy, EmptyEnvironment, type InputOf, type OutputOf, type Route, Router, type RouterHandler, Workflow, WorkflowFinish, WorkflowStart, route, onStart, onAction, toAction, Ttl } from "@agboss/core";
+import { Action, type ActionHandler, Application, Budget, BudgetPeriod, BudgetScope, type BudgetHandler, DecidedBy, type InputOf, type OutputOf, type Route, Router, type RouterHandler, Workflow, WorkflowFinish, WorkflowStart, route, onStart, onAction, toAction, Ttl } from "@agboss/core";
 import { Integer, Text } from "@agboss/core/dto";
 import { usd, type Usd } from "@agboss/core/units";
 
@@ -150,7 +150,6 @@ export class Case01BrokenExecBudget implements BudgetHandler {
 @Application({
   name: "case-01-missing-input-broken-application",
   version: "0.1.0",
-  environment: EmptyEnvironment,
   workflows: [MissingInputBrokenWorkflow],
   budgets: [Case01BrokenAppBudget, Case01BrokenTenantBudget, Case01BrokenExecBudget],
 })

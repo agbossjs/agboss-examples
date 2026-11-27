@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SuiteAppBudget } from "./budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "./budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "./budgets/suite-tenant.budget.js";
@@ -12,7 +12,6 @@ import { UncompensatedFixedWorkflow } from "./workflows/uncompensated-fixed/unco
 @Application({
   name: "path-scope-proof-application",
   version: "0.1.1",
-  environment: EmptyEnvironment,
   workflows: [
     MissingInputFixedWorkflow,
     OutdatedDataFixedWorkflow,

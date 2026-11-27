@@ -65,7 +65,7 @@ describe("AC3: a free-text approval becomes a typed decision and the run resumes
         reply: "ok but only up to $500",
       },
     ]);
-    expect(done.spend.byCaller["reply-interpreter:purchase-reply-interpreter"]).toBe(0.00003);
+    expect(done.spend.byCaller["channel-interpreter:purchase-reply-interpreter"]).toBe(0.00003);
   });
 
   test("a plain approval keeps the amount asked", async ({ app, mockModel, mockService }) => {

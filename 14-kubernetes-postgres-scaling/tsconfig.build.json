@@ -7,5 +7,5 @@
     "sourceMap": true
   },
   "include": ["src", ".agboss/**/*.d.ts"],
-  "exclude": ["src/demo.ts"]
+  "exclude": ["src/scripts/demo.ts"]
 }

@@ -1,4 +1,5 @@
-import { ApplicationContext, Injectable } from "@agboss/core";
+import { Injectable, type InferEnv } from "@agboss/core";
+import { scalingEnv } from "../scaling.env.js";
 
 /** An entry the ledger applied: the external side effect of a job. */
 export interface LedgerEntryDto {
@@ -19,15 +20,15 @@ function entryOf(value: unknown): LedgerEntryDto {
  * Idempotency-Key — a repeat gets the first entry back —, `find` looks a job's entry up, for
  * `reconcile` when an earlier attempt's outcome is unknown.
  */
-@Injectable({ deps: [ApplicationContext] })
+@Injectable({ deps: [scalingEnv] })
 export class LedgerClient {
-  constructor(private readonly applicationContext: ApplicationContext) {}
+  constructor(private readonly settings: InferEnv<typeof scalingEnv>) {}
 
   async record(
     entry: { readonly jobId: string; readonly deliveredBy: string; readonly pod: string },
     options: { readonly idempotencyKey: string; readonly signal: AbortSignal },
   ): Promise<LedgerEntryDto> {
-    const response = await fetch(`${this.applicationContext.environment.ledgerUrl}/ledger`, {
+    const response = await fetch(`${this.settings.ledgerUrl}/ledger`, {
       method: "POST",
       headers: { "content-type": "application/json", "idempotency-key": options.idempotencyKey },
       body: JSON.stringify(entry),
@@ -38,7 +39,7 @@ export class LedgerClient {
   }
 
   async find(jobId: string, signal: AbortSignal): Promise<LedgerEntryDto | undefined> {
-    const url = `${this.applicationContext.environment.ledgerUrl}/ledger?jobId=${encodeURIComponent(jobId)}`;
+    const url = `${this.settings.ledgerUrl}/ledger?jobId=${encodeURIComponent(jobId)}`;
     const response = await fetch(url, { signal });
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`the ledger lookup failed: HTTP ${String(response.status)}`);

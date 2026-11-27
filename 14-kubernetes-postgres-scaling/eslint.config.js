@@ -22,7 +22,7 @@ export default tseslint.config(
     files: ["src/**/*.ts"],
     // the stub is the other system (not an AGBoss component, on real time); the demo and the load
     // generator are scripts around the app
-    ignores: ["src/**/*.test.ts", "src/demo.ts", "src/load.ts", "src/stub/**"],
+    ignores: ["src/**/*.test.ts", "src/scripts/**", "src/stub/**"],
     plugins: { agboss: agbossPlugin },
     rules: { "agboss/no-component-state": "error", "agboss/no-direct-time": "error" },
   },

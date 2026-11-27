@@ -532,7 +532,7 @@ export class OpenRouterModelProvider {}
 
 ```ts file=src/screening.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { ApplicationDailyBudget } from "./screening/budgets/application-daily.budget.js";
 import { ExecutionBudget } from "./screening/budgets/execution.budget.js";
 import { TenantDailyBudget } from "./screening/budgets/tenant-daily.budget.js";
@@ -544,7 +544,6 @@ import { ScreeningWorkflow } from "./screening/workflows/screening/screening.wor
   providers: [OpenRouterModelProvider],
   name: "screening-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [ScreeningWorkflow],
   budgets: [ApplicationDailyBudget, TenantDailyBudget, ExecutionBudget],
   piiPolicies: [ContactPiiPolicy],
@@ -1075,7 +1074,7 @@ export class RentalExecutionBudget implements BudgetHandler {
 
 ```ts file=src/rental.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { RentalApplicationBudget } from "./rental/budgets/rental-application.budget.js";
 import { RentalExecutionBudget } from "./rental/budgets/rental-execution.budget.js";
 import { RentalTenantBudget } from "./rental/budgets/rental-tenant.budget.js";
@@ -1086,7 +1085,6 @@ import { RentalWorkflow } from "./rental/workflows/rental/rental.workflow.js";
   providers: [OpenRouterModelProvider],
   name: "rental-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [RentalWorkflow],
   budgets: [RentalApplicationBudget, RentalTenantBudget, RentalExecutionBudget],
 })
@@ -1150,8 +1148,8 @@ test("an undo that fails: ExecutionError.CompensationFailed, the original error 
 });
 ```
 
-- A failed join's undo is `CompensationReason.JoinFailed`; a cancel's (`app.cancel`, a `FailFast`
-  abort) `ExecutionCancelled`.
+- A failed join's undo is `CompensationReason.JoinFailed`; a cancel's (`app.cancel`, a failed
+  sibling's abort) `ExecutionCancelled`.
 - The automatic undo runs on the test's `clock` like everything else: a slow undo is cut at
   `compensationTimeout` only when the clock is advanced past it.
 
@@ -1246,7 +1244,7 @@ it("complete() maps the request to the SDK, with the execution's tenant", async 
 
 One runner, `testUnit(Class)`, for every kind below (a list of `@PiiPolicy` classes is the policies one
 element lists); it builds the component's own container (its `deps`, `services` — fake classes that
-`extends` the real ones or name a port with `injectAs`, and `provide(TOKEN, value)` —, an `environment`) and
+`extends` the real ones or name a port with `injectAs`, and `provide(TOKEN, value)` —, an `env: configureEnv(appEnv, { … })`) and
 runs every call in the frame of its step, so `ExecutionContext`, `SpendRecorder` and `JudgeModel`
 work as in a run. Every call returns `{ output, spend }`; `run.clock` is its `VirtualClock`.
 
@@ -1558,7 +1556,7 @@ hashes) still replays, without stale detection, and prints a hint to re-record i
 Work from the cheapest loop outwards; a later loop never replaces an earlier one.
 
 **Loop 0 — static, $0, after every change.** `npx agboss check` (assembly rules, generated types,
-prompts, environment — all problems at once as `[rule.code]` lines, fix every one) and `npx agboss
+prompts, process variables — all problems at once as `[rule.code]` lines, fix every one) and `npx agboss
 describe` (the flow as assembled, each node's inputs and producers, models and limits). `check` also
 assembles every `eval-suites/*.eval-suite.ts` of the application (its rules and its cases' values,
 `eval-suites` in its list of checks) — no model is called. No test runs before `check` prints `ok:`.
@@ -1601,8 +1599,8 @@ snapshot among them checks that a changed export got a new version
 
 **Loops 2 and 3 — evals on a live model, paid, before a merge and on a schedule.**
 
-1. Loop 2: `npx agboss eval run --suite <name> --runs <k> --env <name> --report <run.json>` — every
-   case k times on the real application (the environment's services and fixtures), the cascade
+1. Loop 2: `npx agboss eval run --suite <name> --runs <k> --report <run.json>` — every
+   case k times on the real application (its services and fixtures), the cascade
    per run: free trajectory invariants → code `@Judge` → model `@Judge`. Read pass@k and pass^k
    per case; a case marked `unstable` (pass@k without pass^k) goes to deterministic code, not to a
    longer prompt. Add `--html <report.html>` to read the run in a browser: one self-contained page
@@ -1719,10 +1717,10 @@ export class ScreeningEvalSuite {}
 ## Running a suite: `agboss eval run`
 
 ```
-npx agboss eval run --suite screening-eval-suite --runs 3 --env eval --report .artifacts/eval/main.json
+npx agboss eval run --suite screening-eval-suite --runs 3 --report .artifacts/eval/main.json
 ```
 
-- The application is built as `createApp` builds it, on the `--env` environment (default `dev`): the
+- The application is built as `createApp` builds it: the
   suite is assembled first (its rules, then its cases' values — `eval.case-invalid`, exit 3), then
   every case runs `--runs` times (default 1), one run after the other, each on a thread of its own.
   `--suite` names the suite by its full name; with one suite in the application it may be left out
@@ -1780,7 +1778,7 @@ cascade) · spent $0.3120`). `--report <run.json>` writes the run artifact — `
   execution drafted exactly as `npx agboss generate eval-case <name> --from-execution <executionId>`
   drafts it (the turn, the contexts, the thread's earlier turns as `history`, its calls as
   `tools.required`) and written into the suite's file under the name you give. It needs the
-  application's history (`@Application({ retention: { executionRecords } })`, its stores on `--env`; the
+  application's history (`@Application({ retention: { executionRecords } })`, its stores opened; the
   application from `package.json` or `--application`) — without it the page says so instead of a
   button. The file is written whole and atomically, only if it is still the one the page was made from
   (else 409: reload), never over a case of the same name (409). The execution is the run's own: the
@@ -1796,7 +1794,7 @@ score` scores or `npx agboss golden add` saves.
 ### Against a baseline: `--baseline <run.json> [--fail-on-regression]` and `--save-baseline <baseline.json>`
 
 ```
-npx agboss eval run --suite screening-eval-suite --runs 3 --env eval --baseline main.json --fail-on-regression
+npx agboss eval run --suite screening-eval-suite --runs 3 --baseline main.json --fail-on-regression
 ```
 
 - `--save-baseline <baseline.json>` writes a compact, git-diff-friendly baseline snapshot (`kind: "agboss.eval-baseline"`, `schemaVersion: 1`, per-case `caseId`, `caseHash`, `runs`, `passed`, `passAtK`, `passHatK`, `flaky`, `avgSpendUsd`, `verdictSummary`) meant for `eval/baseline/main-baseline.json`, while full run artifacts (`--report`) stay in gitignored `.agboss/eval/`.
@@ -1842,7 +1840,7 @@ npx agboss eval calibrate --report main.json --labels labels/refunds.jsonl
 ### Under failures: `--chaos <rate> --chaos-seed <n> [--chaos-failures <list>]`
 
 ```
-npx agboss eval run --suite screening-eval-suite --runs 3 --env eval --chaos 0.2 --chaos-seed 7
+npx agboss eval run --suite screening-eval-suite --runs 3 --chaos 0.2 --chaos-seed 7
 npx agboss eval run --suite screening-eval-suite --chaos 0.2 --chaos-seed 7 --chaos-failures rate-limited,timeout
 ```
 
@@ -1936,6 +1934,6 @@ tasks })`, on the workflow that `start` opens, assembled as `createApp` assemble
 - A script for a path the test does not take: it fails as unused — script only what runs.
 - `thenReturnAlways` to silence a loop: script the exact turns; a loop is bounded by `maxVisits`.
 - Asserting on `Date.now()` or real timers: advance the `clock` fixture.
-- A test environment that reads a secret: leave secrets out of `test.environment.ts`.
+- A test that reads a `secret(…)` it does not set: the start fails naming the variable — give the key `secret.optional(…)`, or set it in the test's `configureEnv`.
 - Testing the graph by inspecting it: run it and assert the path (`toFollowPath`) and the finish.
 - Expecting `testWith` to call a transport provider's `complete()`: `mockModel` answers above it (only a VCR recording calls it, #439).

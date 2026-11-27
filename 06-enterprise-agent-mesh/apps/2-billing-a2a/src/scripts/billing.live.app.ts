@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { BillingA2AEndpoint } from "../a2a/billing.a2a-endpoint.js";
 import { BillingHttpAuthenticator } from "../a2a/billing.http-authenticator.js";
 import { BillingAppDailyBudget } from "../budgets/billing-app-daily.budget.js";
@@ -18,7 +18,6 @@ import { InvoiceReviewWorkflow } from "../workflows/invoice-review/invoice-revie
 @Application({
   name: "billing-live-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: BillingDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   workflows: [BillingWorkflow, InvoiceReviewWorkflow],

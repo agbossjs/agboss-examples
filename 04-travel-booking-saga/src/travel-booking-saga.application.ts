@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SagaApplicationDailyBudget } from "./budgets/saga-application-daily.budget.js";
 import { SagaExecutionBudget } from "./budgets/saga-execution.budget.js";
 import { SagaTenantDailyBudget } from "./budgets/saga-tenant-daily.budget.js";
@@ -17,7 +17,6 @@ import { QuorumSagaWorkflow } from "./workflows/quorum-saga/quorum-saga.workflow
 @Application({
   name: "travel-booking-saga-application",
   version: "0.1.1",
-  environment: EmptyEnvironment,
   storage: TravelSagaDatabaseStorage, // its own PII key (#825), read through defineEnv
   modelProvider: SagaOfflineModelProvider, // every model of the saga: the offline script
   workflows: [

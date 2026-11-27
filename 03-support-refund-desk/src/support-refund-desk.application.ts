@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { OnCallRefundApproverChannel } from "./channels/on-call-refund-approver.channel.js";
 import { OnCallSeniorApproverChannel } from "./channels/on-call-senior-approver.channel.js";
@@ -25,7 +25,6 @@ import { SupportRefundWorkflow } from "./workflows/support-refund/support-refund
 @Application({
   name: "support-refund-desk-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   tenantContext: SupportTenantContext,
   executionContext: SupportExecutionContext,
   storage: SupportDeskDatabaseStorage,

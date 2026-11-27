@@ -1,4 +1,5 @@
 import { parseArgs } from "node:util";
+import { PUBLIC_GREENHOUSE_API_URL } from "../job-scout.env.js";
 import { fetchJsonOverHttp, probeBoard } from "../services/greenhouse-boards.service.js";
 import { jobSearchConfig } from "../config/search.js";
 
@@ -13,8 +14,8 @@ if (place === "" || positionals.length === 0) {
   process.stderr.write("usage: npm run job-scout:probe -- --place <place> <board token> …\n");
   process.exit(1);
 }
-// the public board API, as in dev.environment.ts (the probe runs outside the app)
-const api = { greenhouseApiUrl: "https://boards-api.greenhouse.io", fetchJson: fetchJsonOverHttp };
+// the public board API, as in `config/dev.config.ts` (the probe runs outside the app)
+const api = { greenhouseApiUrl: PUBLIC_GREENHOUSE_API_URL, fetchJson: fetchJsonOverHttp };
 const words = jobSearchConfig.places[place] ?? [place];
 const results = await Promise.all(
   positionals.map((board) => probeBoard(api, board.toLowerCase(), words)),

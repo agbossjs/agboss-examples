@@ -6,7 +6,7 @@ import { hours } from "@agboss/core/units";
   name: "booking-approval-tool-approval",
   description: "Corporate travel manager approval for high-value bookings",
   respondent: PauseRespondent.Delegate,
-  // the manager has half a working day; an operator can move this deadline (`app.extendPause`)
+  // the manager has half a working day; an operator can move this deadline (`app.setPauseTimeout`)
   timeout: hours(4),
 })
 export class BookingApprovalToolApproval {}

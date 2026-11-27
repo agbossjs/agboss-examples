@@ -1,4 +1,5 @@
-import { ApplicationContext, Injectable } from "@agboss/core";
+import { Injectable, type InferEnv } from "@agboss/core";
+import { scalingEnv } from "../scaling.env.js";
 
 /** What the remote work is told: the job and who works on it, under which lease token. */
 export interface WorkRequest {
@@ -8,7 +9,6 @@ export interface WorkRequest {
   readonly rootExecutionId: string;
   readonly instanceId: string;
   readonly pod: string;
-  readonly token: number;
 }
 
 /** The other system refused the job's work (HTTP 422): the job fails; its batch goes on. */
@@ -22,12 +22,12 @@ export class JobRejectedError extends Error {
  * lost meanwhile (a frozen pod, a partition) goes on to its write when the answer comes. That is
  * the zombie the fenced effect after it refuses (agbossjs/agboss#487, Wiki → Several-instances).
  */
-@Injectable({ deps: [ApplicationContext] })
+@Injectable({ deps: [scalingEnv] })
 export class WorkClient {
-  constructor(private readonly applicationContext: ApplicationContext) {}
+  constructor(private readonly settings: InferEnv<typeof scalingEnv>) {}
 
   async work(request: WorkRequest): Promise<void> {
-    const response = await fetch(`${this.applicationContext.environment.ledgerUrl}/work`, {
+    const response = await fetch(`${this.settings.ledgerUrl}/work`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),

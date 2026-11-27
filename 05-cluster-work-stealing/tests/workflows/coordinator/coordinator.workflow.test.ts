@@ -29,7 +29,7 @@ afterEach(() => {
 
 describe("CoordinatorWorkflow, ChunkWorkerWorkflow & RecursiveDecomposerWorkflow", () => {
   clusterTest(
-    "fans out ChunkWorkerWorkflow with ChildPlacement.AnyInstance across 2 cluster instances and isolates soft-failed chunks",
+    "fans out ChunkWorkerWorkflow with ChildPlacement.AnyWorker across 2 cluster instances and isolates soft-failed chunks",
     async ({ apps, mockModel }) => {
       const [coordinatorApp] = apps;
       expect(apps.length).toBe(2);

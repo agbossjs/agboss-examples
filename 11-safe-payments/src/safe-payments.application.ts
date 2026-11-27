@@ -1,5 +1,4 @@
 import { Application } from "@agboss/core";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { PaymentsApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { PaymentsExecutionBudget } from "./budgets/execution.budget.js";
 import { PaymentsTenantDailyBudget } from "./budgets/tenant-daily.budget.js";
@@ -55,7 +54,6 @@ export const SAFE_PAYMENTS_CHANNELS = [ApprovalInboxChannel, AwaitedOutcomeChann
 @Application({
   name: "safe-payments-application",
   version: "1.0.0",
-  environment: AppEnvironment,
   storage: SafePaymentsDatabaseStorage, // with the idempotency secret: agbossjs/agboss#825, business-key fingerprints
   modelProvider: OpenRouterModelProvider,
   channels: SAFE_PAYMENTS_CHANNELS,

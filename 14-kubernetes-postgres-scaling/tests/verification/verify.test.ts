@@ -11,7 +11,7 @@ import {
   ChildExecutionStatus,
   ExecutionHistoryStatus,
   ExecutionAuditEventKind,
-  FencedEffectEventOutcome,
+  IdempotencyRunEventOutcome,
   LeaseTakeoverReason,
   OutboundCallStatus,
   type ExecutionAuditEventRecord,
@@ -28,12 +28,12 @@ const deliver = (
   jobId: string,
   instance: string,
   token: number,
-  outcome: FencedEffectEventOutcome,
+  outcome: IdempotencyRunEventOutcome,
   extra: Record<string, number> = {},
 ): ExecutionAuditEventRecord =>
   ({
     ...BASE,
-    kind: ExecutionAuditEventKind.FencedEffect,
+    kind: ExecutionAuditEventKind.IdempotencyRun,
     executionId: exec(jobId),
     scopeKey: `default:${exec(jobId)}`,
     token,
@@ -122,16 +122,16 @@ const stubOf = (jobIds: readonly string[], extra: readonly string[] = [], reject
 const JOBS = ["j1", "j2", "z", "k", "r"];
 /** The dead-and-risen run: z's zombie refused, k's killed holder never wrote, r replayed. */
 const DEAD_AND_RISEN: ExecutionAuditEventRecord[] = [
-  deliver("j1", "a", 1, FencedEffectEventOutcome.Ran),
-  deliver("j2", "b", 1, FencedEffectEventOutcome.Ran),
+  deliver("j1", "a", 1, IdempotencyRunEventOutcome.Ran),
+  deliver("j2", "b", 1, IdempotencyRunEventOutcome.Ran),
   takeover("z", "b", 2, "zombie", 1),
-  deliver("z", "b", 2, FencedEffectEventOutcome.Ran),
-  deliver("z", "zombie", 1, FencedEffectEventOutcome.Refused, { observedToken: 2 }),
+  deliver("z", "b", 2, IdempotencyRunEventOutcome.Ran),
+  deliver("z", "zombie", 1, IdempotencyRunEventOutcome.Refused, { observedToken: 2 }),
   takeover("k", "a", 2, "killed", 1),
-  deliver("k", "a", 2, FencedEffectEventOutcome.Ran),
-  deliver("r", "crashed", 1, FencedEffectEventOutcome.Ran),
+  deliver("k", "a", 2, IdempotencyRunEventOutcome.Ran),
+  deliver("r", "crashed", 1, IdempotencyRunEventOutcome.Ran),
   takeover("r", "b", 2, "crashed", 1),
-  deliver("r", "b", 2, FencedEffectEventOutcome.Replayed, { writtenToken: 1 }),
+  deliver("r", "b", 2, IdempotencyRunEventOutcome.Replayed, { writtenToken: 1 }),
 ];
 const EXPECTED: Expectation[] = [
   { batchId: "b", jobId: "z", kind: "refused", instanceId: "zombie", why: "the frozen pod came back" },
@@ -163,7 +163,7 @@ describe("AC3 + AC5: the verification bites", () => {
     report.jobs.find((job) => job.jobId === jobId)?.problems.join("; ") ?? "";
 
   it("a second delivery of a job (two Ran) fails, naming the job", () => {
-    const report = fails(batchOf(JOBS, [...DEAD_AND_RISEN, deliver("j1", "b", 2, FencedEffectEventOutcome.Ran)]), stubOf(JOBS));
+    const report = fails(batchOf(JOBS, [...DEAD_AND_RISEN, deliver("j1", "b", 2, IdempotencyRunEventOutcome.Ran)]), stubOf(JOBS));
     expect(problemsOf(report, "j1")).toContain("2 deliveries ran");
     expect(report.totals.duplicates).toBe(1);
   });
@@ -184,13 +184,13 @@ describe("AC3 + AC5: the verification bites", () => {
   });
 
   it("a refusal with no takeover by a newer holder is inconsistent", () => {
-    const events = [...DEAD_AND_RISEN, deliver("j2", "c", 1, FencedEffectEventOutcome.Refused, { observedToken: 1 })];
+    const events = [...DEAD_AND_RISEN, deliver("j2", "c", 1, IdempotencyRunEventOutcome.Refused, { observedToken: 1 })];
     expect(problemsOf(fails(batchOf(JOBS, events), stubOf(JOBS)), "j2")).toContain("inconsistent");
   });
 
   it("a replay of a token no Ran wrote is inconsistent", () => {
     const events = DEAD_AND_RISEN.map((event) =>
-      event.kind === ExecutionAuditEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Replayed ? { ...event, writtenToken: 7 } : event,
+      event.kind === ExecutionAuditEventKind.IdempotencyRun && event.outcome === IdempotencyRunEventOutcome.Replayed ? { ...event, writtenToken: 7 } : event,
     );
     expect(problemsOf(fails(batchOf(JOBS, events), stubOf(JOBS)), "r")).toContain("which no Ran wrote");
   });
@@ -206,14 +206,14 @@ describe("AC3 + AC5: the verification bites", () => {
   });
 
   it("a clean result with the zombie's refusal missing fails: a clean final result alone never passes", () => {
-    const events = DEAD_AND_RISEN.filter((event) => !(event.kind === ExecutionAuditEventKind.FencedEffect && event.outcome === FencedEffectEventOutcome.Refused));
+    const events = DEAD_AND_RISEN.filter((event) => !(event.kind === ExecutionAuditEventKind.IdempotencyRun && event.outcome === IdempotencyRunEventOutcome.Refused));
     const report = fails(batchOf(JOBS, events), stubOf(JOBS), EXPECTED);
     expect(report.jobs.every((job) => job.problems.length === 0)).toBe(true);
     expect(report.expectations.find((one) => one.jobId === "z")?.found).toBe(false);
   });
 
   it("a killed holder that is counted as refused is not 'never attempted'", () => {
-    const events = [...DEAD_AND_RISEN, deliver("k", "killed", 1, FencedEffectEventOutcome.Refused, { observedToken: 2 })];
+    const events = [...DEAD_AND_RISEN, deliver("k", "killed", 1, IdempotencyRunEventOutcome.Refused, { observedToken: 2 })];
     const report = fails(batchOf(JOBS, events), stubOf(JOBS), EXPECTED);
     expect(report.expectations.find((one) => one.jobId === "k")?.found).toBe(false);
   });
@@ -284,9 +284,9 @@ describe("the verification stands alone: no effect applied or replayed at a stal
   it("a zombie's replay at its stale token, after the lease was taken over at a newer one, fails", () => {
     const report = verifyStale([
       takeover("s", "a", 2, "zombie", 1),
-      deliver("s", "a", 2, FencedEffectEventOutcome.Ran),
+      deliver("s", "a", 2, IdempotencyRunEventOutcome.Ran),
       // the zombie, back at token 1, got the stored receipt: a store that read the key at a stale token
-      deliver("s", "zombie", 1, FencedEffectEventOutcome.Replayed, { writtenToken: 2 }),
+      deliver("s", "zombie", 1, IdempotencyRunEventOutcome.Replayed, { writtenToken: 2 }),
     ]);
 
     expect(report.passed).toBe(false);
@@ -298,8 +298,8 @@ describe("the verification stands alone: no effect applied or replayed at a stal
   it("a zombie's write at its stale token, replayed by the new holder, fails: one Ran is not enough", () => {
     const report = verifyStale([
       takeover("s", "a", 2, "zombie", 1),
-      deliver("s", "zombie", 1, FencedEffectEventOutcome.Ran),
-      deliver("s", "a", 2, FencedEffectEventOutcome.Replayed, { writtenToken: 1 }),
+      deliver("s", "zombie", 1, IdempotencyRunEventOutcome.Ran),
+      deliver("s", "a", 2, IdempotencyRunEventOutcome.Replayed, { writtenToken: 1 }),
     ]);
 
     expect(report.passed).toBe(false);
@@ -308,9 +308,9 @@ describe("the verification stands alone: no effect applied or replayed at a stal
 
   it("a write at token 1 before the takeover at 2, replayed after it, is no stale write (the crash after the effect)", () => {
     const report = verifyStale([
-      deliver("s", "crashed", 1, FencedEffectEventOutcome.Ran),
+      deliver("s", "crashed", 1, IdempotencyRunEventOutcome.Ran),
       takeover("s", "b", 2, "crashed", 1),
-      deliver("s", "b", 2, FencedEffectEventOutcome.Replayed, { writtenToken: 1 }),
+      deliver("s", "b", 2, IdempotencyRunEventOutcome.Replayed, { writtenToken: 1 }),
     ]);
 
     expect(report.jobs.flatMap((one) => one.problems)).toEqual([]);

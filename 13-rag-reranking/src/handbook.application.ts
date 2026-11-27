@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
 import { HandbookDatabaseStorage } from "./storages/handbook.database-storage.js";
 import { HandbookApplicationDailyBudget } from "./budgets/application-daily.budget.js";
@@ -14,7 +14,6 @@ import { HandbookWorkflow } from "./workflows/handbook/handbook.workflow.js";
 @Application({
   name: "handbook-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: HandbookDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   // the storage's PII key: one token per value on every instance and in every process

@@ -14,4 +14,4 @@ RUN npm install --omit=dev --no-audit --no-fund --ignore-scripts --before="${NPM
 COPY dist ./dist
 USER node
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/scripts/main.js"]

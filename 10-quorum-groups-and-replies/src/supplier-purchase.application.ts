@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SupplierPurchaseDatabaseStorage } from "./storages/supplier-purchase.database-storage.js";
 import { PurchaseApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { PurchaseExecutionBudget } from "./budgets/execution.budget.js";
@@ -22,7 +22,6 @@ import { SupplierPurchaseWorkflow } from "./workflows/supplier-purchase/supplier
 @Application({
   name: "supplier-purchase-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: SupplierPurchaseDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   workflows: [SupplierPurchaseWorkflow, BudgetRaiseWorkflow],

@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { SuiteAppBudget } from "../../../src/budgets/suite-app.budget.js";
 import { SuiteExecBudget } from "../../../src/budgets/suite-exec.budget.js";
 import { SuiteTenantBudget } from "../../../src/budgets/suite-tenant.budget.js";
@@ -22,7 +22,6 @@ export { OutdatedDataFixedWorkflow } from "../../../src/workflows/outdated-data-
 @Application({
   name: "case-02-outdated-data-fixed-application",
   version: "0.1.0",
-  environment: EmptyEnvironment,
   workflows: [OutdatedDataFixedWorkflow],
   storage: PathScopeProofDatabaseStorage,
   budgets: [SuiteAppBudget, SuiteTenantBudget, SuiteExecBudget],

@@ -8,7 +8,7 @@ import { PodApplication } from "./pod.application.js";
  * (`SQLITE_PATH`), told over IPC what to execute. Its recovery sweep runs by itself,
  * on real time — a lease of 30 s, a sweep every 30 s.
  */
-const app = await createApp(PodApplication, { env: "dev" });
+const app = await createApp(PodApplication);
 process.on("message", (message: { readonly execute?: CheckoutRequestDto }) => {
   const order = message.execute;
   if (order === undefined) return;

@@ -10,6 +10,7 @@ export function ledgerStubForFile(): { readonly current: () => LedgerStub } {
   beforeAll(async () => {
     stub = await startLedgerStub(0, "127.0.0.1");
     process.env.LEDGER_URL = stub.url;
+    process.env.POD_NAME ??= "test-pod";
   });
   afterAll(async () => {
     await stub?.close();

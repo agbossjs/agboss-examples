@@ -1,7 +1,6 @@
 import { Application, Idempotency, Injectable, TenantContext, type JsonValue } from "@agboss/core";
 import { OrderBookRepository } from "../../src/repositories/order-book.repository.js";
 import { OrderBookService, type BookingIdentity } from "../../src/services/order-book.service.js";
-import { AppEnvironment } from "../../src/environments/app.environment.js";
 import { ApprovalInboxChannel } from "../../src/channels/approval-inbox.channel.js";
 import { AwaitedOutcomeChannel } from "../../src/channels/awaited-outcome.channel.js";
 import { OpenRouterModelProvider } from "../../src/model-providers/openrouter.model-provider.js";
@@ -33,7 +32,6 @@ export class PodOrderBookService extends OrderBookService {
 @Application({
   name: "safe-payments-application",
   version: "1.0.0",
-  environment: AppEnvironment,
   storage: SafePaymentsDatabaseStorage,
   modelProvider: OpenRouterModelProvider,
   channels: [ApprovalInboxChannel, AwaitedOutcomeChannel],

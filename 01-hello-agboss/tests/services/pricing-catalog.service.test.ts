@@ -22,18 +22,10 @@ describe("PricingCatalogService (@Injectable with real HTTP fetch)", () => {
   });
 
   function createService(catalogCurrency = "USD", baseUrl = apiServer.baseUrl) {
-    const executionCtx = testExecutionContext({
-      application: {
-        environment: {
-          catalogCurrency,
-          pricingApiKey: PRICING_API_KEY,
-          pricingApiBaseUrl: baseUrl,
-        },
-      },
-      executionId: "exec-quote-test-1",
-    });
+    const executionCtx = testExecutionContext({ executionId: "exec-quote-test-1" });
+    const settings = { catalogCurrency, gatewayBaseUrl: undefined, pricingApiKey: PRICING_API_KEY, pricingApiBaseUrl: baseUrl };
     return {
-      service: new PricingCatalogService(executionCtx.tenant.application, executionCtx),
+      service: new PricingCatalogService(settings, executionCtx),
       expectedIdempotencyKey: executionCtx.step.idempotencyKey,
     };
   }

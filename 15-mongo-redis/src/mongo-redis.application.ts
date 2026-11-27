@@ -2,7 +2,6 @@ import { Application, EXECUTION_ID_STORE, provide } from "@agboss/core";
 import { MONGODB_DURABLE_STORES, MongoExecutionLeaseRepository } from "@agboss/mongodb";
 import { REDIS_COORDINATION_STORES } from "@agboss/redis";
 import { RECOUNT_BUDGETS } from "./budgets/index.js";
-import { AppEnvironment } from "./environments/app.environment.js";
 import { RecountWorkflow } from "./workflows/recount/recount.workflow.js";
 import { ShelfWorkflow } from "./workflows/shelf/shelf.workflow.js";
 
@@ -19,10 +18,9 @@ import { ShelfWorkflow } from "./workflows/shelf/shelf.workflow.js";
 @Application({
   name: "mongo-redis-application",
   version: "1.0.0",
-  environment: AppEnvironment,
   workflows: [RecountWorkflow, ShelfWorkflow],
   budgets: RECOUNT_BUDGETS,
-  maxConcurrentSteps: 4,
+  executionLimits: { maxConcurrentSteps: 4 },
   providers: [
     ...MONGODB_DURABLE_STORES,
     ...REDIS_COORDINATION_STORES,

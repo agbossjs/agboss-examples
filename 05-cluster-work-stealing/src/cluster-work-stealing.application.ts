@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { ClusterAppDailyBudget } from "./budgets/cluster-app-daily.budget.js";
 import { ClusterExecutionBudget } from "./budgets/cluster-execution.budget.js";
@@ -23,7 +23,6 @@ import { RecursiveDecomposerWorkflow } from "./workflows/recursive-decomposer/re
 @Application({
   name: "cluster-work-stealing-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: ClusterDatabaseStorage, // one SQLite file for every instance; the idempotency and PII keys are read through defineEnv
   modelProvider: ClusterOfflineModelProvider,
   workflows: [

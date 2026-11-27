@@ -10,7 +10,7 @@ arbiters** before it counts: a code arbiter first (does the review cite what it 
 it?). Each branch's **verdict** is recorded. The first complete group by priority goes on: legal +
 compliance (priority 1) to the order, price + budget (priority 2) to a deferral; neither in time →
 the rejected finish. The order **waits for an approver** on a channel; the approver answers in free
-text ("ok but only up to $500") and a `@ReplyInterpreter` turns the words into a typed decision
+text ("ok but only up to $500") and a `@ChannelInterpreter` turns the words into a typed decision
 before anything resumes — an unreadable reply resumes nothing. A second workflow raises a budget
 line by asking its owner a **typed question** (an `@ExternalTask`, `.toExternalTask(BudgetOwnerExternalTask)`):
 the owner's free-text reply is read by code into a typed answer; a limit below the request asks
@@ -56,7 +56,7 @@ budget-raise-request-workflow-start
 - [`src/agents/`](./src/agents/) — the four reviewers and `purchase-order`, each `<name>.agent.ts` + `<name>.prompt.md`.
 - [`src/arbiters/`](./src/arbiters/) — `purchase-policy` (code, and Jev through `ArbiterModel`).
 - [`src/channels/`](./src/channels/) — the role `PurchaseApproverChannel` and its one implementation `ConsoleApproverChannel`; the question role `BudgetOwnerQuestion` and `InboxBudgetOwnerChannel`; [`src/services/`](./src/services/) — the stand-ins for the approvers' and the budget owners' chat apps.
-- [`src/reply-interpreters/`](./src/reply-interpreters/) — the purchase reply interpreter (a model) and its prompt; the budget owner's (code).
+- [`src/channel-interpreters/`](./src/channel-interpreters/) — the purchase channel interpreter (a model) and its prompt; the budget owner's (code).
 - `src/tools/`, `src/actions/`, `src/dto/`, `src/budgets/`, `src/environments/`, `src/model-providers/` — one kind per folder.
 - [`src/scripts/demo.ts`](./src/scripts/demo.ts) — `npm run demo` / `npm run demo:live`; [`fixtures/offline-openrouter.ts`](./fixtures/offline-openrouter.ts) — the demo's scripted OpenRouter (tests script models with `mockModel` instead).
 - `tests/` mirrors `src/`.

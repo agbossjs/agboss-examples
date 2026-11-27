@@ -11,7 +11,7 @@ import { ChatWorkflowFinish } from "../src/workflow-finishes/chat.workflow-finis
  * the Jev main router, the profiler) answers from the cassette — no script, no key, no network.
  * Recorded from real models (version 2: each interaction keyed by its prompt and schema hashes, so
  * `agboss check --cassettes` names a stale one). Re-record after a prompt, tool or flow change:
- * `mode: VcrMode.Record` on `env: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
+ * `mode: VcrMode.Record` on `profile: "dev"` with a model key and `allowNetwork: ["openrouter.ai"]`.
  */
 const test = testWith(JobScoutApplication, {
   vcr: { cassetteName: "job-scout-brief", dir: "tests/cassettes", mode: VcrMode.Replay },

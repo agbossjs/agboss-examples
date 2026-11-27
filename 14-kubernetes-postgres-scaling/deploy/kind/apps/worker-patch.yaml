@@ -12,7 +12,7 @@ spec:
           image: agboss-scaling:local
           imagePullPolicy: Never
           env:
-            - { name: AGBOSS_ENV, value: prod }
+            - { name: AGBOSS_PROFILE, value: prod }
             - { name: LEDGER_URL, value: "http://ledger-stub:8081" }
             - { name: POSTGRES_POOL_SIZE, value: "5" }
             - name: POD_NAME

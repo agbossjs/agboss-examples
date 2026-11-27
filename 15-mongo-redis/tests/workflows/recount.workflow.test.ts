@@ -7,9 +7,11 @@ import { ChildExecutionStatus } from "@agboss/core";
 import { testWith } from "@agboss/core/testing";
 import { expect } from "vitest";
 import { LocalMongoRedisApplication } from "../../src/local/local-mongo-redis.application.js";
+import { instancesFilePerTest } from "../support/instances-file.js";
 import { shelvesOf } from "../../src/shelves.js";
 import { RecountWorkflowStart } from "../../src/workflows/recount/recount.workflow-start.js";
 
+instancesFilePerTest();
 const test = testWith(LocalMongoRedisApplication, { instances: 2 });
 
 test("#891 AC6: twelve shelves on two instances — each counted once, the totals add up", async ({ app }) => {

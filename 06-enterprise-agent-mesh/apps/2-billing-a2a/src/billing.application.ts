@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { hours, seconds } from "@agboss/core/units";
 import { BillingA2AEndpoint } from "./a2a/billing.a2a-endpoint.js";
 import { BillingHttpAuthenticator } from "./a2a/billing.http-authenticator.js";
@@ -37,7 +37,6 @@ export { InvoiceReviewWorkflowStart } from "./workflows/invoice-review/invoice-r
 @Application({
   name: "billing-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: BillingDatabaseStorage,
   modelProvider: InvoiceReviewerOfflineModelProvider,
   workflows: [BillingWorkflow, InvoiceReviewWorkflow],

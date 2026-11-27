@@ -1,5 +1,5 @@
 import { Decision, DecisionModel, ExecutionContext, Injectable, provide, Tool } from "@agboss/core";
-import { testExecutionContext, testService, testUnit } from "@agboss/core/testing";
+import { testService, testUnit } from "@agboss/core/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FIT_QUESTION, mapLimited, type FitJudge } from "../src/helpers/fit.helper.js";
 import { JobMatches, JobQuery } from "../src/tools/greenhouse-jobs.dto.js";
@@ -7,14 +7,8 @@ import { GreenhouseJobs } from "../src/tools/greenhouse-jobs.tool.js";
 import { GreenhouseBoards } from "../src/services/greenhouse-boards.service.js";
 import { JobFitJudge } from "../src/services/job-fit.service.js";
 
-/** The application context of the dev environment: the public board API. */
-const { application } = testExecutionContext({
-  application: {
-    environment: {
-      greenhouseApiUrl: "https://boards-api.greenhouse.io",
-    },
-  },
-}).tenant;
+/** The settings of the dev profile: the public board API. */
+const application = { greenhouseApiUrl: "https://boards-api.greenhouse.io" };
 
 import type { JobSearch } from "../src/config/search.js";
 

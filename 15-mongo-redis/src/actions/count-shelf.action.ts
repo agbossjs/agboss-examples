@@ -28,7 +28,7 @@ export class CountShelfAction implements ActionHandler<CountShelfAction> {
   constructor(private readonly applicationContext: ApplicationContext) {}
 
   execute(input: InputOf<CountShelfAction>): Promise<OutputOf<CountShelfAction>> {
-    const { shelfId, scans } = input.shelf.value;
+    const { shelfId, scans } = input.shelf;
     return Promise.resolve({
       shelfId,
       items: scans.length,

@@ -48,7 +48,7 @@ describe("job-scout follows the file conventions (#107)", () => {
         "workflow-finishes",
         "config",
         "data",
-        "environments",
+        "job-scout.env.ts",
         "guardrails",
         "helpers",
         "job-scout.application.ts",

@@ -22,7 +22,7 @@ beforeAll(() => {
 
 const refusalOf = async (extra: Provider): Promise<string> => {
   try {
-    const app = await createApp(variantWith(extra), { env: "test" });
+    const app = await createApp(variantWith(extra), {});
     await app.close();
     return "assembled";
   } catch (error) {

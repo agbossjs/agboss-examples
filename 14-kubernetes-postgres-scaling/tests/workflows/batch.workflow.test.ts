@@ -11,9 +11,11 @@ import { LocalScalingApplication } from "../../src/local/local-scaling.applicati
 import { batchEvidenceOf } from "../../src/verification/evidence.js";
 import { verifyRun } from "../../src/verification/verify.js";
 import { BatchWorkflowStart } from "../../src/workflows/batch/batch.workflow-start.js";
+import { instancesFilePerTest } from "../support/instances-file.js";
 import { ledgerStubForFile } from "../support/stub.js";
 
 const stub = ledgerStubForFile();
+instancesFilePerTest();
 const test = testWith(LocalScalingApplication, { instances: 2, allowNetwork: ["127.0.0.1"] });
 
 test("AC3: twelve jobs on two instances — each done, delivered and entered once, verified from state", async ({ app }) => {

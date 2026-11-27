@@ -8,6 +8,14 @@ import { getOperationLedgerEntries, resetOperationLedger } from "../src/services
 import { TravelBookingSagaApplication } from "../src/travel-booking-saga.application.js";
 import { HitlHoldSagaWorkflowStart } from "../src/workflows/hitl-hold-saga/hitl-hold-saga.workflow-start.js";
 
+/** Two times are the same instant when their epoch milliseconds are equal; `===` on two `Date`s compares identity. */
+const sameInstant = (a: Date | undefined, b: Date | undefined): boolean =>
+  a !== undefined && b !== undefined && a.getTime() === b.getTime();
+
+/** `a` is later than `b`; a missing time is never later and nothing is later than none. */
+const isLater = (a: Date | undefined, b: Date | undefined): boolean =>
+  a !== undefined && b !== undefined && a.getTime() > b.getTime();
+
 export interface ManagerAwayScenarioResult {
   readonly initialStatus: ExecutionStatus;
   readonly deadlineMovedForward: boolean;
@@ -39,7 +47,7 @@ function statusOf(output: unknown): string | undefined {
 /**
  * Scenario G — The Manager Is Away: the Approval Moves to a Deputy:
  * 1. Flight and hotel are reserved, the approval is posted to the travel manager, the run pauses.
- * 2. `app.extendPause` gives the question 24 hours instead of the role's 4 (a pause with `expiresIn`).
+ * 2. `app.setPauseTimeout` gives the question 24 hours instead of the target's 4.
  * 3. The manager is on leave: `app.reassignPause({ pauseId, assignees: ["deputy"] })` moves the open question.
  *    The agent and the reservations do not run again. The channel is sent again, with a new
  *    `pauseId`, `ChannelAsk.assignee` and `ChannelAsk.replaces`, and told `onPauseClosed` with
@@ -67,7 +75,7 @@ export async function runManagerAwayScenario(bookingId = "AWAY-G1"): Promise<Man
     const managerPauseId = getSentChannelAsks()[0]?.pauseId ?? "";
     const operator = { actor: { id: "travel-desk-operator" } };
 
-    const extension = await app.extendPause({ pauseId: managerPauseId, expiresIn: hours(24) }, operator);
+    const extension = await app.setPauseTimeout({ pauseId: managerPauseId, timeout: hours(24) }, operator);
 
     const reassignment = await app.reassignPause({ pauseId: managerPauseId, channel: DeputyBookingApprovalChannel, assignees: ["deputy"] }, operator);
     await waitForChannelAskSent(2);
@@ -97,13 +105,13 @@ export async function runManagerAwayScenario(bookingId = "AWAY-G1"): Promise<Man
     const ledger = getOperationLedgerEntries();
     return {
       initialStatus: pausedRun.status,
-      deadlineMovedForward: Date.parse(extension.expiresAt) > Date.parse(extension.previousExpiresAt),
+      deadlineMovedForward: isLater(extension.expiresAt, extension.previousExpiresAt),
       sends,
       closedNotices,
       reassignmentExposesNewPauseId: JSON.stringify(reassignment).includes(deputyPauseId),
       oldPauseAnswerRejectedWith,
-      pendingAfterReassign: pending.pauses.length,
-      pendingDeadlineIsTheExtendedOne: pending.pauses.every((pause) => pause.expiresAt === extension.expiresAt),
+      pendingAfterReassign: pending.items.length,
+      pendingDeadlineIsTheExtendedOne: pending.items.every((pause) => sameInstant(pause.expiresAt, extension.expiresAt)),
       finalStatus: finished.status,
       outcomeStatus: statusOf(finished.output),
       reservations: {

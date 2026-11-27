@@ -1,4 +1,4 @@
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { CreditReviewDatabaseStorage } from "./storages/credit-review.database-storage.js";
 import { CreditReviewApplicationDailyBudget } from "./budgets/application-daily.budget.js";
 import { CreditReviewExecutionBudget } from "./budgets/execution.budget.js";
@@ -15,7 +15,6 @@ import { CreditReviewWorkflow } from "./workflows/credit-review/credit-review.wo
 @Application({
   name: "credit-review-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   storage: CreditReviewDatabaseStorage,
   modelProvider: OpenRouterModelProvider, // the agents' chat models; the model router names the decisions provider itself
   workflows: [CreditReviewWorkflow],

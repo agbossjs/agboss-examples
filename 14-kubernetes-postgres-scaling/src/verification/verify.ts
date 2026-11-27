@@ -7,16 +7,16 @@ import {
   ChildExecutionStatus,
   ExecutionHistoryStatus,
   ExecutionAuditEventKind,
-  FencedEffectEventOutcome,
+  IdempotencyRunEventOutcome,
   OutboundCallStatus,
   type ExecutionAuditEventRecord,
-  type FencedEffectRecord,
+  type IdempotencyRunRecord,
   type LeaseTakeoverRecord,
   type OutboundCallRecord,
 } from "@agboss/core";
 import type { StubState } from "../stub/ledger-stub.js";
 
-/** The protected write of a job (the fenced effect's name in `ProcessJobAction`). */
+/** The protected write of a job (the effect's name in `ProcessJobAction`). */
 export const DELIVER = "deliver";
 /** The job's call that leaves the system. */
 export const LEDGER = "ledger";
@@ -31,7 +31,7 @@ export enum WriteVerdict {
   Accepted = "accepted",
   /** A later holder got the stored result back (`Replayed`): the write did not run again. */
   Replayed = "replayed",
-  /** A holder whose lease was taken over reached the write and was refused (`ExecutionFencedError`). */
+  /** A holder whose lease was taken over reached the write and was refused (`ExecutionError.Fenced`). */
   Refused = "refused",
   /** A holder whose lease was taken over never reached the write (it was killed, or stopped first). */
   NeverAttempted = "never-attempted",
@@ -134,8 +134,8 @@ const jobIdOf = (input: unknown): string | undefined => {
   return typeof job["jobId"] === "string" ? job["jobId"] : undefined;
 };
 
-const isDeliver = (event: ExecutionAuditEventRecord): event is FencedEffectRecord =>
-  event.kind === ExecutionAuditEventKind.FencedEffect && event.name === DELIVER;
+const isDeliver = (event: ExecutionAuditEventRecord): event is IdempotencyRunRecord =>
+  event.kind === ExecutionAuditEventKind.IdempotencyRun && event.name === DELIVER;
 
 const isTakeover = (event: ExecutionAuditEventRecord): event is LeaseTakeoverRecord =>
   event.kind === ExecutionAuditEventKind.Takeover;
@@ -146,21 +146,21 @@ const isTakeover = (event: ExecutionAuditEventRecord): event is LeaseTakeoverRec
  * below it was made by a holder whose lease had already been taken over — a zombie the store let
  * through — whatever the rest of the evidence says.
  */
-function epochsAt(events: readonly ExecutionAuditEventRecord[]): Map<FencedEffectRecord, number> {
-  const epochs = new Map<FencedEffectRecord, number>();
+function epochsAt(events: readonly ExecutionAuditEventRecord[]): Map<IdempotencyRunRecord, number> {
+  const epochs = new Map<IdempotencyRunRecord, number>();
   let epoch = 0;
   for (const event of events) {
     if (isTakeover(event)) epoch = Math.max(epoch, event.token);
     else if (isDeliver(event)) {
       epochs.set(event, epoch);
-      if (event.outcome !== FencedEffectEventOutcome.Refused) epoch = Math.max(epoch, event.token);
+      if (event.outcome !== IdempotencyRunEventOutcome.Refused) epoch = Math.max(epoch, event.token);
     }
   }
   return epochs;
 }
 
 /** An effect applied or replayed at a token below the lease's latest epoch: never accepted. */
-const staleOf = (event: FencedEffectRecord, epoch: number): WriteAttempt => ({
+const staleOf = (event: IdempotencyRunRecord, epoch: number): WriteAttempt => ({
   instanceId: event.holderInstanceId,
   token: event.token,
   verdict: WriteVerdict.Inconsistent,
@@ -172,16 +172,16 @@ function attemptsOf(events: readonly ExecutionAuditEventRecord[]): WriteAttempt[
   const deliveries = events.filter(isDeliver);
   const takeovers = events.filter(isTakeover);
   const epochs = epochsAt(events);
-  const ran = deliveries.filter((event) => event.outcome === FencedEffectEventOutcome.Ran);
+  const ran = deliveries.filter((event) => event.outcome === IdempotencyRunEventOutcome.Ran);
   const attempts = deliveries.map((event): WriteAttempt => {
     const at = { instanceId: event.holderInstanceId, token: event.token };
     const epoch = epochs.get(event) ?? 0;
-    if (event.outcome !== FencedEffectEventOutcome.Refused && event.token < epoch) return staleOf(event, epoch);
+    if (event.outcome !== IdempotencyRunEventOutcome.Refused && event.token < epoch) return staleOf(event, epoch);
     switch (event.outcome) {
-      case FencedEffectEventOutcome.Ran:
-      case FencedEffectEventOutcome.Joined:
+      case IdempotencyRunEventOutcome.Ran:
+      case IdempotencyRunEventOutcome.Joined:
         return { ...at, verdict: WriteVerdict.Accepted, detail: `${event.outcome} at token ${String(event.token)}` };
-      case FencedEffectEventOutcome.Replayed: {
+      case IdempotencyRunEventOutcome.Replayed: {
         const written = ran.find((one) => one.token === event.writtenToken);
         // what it replays must itself stand: a write at a stale token is no receipt to replay
         if (written !== undefined && written.token < (epochs.get(written) ?? 0))
@@ -190,10 +190,10 @@ function attemptsOf(events: readonly ExecutionAuditEventRecord[]): WriteAttempt[
           ? { ...at, verdict: WriteVerdict.Inconsistent, detail: `replayed token ${String(event.writtenToken)}, which no Ran wrote` }
           : { ...at, verdict: WriteVerdict.Replayed, detail: `replayed what token ${String(written.token)} wrote` };
       }
-      case FencedEffectEventOutcome.Cancelled:
+      case IdempotencyRunEventOutcome.Cancelled:
         // its tree's cancel is durable (#909): the write did not run, nothing was written
         return { ...at, verdict: WriteVerdict.Refused, detail: `refused at token ${String(event.token)}: the tree's cancel is durable` };
-      case FencedEffectEventOutcome.Refused: {
+      case IdempotencyRunEventOutcome.Refused: {
         const newer = (event.observedToken ?? 0) > event.token;
         const takenOver = takeovers.some((takeover) => takeover.token > event.token);
         return newer && takenOver
@@ -235,7 +235,7 @@ function verifyJob(batch: BatchEvidence, jobId: string, stub: StubState): JobVer
   const events = batch.auditLog.filter((event) => executions.has(event.executionId));
   const deliveries = events.filter(isDeliver);
   const attempts = attemptsOf(events);
-  const ran = deliveries.filter((event) => event.outcome === FencedEffectEventOutcome.Ran).length;
+  const ran = deliveries.filter((event) => event.outcome === IdempotencyRunEventOutcome.Ran).length;
   const expected = isFailed ? 0 : 1;
   if (ran !== expected) problems.push(`${String(ran)} deliveries ran (expected exactly ${String(expected)})`);
   for (const attempt of attempts)
@@ -306,7 +306,7 @@ export function verifyRun(input: {
       problems.push(
         `its output says ${String(output["succeeded"])} succeeded and ${String(output["failed"])} failed (expected ${String(succeeded)} and ${String(failed)})`,
       );
-    const ran = batch.auditLog.filter((event) => isDeliver(event) && event.outcome === FencedEffectEventOutcome.Ran).length;
+    const ran = batch.auditLog.filter((event) => isDeliver(event) && event.outcome === IdempotencyRunEventOutcome.Ran).length;
     if (ran !== succeeded) problems.push(`${String(ran)} deliveries ran in its tree for ${String(succeeded)} jobs done`);
     for (const jobId of batch.jobIds) jobs.push(verifyJob(batch, jobId, input.stub));
     return { batchId: batch.batchId, status: record?.status ?? "missing", jobs: batch.jobIds.length, problems };

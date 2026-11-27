@@ -1,5 +1,4 @@
-import { WorkflowFinish, type Produced } from "@agboss/core";
-import { JobDto } from "../../dto/job.dto.js";
+import { WorkflowFinish } from "@agboss/core";
 import { JobFailedDto } from "../../dto/job-failed.dto.js";
 
 /**
@@ -10,11 +9,6 @@ import { JobFailedDto } from "../../dto/job-failed.dto.js";
 @WorkflowFinish({
   name: "job-failed-workflow-finish",
   description: "The job failed; the batch goes on without it",
-  input: { job: JobDto },
   output: JobFailedDto,
 })
-export class JobFailedWorkflowFinish {
-  finish(input: { readonly job: Produced<JobDto, unknown> }): JobFailedDto {
-    return { jobId: input.job.value.jobId };
-  }
-}
+export class JobFailedWorkflowFinish {}

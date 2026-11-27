@@ -342,7 +342,7 @@ export class OpenRouterModelProvider {}
 
 ```ts file=offers/src/offers.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { OffersApplicationBudget } from "./budgets/offers-application.budget.js";
 import { OffersExecutionBudget } from "./budgets/offers-execution.budget.js";
 import { OffersTenantBudget } from "./budgets/offers-tenant.budget.js";
@@ -353,7 +353,6 @@ import { OfferLetterWorkflow } from "./workflows/offer-letter/offer-letter.workf
   providers: [OpenRouterModelProvider],
   name: "offers-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [OfferLetterWorkflow],
   budgets: [OffersApplicationBudget, OffersTenantBudget, OffersExecutionBudget],
 })
@@ -870,17 +869,7 @@ import { SourcingWorkflowStart } from "./sourcing.workflow-start.js";
 export class SourcingWorkflow {}
 ```
 
-The environments, the budgets and the application:
-
-```ts file=sourcing/src/environments/app.environment.ts
-export class SourcingEnvironment {} // the storage's path is env(…) in its decorator
-```
-
-```ts file=sourcing/src/environments/test.environment.ts
-import type { SourcingEnvironment } from "./app.environment.js";
-
-export const environment: SourcingEnvironment = {};
-```
+The budgets and the application:
 
 ```ts file=sourcing/src/storages/sourcing.database-storage.ts
 // pauses must survive a restart: SQLite in a file (":memory:" in the tests' env)
@@ -960,7 +949,6 @@ import { SourcingApplicationBudget } from "./budgets/sourcing-application.budget
 import { SourcingExecutionBudget } from "./budgets/sourcing-execution.budget.js";
 import { SourcingTenantBudget } from "./budgets/sourcing-tenant.budget.js";
 import { BuyerInboxPurchaseChannel } from "./channels/buyer-inbox-purchase.channel.js";
-import { SourcingEnvironment } from "./environments/app.environment.js";
 import { BuyerInboxService } from "./services/buyer-inbox.service.js";
 import { SourcingDatabaseStorage } from "./storages/sourcing.database-storage.js";
 import { SourcingWorkflow } from "./workflows/sourcing/sourcing.workflow.js";
@@ -969,7 +957,6 @@ import { SourcingWorkflow } from "./workflows/sourcing/sourcing.workflow.js";
   modelProvider: OpenRouterModelProvider,
   name: "sourcing-application",
   version: "1.0.0",
-  environment: SourcingEnvironment,
   workflows: [SourcingWorkflow], // the child need not be listed: it belongs to its parent
   budgets: [SourcingApplicationBudget, SourcingTenantBudget, SourcingExecutionBudget],
   storage: SourcingDatabaseStorage, // the pauses survive a restart
@@ -1333,7 +1320,7 @@ export class OpenRouterModelProvider {}
 
 ```ts file=helpdesk/src/helpdesk.application.ts
 import { OpenRouterModelProvider } from "./model-providers/openrouter.model-provider.js";
-import { Application, EmptyEnvironment } from "@agboss/core";
+import { Application } from "@agboss/core";
 import { HelpdeskHttpAuthenticator } from "./a2a/helpdesk.http-authenticator.js";
 import { HelpdeskA2AEndpoint } from "./a2a/helpdesk.a2a-endpoint.js";
 import { HelpdeskApplicationBudget } from "./budgets/helpdesk-application.budget.js";
@@ -1346,7 +1333,6 @@ import { HelpdeskWorkflow } from "./workflows/helpdesk/helpdesk.workflow.js";
   providers: [OpenRouterModelProvider],
   name: "helpdesk-application",
   version: "1.0.0",
-  environment: EmptyEnvironment,
   workflows: [HelpdeskWorkflow],
   services: [HelpdeskHttpAuthenticator], // an @HttpAuthenticator is a service: the listener resolves it
   budgets: [HelpdeskApplicationBudget, HelpdeskTenantBudget, HelpdeskExecutionBudget],
@@ -1366,7 +1352,7 @@ import { HelpdeskA2AEndpoint } from "../a2a/helpdesk.a2a-endpoint.js";
 import { HelpdeskApplication } from "../helpdesk.application.js";
 import { HelpdeskWorkflowStart } from "../workflows/helpdesk/helpdesk.workflow-start.js";
 
-const app = await createApp(HelpdeskApplication, { env: "prod" });
+const app = await createApp(HelpdeskApplication, { profile: "prod" });
 
 const shown = new Map<string, string>(); // the text of each step, as the user sees it
 const result = await app.execute(
@@ -1451,10 +1437,6 @@ export class LenderTenantContext extends TenantContext {
 }
 ```
 
-```ts file=loans/src/environments/app.environment.ts
-export class LoansEnvironment {} // the keys and the file are env(…) / secret(…) in the providers and the storage
-```
-
 ```ts file=loans/src/storages/loans.database-storage.ts
 import { DatabaseStorage, SqliteDriver, defineEnv, env, secret } from "@agboss/core";
 import { hours } from "@agboss/core/units";
@@ -1472,18 +1454,6 @@ const storageEnv = defineEnv({
   piiSecret: storageEnv.piiSecret,
 })
 export class LoansDatabaseStorage {}
-```
-
-```ts file=loans/src/environments/prod.environment.ts
-import type { LoansEnvironment } from "./app.environment.js";
-
-export const environment: LoansEnvironment = {};
-```
-
-```ts file=loans/src/environments/test.environment.ts
-import type { LoansEnvironment } from "./app.environment.js";
-
-export const environment: LoansEnvironment = {}; // no keys: models are scripted
 ```
 
 The model providers, one per file — the backup first, since OpenRouter's breaker falls back to it, and
@@ -1707,7 +1677,7 @@ export class FundsLedgerService {
   constructor(private readonly applicationContext: ApplicationContext) {}
 
   reserve(amount: number, idempotencyKey: string): Promise<string> {
-    return Promise.resolve(`${this.applicationContext.environmentName}:${String(amount)}:${idempotencyKey}`);
+    return Promise.resolve(`${this.applicationContext.profiles.join("+")}:${String(amount)}:${idempotencyKey}`);
   }
 
   release(reservationId: string, idempotencyKey: string): Promise<void> {
@@ -1983,7 +1953,6 @@ import { LenderDailyBudget } from "./budgets/lender-daily.budget.js";
 import { LoansApplicationBudget } from "./budgets/loans-application.budget.js";
 import { LoansExecutionBudget } from "./budgets/loans-execution.budget.js";
 import { LenderTenantContext } from "./contexts/lender.context.js";
-import { LoansEnvironment } from "./environments/app.environment.js";
 import { OutOfScopeGuardrail } from "./guardrails/out-of-scope/out-of-scope.guardrail.js";
 import { FundsLedgerHealthCheck } from "./health-checks/funds-ledger.health-check.js";
 import { LoansBackupModelProvider } from "./model-providers/loans-backup.model-provider.js";
@@ -1996,7 +1965,6 @@ import { LoanWorkflow } from "./workflows/loan/loan.workflow.js";
 @Application({
   name: "loans-application",
   version: "1.0.0",
-  environment: LoansEnvironment,
   tenantContext: LenderTenantContext,
   workflows: [LoanWorkflow],
   budgets: [LoansApplicationBudget, LenderDailyBudget, LoansExecutionBudget],

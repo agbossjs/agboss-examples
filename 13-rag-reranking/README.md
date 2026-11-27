@@ -87,4 +87,4 @@ src/offline/offline-openrouter.ts        the demo's scripted OpenRouter wire
   the rerankers are `@RagReranker` classes carrying their `candidates` and `onFailure`; the agent that searched in "tool mode" now has an ordinary
   `@Tool` (`SearchHandbookTool`) over `HandbookRag.search`, and the briefing agent reads it as its context (`rag: [HandbookRag]`).
 - Cohere's key and address are `defineEnv` references (`cohereEnv`); OpenRouter is a driver provider and the application's `modelProvider`;
-  the rows are `HandbookDatabaseStorage`; the environment contract is `EmptyEnvironment`.
+  the rows are `HandbookDatabaseStorage`; the application declares no `defineEnv` of its own.
